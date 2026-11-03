@@ -30,15 +30,7 @@ export class Atmosphere {
     // 화면을 덮는 곱하기(MULTIPLY) 레이어로 시간대 색감 연출
     this.overlay = scene.add.image(0, 0, '__WHITE').setOrigin(0).setDepth(DEPTH.overlay).setBlendMode(Phaser.BlendModes.MULTIPLY);
 
-    for (const l of world.lamps) {
-      this.addGlow(l.x, l.y, 0.75, 0xffd88a);
-      this.addGlow(l.x, l.y + 30, 1.2, 0xffb860, 0.5);
-    }
-    const house = world.objects.find((o) => o.type === 'house');
-    if (house) {
-      const hx = house.sprite.x, hy = house.sprite.y;
-      for (const [dx, dy, s] of [[-26, -26, 1.1], [26, -26, 1.1], [0, -18, 0.8], [0, -76, 0.6]] as const) this.addGlow(hx + dx, hy + dy, s, 0xffc870);
-    }
+    for (const l of world.lights) this.addGlow(l.x, l.y, l.scale, l.tint, l.base);
 
     // 구름 그림자
     for (let i = 0; i < 5; i++) {
@@ -47,8 +39,10 @@ export class Atmosphere {
     }
 
     // 비
-    const g = scene.make.graphics({}, false);
-    g.fillStyle(0xbfe3ff, 1).fillRect(0, 0, 1, 6); g.generateTexture('raindrop', 1, 6); g.destroy();
+    if (!scene.textures.exists('raindrop')) {
+      const g = scene.make.graphics({}, false);
+      g.fillStyle(0xbfe3ff, 1).fillRect(0, 0, 1, 6); g.generateTexture('raindrop', 1, 6); g.destroy();
+    }
     this.rain = scene.add.particles(0, 0, 'raindrop', {
       x: { min: -40, max: 1400 }, y: { min: -20, max: 0 }, lifespan: { min: 900, max: 1500 },
       speedY: { min: 240, max: 300 }, speedX: { min: -50, max: -35 }, quantity: 3, frequency: 14, alpha: { start: 0.75, end: 0.2 }, emitting: false,
@@ -56,9 +50,10 @@ export class Atmosphere {
 
     for (let i = 0; i < 9; i++) this.butterflies.push(new Butterfly(scene, 100 + Math.random() * (world.widthPx - 200), 80 + Math.random() * (world.heightPx - 160), { w: world.widthPx, h: world.heightPx }));
     for (let i = 0; i < 26; i++) {
+      const water = world.mapId === 'town' ? { x: 360, y: 290, w: 270, h: 160 } : { x: 100, y: 400, w: 200, h: 180 };
       const nearPond = i < 14;
-      const bx = nearPond ? 100 + Math.random() * 200 : 60 + Math.random() * (world.widthPx - 120);
-      const by = nearPond ? 400 + Math.random() * 180 : 60 + Math.random() * (world.heightPx - 120);
+      const bx = nearPond ? water.x + Math.random() * water.w : 60 + Math.random() * (world.widthPx - 120);
+      const by = nearPond ? water.y + Math.random() * water.h : 60 + Math.random() * (world.heightPx - 120);
       this.fireflies.push({ img: scene.add.image(bx, by, 'glow').setScale(0.06).setTint(0xd8ff7a).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.glow).setAlpha(0), t: Math.random() * 9999, bx, by });
     }
   }
@@ -85,7 +80,7 @@ export class Atmosphere {
 
     const now = this.scene.time.now;
     for (const g of this.glows) g.img.setAlpha(this.light * g.base * (0.85 + Math.sin(now / 180 + g.phase) * 0.05 + Math.sin(now / 47 + g.phase) * 0.03));
-    if (this.world.houseGlow) this.world.houseGlow.setAlpha(this.light * 0.9);
+    for (const w of this.world.windowGlows) w.setAlpha(this.light * 0.9);
 
     for (const c of this.clouds) {
       c.x += dt * 0.006; c.y += dt * 0.0015;

@@ -7,6 +7,7 @@ export interface TiledMap { width: number; height: number; tilewidth: number; la
 export const prop = <T = string | number>(o: { properties?: TiledProperty[] }, name: string, def?: T): T =>
   ((o.properties?.find((p) => p.name === name)?.value as T) ?? (def as T));
 
+export interface WarpDef { x: number; y: number; w: number; h: number; to: string; spawn: string }
 export interface PlotDef { name: string; x: number; y: number; w: number; h: number; crop: string; stage: number; watered: boolean }
 
 export class MapInfo {
@@ -20,9 +21,12 @@ export class MapInfo {
   readonly spawnList: TiledObject[] = [];
   readonly plots: PlotDef[] = [];
   readonly farmZones: PlotDef[] = [];
+  readonly warps: WarpDef[] = [];
+  readonly name: string;
 
   constructor(map: TiledMap) {
     this.width = map.width; this.height = map.height; this.tile = map.tilewidth;
+    this.name = String(map.properties?.find((p) => p.name === 'name')?.value ?? 'farm');
     const col = map.layers.find((l) => l.name === 'Collision');
     this.blocked = new Uint8Array(this.width * this.height);
     col?.data?.forEach((g, i) => { if (g) this.blocked[i] = 1; });
@@ -33,11 +37,21 @@ export class MapInfo {
       const d: PlotDef = { name: p.name, x: p.x / this.tile, y: p.y / this.tile, w: p.width / this.tile, h: p.height / this.tile, crop: prop(p, 'crop', ''), stage: prop(p, 'stage', 0), watered: !!prop(p, 'watered', 0) };
       (d.crop === '*' ? this.farmZones : this.plots).push(d);
     }
+    for (const w of map.layers.find((l) => l.name === 'Warps')?.objects ?? []) {
+      this.warps.push({ x: w.x, y: w.y, w: w.width, h: w.height, to: prop(w, 'to', 'farm'), spawn: prop(w, 'spawn', 'player') });
+    }
   }
   inBounds(x: number, y: number) { return x >= 0 && y >= 0 && x < this.width && y < this.height; }
   isBlocked(x: number, y: number) { return !this.inBounds(x, y) || this.blocked[y * this.width + x] === 1; }
   terrainAt(x: number, y: number) { return this.terrain[y]?.[x] ?? '0'; }
   /** 괭이질 가능한 칸: 농지 구역 안 + 막히지 않음 + 잔디/흙 */
+  canStand(px: number, py: number, hw = 5, hh = 5) {
+    const T = this.tile;
+    for (let cy = Math.floor((py - hh) / T); cy <= Math.floor((py - 0.01) / T); cy++)
+      for (let cx = Math.floor((px - hw) / T); cx <= Math.floor((px + hw - 0.01) / T); cx++) if (this.isBlocked(cx, cy)) return false;
+    return true;
+  }
+  warpAt(px: number, py: number) { return this.warps.find((w) => px >= w.x && px < w.x + w.w && py >= w.y && py < w.y + w.h); }
   isTillable(x: number, y: number) {
     if (this.isBlocked(x, y) || this.terrainAt(x, y) === '2') return false;
     return this.farmZones.some((z) => x >= z.x && y >= z.y && x < z.x + z.w && y < z.y + z.h);

@@ -18,5 +18,6 @@ export interface Manifest {
   images: Record<string, { path: string; w: number; h: number; originY: number }>;
   spritesheets: Record<string, { path: string; frameWidth: number; frameHeight: number; frames: number; originY: number; ids?: string[]; stages?: number }>;
   characters: Record<string, CharacterMeta>;
+  buildings?: Record<string, { cellW: number; cellH: number; doorCell: number; chimneyX: number | null; w: number; h: number }>;
   tileset: { path: string; columns: number; rows: number; ROW: Record<string, number>; DECOR: Record<string, number>; WOOD: Record<string, number>; MISC: Record<string, number> };
 }

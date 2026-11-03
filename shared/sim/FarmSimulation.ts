@@ -1,7 +1,7 @@
 // 권한 있는 농장 시뮬레이션 (Authoritative). 서버와 싱글플레이(LocalAuthority)에서 동일하게 사용.
 // 클라이언트는 결과가 아니라 ActionIntent 만 보내고, 여기서 거리/에너지/도구 소지를 검증한 뒤 상태를 바꾼다.
-import { CROPS, ITEMS } from '../data';
-import { SoilState, type ActionIntent, type ActionResult, type FarmSnapshot, type FarmTile, type InventorySlot, type PlayerState, type WorldTime, type Weather } from '../types';
+import { CROPS, ITEMS, SHOPS, hhmmToMinutes } from '../data';
+import { SoilState, type ActionIntent, type ActionResult, type FarmSnapshot, type FarmTile, type InventorySlot, type MapId, type PlayerState, type WorldTime, type Weather } from '../types';
 import { MapInfo } from './MapInfo';
 
 export const DAY_START = 6 * 60;      // 06:00
@@ -55,16 +55,21 @@ export class FarmSimulation {
     }
   }
 
-  addPlayer(id: string, name: string, look = 'player', x = 0, y = 0): PlayerState {
+  addPlayer(id: string, name: string, look = 'player', x = 0, y = 0, map: MapId = 'farm'): PlayerState {
     const inv: InventorySlot[] = Array.from({ length: HOTBAR_SIZE }, (_, i) => ({ slotIndex: i, itemId: null, quantity: 0 }));
     const give = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_cauliflower', 'seeds_tomato', 'seeds_pumpkin'];
     const qty: Record<string, number> = { seeds_parsnip: 15, seeds_cauliflower: 5, seeds_tomato: 8, seeds_pumpkin: 3 };
     give.forEach((it, i) => { inv[i].itemId = it; inv[i].quantity = qty[it] ?? 1; });
-    const p: PlayerState = { id, name, look, x, y, dir: 'down', anim: 'idle', energy: 270, maxEnergy: 270, inventory: inv };
+    const p: PlayerState = { id, name, look, map, x, y, dir: 'down', anim: 'idle', energy: 270, maxEnergy: 270, inventory: inv };
     this.players.set(id, p);
     return p;
   }
   removePlayer(id: string) { this.players.delete(id); }
+  /** 맵 이동 (워프). 위치는 도착 맵의 스폰 지점 */
+  setPlayerMap(id: string, map: MapId, x: number, y: number) {
+    const p = this.players.get(id); if (!p) return;
+    p.map = map; p.x = x; p.y = y;
+  }
 
   snapshot(): FarmSnapshot {
     return { time: { ...this.time }, gold: this.gold, tiles: [...this.tiles.values()].map((t) => ({ ...t, crop: t.crop ? { ...t.crop } : null })), removedObjects: [...this.removed], shippingBin: [...this.bin] };
@@ -110,7 +115,13 @@ export class FarmSimulation {
       if (!t.crop && weather !== 'rain' && this.rand() < 0.1) { this.tiles.delete(`${t.x},${t.y}`); t.soil = SoilState.Unplowed; }
       this.emit({ type: 'tile', tile: t });
     }
-    for (const p of this.players.values()) { p.energy = p.maxEnergy; this.emit({ type: 'player', id: p.id, energy: p.energy, inventory: p.inventory }); }
+    // 새 날: 모든 플레이어는 농장 집 앞에서 시작
+    const home = this.map.spawns.get('player');
+    for (const p of this.players.values()) {
+      p.energy = p.maxEnergy;
+      if (home) { p.map = 'farm'; p.x = home.x; p.y = home.y + 5; }
+      this.emit({ type: 'player', id: p.id, energy: p.energy, inventory: p.inventory });
+    }
     if (earned) this.emit({ type: 'gold', gold: this.gold, delta: earned });
     this.emit({ type: 'newDay', time: { ...this.time }, shippedGold: earned });
   }
@@ -119,7 +130,11 @@ export class FarmSimulation {
   apply(playerId: string, a: ActionIntent): ActionResult {
     const p = this.players.get(playerId);
     if (!p) return { ok: false, reason: 'no-player' };
+    // 농사 관련 행동은 농장 맵에서만
+    if (['useTool', 'plant', 'harvest', 'ship', 'chop'].includes(a.kind) && p.map !== 'farm') return { ok: false, reason: 'wrong-map' };
     switch (a.kind) {
+      case 'buy': return this.buy(p, a.shop, a.itemId, a.qty);
+      case 'eat': return this.eat(p, a.slot);
       case 'useTool': return this.useTool(p, a.slot, a.tx, a.ty);
       case 'plant': return this.plant(p, a.slot, a.tx, a.ty);
       case 'harvest': return this.harvest(p, a.tx, a.ty);
@@ -216,6 +231,34 @@ export class FarmSimulation {
       return { ok: true, anim: 'axe' };
     }
     return { ok: true, anim: 'axe', reason: 'shake' };
+  }
+
+  private buy(p: PlayerState, shopId: string, itemId: string, qty: number): ActionResult {
+    const shop = SHOPS[shopId]; const entry = shop?.items.find((i) => i.itemId === itemId);
+    if (!shop || !entry || !ITEMS[itemId]) return { ok: false, reason: 'no-item' };
+    if (p.map !== 'town') return { ok: false, reason: 'wrong-map' };
+    qty = Math.max(1, Math.min(99, Math.floor(qty)));
+    const m = this.time.minutes;
+    if (m < hhmmToMinutes(shop.open) || m >= hhmmToMinutes(shop.close)) { this.emit({ type: 'toast', playerId: p.id, text: `${shop.name}은(는) 지금 문을 닫았어요.` }); return { ok: false, reason: 'closed' }; }
+    const cost = entry.price * qty;
+    if (this.gold < cost) { this.emit({ type: 'toast', playerId: p.id, text: '골드가 부족해요.', icon: 'gold' }); return { ok: false, reason: 'gold' }; }
+    if (!this.addItem(p, itemId, qty)) { this.emit({ type: 'toast', playerId: p.id, text: '가방이 가득 찼어요!' }); return { ok: false, reason: 'full' }; }
+    this.gold -= cost;
+    this.emit({ type: 'gold', gold: this.gold, delta: -cost });
+    this.changed(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${ITEMS[itemId].name} ×${qty} 구매 (-${cost}G)`, icon: ITEMS[itemId].icon });
+    return { ok: true };
+  }
+
+  private eat(p: PlayerState, slot: number): ActionResult {
+    const s = p.inventory[slot]; const item = ITEMS[s?.itemId ?? ''];
+    if (!item || item.type !== 'food') return { ok: false, reason: 'not-food' };
+    if (p.energy >= p.maxEnergy) { this.emit({ type: 'toast', playerId: p.id, text: '배가 불러요. 에너지가 가득 차 있어요.', icon: 'energy' }); return { ok: false, reason: 'full' }; }
+    p.energy = Math.min(p.maxEnergy, p.energy + (item.energy ?? 0));
+    s.quantity--; if (s.quantity <= 0) { s.itemId = null; s.quantity = 0; }
+    this.changed(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${item.name}을(를) 먹었어요. 에너지 +${item.energy}`, icon: 'energy' });
+    return { ok: true, anim: 'interact' };
   }
 
   addItem(p: PlayerState, itemId: string, qty: number) {

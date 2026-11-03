@@ -1,91 +1,757 @@
 {
   "hana": {
-    "id": "hana", "name": "하나", "title": "옆집 농부", "sprite": "hana", "speed": 38, "color": "#e0476b",
+    "id": "hana",
+    "name": "하나",
+    "title": "옆집 농부",
+    "sprite": "hana",
+    "speed": 38,
+    "color": "#e0476b",
     "schedule": [
-      { "time": 600, "to": "wp_field_in", "idle": "work", "work": "water", "radius": 2 },
-      { "time": 1130, "to": "wp_coop", "idle": "wander", "radius": 2 },
-      { "time": 1400, "to": "wp_meadow", "idle": "wander", "radius": 3 },
-      { "time": 1700, "to": "wp_cross", "idle": "stand", "face": "down" },
-      { "time": 1900, "to": "wp_exit", "idle": "leave" }
+      {
+        "time": 600,
+        "map": "farm",
+        "to": "wp_field_in",
+        "idle": "work",
+        "work": "water",
+        "radius": 2
+      },
+      {
+        "time": 1130,
+        "map": "farm",
+        "to": "wp_coop",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 1400,
+        "map": "farm",
+        "to": "wp_meadow",
+        "idle": "wander",
+        "radius": 3
+      },
+      {
+        "time": 1630,
+        "map": "town",
+        "to": "wp_cafe",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 1800,
+        "map": "town",
+        "to": "wp_lake_w",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 2000,
+        "map": "town",
+        "to": "wp_home_luna",
+        "idle": "leave"
+      }
     ],
     "dialogue": {
-      "first": ["안녕! 네가 이번에 이사 온 새 농부구나?", "나는 하나야. 바로 옆 농장에서 일해. 모르는 거 있으면 언제든 물어봐!"],
-      "morning": ["좋은 아침! 아침 이슬 맞은 작물은 유난히 반짝여.", "물은 아침에 주는 게 제일 좋아. 오늘도 힘내자!"],
-      "afternoon": ["닭들이 오늘따라 기분이 좋아 보여. 너도 느껴져?", "점심은 먹었어? 일하다 보면 시간 가는 줄 모른다니까."],
-      "evening": ["노을이 정말 예쁘다... 이 맛에 농사짓는 거지.", "오늘 하루도 수고했어. 푹 자야 내일 또 일하지!"],
-      "rain": ["비 오는 날은 물 안 줘도 돼서 좋아! 대신 신발이 엉망이야."],
-      "random": ["파스닙은 4일이면 다 자라. 처음엔 그걸로 시작하는 게 좋아.", "허수아비 이름은 '감자'야. 내가 지어줬어."]
+      "first": [
+        "안녕! 네가 이번에 이사 온 새 농부구나?",
+        "나는 하나야. 바로 옆 농장에서 일해. 모르는 거 있으면 언제든 물어봐!"
+      ],
+      "morning": [
+        "좋은 아침! 아침 이슬 맞은 작물은 유난히 반짝여.",
+        "물은 아침에 주는 게 제일 좋아. 오늘도 힘내자!"
+      ],
+      "afternoon": [
+        "닭들이 오늘따라 기분이 좋아 보여. 너도 느껴져?",
+        "점심은 먹었어? 일하다 보면 시간 가는 줄 모른다니까."
+      ],
+      "evening": [
+        "노을이 정말 예쁘다... 이 맛에 농사짓는 거지.",
+        "오늘 하루도 수고했어. 푹 자야 내일 또 일하지!",
+        "일 끝나고 마을 카페에서 루나 언니 케이크 먹는 게 내 낙이야!"
+      ],
+      "rain": [
+        "비 오는 날은 물 안 줘도 돼서 좋아! 대신 신발이 엉망이야."
+      ],
+      "random": [
+        "파스닙은 4일이면 다 자라. 처음엔 그걸로 시작하는 게 좋아.",
+        "허수아비 이름은 '감자'야. 내가 지어줬어."
+      ]
     }
   },
   "minsu": {
-    "id": "minsu", "name": "민수", "title": "대장장이", "sprite": "minsu", "speed": 30, "color": "#b8523a",
+    "id": "minsu",
+    "name": "민수",
+    "title": "대장장이",
+    "sprite": "minsu",
+    "speed": 30,
+    "color": "#b8523a",
     "schedule": [
-      { "time": 600, "to": "wp_east", "idle": "stand", "face": "left" },
-      { "time": 1000, "to": "wp_well", "idle": "stand", "face": "up" },
-      { "time": 1230, "to": "wp_lamp", "idle": "wander", "radius": 1 },
-      { "time": 1600, "to": "wp_bin", "idle": "stand", "face": "down" },
-      { "time": 1800, "to": "wp_exit", "idle": "leave" }
+      {
+        "time": 600,
+        "map": "town",
+        "to": "wp_smithy",
+        "idle": "work",
+        "work": "hoe",
+        "face": "right"
+      },
+      {
+        "time": 1200,
+        "map": "town",
+        "to": "wp_cafe",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 1300,
+        "map": "town",
+        "to": "wp_smithy",
+        "idle": "work",
+        "work": "hoe"
+      },
+      {
+        "time": 1700,
+        "map": "farm",
+        "to": "wp_well",
+        "idle": "stand",
+        "face": "up"
+      },
+      {
+        "time": 1830,
+        "map": "town",
+        "to": "wp_lake_e",
+        "idle": "wander",
+        "radius": 1
+      },
+      {
+        "time": 2000,
+        "map": "town",
+        "to": "wp_home_mio",
+        "idle": "leave"
+      }
     ],
     "dialogue": {
-      "first": ["음? 새 얼굴이군. 난 대장간을 하는 민수다.", "도구가 무뎌지면 가져와. 반짝반짝하게 벼려 주지."],
-      "morning": ["아침 공기가 차군. 화로에 불 지피기 딱 좋은 날이야."],
-      "afternoon": ["이 우물 물맛이 아주 좋아. 쇠를 식힐 때도 이 물을 쓰지.", "괭이질은 허리가 아니라 팔로 하는 거다. 명심해."],
-      "evening": ["슬슬 대장간 문 닫을 시간이군."],
-      "rain": ["비 오는 날엔 녹 슬기 쉬워. 도구 관리 잘 해."],
-      "random": ["좋은 도구는 좋은 농부를 만들지. 반대도 마찬가지고.", "...흠. 할 말 없으면 가 봐. 농담이야."]
+      "first": [
+        "음? 새 얼굴이군. 난 대장간을 하는 민수다.",
+        "도구가 무뎌지면 가져와. 반짝반짝하게 벼려 주지."
+      ],
+      "morning": [
+        "아침 공기가 차군. 화로에 불 지피기 딱 좋은 날이야."
+      ],
+      "afternoon": [
+        "이 우물 물맛이 아주 좋아. 쇠를 식힐 때도 이 물을 쓰지.",
+        "괭이질은 허리가 아니라 팔로 하는 거다. 명심해.",
+        "땡! 땡! ...아, 미안. 망치질 소리가 좀 크지?"
+      ],
+      "evening": [
+        "슬슬 대장간 문 닫을 시간이군."
+      ],
+      "rain": [
+        "비 오는 날엔 녹 슬기 쉬워. 도구 관리 잘 해."
+      ],
+      "random": [
+        "좋은 도구는 좋은 농부를 만들지. 반대도 마찬가지고.",
+        "...흠. 할 말 없으면 가 봐. 농담이야."
+      ]
     }
   },
   "sora": {
-    "id": "sora", "name": "소라", "title": "잡화점 주인", "sprite": "sora", "speed": 34, "color": "#7d5aa8",
+    "id": "sora",
+    "name": "소라",
+    "title": "잡화점 주인",
+    "sprite": "sora",
+    "speed": 34,
+    "color": "#7d5aa8",
     "schedule": [
-      { "time": 600, "to": "wp_cross", "idle": "stand", "face": "down" },
-      { "time": 1200, "to": "wp_pond_e", "idle": "wander", "radius": 2 },
-      { "time": 1500, "to": "wp_house", "idle": "stand", "face": "up" },
-      { "time": 1700, "to": "wp_meadow", "idle": "wander", "radius": 2 },
-      { "time": 2000, "to": "wp_exit", "idle": "leave" }
+      {
+        "time": 600,
+        "map": "town",
+        "to": "wp_lake_s",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 900,
+        "map": "town",
+        "to": "wp_store",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 1700,
+        "map": "town",
+        "to": "wp_market",
+        "idle": "wander",
+        "radius": 1
+      },
+      {
+        "time": 1830,
+        "map": "farm",
+        "to": "wp_cross",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 2000,
+        "map": "town",
+        "to": "wp_home_sora",
+        "idle": "leave"
+      }
     ],
     "dialogue": {
-      "first": ["어서 와요! 별빛 마을 잡화점의 소라예요.", "씨앗이 필요하면 언제든 말해요. 신선한 걸로만 들여놓거든요."],
-      "morning": ["오늘의 추천 상품은... 콜리플라워 씨앗! 비싸지만 값어치는 해요."],
-      "afternoon": ["연못가 산책은 제 소소한 행복이에요.", "출하 상자에 넣은 작물은 밤사이에 정산돼요. 아침에 확인해 봐요!"],
-      "evening": ["가게 장부 정리하러 가야겠어요. 숫자는 거짓말을 안 하죠."],
-      "rain": ["빗소리 들으면서 장부 정리하는 게 제 취미예요."],
-      "random": ["안경이요? 계산할 때만 써요. ...거의 항상이네요.", "호박은 비싸게 팔려요. 시간이 좀 걸리지만요."]
+      "first": [
+        "어서 와요! 별빛 마을 잡화점의 소라예요.",
+        "씨앗이 필요하면 언제든 말해요. 신선한 걸로만 들여놓거든요."
+      ],
+      "morning": [
+        "잡화점은 9시부터 5시까지 열어요. 씨앗은 가게 앞에서 말 걸어 주세요!",
+        "오늘의 추천 상품은... 콜리플라워 씨앗! 비싸지만 값어치는 해요."
+      ],
+      "afternoon": [
+        "연못가 산책은 제 소소한 행복이에요.",
+        "출하 상자에 넣은 작물은 밤사이에 정산돼요. 아침에 확인해 봐요!"
+      ],
+      "evening": [
+        "가게 장부 정리하러 가야겠어요. 숫자는 거짓말을 안 하죠."
+      ],
+      "rain": [
+        "빗소리 들으면서 장부 정리하는 게 제 취미예요."
+      ],
+      "random": [
+        "안경이요? 계산할 때만 써요. ...거의 항상이네요.",
+        "호박은 비싸게 팔려요. 시간이 좀 걸리지만요."
+      ]
     }
   },
   "park": {
-    "id": "park", "name": "박 영감", "title": "어부", "sprite": "park", "speed": 22, "color": "#3a6a9a",
+    "id": "park",
+    "name": "박 영감",
+    "title": "어부",
+    "sprite": "park",
+    "speed": 22,
+    "color": "#3a6a9a",
     "schedule": [
-      { "time": 600, "to": "wp_dock", "idle": "stand", "face": "down" },
-      { "time": 1700, "to": "wp_pond_e", "idle": "wander", "radius": 1 },
-      { "time": 1930, "to": "wp_exit", "idle": "leave" }
+      {
+        "time": 600,
+        "map": "farm",
+        "to": "wp_dock",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 1300,
+        "map": "town",
+        "to": "wp_pier",
+        "idle": "stand",
+        "face": "up"
+      },
+      {
+        "time": 1900,
+        "map": "town",
+        "to": "wp_bench_s",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 2030,
+        "map": "town",
+        "to": "wp_home_teo",
+        "idle": "leave"
+      }
     ],
     "dialogue": {
-      "first": ["허허, 젊은이가 이 농장을 맡았다고? 반갑구먼.", "나는 이 연못에서 오십 년째 낚시를 하고 있지. 아직 그 놈을 못 잡았어."],
-      "morning": ["새벽 물안개가 걷힐 때가 입질이 제일 좋아."],
-      "afternoon": ["쉿... 지금 큰 놈이 근처에 있어.", "이 연못엔 전설의 금빛 잉어가 산다는 얘기가 있지."],
-      "evening": ["오늘도 허탕이구먼. 내일은 꼭 잡을 게야."],
-      "rain": ["비 오는 날이 진짜 낚시 날씨야. 허허."],
-      "random": ["젊었을 땐 나도 농사를 지었지. 손에 흙 묻히는 게 제일 행복했어.", "인생은 낚시랑 같아. 기다림이 반이지."]
+      "first": [
+        "허허, 젊은이가 이 농장을 맡았다고? 반갑구먼.",
+        "나는 이 연못에서 오십 년째 낚시를 하고 있지. 아직 그 놈을 못 잡았어."
+      ],
+      "morning": [
+        "새벽 물안개가 걷힐 때가 입질이 제일 좋아."
+      ],
+      "afternoon": [
+        "쉿... 지금 큰 놈이 근처에 있어.",
+        "이 연못엔 전설의 금빛 잉어가 산다는 얘기가 있지.",
+        "마을 호수엔 오리들이 살아. 낚싯줄을 자꾸 물어간다니까, 허허."
+      ],
+      "evening": [
+        "오늘도 허탕이구먼. 내일은 꼭 잡을 게야."
+      ],
+      "rain": [
+        "비 오는 날이 진짜 낚시 날씨야. 허허."
+      ],
+      "random": [
+        "젊었을 땐 나도 농사를 지었지. 손에 흙 묻히는 게 제일 행복했어.",
+        "인생은 낚시랑 같아. 기다림이 반이지."
+      ]
     }
   },
   "juni": {
-    "id": "juni", "name": "준이", "title": "동네 꼬마", "sprite": "juni", "speed": 56, "run": true, "color": "#e8573a",
+    "id": "juni",
+    "name": "준이",
+    "title": "동네 꼬마",
+    "sprite": "juni",
+    "speed": 56,
+    "run": true,
+    "color": "#e8573a",
     "schedule": [
-      { "time": 600, "to": "wp_west", "idle": "wander", "radius": 3 },
-      { "time": 900, "to": "wp_coop", "idle": "wander", "radius": 3 },
-      { "time": 1100, "to": "wp_pond_e", "idle": "wander", "radius": 2 },
-      { "time": 1400, "to": "wp_meadow", "idle": "wander", "radius": 4 },
-      { "time": 1630, "to": "wp_cross", "idle": "wander", "radius": 2 },
-      { "time": 1800, "to": "wp_exit", "idle": "leave" }
+      {
+        "time": 600,
+        "map": "town",
+        "to": "wp_south",
+        "idle": "wander",
+        "radius": 3
+      },
+      {
+        "time": 900,
+        "map": "farm",
+        "to": "wp_coop",
+        "idle": "wander",
+        "radius": 3
+      },
+      {
+        "time": 1100,
+        "map": "farm",
+        "to": "wp_pond_e",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 1300,
+        "map": "town",
+        "to": "wp_lake_w",
+        "idle": "wander",
+        "radius": 3
+      },
+      {
+        "time": 1530,
+        "map": "town",
+        "to": "wp_plaza_e",
+        "idle": "wander",
+        "radius": 3
+      },
+      {
+        "time": 1800,
+        "map": "town",
+        "to": "wp_home_luna",
+        "idle": "leave"
+      }
     ],
     "dialogue": {
-      "first": ["우와! 형이 새로 온 농부야? 나 준이! 8살!", "나중에 닭 쫓기 시합하자! 내가 맨날 이기지만!"],
-      "morning": ["아침밥 먹기 싫어서 도망 나왔어. 쉿!"],
-      "afternoon": ["나비 잡으러 왔는데 너무 빨라!", "박 할아버지는 맨날 물고기 못 잡아. 히히."],
-      "evening": ["엄마가 해 지기 전에 오랬는데... 큰일이다!"],
-      "rain": ["비 웅덩이 첨벙첨벙! 최고야!"],
-      "random": ["내 모자 멋지지? 생일 선물이야!", "닭은 왜 날지 못할까? 형은 알아?"]
+      "first": [
+        "우와! 형이 새로 온 농부야? 나 준이! 8살!",
+        "나중에 닭 쫓기 시합하자! 내가 맨날 이기지만!"
+      ],
+      "morning": [
+        "아침밥 먹기 싫어서 도망 나왔어. 쉿!"
+      ],
+      "afternoon": [
+        "나비 잡으러 왔는데 너무 빨라!",
+        "박 할아버지는 맨날 물고기 못 잡아. 히히.",
+        "호수에 오리 네 마리 있어! 내가 다 이름 지어줬어. 꽥이, 꽉이, 꿱이, 그리고... 오리!"
+      ],
+      "evening": [
+        "엄마가 해 지기 전에 오랬는데... 큰일이다!"
+      ],
+      "rain": [
+        "비 웅덩이 첨벙첨벙! 최고야!"
+      ],
+      "random": [
+        "내 모자 멋지지? 생일 선물이야!",
+        "닭은 왜 날지 못할까? 형은 알아?"
+      ]
+    }
+  },
+  "mayor": {
+    "id": "mayor",
+    "name": "오 촌장",
+    "title": "별빛 마을 촌장",
+    "sprite": "mayor",
+    "speed": 26,
+    "color": "#8a2f3f",
+    "schedule": [
+      {
+        "time": 600,
+        "map": "town",
+        "to": "wp_home_mayor",
+        "idle": "leave"
+      },
+      {
+        "time": 800,
+        "map": "town",
+        "to": "wp_hall",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 1200,
+        "map": "town",
+        "to": "wp_bench_n",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 1400,
+        "map": "town",
+        "to": "wp_board",
+        "idle": "stand",
+        "face": "up"
+      },
+      {
+        "time": 1600,
+        "map": "town",
+        "to": "wp_lake_n",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 1900,
+        "map": "town",
+        "to": "wp_home_mayor",
+        "idle": "leave"
+      }
+    ],
+    "dialogue": {
+      "first": [
+        "오오, 자네가 그 농장을 맡은 새 농부로군! 편지는 잘 받았나?",
+        "별빛 마을에 온 걸 환영하네. 이 마을은 작지만 마음만은 넉넉하다네."
+      ],
+      "morning": [
+        "회관 문은 늘 열려 있다네. 마을 소식은 입구 게시판을 확인하게나."
+      ],
+      "afternoon": [
+        "이 호수가 마을의 자랑이지. 해 질 녘 물빛을 꼭 보게나.",
+        "자네 농장의 작물이 잘 자라면 마을 축제도 열 수 있을 텐데... 허허."
+      ],
+      "evening": [
+        "오늘 하루도 무사히 저물었구먼. 푹 쉬게나."
+      ],
+      "rain": [
+        "비 오는 날의 호수는 또 다른 운치가 있지."
+      ],
+      "random": [
+        "안경 어디 뒀더라... 아, 쓰고 있었군.",
+        "젊을 땐 나도 마을 달리기 대회 우승자였다네. 정말이야."
+      ]
+    }
+  },
+  "luna": {
+    "id": "luna",
+    "name": "루나",
+    "title": "루나 카페 사장",
+    "sprite": "luna",
+    "speed": 32,
+    "color": "#2f8f8a",
+    "schedule": [
+      {
+        "time": 600,
+        "map": "town",
+        "to": "wp_home_luna",
+        "idle": "leave"
+      },
+      {
+        "time": 730,
+        "map": "town",
+        "to": "wp_cafe",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 1500,
+        "map": "town",
+        "to": "wp_lake_n",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 1600,
+        "map": "town",
+        "to": "wp_cafe",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 2200,
+        "map": "town",
+        "to": "wp_home_luna",
+        "idle": "leave"
+      }
+    ],
+    "dialogue": {
+      "first": [
+        "어머, 처음 보는 얼굴! 카페 '루나'에 어서 와요.",
+        "커피 한 잔이면 지친 몸에 힘이 날 거예요. 가게 앞에서 말 걸어 주면 주문할 수 있어요."
+      ],
+      "morning": [
+        "갓 구운 빵 냄새 맡았어요? 아침 일찍부터 반죽했거든요."
+      ],
+      "afternoon": [
+        "오후엔 딸기 케이크가 제일 잘 나가요. 하나 남았는데... 어때요?",
+        "준이가 또 케이크 몰래 먹으러 왔었어요. 그 녀석 참!"
+      ],
+      "evening": [
+        "저녁엔 따뜻한 차가 좋죠. 오늘 하루 수고 많았어요."
+      ],
+      "rain": [
+        "비 오는 날엔 손님이 더 많아요. 다들 커피 향이 그리운가 봐요."
+      ],
+      "random": [
+        "커피콩은 소라네 가게에서 들여와요. 소라는 흥정을 너무 잘해서 탈이에요.",
+        "언젠가 당신 농장 딸기로 케이크를 만들어 보고 싶어요."
+      ]
+    }
+  },
+  "teo": {
+    "id": "teo",
+    "name": "태오",
+    "title": "떠돌이 악사",
+    "sprite": "teo",
+    "speed": 34,
+    "color": "#e8892e",
+    "schedule": [
+      {
+        "time": 600,
+        "map": "town",
+        "to": "wp_home_teo",
+        "idle": "leave"
+      },
+      {
+        "time": 1000,
+        "map": "town",
+        "to": "wp_lake_n",
+        "idle": "perform"
+      },
+      {
+        "time": 1300,
+        "map": "town",
+        "to": "wp_plaza_e",
+        "idle": "perform"
+      },
+      {
+        "time": 1600,
+        "map": "farm",
+        "to": "wp_meadow",
+        "idle": "perform"
+      },
+      {
+        "time": 1830,
+        "map": "town",
+        "to": "wp_lake_s",
+        "idle": "perform"
+      },
+      {
+        "time": 2100,
+        "map": "town",
+        "to": "wp_home_teo",
+        "idle": "leave"
+      }
+    ],
+    "dialogue": {
+      "first": [
+        "♪ 라라라~ 아, 안녕! 나는 태오, 바람 따라 떠도는 악사야.",
+        "이 마을 호숫가 소리가 좋아서 눌러앉았지. 너도 음악 좋아해?"
+      ],
+      "morning": [
+        "아침 공기엔 높은 음이 잘 어울려. 들어 볼래? ♪"
+      ],
+      "afternoon": [
+        "광장에서 연주하면 오리들이 박자를 맞춰 꽥꽥거려. 진짜야!",
+        "너희 농장 초원에서 연주하면 닭들이 춤을 춰. 다음에 보러 와."
+      ],
+      "evening": [
+        "노을 질 때는 느린 곡이 좋아. 하루를 토닥여 주는 노래."
+      ],
+      "rain": [
+        "빗소리는 최고의 반주야. ♪ 토독 토독~"
+      ],
+      "random": [
+        "새 노래 제목을 고민 중이야. '별빛 농부의 노래' 어때?",
+        "박 영감님이 내 노래를 들으면 물고기가 도망간대. 너무해!"
+      ]
+    }
+  },
+  "mio": {
+    "id": "mio",
+    "name": "미오",
+    "title": "화가",
+    "sprite": "mio",
+    "speed": 30,
+    "color": "#d8473b",
+    "schedule": [
+      {
+        "time": 600,
+        "map": "town",
+        "to": "wp_home_mio",
+        "idle": "leave"
+      },
+      {
+        "time": 900,
+        "map": "town",
+        "to": "wp_pier",
+        "idle": "stand",
+        "face": "up"
+      },
+      {
+        "time": 1200,
+        "map": "town",
+        "to": "wp_lake_e",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 1500,
+        "map": "farm",
+        "to": "wp_pond_e",
+        "idle": "stand",
+        "face": "left"
+      },
+      {
+        "time": 1800,
+        "map": "town",
+        "to": "wp_bench_s",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 2000,
+        "map": "town",
+        "to": "wp_home_mio",
+        "idle": "leave"
+      }
+    ],
+    "dialogue": {
+      "first": [
+        "...아, 놀랐다. 그림에 집중하고 있었어. 나는 미오.",
+        "이 마을의 풍경을 전부 캔버스에 담는 게 내 꿈이야."
+      ],
+      "morning": [
+        "아침 호수는 물감으로 담기가 너무 어려워. 빛이 계속 변하거든."
+      ],
+      "afternoon": [
+        "네 농장 연못도 그려 봤어. 허수아비가 생각보다 귀엽더라.",
+        "파란색 물감이 다 떨어졌어... 호수를 너무 많이 그렸나 봐."
+      ],
+      "evening": [
+        "노을빛 주황색은 매일 조금씩 달라. 신기하지?"
+      ],
+      "rain": [
+        "비 오는 날엔 집에서 스케치를 정리해. 오늘은 특별히 나왔어."
+      ],
+      "random": [
+        "언젠가 네 농장의 수확 풍경도 그려 줄게.",
+        "모자? 물감 묻을까 봐 쓰는 거야. ...패션이기도 하고."
+      ]
+    }
+  },
+  "doyun": {
+    "id": "doyun",
+    "name": "도윤",
+    "title": "우체부",
+    "sprite": "doyun",
+    "speed": 44,
+    "color": "#3a64b0",
+    "schedule": [
+      {
+        "time": 600,
+        "map": "town",
+        "to": "wp_home_sora",
+        "idle": "leave"
+      },
+      {
+        "time": 700,
+        "map": "town",
+        "to": "wp_entrance",
+        "idle": "stand",
+        "face": "right"
+      },
+      {
+        "time": 800,
+        "map": "farm",
+        "to": "wp_house",
+        "idle": "stand",
+        "face": "up"
+      },
+      {
+        "time": 900,
+        "map": "town",
+        "to": "wp_store",
+        "idle": "stand",
+        "face": "up"
+      },
+      {
+        "time": 1000,
+        "map": "town",
+        "to": "wp_hall",
+        "idle": "stand",
+        "face": "up"
+      },
+      {
+        "time": 1100,
+        "map": "town",
+        "to": "wp_south",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 1200,
+        "map": "town",
+        "to": "wp_cafe",
+        "idle": "stand",
+        "face": "up"
+      },
+      {
+        "time": 1300,
+        "map": "town",
+        "to": "wp_market",
+        "idle": "stand",
+        "face": "right"
+      },
+      {
+        "time": 1400,
+        "map": "town",
+        "to": "wp_board",
+        "idle": "stand",
+        "face": "up"
+      },
+      {
+        "time": 1500,
+        "map": "farm",
+        "to": "wp_cross",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 1600,
+        "map": "town",
+        "to": "wp_lake_w",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 1900,
+        "map": "town",
+        "to": "wp_home_sora",
+        "idle": "leave"
+      }
+    ],
+    "dialogue": {
+      "first": [
+        "안녕하세요! 별빛 마을 우체부 도윤입니다. 편지는 제 담당이에요!",
+        "농장 우편함에도 매일 아침 들러요. 반가운 소식이 있으면 바로 갖다 드릴게요."
+      ],
+      "morning": [
+        "오늘도 배달할 편지가 한가득! 바쁘다 바빠."
+      ],
+      "afternoon": [
+        "마을 한 바퀴 도는 데 딱 한 시간! 제 신기록이에요.",
+        "촌장님은 편지를 늘 두 번 읽으세요. 안경을 찾느라고요."
+      ],
+      "evening": [
+        "오늘 배달 끝! 다리가 후들후들해요."
+      ],
+      "rain": [
+        "비가 와도 편지는 젖지 않게! 우체부의 자존심이죠."
+      ],
+      "random": [
+        "편지 쓸 일 있으면 저한테 맡겨 주세요.",
+        "가방이 무거워 보여요? 사실 절반은 간식이에요."
+      ]
     }
   }
 }

@@ -61,7 +61,7 @@ export function buildCrops() {
 }
 
 // ── 아이템 아이콘 16x16 ─────────────────────────────────
-export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_cauliflower', 'seeds_tomato', 'seeds_pumpkin', 'parsnip', 'cauliflower', 'tomato', 'pumpkin', 'gold', 'energy', 'sun', 'rain', 'heart'];
+export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_cauliflower', 'seeds_tomato', 'seeds_pumpkin', 'parsnip', 'cauliflower', 'tomato', 'pumpkin', 'gold', 'energy', 'sun', 'rain', 'heart', 'coffee', 'bread', 'cake'];
 export function buildIcons() {
   const img = new Img(16 * ICONS.length, 16);
   const m = P.metal, w = P.wood;
@@ -73,6 +73,9 @@ export function buildIcons() {
     energy: (t) => { const c = '#ffd65a'; t.line(10, 1, 5, 8, c); t.line(11, 1, 6, 8, c); t.hline(5, 8, 7, c); t.line(10, 8, 6, 15, c); t.line(11, 8, 7, 15, '#e09a2a'); },
     sun: (t) => { t.circle(8, 8, 4, '#ffd65a'); t.circle(7.5, 7.5, 2.5, '#fff1a8'); for (const [x, y] of [[8, 1], [8, 14], [1, 8], [14, 8], [3, 3], [13, 3], [3, 13], [13, 13]]) t.set(x, y, '#ffb347'); },
     rain: (t) => { t.ellipse(8, 6, 6, 3.5, '#c9d6e8'); t.ellipse(6, 5, 3, 2.5, '#eef4fb'); for (const [x, y] of [[4, 11], [8, 12], [12, 11], [6, 14], [10, 15]]) { t.set(x, y, '#5aa8e0'); t.set(x, y + 1, '#3f8fc8'); } },
+    coffee: (t) => { t.rect(3, 6, 8, 8, '#fff8ec'); t.rect(3, 6, 8, 1, '#ffffff'); t.rect(4, 7, 6, 2, '#6b3e22'); t.rect(10, 13, 1, 1, '#d9cbb3'); t.rect(11, 8, 2, 4, '#fff8ec'); t.set(12, 9, '#d9cbb3'); t.rect(2, 14, 11, 1, '#d9cbb3'); t.set(5, 3, '#c9c0b4'); t.set(6, 2, '#c9c0b4'); t.set(8, 4, '#c9c0b4'); t.set(8, 3, '#c9c0b4'); },
+    bread: (t) => { t.ellipse(8, 9, 6.5, 4.5, '#c9853f'); t.ellipse(7.5, 8, 5.5, 3, '#e0a65a'); for (const x of [5, 8, 11]) t.line(x, 6, x - 1, 10, '#a8692c'); t.set(5, 7, '#f6d28e'); },
+    cake: (t) => { t.rect(3, 8, 10, 6, '#f6e6c8'); t.rect(3, 8, 10, 2, '#ff9cbc'); t.set(4, 10, '#ff9cbc'); t.set(8, 10, '#ff9cbc'); t.set(11, 10, '#ff9cbc'); t.rect(3, 11, 10, 1, '#e8a0b0'); t.rect(7, 4, 2, 4, '#d8473b'); t.set(7, 4, '#ff8a7a'); t.vline(8, 2, 2, P.leaf.base); },
     heart: (t) => { const h = '#e0475b'; t.rect(3, 4, 4, 4, h); t.rect(9, 4, 4, 4, h); t.rect(4, 7, 8, 3, h); t.rect(5, 10, 6, 2, h); t.rect(7, 12, 2, 1, h); t.rect(4, 5, 2, 1, '#ff9fb0'); },
   };
   const seedCol = { parsnip: '#e6d29a', cauliflower: '#9fd06a', tomato: '#e0574b', pumpkin: '#e8892e' };

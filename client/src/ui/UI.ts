@@ -1,6 +1,6 @@
 // DOM 오버레이 UI: 로딩 / 타이틀 / HUD(시계·골드·에너지) / 핫바 / 대화창 / 토스트 / 힌트 / 하루 전환 / 채팅
 import { ITEMS } from '@shared/data';
-import type { InventorySlot, WorldTime } from '@shared/types';
+import type { InventorySlot, ShopDef, WorldTime } from '@shared/types';
 
 const root = () => document.getElementById('ui')!;
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = '') => {
@@ -224,7 +224,7 @@ const chat = {
   mount() {
     const n = el('div', 'absolute left-4 top-4 w-[340px] flex flex-col gap-1');
     n.innerHTML = `<div data-c="log" class="flex flex-col gap-0.5 text-sm text-white px-outline max-h-[200px] overflow-hidden"></div>
-      <input data-c="in" maxlength="80" placeholder="Enter로 채팅" class="pointer-events-auto hidden w-full px-2 py-1 bg-[#fff8ec]/90 border-2 border-[#a8683a] outline-none text-sm font-[inherit]" />`;
+      <input data-c="in" maxlength="80" placeholder="메시지 입력 후 Enter (Esc 취소)" class="pointer-events-auto hidden w-full px-2 py-1 bg-[#fff8ec]/90 border-2 border-[#a8683a] outline-none text-sm font-[inherit]" />`;
     root().appendChild(n);
     this.node = n; this.input = n.querySelector('[data-c=in]');
     this.input!.addEventListener('keydown', (e) => {
@@ -249,7 +249,7 @@ const help = {
     const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-panel text-lg leading-relaxed pointer-events-auto min-w-[420px]');
     n.innerHTML = `<div class="text-2xl mb-2 text-[#8a5a32]">조작법</div>
       <table class="w-full"><tbody>
-      ${[['WASD / 방향키', '이동'], ['Shift', '달리기'], ['Space / 좌클릭', '도구 사용 · 씨앗 심기'], ['E / 우클릭', '대화 · 수확 · 출하 · 조사'], ['1~0, -, = / 휠', '핫바 선택'], ['Enter', '채팅 (멀티플레이)'], ['N', '(디버그) 다음 날로'], ['H', '도움말 닫기']]
+      ${[['WASD / 방향키', '이동'], ['Shift', '달리기'], ['Space / 좌클릭', '도구 사용 · 씨앗 심기'], ['E / 우클릭', '대화 · 수확 · 출하 · 조사'], ['1~0, -, = / 휠', '핫바 선택'], ['Enter', '채팅 (말풍선으로 표시)'], ['Tab', '접속자 목록 접기/펴기'], ['N', '(디버그) 다음 날로'], ['H', '도움말 닫기']]
         .map(([k, v]) => `<tr><td class="pr-6 text-[#a8683a]">${k}</td><td>${v}</td></tr>`).join('')}
       </tbody></table>
       <div class="mt-3 text-sm text-[#8a5a32]">팁: 괭이로 밭을 갈고 → 씨앗 심고 → 매일 물을 주면 자랍니다. 다 자란 작물은 E로 수확, 출하 상자에 넣으면 다음 날 골드!</div>`;
@@ -258,4 +258,70 @@ const help = {
   },
 };
 
-export const ui = { loading, title, hud, hotbar, dialogue, toast, hint, transition, chat, help, mountGame() { hud.mount(); hotbar.mount(); toast.mount(); hint.mount(); chat.mount(); } };
+// ── 상점 ───────────────────────────────────────────────
+const shop = {
+  node: null as HTMLDivElement | null,
+  get open() { return !!this.node; },
+  show(def: ShopDef, gold: number, onBuy: (itemId: string, qty: number) => void, keeper?: { sprite: string; name: string }) {
+    this.close();
+    const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(640px,94vw)] pointer-events-auto toast-in');
+    n.innerHTML = `<div class="px-panel">
+      <div class="flex items-center gap-4 mb-3">
+        ${keeper ? `<div class="portrait shrink-0" style="width:84px;height:84px;background-image:url(assets/characters/${keeper.sprite}.png);background-size:${384 * 3}px auto;background-position:-${9 * 3}px -${8 * 3}px"></div>` : ''}
+        <div class="flex-1"><div class="text-2xl text-[#8a5a32]">${def.name}</div><div class="text-base">${def.greeting}</div></div>
+        <div class="flex items-center gap-1 bg-[#e6cb93] px-2 py-1 border-2 border-[#a8683a]"><span class="px-icon" style="${iconStyle('gold', 24)}"></span><span data-s="gold" class="text-xl">${gold.toLocaleString()}G</span></div>
+      </div>
+      <div class="flex flex-col gap-2 max-h-[46vh] overflow-y-auto pr-1">
+        ${def.items.map((it) => { const d = ITEMS[it.itemId]; return `<div class="flex items-center gap-3 bg-[#fff8ec]/70 border-2 border-[#d8b67c] px-2 py-1">
+          <span class="px-icon shrink-0" style="${iconStyle(d.icon, 40)}"></span>
+          <div class="flex-1 min-w-0"><div class="text-lg">${d.name}</div><div class="text-xs text-[#8a5a32] truncate">${d.description}</div></div>
+          <div class="text-lg tabular-nums w-16 text-right">${it.price}G</div>
+          <button data-buy="${it.itemId}" data-q="1" class="px-btn text-sm !px-3 !py-1">1개</button>
+          <button data-buy="${it.itemId}" data-q="5" class="px-btn green text-sm !px-3 !py-1">5개</button>
+        </div>`; }).join('')}
+      </div>
+      <div class="mt-3 flex justify-between items-center text-sm text-[#8a5a32]"><span>영업시간 ${String(def.open).replace(/(\d+)(\d\d)$/, '$1:$2')} ~ ${String(def.close).replace(/(\d+)(\d\d)$/, '$1:$2')}</span><button data-close class="px-btn text-base !py-1">닫기 (Esc)</button></div>
+    </div>`;
+    n.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); onBuy(b.dataset.buy!, Number(b.dataset.q)); }; });
+    n.querySelector<HTMLButtonElement>('[data-close]')!.onclick = () => this.close();
+    root().appendChild(n); this.node = n;
+  },
+  gold(g: number) { const e = this.node?.querySelector('[data-s=gold]'); if (e) e.textContent = `${g.toLocaleString()}G`; },
+  close() { this.node?.remove(); this.node = null; },
+};
+
+// ── 접속자 목록 (멀티플레이) ────────────────────────────
+const roster = {
+  node: null as HTMLDivElement | null, collapsed: false,
+  mount() {
+    if (this.node) return;
+    this.node = el('div', 'absolute right-3 top-[150px] min-w-[190px] px-3 py-2 bg-[#3b2414]/80 text-[#fff8ec] text-sm pointer-events-auto cursor-pointer');
+    this.node.onclick = () => { this.collapsed = !this.collapsed; this.node!.querySelector('[data-r=list]')?.classList.toggle('hidden', this.collapsed); };
+    root().appendChild(this.node);
+  },
+  render(players: { id: string; name: string; map: string; me?: boolean }[]) {
+    if (!this.node) return;
+    const label: Record<string, string> = { farm: '농장', town: '마을' };
+    this.node.innerHTML = `<div class="flex justify-between gap-3"><span class="text-[#ffe58a]">접속 중 ${players.length}명</span><span class="opacity-60">Tab</span></div>
+      <div data-r="list" class="mt-1 flex flex-col gap-0.5 ${this.collapsed ? 'hidden' : ''}">${players.map((p) =>
+        `<div class="flex justify-between gap-3"><span>${p.me ? '★ ' : ''}${p.name.replace(/</g, '&lt;')}</span><span class="opacity-75">${label[p.map] ?? p.map}</span></div>`).join('')}</div>`;
+  },
+  toggle() { this.node?.click(); },
+};
+
+// ── 지역 이름 배너 ─────────────────────────────────────
+const banner = {
+  show(title: string, sub = '') {
+    const n = el('div', 'absolute left-1/2 top-[18%] -translate-x-1/2 flex flex-col items-center transition-all duration-700 opacity-0');
+    n.innerHTML = `<div class="text-4xl text-[#ffe58a] px-outline tracking-widest">${title}</div>${sub ? `<div class="text-base text-[#fff8ec] px-outline mt-1">${sub}</div>` : ''}`;
+    root().appendChild(n);
+    requestAnimationFrame(() => { n.style.opacity = '1'; n.style.transform = 'translate(-50%, -6px)'; });
+    setTimeout(() => { n.style.opacity = '0'; setTimeout(() => n.remove(), 800); }, 2600);
+  },
+};
+
+let mounted = false;
+export const ui = {
+  loading, title, hud, hotbar, dialogue, toast, hint, transition, chat, help, shop, roster, banner,
+  mountGame() { if (mounted) return; mounted = true; hud.mount(); hotbar.mount(); toast.mount(); hint.mount(); chat.mount(); },
+};

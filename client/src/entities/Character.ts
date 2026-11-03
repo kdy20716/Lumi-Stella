@@ -12,6 +12,8 @@ export class Character {
   busy = false;
   emote?: Phaser.GameObjects.Sprite;
   label?: Phaser.GameObjects.Text;
+  bubble?: Phaser.GameObjects.Text;
+  private bubbleTimer?: Phaser.Time.TimerEvent;
 
   constructor(protected scene: Phaser.Scene, readonly sheet: string, x: number, y: number, meta: CharacterMeta) {
     this.shadow = scene.add.image(x, y, 'shadow').setScale(0.55, 0.6).setDepth(DEPTH.cursor - 1).setAlpha(0.9);
@@ -54,13 +56,27 @@ export class Character {
     if (e) this.scene.tweens.add({ targets: e, scale: 0, duration: 120, onComplete: () => e.destroy() });
   }
 
+  /** 채팅 말풍선 */
+  say(text: string, zoom: number) {
+    this.bubble?.destroy(); this.bubbleTimer?.remove();
+    const t = text.length > 40 ? text.slice(0, 39) + '…' : text;
+    this.bubble = this.scene.add.text(this.x, this.y - 40, t, {
+      fontFamily: 'Galmuri11, Galmuri9, sans-serif', fontSize: '8px', color: '#3b2414', backgroundColor: '#fff8ec',
+      padding: { x: 4, y: 3 }, resolution: zoom, wordWrap: { width: 110, useAdvancedWrap: true }, align: 'center',
+    }).setOrigin(0.5, 1).setDepth(DEPTH.overlay + 5);
+    const b = this.bubble;
+    b.setScale(0.6); this.scene.tweens.add({ targets: b, scale: 1, duration: 140, ease: 'Back.Out' });
+    this.bubbleTimer = this.scene.time.delayedCall(5000, () => { this.scene.tweens.add({ targets: b, alpha: 0, duration: 300, onComplete: () => { b.destroy(); if (this.bubble === b) this.bubble = undefined; } }); });
+  }
+
   update() {
     this.sprite.setDepth(this.sprite.y);
     this.shadow.setPosition(this.sprite.x, this.sprite.y - 1);
     if (this.emote) this.emote.setPosition(this.sprite.x, this.sprite.y - 33 + Math.sin(this.scene.time.now / 250) * 1);
     if (this.label) this.label.setPosition(this.sprite.x, this.sprite.y - 36).setDepth(DEPTH.overlay - 2);
+    if (this.bubble) this.bubble.setPosition(this.sprite.x, this.sprite.y - (this.label ? 46 : 38));
   }
-  destroy() { this.sprite.destroy(); this.shadow.destroy(); this.emote?.destroy(); this.label?.destroy(); }
+  destroy() { this.sprite.destroy(); this.shadow.destroy(); this.emote?.destroy(); this.label?.destroy(); this.bubble?.destroy(); this.bubbleTimer?.remove(); }
 }
 
 export const facingFromVector = (vx: number, vy: number, current: Dir): Dir => {

@@ -74,3 +74,38 @@ export class Butterfly {
     this.sprite.setFlipX(this.vx > 0).setAlpha(visible);
   }
 }
+
+/** 호수의 오리: 물 위를 천천히 떠다니다 가끔 자맥질 */
+export class Duck {
+  readonly sprite: Phaser.GameObjects.Sprite;
+  private target: { x: number; y: number } | null = null;
+  private timer = Math.random() * 3000;
+  private diving = 0;
+  constructor(private scene: Phaser.Scene, x: number, y: number, private isWater: (px: number, py: number) => boolean) {
+    this.sprite = scene.add.sprite(x, y, 'duck', 0).setOrigin(0.5, 15 / 16);
+  }
+  update(dt: number, player: { x: number; y: number }) {
+    const s = this.sprite;
+    this.timer -= dt;
+    if (this.diving > 0) { this.diving -= dt; s.setFrame(this.diving > 600 ? 2 : 3); if (this.diving <= 0) s.setFrame(0); }
+    else if (this.target) {
+      const dx = this.target.x - s.x, dy = this.target.y - s.y, d = Math.hypot(dx, dy), sp = (12 * dt) / 1000;
+      if (d < 1) this.target = null;
+      else { s.setPosition(s.x + (dx / d) * sp, s.y + (dy / d) * sp); s.setFlipX(dx > 0); }
+      s.setFrame(Math.floor(this.scene.time.now / 400) % 2);
+    } else if (this.timer <= 0) {
+      if (Math.random() < 0.25) this.diving = 1200;
+      else {
+        // 플레이어가 가까우면 멀어지는 쪽으로
+        const away = Math.hypot(player.x - s.x, player.y - s.y) < 40;
+        for (let i = 0; i < 6; i++) {
+          const a = away ? Math.atan2(s.y - player.y, s.x - player.x) + (Math.random() - 0.5) : Math.random() * Math.PI * 2;
+          const tx = s.x + Math.cos(a) * 24, ty = s.y + Math.sin(a) * 16;
+          if (this.isWater(tx, ty) && this.isWater(tx + 6, ty) && this.isWater(tx - 6, ty)) { this.target = { x: tx, y: ty }; break; }
+        }
+      }
+      this.timer = 1500 + Math.random() * 3500;
+    }
+    s.setDepth(s.y);
+  }
+}

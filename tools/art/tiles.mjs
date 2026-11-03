@@ -5,7 +5,8 @@ import { P } from './lib/palette.mjs';
 export const T = 16;
 export const TILESET_COLS = 16;
 // 타일셋 행 정의 (맵 생성기와 게임 코드가 공유)
-export const ROW = { GRASS: 0, DIRT: 1, GRASS_DIRT: 2, GRASS_WATER: 3, TILLED: 4, TILLED_WET: 5, DECOR: 6, WOOD: 7, MISC: 8 };
+export const ROW = { GRASS: 0, DIRT: 1, GRASS_DIRT: 2, GRASS_WATER: 3, TILLED: 4, TILLED_WET: 5, DECOR: 6, WOOD: 7, MISC: 8, STONE: 9, GRASS_STONE: 10 };
+export const TILESET_ROWS = 11;
 export const DECOR = { FLOWER0: 0, FLOWER_COUNT: 6, PEBBLE0: 6, CLOVER0: 8, MUSHROOM: 10, LEAVES: 11, DAISY: 12, STONES: 13, GRASS_DARK: 14, PATCH: 15 };
 export const WOOD = { DOCK_H: 0, DOCK_POST: 1, PORCH: 2, STEP0: 3, STEP1: 4, BRIDGE_TOP: 5, BRIDGE_MID: 6, BRIDGE_BOT: 7 };
 export const MISC = { COLLIDE: 0, TILE_CURSOR: 1 };
@@ -53,23 +54,49 @@ function dirtTexture() {
   return img;
 }
 
+/** 64x64 반복 돌바닥(조약돌 포장) 텍스처: 주기적 지터 격자 보로노이 */
+function stoneTexture() {
+  const S = 64, C = 8, N = S / C, img = new Img(S, S), st = P.stone;
+  const pts = [];
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) pts.push([i * C + 1.5 + hash2(i, j, 51) * 5, j * C + 1.5 + hash2(i, j, 52) * 5, hash2(i, j, 53)]);
+  const tones = ['#9a9ca6', '#a9aab2', '#8e909c', '#b3b2b0', '#a39f98'];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    let d1 = 1e9, d2 = 1e9, best = null;
+    for (const [px, py, r] of pts) for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) {
+      const d = Math.hypot(x + 0.5 - (px + ox), y + 0.5 - (py + oy));
+      if (d < d1) { d2 = d1; d1 = d; best = [px + ox, py + oy, r]; } else if (d < d2) d2 = d;
+    }
+    let c;
+    if (d2 - d1 < 1.1) c = '#6b6a6e';
+    else {
+      c = tones[Math.floor(best[2] * tones.length)];
+      const dx = x + 0.5 - best[0], dy = y + 0.5 - best[1];
+      if (dx + dy < -3.2) c = lighten(c, 0.28); else if (dx + dy > 3) c = darken(c, 0.16);
+      if (d2 - d1 < 2 && dy > 0) c = darken(c, 0.12);
+    }
+    img.put(x, y, c);
+  }
+  void st;
+  return img;
+}
+
 /** 듀얼그리드 코너 → 지형 판정 함수. 1 = 상대 지형(흙/물) */
-function cornerField(idx, seed) {
+function cornerField(idx, seed, amp = 0.42) {
   const tl = (idx >> 3) & 1, tr = (idx >> 2) & 1, bl = (idx >> 1) & 1, br = idx & 1;
   return (px, py) => {
     const u = (px + 0.5) / T, v = (py + 0.5) / T;
     const cu = Math.min(1, Math.max(0, u)), cv = Math.min(1, Math.max(0, v));
     const top = tl + (tr - tl) * cu, bot = bl + (br - bl) * cu;
     const f = top + (bot - top) * cv;
-    const n = (fbm(px / 4, py / 4, 4, seed, 2) - 0.5) * 0.42;
+    const n = (fbm(px / 4, py / 4, 4, seed, 2) - 0.5) * amp;
     return f + n > 0.5 ? 1 : 0;
   };
 }
 
 export function buildTileset() {
-  const rows = 9;
+  const rows = TILESET_ROWS;
   const img = new Img(TILESET_COLS * T, rows * T);
-  const grass = grassTexture(), dirt = dirtTexture();
+  const grass = grassTexture(), dirt = dirtTexture(), stone = stoneTexture();
   const at = (col, row) => [col * T, row * T];
 
   // Row 0/1: 잔디/흙 16 변형 (4x4 조각 = 64px 주기 반복으로 패턴 반복이 눈에 안 띔)
@@ -77,6 +104,28 @@ export function buildTileset() {
     const sx = (i % 4) * T, sy = Math.floor(i / 4) * T;
     let [x, y] = at(i, ROW.GRASS); img.blit(grass, x, y, { sx, sy, sw: T, sh: T });
     [x, y] = at(i, ROW.DIRT); img.blit(dirt, x, y, { sx, sy, sw: T, sh: T });
+    [x, y] = at(i, ROW.STONE); img.blit(stone, x, y, { sx, sy, sw: T, sh: T });
+  }
+
+  // Row 10: 잔디↔돌길 전이 (깔끔한 연석 느낌: 노이즈 약하게)
+  for (let idx = 0; idx < 16; idx++) {
+    const [ox, oy] = at(idx, ROW.GRASS_STONE);
+    const F0 = cornerField(idx, 17, 0.16);
+    const F = (px, py) => F0(px, py);
+    const gsx = (idx % 4) * T, gsy = Math.floor(idx / 4) * T;
+    for (let py = 0; py < T; py++) for (let px = 0; px < T; px++) {
+      if (F(px, py)) {
+        let c = stone.get(gsx + px, gsy + py);
+        const edge = !F(px, py - 1) || !F(px - 1, py) || !F(px + 1, py) || !F(px, py + 1);
+        if (edge) c = rgbArr(!F(px, py - 1) ? '#5d5c62' : '#76757c');
+        img.put(ox + px, oy + py, c);
+      } else {
+        let c = grass.get(gsx + px, gsy + py);
+        if (F(px, py + 1)) c = rgbArr(P.grass.l2);
+        else if (F(px - 1, py) || F(px + 1, py) || F(px, py - 1)) c = rgbArr(P.grass.d1);
+        img.put(ox + px, oy + py, c);
+      }
+    }
   }
 
   // Row 2: 잔디↔흙 전이

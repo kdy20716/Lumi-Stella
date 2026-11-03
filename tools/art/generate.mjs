@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Img } from './lib/img.mjs';
 import { buildTileset, buildWater, ROW, DECOR, WOOD, MISC, TILESET_COLS } from './tiles.mjs';
+import * as TW from './town.mjs';
 import { buildCharacterSheet } from './char.mjs';
 import { LOOKS } from './looks.mjs';
 import * as OB from './objects.mjs';
@@ -70,6 +71,23 @@ image('glow', 'fx/glow.png', OB.buildGlow(128));
 image('cloud', 'fx/cloud.png', OB.buildCloudShadow());
 image('cursor', 'fx/cursor.png', OB.buildCursor());
 image('panel', 'ui/panel.png', buildPanel());
+
+// 마을 건물 (발광 오버레이 + 점유 셀 정보)
+manifest.buildings = {};
+for (const [key, opt] of Object.entries(TW.BUILDINGS)) {
+  const b = TW.buildBuilding(opt);
+  image(key, `buildings/${key}.png`, b.img);
+  image(`${key}_glow`, `buildings/${key}_glow.png`, b.glow);
+  manifest.buildings[key] = { cellW: b.cellW, cellH: b.cellH, doorCell: b.doorCell, chimneyX: opt.chimneyX ?? null, w: opt.w, h: opt.h };
+}
+image('bench', 'objects/bench.png', TW.buildBench());
+image('planter', 'objects/planter.png', TW.buildPlanter());
+image('board', 'objects/board.png', TW.buildBoard());
+image('stall', 'objects/stall.png', TW.buildStall());
+image('stall_b', 'objects/stall_b.png', TW.buildStall(['#7d5aa8', '#fff1dc']));
+image('cafe_table', 'objects/cafe_table.png', TW.buildCafeTable());
+image('anvil', 'objects/anvil.png', TW.buildAnvil());
+sheet('duck', 'animals/duck.png', TW.buildDuck(), 16, 16, { originY: 15 / 16 });
 image('slot', 'ui/slot.png', buildSlot());
 image('slot_active', 'ui/slot_active.png', buildSlotActive());
 

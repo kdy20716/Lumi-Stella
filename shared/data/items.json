@@ -1,13 +1,141 @@
 {
-  "hoe": { "id": "hoe", "name": "괭이", "type": "tool", "tool": "hoe", "icon": "hoe", "sellPrice": 0, "maxStack": 1, "energyCost": 2, "description": "땅을 갈아 씨앗을 심을 수 있는 경작지로 만듭니다." },
-  "watering_can": { "id": "watering_can", "name": "물뿌리개", "type": "tool", "tool": "watering_can", "icon": "watering_can", "sellPrice": 0, "maxStack": 1, "energyCost": 1, "description": "경작지에 물을 줍니다. 물을 준 작물만 자라요." },
-  "axe": { "id": "axe", "name": "도끼", "type": "tool", "tool": "axe", "icon": "axe", "sellPrice": 0, "maxStack": 1, "energyCost": 3, "description": "그루터기와 통나무를 치웁니다." },
-  "seeds_parsnip": { "id": "seeds_parsnip", "name": "파스닙 씨앗", "type": "seed", "cropId": "parsnip", "icon": "seeds_parsnip", "sellPrice": 10, "maxStack": 99, "description": "4일이면 자랍니다. 봄 작물." },
-  "seeds_cauliflower": { "id": "seeds_cauliflower", "name": "콜리플라워 씨앗", "type": "seed", "cropId": "cauliflower", "icon": "seeds_cauliflower", "sellPrice": 40, "maxStack": 99, "description": "7일이면 자랍니다. 비싸게 팔려요." },
-  "seeds_tomato": { "id": "seeds_tomato", "name": "토마토 씨앗", "type": "seed", "cropId": "tomato", "icon": "seeds_tomato", "sellPrice": 25, "maxStack": 99, "description": "다 자란 뒤에도 3일마다 다시 열립니다." },
-  "seeds_pumpkin": { "id": "seeds_pumpkin", "name": "호박 씨앗", "type": "seed", "cropId": "pumpkin", "icon": "seeds_pumpkin", "sellPrice": 50, "maxStack": 99, "description": "9일이면 자랍니다. 커다란 호박!" },
-  "parsnip": { "id": "parsnip", "name": "파스닙", "type": "crop", "icon": "parsnip", "sellPrice": 35, "maxStack": 99, "description": "흙냄새 나는 달큰한 뿌리채소." },
-  "cauliflower": { "id": "cauliflower", "name": "콜리플라워", "type": "crop", "icon": "cauliflower", "sellPrice": 175, "maxStack": 99, "description": "꽃처럼 피어난 하얀 채소." },
-  "tomato": { "id": "tomato", "name": "토마토", "type": "crop", "icon": "tomato", "sellPrice": 60, "maxStack": 99, "description": "햇볕을 가득 머금었어요." },
-  "pumpkin": { "id": "pumpkin", "name": "호박", "type": "crop", "icon": "pumpkin", "sellPrice": 320, "maxStack": 99, "description": "묵직하고 반짝이는 호박." }
+  "hoe": {
+    "id": "hoe",
+    "name": "괭이",
+    "type": "tool",
+    "tool": "hoe",
+    "icon": "hoe",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 2,
+    "description": "땅을 갈아 씨앗을 심을 수 있는 경작지로 만듭니다."
+  },
+  "watering_can": {
+    "id": "watering_can",
+    "name": "물뿌리개",
+    "type": "tool",
+    "tool": "watering_can",
+    "icon": "watering_can",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 1,
+    "description": "경작지에 물을 줍니다. 물을 준 작물만 자라요."
+  },
+  "axe": {
+    "id": "axe",
+    "name": "도끼",
+    "type": "tool",
+    "tool": "axe",
+    "icon": "axe",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 3,
+    "description": "그루터기와 통나무를 치웁니다."
+  },
+  "seeds_parsnip": {
+    "id": "seeds_parsnip",
+    "name": "파스닙 씨앗",
+    "type": "seed",
+    "cropId": "parsnip",
+    "icon": "seeds_parsnip",
+    "sellPrice": 10,
+    "maxStack": 99,
+    "description": "4일이면 자랍니다. 봄 작물."
+  },
+  "seeds_cauliflower": {
+    "id": "seeds_cauliflower",
+    "name": "콜리플라워 씨앗",
+    "type": "seed",
+    "cropId": "cauliflower",
+    "icon": "seeds_cauliflower",
+    "sellPrice": 40,
+    "maxStack": 99,
+    "description": "7일이면 자랍니다. 비싸게 팔려요."
+  },
+  "seeds_tomato": {
+    "id": "seeds_tomato",
+    "name": "토마토 씨앗",
+    "type": "seed",
+    "cropId": "tomato",
+    "icon": "seeds_tomato",
+    "sellPrice": 25,
+    "maxStack": 99,
+    "description": "다 자란 뒤에도 3일마다 다시 열립니다."
+  },
+  "seeds_pumpkin": {
+    "id": "seeds_pumpkin",
+    "name": "호박 씨앗",
+    "type": "seed",
+    "cropId": "pumpkin",
+    "icon": "seeds_pumpkin",
+    "sellPrice": 50,
+    "maxStack": 99,
+    "description": "9일이면 자랍니다. 커다란 호박!"
+  },
+  "parsnip": {
+    "id": "parsnip",
+    "name": "파스닙",
+    "type": "crop",
+    "icon": "parsnip",
+    "sellPrice": 35,
+    "maxStack": 99,
+    "description": "흙냄새 나는 달큰한 뿌리채소."
+  },
+  "cauliflower": {
+    "id": "cauliflower",
+    "name": "콜리플라워",
+    "type": "crop",
+    "icon": "cauliflower",
+    "sellPrice": 175,
+    "maxStack": 99,
+    "description": "꽃처럼 피어난 하얀 채소."
+  },
+  "tomato": {
+    "id": "tomato",
+    "name": "토마토",
+    "type": "crop",
+    "icon": "tomato",
+    "sellPrice": 60,
+    "maxStack": 99,
+    "description": "햇볕을 가득 머금었어요."
+  },
+  "pumpkin": {
+    "id": "pumpkin",
+    "name": "호박",
+    "type": "crop",
+    "icon": "pumpkin",
+    "sellPrice": 320,
+    "maxStack": 99,
+    "description": "묵직하고 반짝이는 호박."
+  },
+  "coffee": {
+    "id": "coffee",
+    "name": "커피",
+    "type": "food",
+    "icon": "coffee",
+    "sellPrice": 25,
+    "maxStack": 20,
+    "energy": 45,
+    "description": "사용하면 에너지 +45. 루나 카페의 향긋한 드립 커피."
+  },
+  "bread": {
+    "id": "bread",
+    "name": "갓 구운 빵",
+    "type": "food",
+    "icon": "bread",
+    "sellPrice": 40,
+    "maxStack": 20,
+    "energy": 90,
+    "description": "사용하면 에너지 +90. 겉은 바삭, 속은 촉촉."
+  },
+  "cake": {
+    "id": "cake",
+    "name": "딸기 케이크",
+    "type": "food",
+    "icon": "cake",
+    "sellPrice": 75,
+    "maxStack": 20,
+    "energy": 180,
+    "description": "사용하면 에너지 +180. 특별한 날을 위한 케이크."
+  }
 }

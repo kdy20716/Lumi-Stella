@@ -11,6 +11,7 @@ export class BootScene extends Phaser.Scene {
     this.load.on('progress', (v: number) => ui.loading.progress(v));
     this.load.json('manifest', 'assets/manifest.json');
     this.load.tilemapTiledJSON('farm', 'assets/maps/farm.json');
+    this.load.tilemapTiledJSON('town', 'assets/maps/town.json');
     this.load.on('filecomplete-json-manifest', (_k: string, _t: string, m: Manifest) => {
       this.load.image('tileset', m.tileset.path);
       for (const [key, im] of Object.entries(m.images)) this.load.image(key, im.path);

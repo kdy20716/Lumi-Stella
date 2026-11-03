@@ -1,0 +1,30 @@
+{
+  "general": {
+    "id": "general", "name": "소라네 잡화점", "owner": "sora", "open": 900, "close": 1700,
+    "greeting": "어서 와요! 오늘 들어온 씨앗은 전부 싱싱해요.",
+    "items": [
+      { "itemId": "seeds_parsnip", "price": 20 },
+      { "itemId": "seeds_cauliflower", "price": 80 },
+      { "itemId": "seeds_tomato", "price": 50 },
+      { "itemId": "seeds_pumpkin", "price": 100 }
+    ]
+  },
+  "cafe": {
+    "id": "cafe", "name": "루나 카페", "owner": "luna", "open": 730, "close": 2200,
+    "greeting": "따뜻한 커피 한 잔 어때요? 일하다 지치면 단 게 최고예요.",
+    "items": [
+      { "itemId": "coffee", "price": 50 },
+      { "itemId": "bread", "price": 80 },
+      { "itemId": "cake", "price": 150 }
+    ]
+  },
+  "market": {
+    "id": "market", "name": "광장 가판대", "owner": null, "open": 900, "close": 1800,
+    "greeting": "(무인 가판대다. 돈을 넣는 통이 놓여 있다.)",
+    "items": [
+      { "itemId": "seeds_tomato", "price": 45 },
+      { "itemId": "seeds_pumpkin", "price": 95 },
+      { "itemId": "bread", "price": 70 }
+    ]
+  }
+}

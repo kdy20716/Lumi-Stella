@@ -35,4 +35,29 @@ export const LOOKS = {
     shirt: tone('#b83a2a', '#e8573a', '#ff8a5a'), pants: tone('#2a4a7a', '#3a64a0', '#5a8ad0'),
     shoes: tone('#c8c8cc', '#f0f0f0', '#ffffff'), outfit: 'shirt', sleeves: 'short', hat: 'cap', accent: tone('#1f5a8a', '#2f7ab5', '#5aa8e0'),
   },
+  mayor: { // 오 촌장
+    skin: SKINS.tan, hair: tone('#8a8a90', '#b8b8be', '#e0e0e6'), hairStyle: 'bald', beard: true, glasses: true,
+    shirt: tone('#c9b48a', '#efe0bc', '#fff6dc'), pants: tone('#3a2a22', '#5a4234', '#7a5c48'),
+    shoes: shoesDark, outfit: 'vest', sleeves: 'long', accent: tone('#5a1f2a', '#8a2f3f', '#b84a5a'),
+  },
+  luna: { // 카페 사장
+    skin: SKINS.light, hair: tone('#7a3f1f', '#a8602f', '#d8904f'), hairStyle: 'long',
+    shirt: tone('#1f6a66', '#2f8f8a', '#5ab8b0'), pants: tone('#2a2a36', '#3d3d4e', '#5c5c70'),
+    shoes: shoesBrown, outfit: 'apron', sleeves: 'long', accent: tone('#8a4a6a', '#b86a8a', '#e09ab4'),
+  },
+  teo: { // 거리 악사
+    skin: SKINS.brown, hair: tone('#151012', '#221a1c', '#3a2e30'), hairStyle: 'short', hat: 'beanie',
+    shirt: tone('#c06a1f', '#e8892e', '#ffb05a'), pants: tone('#2a3a5a', '#3a5078', '#5a74a0'),
+    shoes: shoesDark, outfit: 'vest', sleeves: 'short', accent: tone('#2f5a2f', '#3f7a3f', '#5fa05f'),
+  },
+  mio: { // 화가
+    skin: SKINS.pale, hair: tone('#2a2a5a', '#3f3f8a', '#6a6ab8'), hairStyle: 'bob', hat: 'beanie',
+    shirt: tone('#c9a24a', '#f0d27a', '#fff0b0'), pants: tone('#3a2a4a', '#4a3a5e', '#6a5a80'),
+    shoes: shoesBrown, outfit: 'dress', sleeves: 'short', accent: tone('#a82f3a', '#d8473b', '#ff7a6a'),
+  },
+  doyun: { // 우체부
+    skin: SKINS.light, hair: tone('#4a2a1a', '#6a3f24', '#8a5a36'), hairStyle: 'short', hat: 'cap',
+    shirt: tone('#2a4a8a', '#3a64b0', '#6a90d8'), pants: tone('#1f2a4a', '#2a3a64', '#4a5a8a'),
+    shoes: shoesDark, outfit: 'shirt', sleeves: 'long', accent: tone('#1f3a6a', '#2a4a8a', '#ffd65a'),
+  },
 };

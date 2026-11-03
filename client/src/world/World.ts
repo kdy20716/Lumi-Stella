@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import { MapInfo, prop, type TiledMap } from '@shared/sim/MapInfo';
+import type { MapId } from '@shared/types';
 import { DEPTH, TILE, type Manifest } from '../config';
 import { Grid } from './Grid';
 
 export interface WorldObject {
   id: number;
   type: string;
-  cellX: number; cellY: number; cellW: number;
+  cellX: number; cellY: number; cellW: number; cellH: number;
   sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
   shadow?: Phaser.GameObjects.Image;
   interact?: string;
@@ -15,7 +16,7 @@ export interface WorldObject {
   blocks: boolean;
 }
 
-const TALL = new Set(['oak', 'oak_apple', 'pine', 'house']);
+const TALL = new Set(['oak', 'oak_apple', 'pine', 'house', 'board', 'stall', 'stall_b']);
 const NON_BLOCKING = new Set(['tuft']);
 // 그림자 크기 (가로 배율, 세로 배율)
 const SHADOW: Record<string, [number, number, number]> = {
@@ -23,7 +24,10 @@ const SHADOW: Record<string, [number, number, number]> = {
   rock_big: [0.95, 0.8, -1], rock: [0.5, 0.55, 0], well: [1, 0.9, -1], shipping_bin: [0.95, 0.7, -1], house: [3.6, 1.6, -2],
   stump: [0.5, 0.5, 0], log: [0.95, 0.6, 0], barrel: [0.5, 0.5, 0], crate: [0.5, 0.5, 0], hay: [0.5, 0.5, 0],
   scarecrow: [0.5, 0.5, 0], mailbox: [0.4, 0.45, 0], lamp: [0.35, 0.4, 0], sign: [0.45, 0.45, 0],
+  bench: [0.9, 0.5, 0], planter: [0.5, 0.45, 0], board: [0.9, 0.5, 0], stall: [1.4, 0.7, -1], stall_b: [1.4, 0.7, -1], cafe_table: [0.6, 0.45, 0], anvil: [0.5, 0.4, 0],
 };
+
+export interface LightSource { x: number; y: number; scale: number; tint: number; base: number }
 
 /** 타일맵 레이어 + 맵 오브젝트 스프라이트 구성 */
 export class World {
@@ -32,15 +36,17 @@ export class World {
   readonly map: Phaser.Tilemaps.Tilemap;
   readonly soil: Phaser.Tilemaps.TilemapLayer;
   readonly objects: WorldObject[] = [];
-  readonly lamps: { x: number; y: number }[] = [];
-  houseGlow?: Phaser.GameObjects.Image;
+  /** 밤에 켜지는 빛 (가로등/창문 주변 후광) */
+  readonly lights: LightSource[] = [];
+  /** 밤에 켜지는 창문 발광 오버레이 */
+  readonly windowGlows: Phaser.GameObjects.Image[] = [];
   readonly widthPx: number; readonly heightPx: number;
   private water: Phaser.GameObjects.TileSprite[] = [];
   private waterFrame = 0; private waterT = 0;
   private tufts: Phaser.GameObjects.Sprite[] = [];
 
-  constructor(private scene: Phaser.Scene, readonly manifest: Manifest) {
-    const raw = scene.cache.tilemap.get('farm').data as TiledMap;
+  constructor(private scene: Phaser.Scene, readonly manifest: Manifest, readonly mapId: MapId = 'farm') {
+    const raw = scene.cache.tilemap.get(mapId).data as TiledMap;
     this.info = new MapInfo(raw);
     this.grid = new Grid(this.info);
     this.widthPx = this.info.width * TILE; this.heightPx = this.info.height * TILE;
@@ -48,7 +54,7 @@ export class World {
     // 물: 맵 전체 아래에 깔리는 애니메이션 타일스프라이트 (지면 타일의 투명 영역으로 비침)
     for (let f = 0; f < 4; f++) this.water.push(scene.add.tileSprite(0, 0, this.widthPx + TILE, this.heightPx + TILE, `water${f}`).setOrigin(0).setDepth(DEPTH.water).setVisible(f === 0));
 
-    this.map = scene.make.tilemap({ key: 'farm' });
+    this.map = scene.make.tilemap({ key: mapId });
     const ts = this.map.addTilesetImage('tileset', 'tileset')!;
     const off = Number(prop(raw, 'groundOffset', 8));
     this.map.createLayer('Ground', ts, off, off)!.setDepth(DEPTH.ground);
@@ -64,7 +70,8 @@ export class World {
     const fences = new Set(this.info.objects.filter((o) => o.type === 'fence').map((o) => `${prop(o, 'cellX')},${prop(o, 'cellY')}`));
     for (const o of this.info.objects) {
       const type = o.type;
-      const cellX = Number(prop(o, 'cellX', 0)), cellY = Number(prop(o, 'cellY', 0)), cellW = Number(prop(o, 'cellW', 1));
+      const cellX = Number(prop(o, 'cellX', 0)), cellY = Number(prop(o, 'cellY', 0)), cellW = Number(prop(o, 'cellW', 1)), cellH = Number(prop(o, 'cellH', 1));
+      const building = m.buildings?.[type];
       let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
       const sheet = m.spritesheets[type], img = m.images[type];
       if (sheet) {
@@ -85,42 +92,49 @@ export class World {
       const sh = SHADOW[type];
       let shadow: Phaser.GameObjects.Image | undefined;
       if (sh) shadow = s.add.image(o.x, o.y + sh[2], 'shadow').setScale(sh[0], sh[1]).setDepth(DEPTH.cursor - 1).setAlpha(type === 'house' ? 0.6 : 0.9);
+      else if (building) shadow = s.add.image(o.x, o.y - 2, 'shadow').setScale(cellW * 0.55, 1.5).setDepth(DEPTH.cursor - 1).setAlpha(0.6);
 
       const wo: WorldObject = {
-        id: o.id, type, cellX, cellY, cellW, sprite, shadow, tall: TALL.has(type), blocks: !NON_BLOCKING.has(type),
+        id: o.id, type, cellX, cellY, cellW, cellH, sprite, shadow, tall: TALL.has(type) || !!building, blocks: !NON_BLOCKING.has(type),
         interact: prop<string | undefined>(o, 'interact', undefined), text: prop<string | undefined>(o, 'text', undefined),
       };
       this.objects.push(wo);
       if (type === 'tuft') this.tufts.push(sprite as Phaser.GameObjects.Sprite);
-      if (type === 'lamp') this.lamps.push({ x: o.x, y: o.y - 37 });
-      if (type === 'house') {
-        this.houseGlow = s.add.image(o.x, o.y, 'house_glow').setOrigin(0.5, img!.originY).setDepth(o.y + 1).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
-        wo.interact = 'door';
-        this.chimneySmoke(o.x + 30, o.y - 112);
+      if (type === 'lamp') {
+        this.lights.push({ x: o.x, y: o.y - 37, scale: 0.75, tint: 0xffd88a, base: 1 }, { x: o.x, y: o.y - 7, scale: 1.2, tint: 0xffb860, base: 0.5 });
+      }
+      if (type === 'house' || building) {
+        const top = o.y - img!.h * img!.originY;
+        const glowKey = type === 'house' ? 'house_glow' : `${type}_glow`;
+        if (s.textures.exists(glowKey)) this.windowGlows.push(s.add.image(o.x, o.y, glowKey).setOrigin(0.5, img!.originY).setDepth(o.y + 1).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0));
+        const half = img!.w / 2;
+        this.lights.push({ x: o.x - half * 0.45, y: o.y - 26, scale: 1.1, tint: 0xffc870, base: 1 }, { x: o.x + half * 0.45, y: o.y - 26, scale: 1.1, tint: 0xffc870, base: 1 });
+        if (type === 'house') { wo.interact ??= 'door'; this.chimneySmoke(o.x + 30, o.y - 112); }
+        else if (building?.chimneyX != null) this.chimneySmoke(o.x - half + building.chimneyX + 4, top + 1, type === 'smithy');
       }
     }
   }
 
-  private chimneySmoke(x: number, y: number) {
-    const g = this.scene.make.graphics({}, false);
-    g.fillStyle(0xffffff, 1).fillCircle(4, 4, 4); g.generateTexture('smoke', 8, 8); g.destroy();
+  private chimneySmoke(x: number, y: number, dark = false) {
+    if (!this.scene.textures.exists('smoke')) {
+      const g = this.scene.make.graphics({}, false);
+      g.fillStyle(0xffffff, 1).fillCircle(4, 4, 4); g.generateTexture('smoke', 8, 8); g.destroy();
+    }
     this.scene.add.particles(x, y, 'smoke', {
-      lifespan: 3200, frequency: 420, speedY: { min: -14, max: -9 }, speedX: { min: 2, max: 7 },
-      scale: { start: 0.5, end: 1.6 }, alpha: { start: 0.55, end: 0 }, tint: 0xd8d4d0,
+      lifespan: 3200, frequency: dark ? 260 : 420, speedY: { min: -14, max: -9 }, speedX: { min: 2, max: 7 },
+      scale: { start: 0.5, end: 1.6 }, alpha: { start: 0.55, end: 0 }, tint: dark ? 0x8a8690 : 0xd8d4d0,
     }).setDepth(DEPTH.overlay - 10);
   }
 
   /** 셀 (cx,cy)를 점유한 오브젝트 */
   objectAt(cx: number, cy: number): WorldObject | undefined {
-    return this.objects.find((o) => o.sprite.active && o.blocks && cy === o.cellY && cx >= o.cellX && cx < o.cellX + o.cellW)
-      ?? this.objects.find((o) => o.sprite.active && o.type === 'house' && cy <= o.cellY && cy >= o.cellY - 3 && cx >= o.cellX && cx < o.cellX + o.cellW)
-      ?? this.objects.find((o) => o.sprite.active && (o.type === 'well') && cy <= o.cellY && cy >= o.cellY - 1 && cx >= o.cellX && cx < o.cellX + o.cellW);
+    return this.objects.find((o) => o.sprite.active && o.blocks && cy <= o.cellY && cy > o.cellY - o.cellH && cx >= o.cellX && cx < o.cellX + o.cellW);
   }
 
   removeObject(id: number, fx = true) {
     const o = this.objects.find((ob) => ob.id === id);
     if (!o || !o.sprite.active) return;
-    for (let x = o.cellX; x < o.cellX + o.cellW; x++) this.grid.setBlocked(x, o.cellY, false);
+    for (let y = o.cellY - o.cellH + 1; y <= o.cellY; y++) for (let x = o.cellX; x < o.cellX + o.cellW; x++) this.grid.setBlocked(x, y, false);
     if (fx) {
       this.scene.tweens.add({ targets: [o.sprite, o.shadow].filter(Boolean), alpha: 0, scaleY: 0.2, duration: 220, onComplete: () => { o.sprite.destroy(); o.shadow?.destroy(); } });
     } else { o.sprite.destroy(); o.shadow?.destroy(); }
@@ -140,7 +154,7 @@ export class World {
     // 플레이어가 큰 오브젝트 뒤에 가려지면 반투명
     for (const o of this.objects) {
       if (!o.tall || !o.sprite.active) continue;
-      if (Math.abs(o.sprite.x - player.x) > 64 || o.sprite.y - player.y > 130 || player.y > o.sprite.y + 4) { if (o.sprite.alpha < 1) o.sprite.alpha = Math.min(1, o.sprite.alpha + dt / 200); continue; }
+      if (Math.abs(o.sprite.x - player.x) > 80 || o.sprite.y - player.y > 130 || player.y > o.sprite.y + 4) { if (o.sprite.alpha < 1) o.sprite.alpha = Math.min(1, o.sprite.alpha + dt / 200); continue; }
       const b = o.sprite.getBounds();
       const behind = player.y < o.sprite.y - 2 && player.x > b.left + 4 && player.x < b.right - 4 && player.y - 18 < b.bottom - 6 && player.y > b.top + 8;
       const target = behind ? 0.55 : 1;

@@ -2,7 +2,9 @@
 export type Dir = 'down' | 'left' | 'right' | 'up';
 export const DIR_VEC: Record<Dir, [number, number]> = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
 
-export type ItemType = 'tool' | 'seed' | 'crop' | 'material';
+export type ItemType = 'tool' | 'seed' | 'crop' | 'material' | 'food';
+export type MapId = 'farm' | 'town';
+export const MAP_NAMES: Record<MapId, string> = { farm: '별빛 농장', town: '별빛 마을' };
 export type ToolKind = 'hoe' | 'watering_can' | 'axe';
 
 export interface ItemDef {
@@ -16,6 +18,7 @@ export interface ItemDef {
   tool?: ToolKind;
   cropId?: string;       // 씨앗 → 작물
   energyCost?: number;   // 도구 사용 시 소모 에너지
+  energy?: number;       // 음식: 회복 에너지
 }
 
 export interface CropDef {
@@ -45,6 +48,7 @@ export interface PlayerState {
   id: string;
   name: string;
   look: string;           // 캐릭터 시트 키
+  map: MapId;             // 현재 있는 맵
   x: number; y: number;   // 월드 픽셀 (발 위치)
   dir: Dir;
   anim: string;           // 'idle' | 'walk' | 'run' | 'hoe' ...
@@ -70,6 +74,13 @@ export type ActionIntent =
   | { kind: 'harvest'; tx: number; ty: number }
   | { kind: 'ship'; slot: number }
   | { kind: 'chop'; objectId: number }
+  | { kind: 'buy'; shop: string; itemId: string; qty: number }
+  | { kind: 'eat'; slot: number }
   | { kind: 'sleep' };
 
 export interface ActionResult { ok: boolean; reason?: string; anim?: string }
+
+export interface ShopDef {
+  id: string; name: string; owner: string | null; open: number; close: number; greeting: string;
+  items: { itemId: string; price: number }[];
+}
