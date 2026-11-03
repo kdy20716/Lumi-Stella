@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --font-pixel: "Galmuri11", "Galmuri9", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-pixel-sm: "Galmuri9", "Galmuri11", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --color-ink: #3b2414;
+  --color-parch: #f3dfb4;
+  --color-wood: #a8683a;
+  --color-wood-dark: #5e3620;
+  --color-leaf: #4f9a45;
+  --color-gold: #f0c84a;
+}
+
+html, body { height: 100%; }
+body { font-family: var(--font-pixel); color: var(--color-ink); -webkit-font-smoothing: none; }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+
+/* ── 픽셀 9-slice 패널 (코드로 생성한 ui/panel.png) ── */
+.px-panel {
+  border-style: solid;
+  border-width: 18px;
+  border-image: url("../public/assets/ui/panel.png") 6 fill / 18px stretch;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 0 rgba(20, 12, 6, 0.45));
+}
+.px-slot {
+  width: 54px; height: 54px;
+  background: url("../public/assets/ui/slot.png") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  position: relative;
+}
+.px-slot.active { background-image: url("../public/assets/ui/slot_active.png"); transform: translateY(-4px); }
+.px-icon {
+  width: 48px; height: 48px;
+  background-image: url("../public/assets/ui/icons.png");
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.px-icon.sm { width: 32px; height: 32px; }
+.px-text-shadow { text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35); }
+.px-outline { text-shadow: -2px 0 #3b2414, 2px 0 #3b2414, 0 -2px #3b2414, 0 2px #3b2414, 2px 2px #3b2414, -2px 2px #3b2414; }
+
+.px-btn {
+  font-family: var(--font-pixel);
+  background: linear-gradient(#e9a45d, #c97a3c);
+  color: #fff8ec;
+  border: 3px solid #5e3620;
+  box-shadow: inset 0 3px 0 #ffc98a, inset 0 -4px 0 #9a5528, 0 4px 0 #3b2414;
+  padding: 10px 26px;
+  image-rendering: pixelated;
+  transition: transform 80ms;
+}
+.px-btn:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.px-btn:active { transform: translateY(2px); box-shadow: inset 0 3px 0 #ffc98a, inset 0 -2px 0 #9a5528, 0 1px 0 #3b2414; }
+.px-btn.green { background: linear-gradient(#7cc45a, #4f9a45); box-shadow: inset 0 3px 0 #a8e07a, inset 0 -4px 0 #2f6a34, 0 4px 0 #1f3a22; }
+
+.portrait {
+  width: 120px; height: 120px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  background-color: #cfe7f0;
+  border: 4px solid #6e4024;
+  box-shadow: inset 0 0 0 3px #e6cb93;
+}
+
+@keyframes bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(3px) } }
+.bob { animation: bob 0.9s steps(2) infinite; }
+@keyframes toast-in { from { transform: translateX(-30px); opacity: 0 } to { transform: none; opacity: 1 } }
+.toast-in { animation: toast-in 0.25s ease-out; }
+@keyframes float-title { 0%, 100% { transform: translateY(0) rotate(-1deg) } 50% { transform: translateY(-8px) rotate(1deg) } }
+.title-float { animation: float-title 4s ease-in-out infinite; }
+.vignette { background: radial-gradient(ellipse at center, transparent 55%, rgba(10, 6, 20, 0.35) 100%); }

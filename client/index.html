@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>별빛 농장 · Starlight Farm</title>
+    <link rel="icon" href="assets/ui/icons.png" />
+    <!-- 한글 픽셀 폰트 (Galmuri, OFL) — 오프라인이면 시스템 폰트로 대체됨 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" />
+  </head>
+  <body class="bg-[#14201a] overflow-hidden select-none">
+    <div id="game" class="fixed inset-0"></div>
+    <!-- DOM 오버레이 UI (HUD/핫바/대화창). pointer-events 는 컴포넌트별로 켬 -->
+    <div id="ui" class="fixed inset-0 pointer-events-none"></div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

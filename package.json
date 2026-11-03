@@ -1,0 +1,30 @@
+{
+  "name": "starlight-farm",
+  "private": true,
+  "version": "0.1.0",
+  "description": "스타듀밸리 스타일 2D 픽셀 농장 멀티플레이 웹 게임 (Vite + TypeScript + Phaser 3)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "gen:art": "node tools/art/generate.mjs",
+    "gen:map": "node tools/map/generate-map.mjs",
+    "gen": "npm run gen:art && npm run gen:map",
+    "server": "tsx server/index.ts"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.8",
+    "@types/node": "^22.15.0",
+    "@types/ws": "^8.18.1",
+    "tailwindcss": "^4.1.8",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "ws": "^8.18.2"
+  }
+}
