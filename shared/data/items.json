@@ -137,5 +137,176 @@
     "maxStack": 20,
     "energy": 180,
     "description": "사용하면 에너지 +180. 특별한 날을 위한 케이크."
+  },
+  "pickaxe": {
+    "id": "pickaxe",
+    "name": "곡괭이",
+    "type": "tool",
+    "icon": "pickaxe",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "바위와 광석을 캡니다. 채석장 바위는 매일 다시 생겨요.",
+    "tool": "pickaxe",
+    "energyCost": 3
+  },
+  "rod": {
+    "id": "rod",
+    "name": "낚싯대",
+    "type": "tool",
+    "icon": "rod",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "물을 바라보고 사용하세요. 찌가 \"!\" 하고 흔들리면 바로 다시 누르기!",
+    "tool": "rod",
+    "energyCost": 2
+  },
+  "jar": {
+    "id": "jar",
+    "name": "별빛 병",
+    "type": "battle",
+    "icon": "jar",
+    "sellPrice": 20,
+    "maxStack": 99,
+    "description": "야생 루미를 담는 병. 체력이 적을수록 잘 잡혀요.",
+    "catchBonus": 1
+  },
+  "super_jar": {
+    "id": "super_jar",
+    "name": "반짝 별빛 병",
+    "type": "battle",
+    "icon": "super_jar",
+    "sellPrice": 60,
+    "maxStack": 99,
+    "description": "더 잘 잡히는 고급 별빛 병.",
+    "catchBonus": 1.8
+  },
+  "potion": {
+    "id": "potion",
+    "name": "회복 꿀",
+    "type": "battle",
+    "icon": "potion",
+    "sellPrice": 30,
+    "maxStack": 99,
+    "description": "배틀 중 루미의 체력을 30 회복해요.",
+    "heal": 30
+  },
+  "badge_wind": {
+    "id": "badge_wind",
+    "name": "바람 배지",
+    "type": "material",
+    "icon": "badge_wind",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "바람골 도장을 제패한 증표."
+  },
+  "fish_crucian": {
+    "id": "fish_crucian",
+    "name": "붕어",
+    "type": "material",
+    "icon": "fish_crucian",
+    "sellPrice": 40,
+    "maxStack": 99,
+    "description": "어디서나 잡히는 친근한 물고기."
+  },
+  "fish_trout": {
+    "id": "fish_trout",
+    "name": "송어",
+    "type": "material",
+    "icon": "fish_trout",
+    "sellPrice": 75,
+    "maxStack": 99,
+    "description": "맑은 물을 좋아하는 물고기."
+  },
+  "fish_catfish": {
+    "id": "fish_catfish",
+    "name": "메기",
+    "type": "material",
+    "icon": "fish_catfish",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "수염이 멋진 바닥 물고기."
+  },
+  "fish_rainbow": {
+    "id": "fish_rainbow",
+    "name": "무지개송어",
+    "type": "material",
+    "icon": "fish_rainbow",
+    "sellPrice": 180,
+    "maxStack": 99,
+    "description": "비늘이 무지갯빛으로 빛나는 귀한 물고기."
+  },
+  "berry": {
+    "id": "berry",
+    "name": "산딸기",
+    "type": "food",
+    "icon": "berry",
+    "sellPrice": 25,
+    "maxStack": 99,
+    "description": "사용하면 에너지 +25. 길가에서 딴 새콤한 열매.",
+    "energy": 25
+  },
+  "wild_mushroom": {
+    "id": "wild_mushroom",
+    "name": "야생 버섯",
+    "type": "material",
+    "icon": "wild_mushroom",
+    "sellPrice": 40,
+    "maxStack": 99,
+    "description": "숲에서 채집한 향긋한 버섯."
+  },
+  "dandelion": {
+    "id": "dandelion",
+    "name": "민들레",
+    "type": "material",
+    "icon": "dandelion",
+    "sellPrice": 30,
+    "maxStack": 99,
+    "description": "봄 들판의 노란 꽃."
+  },
+  "herb": {
+    "id": "herb",
+    "name": "약초",
+    "type": "food",
+    "icon": "herb",
+    "sellPrice": 35,
+    "maxStack": 99,
+    "description": "사용하면 에너지 +40. 쌉싸름한 들풀.",
+    "energy": 40
+  },
+  "stone": {
+    "id": "stone",
+    "name": "돌",
+    "type": "material",
+    "icon": "stone",
+    "sellPrice": 5,
+    "maxStack": 99,
+    "description": "흔한 돌멩이."
+  },
+  "copper_ore": {
+    "id": "copper_ore",
+    "name": "구리 광석",
+    "type": "material",
+    "icon": "copper_ore",
+    "sellPrice": 30,
+    "maxStack": 99,
+    "description": "불그스름한 광석."
+  },
+  "iron_ore": {
+    "id": "iron_ore",
+    "name": "철 광석",
+    "type": "material",
+    "icon": "iron_ore",
+    "sellPrice": 55,
+    "maxStack": 99,
+    "description": "단단한 회색 광석."
+  },
+  "star_shard": {
+    "id": "star_shard",
+    "name": "별가루 결정",
+    "type": "material",
+    "icon": "star_shard",
+    "sellPrice": 200,
+    "maxStack": 99,
+    "description": "밤하늘의 별빛이 굳은 듯한 신비한 결정."
   }
 }

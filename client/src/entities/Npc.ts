@@ -7,6 +7,8 @@ import { Character, facingFromVector } from './Character';
 
 type State = 'walk' | 'idle' | 'talk' | 'gone';
 const cellCenter = (cx: number, cy: number) => ({ x: cx * TILE + 8, y: cy * TILE + 13 });
+/** 건물 실내 → 바깥 맵에서 그 건물 문 앞 웨이포인트 */
+const DOOR_WP: Partial<Record<MapId, string>> = { in_store: 'wp_store', in_cafe: 'wp_cafe', in_lab: 'wp_lab', in_smithy: 'wp_smithy', in_center: 'wp_center', in_shop_w: 'wp_shop' };
 
 /** 맵 전환(씬 재시작)에도 유지되는 NPC 기억: 만남 여부, 호감도, 마지막으로 대화한 날 */
 const MEMORY = new Map<string, { met: boolean; hearts: number; talkedDay: number }>();
@@ -42,7 +44,8 @@ export class Npc extends Character {
   talkedOn(day: number) { return this.mem.talkedDay === day; }
 
   private wp(name: string) { const p = this.waypoints.get(name); return p ? { cx: Math.floor(p.x / TILE), cy: Math.floor(p.y / TILE) } : null; }
-  private gate() { return this.wp('wp_gate') ?? { cx: 0, cy: 20 }; }
+  /** 다른 맵으로 오가는 출입구: 그 맵이 이 맵의 건물 실내면 그 건물 문 앞, 아니면 맵 출입구(wp_gate) */
+  private gate(other?: MapId) { const d = other ? DOOR_WP[other] : undefined; return (d && this.wp(d)) || this.wp('wp_gate') || { cx: 0, cy: 20 }; }
   cell(): [number, number] { return [Math.floor(this.x / TILE), Math.floor((this.y - 3) / TILE)]; }
   private entryMap(e?: NpcScheduleEntry): MapId { return (e?.map ?? 'farm') as MapId; }
 
@@ -61,7 +64,7 @@ export class Npc extends Character {
     const target = here ? this.wp(e.to) : null;
     if (!here || !target || e.idle === 'leave') {
       // 이 맵에 없음: 나중에 등장할 위치 기억
-      const p = here && target ? target : this.gate();
+      const p = here && target ? target : this.gate(this.entryMap(e));
       this.vanishAt = cellCenter(p.cx, p.cy);
       this.setPosition(this.vanishAt.x, this.vanishAt.y);
       this.vanish(false);
@@ -136,7 +139,7 @@ export class Npc extends Character {
       if (nextMap === this.mapId) {
         if (this.state === 'gone') {
           // 다른 맵에서 왔으면 출입구에서, 집에서 나오면 그 문 앞에서 등장
-          const g = this.gate(); const from = prevMap !== this.mapId ? cellCenter(g.cx, g.cy) : (this.vanishAt ?? cellCenter(g.cx, g.cy));
+          const g = this.gate(prevMap); const from = prevMap !== this.mapId ? cellCenter(g.cx, g.cy) : (this.vanishAt ?? cellCenter(g.cx, g.cy));
           this.setPosition(from.x, from.y); this.show(); this.sprite.setAlpha(0);
           this.scene.tweens.add({ targets: this.sprite, alpha: 1, duration: 400 });
         }
@@ -146,7 +149,7 @@ export class Npc extends Character {
       } else if (this.state !== 'gone') {
         // 다른 맵으로 이동: 출입구로 걸어가서 사라짐
         this.exiting = true;
-        const g = this.gate(); this.goTo(g.cx, g.cy);
+        const g = this.gate(nextMap); this.goTo(g.cx, g.cy);
       }
     }
     if (this.state === 'gone') { this.update(); return; }

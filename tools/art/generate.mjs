@@ -7,9 +7,14 @@ import { dirname, join } from 'node:path';
 import { Img } from './lib/img.mjs';
 import { buildTileset, buildWater, ROW, DECOR, WOOD, MISC, TILESET_COLS } from './tiles.mjs';
 import * as TW from './town.mjs';
+import * as ADV from './adventure.mjs';
+import { buildCreatureSheet, SPECIES_ART, CF } from './creatures.mjs';
 import { buildCharacterSheet } from './char.mjs';
 import { LOOKS } from './looks.mjs';
 import * as OB from './objects.mjs';
+import { buildRoom, FURN, ROOMS } from './interior.mjs';
+import { buildPortrait } from './portrait.mjs';
+import { buildWorldMap } from './worldmap.mjs';
 import { buildCrops, buildIcons, buildPanel, buildSlot, buildSlotActive, ICONS, CROP_IDS, CROP_STAGES } from './items.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../client/public/assets');
@@ -74,7 +79,7 @@ image('panel', 'ui/panel.png', buildPanel());
 
 // 마을 건물 (발광 오버레이 + 점유 셀 정보)
 manifest.buildings = {};
-for (const [key, opt] of Object.entries(TW.BUILDINGS)) {
+for (const [key, opt] of Object.entries({ ...TW.BUILDINGS, ...ADV.ADV_BUILDINGS })) {
   const b = TW.buildBuilding(opt);
   image(key, `buildings/${key}.png`, b.img);
   image(`${key}_glow`, `buildings/${key}_glow.png`, b.glow);
@@ -88,6 +93,29 @@ image('stall_b', 'objects/stall_b.png', TW.buildStall(['#7d5aa8', '#fff1dc']));
 image('cafe_table', 'objects/cafe_table.png', TW.buildCafeTable());
 image('anvil', 'objects/anvil.png', TW.buildAnvil());
 sheet('duck', 'animals/duck.png', TW.buildDuck(), 16, 16, { originY: 15 / 16 });
+
+// 모험 요소
+sheet('tallgrass', 'objects/tallgrass.png', ADV.buildTallGrass(), 16, 16, { originY: 1 });
+for (const k of ['stone', 'copper', 'iron', 'star']) image(`ore_${k}`, `objects/ore_${k}.png`, ADV.buildOreRock(k));
+for (const k of ['grass', 'water', 'town']) image(`battle_${k}`, `battle/bg_${k}.png`, ADV.buildBattleBg(k));
+image('windmill_blades', 'buildings/windmill_blades.png', ADV.buildWindmillBlades());
+image('jar_throw', 'fx/jar.png', ADV.buildJar());
+image('sparkle', 'fx/sparkle.png', ADV.buildSparkle());
+
+// 루미 (오리지널 몬스터) 시트: 열 = [정면0, 정면1, 측면0, 측면1, 뒷면0, 뒷면1]
+manifest.lumi = {};
+for (const [id, cfg] of Object.entries(SPECIES_ART)) {
+  const img = buildCreatureSheet(cfg);
+  sheet(`lumi_${id}`, `lumi/${id}.png`, img, CF, CF, { originY: 30 / 32 });
+  manifest.lumi[id] = `lumi_${id}`;
+}
+// 건물 실내: 방 배경 + 가구
+for (const [id, spec] of Object.entries(ROOMS)) image(`room_${id}`, `interiors/${id}.png`, buildRoom(spec));
+for (const [type, f] of Object.entries(FURN)) image(type, `objects/${type}.png`, f.build());
+// 대화창 흉상 일러스트 (모든 인물)
+for (const [id, look] of Object.entries(LOOKS)) buildPortrait(look).save(out(`portraits/${id}.png`));
+// 휴대폰 지도
+image('worldmap', 'ui/worldmap.png', buildWorldMap());
 image('slot', 'ui/slot.png', buildSlot());
 image('slot_active', 'ui/slot_active.png', buildSlotActive());
 

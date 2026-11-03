@@ -469,8 +469,9 @@ export function buildCursor() {
 
 /** 감정 말풍선 16x16: ... ! ♥ ? ♪ */
 export function buildEmotes() {
-  const img = new Img(16 * 5, 16);
-  for (let i = 0; i < 5; i++) {
+  // 0 ... · 1 ! · 2 하트 · 3 ? · 4 음표 · 5 웃음 · 6 슬픔 · 7 화남
+  const img = new Img(16 * 8, 16);
+  for (let i = 0; i < 8; i++) {
     const t = new Img(16, 16);
     t.rrect(1, 1, 14, 11, '#fff8ec', 2); t.set(6, 12, '#fff8ec'); t.set(7, 12, '#fff8ec'); t.set(6, 13, '#fff8ec');
     t.hline(3, 11, 11, '#d9cbb3');
@@ -480,6 +481,19 @@ export function buildEmotes() {
     if (i === 2) { const h = '#e0475b'; t.rect(4, 4, 3, 3, h); t.rect(9, 4, 3, 3, h); t.rect(5, 6, 6, 2, h); t.rect(6, 8, 4, 1, h); t.rect(7, 9, 2, 1, h); t.set(5, 5, '#ff9fb0'); }
     if (i === 3) { t.rect(6, 3, 4, 1, '#3f8fc8'); t.set(10, 4, '#3f8fc8'); t.set(10, 5, '#3f8fc8'); t.rect(8, 6, 2, 1, '#3f8fc8'); t.set(8, 7, '#3f8fc8'); t.set(8, 9, '#3f8fc8'); t.set(5, 4, '#3f8fc8'); }
     if (i === 4) { const m = '#7d5aa8'; t.rect(5, 7, 3, 2, m); t.vline(7, 3, 5, m); t.rect(8, 3, 3, 1, m); t.rect(10, 4, 1, 2, m); }
+    if (i === 5) { // ^ ^ 웃는 눈 + 입 + 볼터치
+      t.set(4, 5, ink); t.set(5, 4, ink); t.set(6, 5, ink); t.set(9, 5, ink); t.set(10, 4, ink); t.set(11, 5, ink);
+      t.rect(6, 7, 4, 1, ink); t.rect(7, 8, 2, 1, '#e0475b'); t.set(3, 7, '#ff9fb0'); t.set(12, 7, '#ff9fb0');
+    }
+    if (i === 6) { // 슬픈 눈썹 + 눈물
+      t.set(4, 4, ink); t.set(5, 5, ink); t.set(11, 4, ink); t.set(10, 5, ink); t.rect(5, 6, 1, 1, ink); t.rect(10, 6, 1, 1, ink);
+      const w = '#5aa8e0'; t.set(4, 7, w); t.rect(4, 8, 1, 2, w); t.set(3, 9, w); t.rect(6, 9, 4, 1, ink); t.set(5, 8, ink); t.set(10, 8, ink);
+    }
+    if (i === 7) { // 💢 화남 마크: 네 모서리의 갈고리
+      const r = '#d8473b', d = '#a8302a';
+      for (const [x, y] of [[6, 2], [5, 3], [6, 3], [10, 2], [10, 3], [11, 3], [5, 7], [6, 7], [6, 8], [10, 7], [11, 7], [10, 8]]) t.set(x, y, r);
+      for (const [x, y] of [[7, 4], [9, 4], [7, 6], [9, 6]]) t.set(x, y, d);
+    }
     t.outline(O, 0.6);
     img.blit(t, i * 16, 0);
   }

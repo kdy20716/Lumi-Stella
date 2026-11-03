@@ -6,7 +6,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { buildFarm } from './farm.mjs';
 import { buildTown } from './town.mjs';
+import { buildRoute1 } from './route1.mjs';
+import { buildWindvale } from './windvale.mjs';
+import { buildInterior, INTERIOR_IDS } from './interiors.mjs';
 
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '../../client/public/assets/maps');
 buildFarm().write(join(DIR, 'farm.json'));
 buildTown().write(join(DIR, 'town.json'));
+buildRoute1().write(join(DIR, 'route1.json'));
+buildWindvale().write(join(DIR, 'windvale.json'));
+for (const id of INTERIOR_IDS) buildInterior(id).write(join(DIR, `${id}.json`));

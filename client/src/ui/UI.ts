@@ -1,6 +1,9 @@
 // DOM 오버레이 UI: 로딩 / 타이틀 / HUD(시계·골드·에너지) / 핫바 / 대화창 / 토스트 / 힌트 / 하루 전환 / 채팅
-import { ITEMS } from '@shared/data';
-import type { InventorySlot, ShopDef, WorldTime } from '@shared/types';
+import { ITEMS, SPECIES, TYPE_COLORS } from '@shared/data';
+import { josa } from '@shared/josa';
+import { creator, emoteWheel, invitePrompt, mailbox } from './Social';
+import { sfx } from '../audio/Sfx';
+import type { CreatureInst, InventorySlot, PlayerState, ShopDef, WorldTime } from '@shared/types';
 
 const root = () => document.getElementById('ui')!;
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = '') => {
@@ -36,36 +39,46 @@ const loading = {
 };
 
 // ── 타이틀 ──────────────────────────────────────────────
+export interface TitleHandle { close: () => void; error: (m: string) => void; busy: (m: string) => void; setUser: (name: string | null) => void }
 const title = {
-  show(onSolo: () => void, onMulti: (url: string, name: string) => void) {
+  show(o: { onGoogle: (mode: 'public' | 'friends') => void; onLogout: () => void }): TitleHandle & { url: () => string } {
     const n = el('div', 'fixed inset-0 z-40 flex flex-col items-center justify-center pointer-events-auto vignette');
-    const savedName = (() => { try { return localStorage.getItem('sf:name') ?? ''; } catch { return ''; } })();
+    // 서버 주소는 화면에 보이지 않음: 접속한 페이지의 호스트(같은 PC)의 2567 포트, 또는 ?server=ws://... 로 지정
+    const qs = new URLSearchParams(location.search).get('server');
+    const defUrl = qs || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname || 'localhost'}:2567`;
     n.innerHTML = `
-      <div class="title-float flex flex-col items-center mb-10">
+      <div class="title-float flex flex-col items-center mb-8">
         <div class="text-[64px] leading-none text-[#ffe58a] px-outline tracking-[0.15em]" style="text-shadow:-4px 0 #3b2414,4px 0 #3b2414,0 -4px #3b2414,0 4px #3b2414,4px 4px #3b2414,6px 8px 0 rgba(0,0,0,.35)">별빛 농장</div>
         <div class="mt-3 text-xl text-[#fff8ec] px-outline tracking-[0.4em]">STARLIGHT FARM</div>
       </div>
-      <div class="px-panel flex flex-col items-center gap-4 min-w-[340px]">
-        <button data-a="solo" class="px-btn green text-xl w-full">혼자 시작하기</button>
-        <div class="w-full flex flex-col gap-2 text-sm">
-          <input data-i="name" maxlength="10" placeholder="닉네임" value="${savedName}" class="w-full px-3 py-2 bg-[#fff8ec] border-2 border-[#a8683a] outline-none font-[inherit]" />
-          <input data-i="url" placeholder="ws://localhost:2567" value="ws://${location.hostname || 'localhost'}:2567" class="w-full px-3 py-2 bg-[#fff8ec] border-2 border-[#a8683a] outline-none font-[inherit]" />
-          <button data-a="multi" class="px-btn text-lg w-full">멀티플레이 접속</button>
-          <div data-e class="text-[#c8453c] text-xs min-h-4"></div>
-        </div>
+      <div class="px-panel flex flex-col items-center gap-3 w-[min(380px,92vw)]">
+        <div data-c="user" class="text-sm text-[#8a5a32] min-h-5">로그인 상태 확인 중...</div>
+        <button data-a="google" class="px-btn green text-xl w-full flex items-center justify-center gap-2"><span class="inline-flex w-7 h-7 rounded-full bg-white text-[#4285f4] font-bold items-center justify-center text-lg">G</span><span data-c="gtext">구글 계정으로 시작</span></button>
+        <div class="-mt-2 text-[11px] text-[#8a5a32]">접속한 모든 사람과 같은 서버에서 함께해요</div>
+        <button data-a="solo" class="px-btn text-lg w-full">혼자하기 <span class="text-sm opacity-85">(친구들만)</span></button>
+        <div class="-mt-2 text-[11px] text-[#8a5a32] text-center">나만의 세계 — 우편함으로 초대한 친구만 보여요</div>
+        <button data-a="logout" class="hidden text-xs underline text-[#8a5a32]">다른 계정으로 로그인</button>
+        <div data-e class="text-[#c8453c] text-sm min-h-5 text-center"></div>
       </div>
-      <div class="absolute bottom-4 text-xs text-[#fff8ec] opacity-80 px-outline">WASD 이동 · Shift 달리기 · Space/클릭 도구 · E/우클릭 상호작용 · 1~0 슬롯 · H 도움말</div>`;
+      <div class="absolute bottom-4 text-xs text-[#fff8ec] opacity-80 px-outline">로그인하면 진행상황이 자동 저장돼요 · WASD 이동 · E 상호작용 · Tab 감정표현 · H 도움말</div>`;
     root().appendChild(n);
+    const q = <T extends HTMLElement>(s: string) => n.querySelector<T>(s)!;
+    const url = () => defUrl;
     const close = () => { n.style.transition = 'opacity .4s'; n.style.opacity = '0'; setTimeout(() => n.remove(), 400); };
-    n.querySelector<HTMLButtonElement>('[data-a=solo]')!.onclick = () => { close(); onSolo(); };
-    n.querySelector<HTMLButtonElement>('[data-a=multi]')!.onclick = () => {
-      const name = n.querySelector<HTMLInputElement>('[data-i=name]')!.value.trim() || '농부';
-      try { localStorage.setItem('sf:name', name); } catch { /* 무시 */ }
-      const url = n.querySelector<HTMLInputElement>('[data-i=url]')!.value.trim();
-      (n.querySelector('[data-e]') as HTMLElement).textContent = '접속 중...';
-      onMulti(url, name);
+    const err = q<HTMLDivElement>('[data-e]');
+    q<HTMLButtonElement>('[data-a=google]').onclick = () => { sfx.play('confirm'); err.textContent = ''; o.onGoogle('public'); };
+    q<HTMLButtonElement>('[data-a=solo]').onclick = () => { sfx.play('confirm'); err.textContent = ''; o.onGoogle('friends'); };
+    q<HTMLButtonElement>('[data-a=logout]').onclick = () => o.onLogout();
+    return {
+      close, url,
+      error: (m) => { err.style.color = '#c8453c'; err.textContent = m; },
+      busy: (m) => { err.style.color = '#2f7a3a'; err.textContent = m; },
+      setUser: (name) => {
+        q('[data-c=user]').textContent = name ? `${name} 님으로 로그인됨` : '로그인하면 진행상황이 자동 저장돼요';
+        q('[data-c=gtext]').textContent = name ? `${name}(으)로 시작` : '구글 계정으로 시작';
+        q('[data-a=logout]').classList.toggle('hidden', !name);
+      },
     };
-    return { close, error: (m: string) => { (n.querySelector('[data-e]') as HTMLElement).textContent = m; } };
   },
 };
 
@@ -113,10 +126,12 @@ const hotbar = {
     root().appendChild(wrap);
     this.node = bar;
   },
-  render(slots: InventorySlot[], selected?: number) {
+  row: 0,
+  render(all: InventorySlot[], selected?: number) {
     if (!this.node) return;
     this.selected = selected ?? this.selected;
     selected = this.selected;
+    const slots = all.slice(this.row * 12, this.row * 12 + 12);
     this.node.innerHTML = '';
     const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
     slots.forEach((s, i) => {
@@ -128,6 +143,7 @@ const hotbar = {
       d.onclick = () => this.onSelect(i);
       this.node!.appendChild(d);
     });
+    const tag = el('div', 'flex flex-col items-center justify-center px-1 text-[10px] text-[#6e4024] leading-tight'); tag.innerHTML = `<span>${this.row + 1}/2</span><span class="opacity-70">Q</span>`; this.node!.appendChild(tag);
     const cur = slots[selected]?.itemId; const it = cur ? ITEMS[cur] : null;
     if (this.label) { this.label.textContent = it ? it.name : ''; this.label.style.opacity = it ? '1' : '0'; clearTimeout(this.labelTimer); this.labelTimer = window.setTimeout(() => { if (this.label) this.label.style.opacity = '0'; }, 1500); }
   },
@@ -137,25 +153,30 @@ const hotbar = {
 const dialogue = {
   node: null as HTMLDivElement | null, pages: [] as string[], page: 0, typing: 0, full: '', shown: 0, onClose: null as (() => void) | null,
   get open() { return !!this.node; },
+  /** 하단 대화창. sprite(=인물 id)가 있으면 오른쪽에 흉상 일러스트 + 이름표 */
   show(o: { name: string; title?: string; sprite?: string; color?: string; pages: string[]; hearts?: number }, onClose?: () => void) {
     this.close(false);
-    this.pages = o.pages; this.page = 0; this.onClose = onClose ?? null;
-    const n = el('div', 'absolute left-1/2 -translate-x-1/2 bottom-[110px] w-[min(860px,94vw)] pointer-events-auto toast-in');
-    const portrait = o.sprite ? `<div class="flex flex-col items-center gap-1 shrink-0">
-        <div class="portrait" style="background-image:url(assets/characters/${o.sprite}.png);background-size:${384 * 4}px auto;background-position:-${9 * 4}px -${7 * 4}px"></div>
-        <div class="px-2 py-0.5 text-white text-base px-outline" style="background:${o.color ?? '#a8683a'}">${o.name}</div>
-        ${o.hearts !== undefined ? `<div class="flex gap-0.5">${Array.from({ length: 5 }, (_, i) => `<span class="px-icon" style="${iconStyle('heart', 16)};${i < o.hearts! ? '' : 'filter:grayscale(1) opacity(.45)'}"></span>`).join('')}</div>` : ''}
-      </div>` : '';
-    n.innerHTML = `<div class="px-panel flex gap-5 items-start min-h-[170px]">${portrait}
-      <div class="flex-1 flex flex-col">
+    this.pages = o.pages.map(josa); this.page = 0; this.onClose = onClose ?? null;
+    const n = el('div', 'fixed left-1/2 -translate-x-1/2 bottom-3 w-[min(980px,97vw)] z-30 pointer-events-auto dlg-in');
+    const hearts = o.hearts !== undefined ? `<div class="flex gap-0.5 justify-center mt-1">${Array.from({ length: 5 }, (_, i) => `<span class="px-icon" style="${iconStyle('heart', 14)};${i < o.hearts! ? '' : 'filter:grayscale(1) opacity(.45)'}"></span>`).join('')}</div>` : '';
+    const portrait = o.sprite ? `<div class="shrink-0 flex flex-col items-center gap-1">
+        <div class="dlg-portrait" style="--pc:${o.color ?? '#a8683a'}"><img src="assets/portraits/${o.sprite}.png" alt="" onerror="this.style.display='none'"></div>
+        <div class="dlg-name" style="background:${o.color ?? '#a8683a'}">${o.name}</div>${hearts}</div>` : '';
+    n.innerHTML = `<div class="px-panel flex gap-4 items-stretch min-h-[178px]">
+      <div class="flex-1 flex flex-col min-w-0">
+        ${!o.sprite && o.name ? `<div class="self-start -mt-1 mb-1 px-3 py-0.5 text-white text-base px-outline" style="background:${o.color ?? '#a8683a'}">${o.name}</div>` : ''}
         ${o.title ? `<div class="text-sm text-[#8a5a32]">${o.title}</div>` : ''}
-        <div data-d="text" class="text-xl leading-relaxed whitespace-pre-wrap min-h-[96px]"></div>
+        <div data-d="text" class="text-[22px] leading-relaxed whitespace-pre-wrap flex-1"></div>
         <div class="self-end text-[#a8683a] bob text-lg">▼</div>
-      </div></div>`;
+      </div>${portrait}</div>`;
     n.onclick = () => this.advance();
     root().appendChild(n);
     this.node = n;
     this.type();
+  },
+  /** 컷신용: 대화가 끝날 때까지 기다림 */
+  say(o: { name: string; title?: string; sprite?: string; color?: string; pages: string[] }): Promise<void> {
+    return new Promise((res) => this.show(o, res));
   },
   type() {
     this.full = this.pages[this.page] ?? ''; this.shown = 0;
@@ -163,13 +184,15 @@ const dialogue = {
     const t = this.node!.querySelector('[data-d=text]') as HTMLElement;
     this.typing = window.setInterval(() => {
       this.shown++; t.textContent = this.full.slice(0, this.shown);
+      if (this.shown % 3 === 1 && this.full[this.shown - 1]?.trim()) sfx.play('talk');
       if (this.shown >= this.full.length) clearInterval(this.typing);
-    }, 28);
+    }, 30);
   },
   /** 반환값: 대화가 끝났으면 true */
   advance(): boolean {
     if (!this.node) return true;
     if (this.shown < this.full.length) { this.shown = this.full.length; (this.node.querySelector('[data-d=text]') as HTMLElement).textContent = this.full; clearInterval(this.typing); return false; }
+    sfx.play('blip');
     this.page++;
     if (this.page >= this.pages.length) { this.close(); return true; }
     this.type(); return false;
@@ -189,7 +212,8 @@ const toast = {
   push(text: string, icon?: string) {
     if (!this.node) return;
     const t = el('div', 'toast-in flex items-center gap-2 px-3 py-2 bg-[#fff8ec] border-4 border-[#a8683a] shadow-[0_4px_0_rgba(0,0,0,.3)] text-base');
-    t.innerHTML = `${icon ? `<span class="px-icon" style="${iconStyle(icon, 32)}"></span>` : ''}<span>${text}</span>`;
+    t.innerHTML = `${icon ? `<span class="px-icon" style="${iconStyle(icon, 32)}"></span>` : ''}<span>${josa(text)}</span>`;
+    if (icon) sfx.play(icon === 'gold' ? 'coin' : 'pickup');
     this.node.appendChild(t);
     while (this.node.children.length > 5) this.node.firstElementChild?.remove();
     setTimeout(() => { t.style.transition = 'opacity .5s, transform .5s'; t.style.opacity = '0'; t.style.transform = 'translateX(-20px)'; setTimeout(() => t.remove(), 500); }, 3800);
@@ -249,10 +273,10 @@ const help = {
     const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-panel text-lg leading-relaxed pointer-events-auto min-w-[420px]');
     n.innerHTML = `<div class="text-2xl mb-2 text-[#8a5a32]">조작법</div>
       <table class="w-full"><tbody>
-      ${[['WASD / 방향키', '이동'], ['Shift', '달리기'], ['Space / 좌클릭', '도구 사용 · 씨앗 심기'], ['E / 우클릭', '대화 · 수확 · 출하 · 조사'], ['1~0, -, = / 휠', '핫바 선택'], ['Enter', '채팅 (말풍선으로 표시)'], ['Tab', '접속자 목록 접기/펴기'], ['N', '(디버그) 다음 날로'], ['H', '도움말 닫기']]
+      ${[['WASD / 방향키', '이동'], ['Shift', '달리기'], ['Space / 좌클릭', '도구 사용 · 씨앗 심기'], ['E / 우클릭', '대화 · 수확 · 출하 · 조사'], ['1~0, -, = / 휠', '핫바 선택'], ['Enter', '채팅 (말풍선으로 표시)'], ['Tab (누른 채 마우스)', '감정표현 휠 — 떼면 표현'], ['L', '접속자 목록 접기/펴기'], ['P', '나의 루미 (파티·도감·가방)'], ['Q', '핫바 1줄 ↔ 2줄 전환'], ['N', '(디버그) 다음 날로'], ['H', '도움말 닫기']]
         .map(([k, v]) => `<tr><td class="pr-6 text-[#a8683a]">${k}</td><td>${v}</td></tr>`).join('')}
       </tbody></table>
-      <div class="mt-3 text-sm text-[#8a5a32]">팁: 괭이로 밭을 갈고 → 씨앗 심고 → 매일 물을 주면 자랍니다. 다 자란 작물은 E로 수확, 출하 상자에 넣으면 다음 날 골드!</div>`;
+      <div class="mt-3 text-sm text-[#8a5a32]">루미: 마을회관에서 파트너를 받고, 동쪽 1번 도로 풀숲을 걸으면 야생 루미가 나와요. 트레이너와 눈이 마주치면 배틀!<br>집: 문 앞에서 E 로 들어가요. 내 집 옷장에서 외형 변경, 침대에서 잠, 식탁에 음식을 차려 친구와 같이 먹을 수 있어요. 농장 우편함에서 친구 초대!<br>팁: 괭이로 밭을 갈고 → 씨앗 심고 → 매일 물을 주면 자랍니다. 다 자란 작물은 E로 수확, 출하 상자에 넣으면 다음 날 골드!</div>`;
     n.onclick = () => this.toggle();
     root().appendChild(n); this.node = n;
   },
@@ -299,12 +323,11 @@ const roster = {
     this.node.onclick = () => { this.collapsed = !this.collapsed; this.node!.querySelector('[data-r=list]')?.classList.toggle('hidden', this.collapsed); };
     root().appendChild(this.node);
   },
-  render(players: { id: string; name: string; map: string; me?: boolean }[]) {
+  render(players: { id: string; name: string; where: string; me?: boolean }[]) {
     if (!this.node) return;
-    const label: Record<string, string> = { farm: '농장', town: '마을' };
-    this.node.innerHTML = `<div class="flex justify-between gap-3"><span class="text-[#ffe58a]">접속 중 ${players.length}명</span><span class="opacity-60">Tab</span></div>
+    this.node.innerHTML = `<div class="flex justify-between gap-3"><span class="text-[#ffe58a]">접속 중 ${players.length}명</span><span class="opacity-60">L</span></div>
       <div data-r="list" class="mt-1 flex flex-col gap-0.5 ${this.collapsed ? 'hidden' : ''}">${players.map((p) =>
-        `<div class="flex justify-between gap-3"><span>${p.me ? '★ ' : ''}${p.name.replace(/</g, '&lt;')}</span><span class="opacity-75">${label[p.map] ?? p.map}</span></div>`).join('')}</div>`;
+        `<div class="flex justify-between gap-3"><span>${p.me ? '★ ' : ''}${p.name.replace(/</g, '&lt;')}</span><span class="opacity-75">${p.where.replace(/</g, '&lt;')}</span></div>`).join('')}</div>`;
   },
   toggle() { this.node?.click(); },
 };
@@ -320,8 +343,136 @@ const banner = {
   },
 };
 
+// ── 스타터 선택 ────────────────────────────────────────
+const typeChip = (t: string) => `<span class="px-2 text-xs text-white" style="background:${TYPE_COLORS[t as keyof typeof TYPE_COLORS] ?? '#888'}">${t}</span>`;
+const HELP_TEXT: Record<string, string> = { farm: '농사 도우미: 아침마다 작물에 물을 줘요', fish: '낚시 도우미: 희귀 물고기↑, 물뿌리개 에너지 0', mine: '채광 도우미: 광석 +1, 곡괭이 에너지 절약', forage: '채집 도우미: 채집물 2배', energy: '응원단: 도구 에너지 -1', exp: '배움 도우미: 경험치 +25%' };
+const starter = {
+  show(ids: string[], onPick: (id: string) => void, sub = '한별 박사: "셋 다 좋은 아이들이라네. 마음이 가는 아이를 데려가게!"') {
+    const n = el('div', 'fixed inset-0 z-30 flex items-center justify-center bg-[#0b0d18]/60 pointer-events-auto toast-in');
+    n.innerHTML = `<div class="px-panel w-[min(900px,96vw)]">
+      <div class="text-center text-2xl text-[#8a5a32] mb-1">함께할 파트너 루미를 골라 주세요</div>
+      <div class="text-center text-sm mb-4">${sub}</div>
+      <div class="grid grid-cols-3 gap-4">${ids.map((id) => { const sp = SPECIES[id]; return `
+        <button data-id="${id}" class="group flex flex-col items-center gap-2 p-3 bg-[#fff8ec] border-4 border-[#d8b67c] hover:border-[#e0a43a] hover:-translate-y-1 transition-all">
+          <span class="lumi-icon xl " style="background-image:url(assets/lumi/${id}.png)"></span>
+          <span class="text-2xl">${sp.name}</span>
+          <span class="flex gap-2 items-center">${typeChip(sp.type)}<span class="text-xs text-[#8a5a32]">${sp.kind}</span></span>
+          <span class="text-xs leading-snug text-left min-h-[48px]">${sp.description}</span>
+          <span class="grid grid-cols-4 gap-1 text-[11px] w-full text-center">${(['hp', 'atk', 'def', 'spd'] as const).map((k) => `<span class="bg-[#efe3c4] py-0.5">${{ hp: '체력', atk: '공격', def: '방어', spd: '속도' }[k]}<br><b>${sp.base[k]}</b></span>`).join('')}</span>
+          <span class="text-xs text-[#2f7a3a]">${HELP_TEXT[sp.helps]}</span>
+        </button>`; }).join('')}</div>
+      <div class="text-center text-xs mt-3 text-[#8a5a32]">상성: 풀 ▶ 물 ▶ 불 ▶ 풀</div></div>`;
+    n.querySelectorAll<HTMLButtonElement>('[data-id]').forEach((b) => { b.onmouseenter = () => sfx.play('blip'); b.onclick = () => { n.remove(); onPick(b.dataset.id!); }; });
+    root().appendChild(n);
+  },
+};
+
+// ── 파티 / 도감 패널 (P) ──────────────────────────────
+const party = {
+  node: null as HTMLDivElement | null,
+  get open() { return !!this.node; },
+  toggle(p: PlayerState, onPartner: (i: number) => void) { if (this.node) this.close(); else this.show(p, onPartner); },
+  show(p: PlayerState, onPartner: (i: number) => void) {
+    this.close();
+    const statsOf = (c: CreatureInst) => { const b = SPECIES[c.species].base, L = c.level; return { maxHp: Math.floor((b.hp * 2 * L) / 100) + L + 10 }; };
+    const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(760px,96vw)] pointer-events-auto toast-in');
+    n.innerHTML = `<div class="px-panel">
+      <div class="flex items-center justify-between mb-2"><span class="text-2xl text-[#8a5a32]">나의 루미</span>
+        <span class="text-sm">도감: 본 루미 ${p.seen.length} · 잡은 루미 ${p.caught.length} / ${Object.keys(SPECIES).length}</span></div>
+      ${p.party.length ? '' : '<div class="text-center py-6">아직 파트너가 없어요. 별빛 마을 <b>마을회관</b>의 한별 박사님을 찾아가 보세요!</div>'}
+      <div class="grid grid-cols-2 gap-2">${p.party.map((c, i) => { const sp = SPECIES[c.species], max = statsOf(c).maxHp, r = c.hp / max; return `
+        <div class="flex items-center gap-2 p-2 bg-[#fff8ec] border-2 ${i === 0 ? 'border-[#e0a43a]' : 'border-[#d8b67c]'}">
+          <span class="lumi-icon lg" style="background-image:url(assets/lumi/${c.species}.png);width:64px;height:64px;background-size:384px 64px"></span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2"><span class="text-lg">${i === 0 ? '★ ' : ''}${sp.name}</span>${typeChip(sp.type)}<span class="ml-auto">Lv.${c.level}</span></div>
+            <div class="h-2.5 bg-[#3b2414] mt-1"><div class="h-full" style="width:${r * 100}%;background:${r > 0.5 ? '#5fc04a' : r > 0.2 ? '#f0c84a' : '#e0473b'}"></div></div>
+            <div class="flex justify-between text-xs mt-0.5"><span>${c.hp}/${max}</span><span class="text-[#8a5a32]">${HELP_TEXT[sp.helps].split(':')[0]}</span></div>
+            ${i > 0 ? `<button data-partner="${i}" class="px-btn text-xs !px-2 !py-0.5 mt-1">파트너로 함께 걷기</button>` : '<div class="text-xs text-[#2f7a3a] mt-1">함께 걷는 중 · ' + HELP_TEXT[sp.helps].split(': ')[1] + '</div>'}
+          </div></div>`; }).join('')}</div>
+      <div class="flex flex-wrap gap-3 items-center mt-3 text-sm">
+        <span>가방:</span>${Object.entries(p.bag).filter(([, q]) => q > 0).map(([id, q]) => `<span class="flex items-center gap-1"><span class="px-icon" style="${iconStyle(ITEMS[id].icon, 24)}"></span>${ITEMS[id].name} ×${q}</span>`).join('') || '<span class="opacity-60">비어 있음</span>'}
+        <span class="ml-auto">배지:</span>${p.badges.map((b) => `<span class="px-icon" title="${ITEMS[b].name}" style="${iconStyle(ITEMS[b].icon, 28)}"></span>`).join('') || '<span class="opacity-60">없음</span>'}
+      </div>
+      <div class="text-right text-xs mt-2 text-[#8a5a32]">P 또는 Esc 로 닫기 · 보관함 ${p.box.length}마리</div></div>`;
+    n.querySelectorAll<HTMLButtonElement>('[data-partner]').forEach((b) => { b.onclick = () => { onPartner(Number(b.dataset.partner)); this.close(); }; });
+    root().appendChild(n); this.node = n;
+  },
+  close() { this.node?.remove(); this.node = null; },
+};
+
+// ── 낚시 찌 표시 ──────────────────────────────────────
+const fishing = {
+  node: null as HTMLDivElement | null,
+  show(text: string) { if (!this.node) { this.node = el('div', 'absolute left-1/2 top-[30%] -translate-x-1/2 text-5xl px-outline text-[#ffe58a] transition-transform'); root().appendChild(this.node); } this.node.textContent = text; this.node.style.transform = 'translate(-50%,0) scale(1.2)'; setTimeout(() => { if (this.node) this.node.style.transform = 'translate(-50%,0) scale(1)'; }, 120); },
+  hide() { this.node?.remove(); this.node = null; },
+};
+
+// ── 휴대폰 지도 (M) ────────────────────────────────────
+const PLACES: Record<string, [number, number, string]> = { farm: [26, 128, '별빛 농장'], town: [50, 122, '별빛 마을'], route1: [74, 120, '1번 도로'], windvale: [98, 116, '바람골 마을'] };
+const LOCKED: [number, number][] = [[150, 112], [196, 70], [120, 52], [52, 40], [200, 128]];
+const worldMap = {
+  node: null as HTMLDivElement | null,
+  get open() { return !!this.node; },
+  toggle(here: string, ownerName = '') {
+    if (this.node) { this.close(); return; }
+    sfx.play('phone');
+    const S = 3;
+    const n = el('div', 'fixed inset-0 z-40 flex items-center justify-center bg-[#0b0d18]/60 pointer-events-auto toast-in');
+    const pins = Object.entries(PLACES).map(([id, [x, y, name]]) => `
+      <div class="absolute -translate-x-1/2 -translate-y-full flex flex-col items-center" style="left:${x * S}px;top:${(y - 6) * S}px">
+        <span class="px-1.5 text-xs text-white px-outline whitespace-nowrap" style="background:${id === here ? '#e0473b' : '#3b2414cc'}">${name}</span>
+        ${id === here ? '<span class="text-2xl leading-none map-pin">📍</span>' : ''}</div>`).join('');
+    const locks = LOCKED.map(([x, y]) => `<span class="absolute -translate-x-1/2 -translate-y-1/2 text-lg text-[#7a8090] font-bold" style="left:${x * S}px;top:${y * S}px">???</span>`).join('');
+    n.innerHTML = `<div class="relative px-[26px] pt-[40px] pb-[26px] rounded-[28px] bg-[#2a2f3a] border-4 border-[#14161c] shadow-[0_10px_0_rgba(0,0,0,.35)]">
+      <div class="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-2 rounded-full bg-[#14161c]"></div>
+      <div class="absolute top-2 right-6 text-xs text-[#c9d1e0]">📶 지도</div>
+      <div class="relative" style="width:${240 * S}px;height:${160 * S}px;max-width:90vw">
+        <img src="assets/ui/worldmap.png" style="width:100%;height:100%;image-rendering:pixelated;border-radius:6px" alt="">
+        ${pins}${locks}
+      </div>
+      <div class="flex justify-between mt-2 text-sm text-[#c9d1e0]"><span>현재 위치: <b class="text-[#ffe58a]">${PLACES[here]?.[2] ?? '?'}${ownerName}</b></span><span>아직 가 보지 못한 곳은 구름에 가려져 있어요 · M / Esc 닫기</span></div>
+    </div>`;
+    n.onclick = (e) => { if (e.target === n) this.close(); };
+    root().appendChild(n); this.node = n;
+  },
+  close() { this.node?.remove(); this.node = null; },
+};
+
+// ── 일시정지 메뉴 (Esc) ────────────────────────────────
+const menu = {
+  node: null as HTMLDivElement | null,
+  get open() { return !!this.node; },
+  show(o: { storage: string; canSave: boolean; onSave: () => void; onReset: () => void; onTitle: () => void }) {
+    this.close();
+    sfx.play('menu');
+    const n = el('div', 'fixed inset-0 z-40 flex items-center justify-center bg-[#0b0d18]/55 pointer-events-auto toast-in');
+    const render = (confirm = false) => {
+      n.innerHTML = `<div class="px-panel w-[min(380px,92vw)] flex flex-col gap-3 items-stretch">
+        <div class="text-center text-2xl text-[#8a5a32]">일시정지</div>
+        <div class="text-center text-xs text-[#8a5a32]">저장: ${o.storage}</div>
+        ${confirm ? `<div class="text-center text-base">정말 처음부터 다시 시작할까요?<br><span class="text-sm text-[#c8453c]">캐릭터 · 가방 · 루미 · 농장이 모두 지워져요.</span></div>
+          <button data-a="yes" class="px-btn text-lg" style="background:linear-gradient(#e8705a,#c8453c)">네, 초기화할게요</button>
+          <button data-a="no" class="px-btn green text-lg">아니요</button>` : `
+          <button data-a="resume" class="px-btn green text-lg">계속하기</button>
+          ${o.canSave ? '<button data-a="save" class="px-btn text-lg">지금 저장하기</button>' : ''}
+          <button data-a="sound" class="px-btn text-lg">효과음: ${sfx.muted ? '끔 🔇' : '켬 🔊'}</button>
+          <button data-a="reset" class="px-btn text-lg" style="background:linear-gradient(#e8705a,#c8453c)">저장 초기화</button>
+          <button data-a="title" class="px-btn text-base !py-1.5">타이틀로</button>`}
+      </div>`;
+      const on = (k: string, f: () => void) => { const b = n.querySelector<HTMLButtonElement>(`[data-a=${k}]`); if (b) b.onclick = () => { sfx.play('blip'); f(); }; };
+      on('resume', () => this.close()); on('save', () => { o.onSave(); this.close(); });
+      on('sound', () => { sfx.setMuted(!sfx.muted); render(); }); on('reset', () => render(true));
+      on('no', () => render()); on('yes', () => { this.close(); o.onReset(); }); on('title', () => { this.close(); o.onTitle(); });
+    };
+    render();
+    root().appendChild(n); this.node = n;
+  },
+  close() { this.node?.remove(); this.node = null; },
+};
+
 let mounted = false;
 export const ui = {
-  loading, title, hud, hotbar, dialogue, toast, hint, transition, chat, help, shop, roster, banner,
+  creator, emoteWheel, mailbox, invitePrompt, worldMap, menu,
+  loading, title, hud, hotbar, dialogue, toast, hint, transition, chat, help, shop, roster, banner, starter, party, fishing,
   mountGame() { if (mounted) return; mounted = true; hud.mount(); hotbar.mount(); toast.mount(); hint.mount(); chat.mount(); },
 };

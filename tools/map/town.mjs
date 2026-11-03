@@ -26,7 +26,7 @@ export function buildTown() {
   m.path(8, 37, 50, 37, 2, S);              // 남쪽 주택가
   m.path(30, 28, 30, 37, 3, S);             // 광장 → 남쪽 거리
   m.path(30, 14, 30, 16, 3, S);             // 상점가 → 광장
-  m.path(41, 21, 50, 21, 2, S);             // 광장 → 시장
+  m.path(41, 21, W - 1, 21, 2, S);          // 광장 → 시장 → 동쪽 출구(1번 도로)
   m.path(5, 13, 5, 21, 2, S);               // 입구 → 상점가
   m.path(8, 22, 8, 37, 2, S);               // 서쪽 골목
   m.path(50, 13, 50, 37, 2, S);             // 동쪽 골목
@@ -66,7 +66,8 @@ export function buildTown() {
   m.place('barrel', smithDoor - 3, 12, { force: true }); m.place('crate', smithDoor - 2, 12, { force: true });
 
   // 6. 숲 테두리 (서쪽 입구 비움) + 자연
-  m.forest((x, y) => x < 6 && y >= 17 && y <= 24, 0.1);
+  m.forest((x, y) => (x < 6 && y >= 17 && y <= 24) || (x > W - 6 && y >= 19 && y <= 24), 0.1);
+  m.place('sign', W - 4, 19, { force: true, props: { interact: 'sign', text: '→ 1번 도로 · 산들길\n풀숲에는 야생 루미가 살아요. 파트너 없이 들어가지 마세요!' } });
   m.scatter('oak', 14); m.scatter('oak_apple', 4); m.scatter('pine', 4);
   m.scatter('bush', 10, { w: 2 }); m.scatter('bush_berry', 4, { w: 2 });
   m.scatter('rock', 4); m.scatter('tuft', 50, { block: false });
@@ -84,5 +85,7 @@ export function buildTown() {
   m.spawn('wp_home_sora', homeD, 37); m.spawn('wp_home_mio', homeE, 37);
   for (const [x, y] of [[27, 21], [34, 24], [30, 25], [36, 21]]) m.spawn('duck', x, y);
   m.warp(0, 19, 1, 4, 'farm', 'from_town');
+  m.warp(W - 1, 19, 1, 5, 'route1', 'from_town');
+  m.spawn('from_route1', W - 3, 21); m.spawn('wp_gate_e', W - 1, 21); m.spawn('wp_lab', hallDoor + 2, 14);
   return m;
 }

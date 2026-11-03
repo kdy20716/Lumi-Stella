@@ -87,11 +87,11 @@
     "schedule": [
       {
         "time": 600,
-        "map": "town",
-        "to": "wp_smithy",
+        "map": "in_smithy",
+        "to": "wp_forge",
         "idle": "work",
         "work": "hoe",
-        "face": "right"
+        "face": "left"
       },
       {
         "time": 1200,
@@ -102,10 +102,11 @@
       },
       {
         "time": 1300,
-        "map": "town",
-        "to": "wp_smithy",
+        "map": "in_smithy",
+        "to": "wp_forge",
         "idle": "work",
-        "work": "hoe"
+        "work": "hoe",
+        "face": "left"
       },
       {
         "time": 1700,
@@ -170,8 +171,8 @@
       },
       {
         "time": 900,
-        "map": "town",
-        "to": "wp_store",
+        "map": "in_store",
+        "to": "wp_clerk",
         "idle": "stand",
         "face": "down"
       },
@@ -360,8 +361,8 @@
   },
   "mayor": {
     "id": "mayor",
-    "name": "오 촌장",
-    "title": "별빛 마을 촌장",
+    "name": "오 이장",
+    "title": "별빛 마을 이장",
     "sprite": "mayor",
     "speed": 26,
     "color": "#8a2f3f",
@@ -447,8 +448,8 @@
       },
       {
         "time": 730,
-        "map": "town",
-        "to": "wp_cafe",
+        "map": "in_cafe",
+        "to": "wp_clerk",
         "idle": "stand",
         "face": "down"
       },
@@ -461,8 +462,8 @@
       },
       {
         "time": 1600,
-        "map": "town",
-        "to": "wp_cafe",
+        "map": "in_cafe",
+        "to": "wp_clerk",
         "idle": "stand",
         "face": "down"
       },
@@ -740,7 +741,7 @@
       ],
       "afternoon": [
         "마을 한 바퀴 도는 데 딱 한 시간! 제 신기록이에요.",
-        "촌장님은 편지를 늘 두 번 읽으세요. 안경을 찾느라고요."
+        "이장님은 편지를 늘 두 번 읽으세요. 안경을 찾느라고요."
       ],
       "evening": [
         "오늘 배달 끝! 다리가 후들후들해요."
@@ -751,6 +752,135 @@
       "random": [
         "편지 쓸 일 있으면 저한테 맡겨 주세요.",
         "가방이 무거워 보여요? 사실 절반은 간식이에요."
+      ]
+    }
+  },
+  "hanbyeol": {
+    "id": "hanbyeol",
+    "name": "한별 박사",
+    "title": "루미 연구가",
+    "sprite": "professor",
+    "speed": 30,
+    "color": "#3a8ab0",
+    "schedule": [
+      {
+        "time": 600,
+        "map": "in_lab",
+        "to": "wp_prof",
+        "idle": "stand",
+        "face": "down"
+      }
+    ],
+    "dialogue": {
+      "first": [
+        "오, 자네가 새로 온 농부로군! 나는 루미를 연구하는 한별일세.",
+        "마을회관 안에 내 연구실이 있다네. 들어와 보게!"
+      ],
+      "morning": [
+        "루미는 별빛이 땅에 내려와 생긴 정령이라는 설이 있지."
+      ],
+      "afternoon": [
+        "파트너와 함께 일하면 농사도 낚시도 훨씬 수월할 걸세.",
+        "1번 도로 풀숲엔 여러 루미가 산다네. 별빛 병을 넉넉히 챙기게."
+      ],
+      "evening": [
+        "밤에만 나타나는 루미도 있다는 사실, 알고 있나?"
+      ],
+      "rain": [
+        "비 오는 날엔 물 타입 루미가 신나 하지."
+      ],
+      "random": [
+        "도감을 채우는 건 내 평생의 꿈이라네. 자네가 도와주게!",
+        "루미가 지치면 마을회관에 데려오게. 내가 돌봐주지."
+      ]
+    }
+  },
+  "daon": {
+    "id": "daon",
+    "name": "다온",
+    "title": "루미 쉼터 돌보미",
+    "sprite": "nurse",
+    "speed": 28,
+    "color": "#e07a8a",
+    "schedule": [
+      {
+        "time": 600,
+        "map": "in_center",
+        "to": "wp_clerk",
+        "idle": "stand",
+        "face": "down"
+      }
+    ],
+    "dialogue": {
+      "first": [
+        "루미 쉼터에 어서 오세요! 저는 돌보미 다온이에요.",
+        "쉼터 문 앞에서 말을 걸면 루미들을 건강하게 회복시켜 드려요."
+      ],
+      "morning": [
+        "오늘도 루미들이 건강하길!"
+      ],
+      "afternoon": [
+        "관장님 루미들은 바람처럼 빨라요. 조심하세요!"
+      ],
+      "evening": [
+        "밤엔 '반짝'이들이 쉼터 창가로 놀러 와요."
+      ],
+      "rain": [
+        "비 오는 날엔 쉼터가 붐벼요."
+      ],
+      "random": [
+        "회복 꿀은 상점에서 팔아요. 배틀 중에 쓰면 체력이 회복돼요."
+      ]
+    }
+  },
+  "gureum": {
+    "id": "gureum",
+    "name": "구름",
+    "title": "바람골 상점 주인",
+    "sprite": "villager",
+    "speed": 30,
+    "color": "#a8523a",
+    "schedule": [
+      {
+        "time": 600,
+        "map": "windvale",
+        "to": "wp_plaza",
+        "idle": "wander",
+        "radius": 2
+      },
+      {
+        "time": 800,
+        "map": "in_shop_w",
+        "to": "wp_clerk",
+        "idle": "stand",
+        "face": "down"
+      },
+      {
+        "time": 2000,
+        "map": "windvale",
+        "to": "wp_home_v",
+        "idle": "leave"
+      }
+    ],
+    "dialogue": {
+      "first": [
+        "바람골에 온 걸 환영해요! 상점을 하는 구름이에요.",
+        "별빛 병이 떨어지면 언제든 들르세요."
+      ],
+      "morning": [
+        "풍차가 잘 돌아가는 날은 장사도 잘 돼요."
+      ],
+      "afternoon": [
+        "반짝 별빛 병은 비싸지만 아스트라 같은 희귀 루미에겐 꼭 필요할걸요?"
+      ],
+      "evening": [
+        "오늘 장사 끝! 내일 또 와요."
+      ],
+      "rain": [
+        "비 오는 날엔 풍차도 쉬어요."
+      ],
+      "random": [
+        "관장 세나는 제 소꿉친구예요. 엄청 강하죠."
       ]
     }
   }

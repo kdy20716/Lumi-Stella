@@ -1,0 +1,149 @@
+{
+  "minkyu": {
+    "id": "minkyu",
+    "name": "민규",
+    "title": "곤충소년",
+    "sprite": "bugkid",
+    "map": "route1",
+    "sight": 4,
+    "team": [
+      [
+        "posil",
+        4
+      ],
+      [
+        "poreureu",
+        4
+      ]
+    ],
+    "reward": 120,
+    "intro": [
+      "어이! 눈이 마주쳤으면 승부다!",
+      "내 루미들은 풀숲에서 직접 잡은 녀석들이라고!"
+    ],
+    "defeat": [
+      "으악, 내 루미들이...!"
+    ],
+    "after": [
+      "풀숲 깊은 곳엔 '반짝'도 산대. 밤에만 나온다던데."
+    ]
+  },
+  "harin": {
+    "id": "harin",
+    "name": "하린",
+    "title": "소녀",
+    "sprite": "lass",
+    "map": "route1",
+    "sight": 4,
+    "team": [
+      [
+        "kongkong",
+        5
+      ],
+      [
+        "pongpong",
+        5
+      ]
+    ],
+    "reward": 150,
+    "intro": [
+      "와, 귀여운 루미를 데리고 있네! 나랑 배틀하자!"
+    ],
+    "defeat": [
+      "내 콩콩이... 다음엔 안 질 거야!"
+    ],
+    "after": [
+      "루미가 지치면 바람골 마을 루미 쉼터에서 쉬게 해 줘."
+    ]
+  },
+  "yongsu": {
+    "id": "yongsu",
+    "name": "용수",
+    "title": "낚시꾼",
+    "sprite": "fisher",
+    "map": "route1",
+    "sight": 4,
+    "team": [
+      [
+        "pongpong",
+        6
+      ],
+      [
+        "mallang",
+        6
+      ]
+    ],
+    "reward": 180,
+    "intro": [
+      "쉿, 물고기가 도망가잖아! ...이렇게 된 거 한판 붙자!"
+    ],
+    "defeat": [
+      "허허, 오늘은 물고기도 배틀도 꽝이구먼."
+    ],
+    "after": [
+      "낚시하다 보면 가끔 물속 루미가 걸려 나와. 놀라지 말라고."
+    ]
+  },
+  "daecheol": {
+    "id": "daecheol",
+    "name": "대철",
+    "title": "등산가",
+    "sprite": "hiker",
+    "map": "route1",
+    "sight": 4,
+    "team": [
+      [
+        "jagal",
+        7
+      ],
+      [
+        "ikkigom",
+        6
+      ]
+    ],
+    "reward": 220,
+    "intro": [
+      "우하하! 산사나이의 단단한 루미를 보여주지!"
+    ],
+    "defeat": [
+      "크윽, 바위보다 단단한 녀석이군!"
+    ],
+    "after": [
+      "채석장 바위에선 별가루 결정도 나온다네. 귀한 물건이지."
+    ]
+  },
+  "sena": {
+    "id": "sena",
+    "name": "세나",
+    "title": "바람골 도장 관장",
+    "sprite": "leader",
+    "map": "in_gym",
+    "sight": 0,
+    "team": [
+      [
+        "poreureu",
+        9
+      ],
+      [
+        "busit",
+        9
+      ],
+      [
+        "ikkigom",
+        10
+      ]
+    ],
+    "reward": 600,
+    "badge": "badge_wind",
+    "intro": [
+      "바람골 도장에 온 걸 환영해. 나는 관장 세나.",
+      "바람은 보이지 않지만 모든 걸 움직여. 네 루미와의 유대도 그럴까? 보여줘!"
+    ],
+    "defeat": [
+      "...멋진 바람이었어. 이 '바람 배지'를 받아."
+    ],
+    "after": [
+      "배지를 모으면 더 먼 곳까지 모험할 수 있을 거야. 2번 도로가 열리면 다시 만나자."
+    ]
+  }
+}

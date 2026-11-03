@@ -148,7 +148,7 @@ export class MapBuilder {
       ],
       tilesets: [{ firstgid: 1, name: 'tileset', image: '../tiles/tileset.png', imagewidth: TILESET_COLS * T, imageheight: TILESET_ROWS * T, tilewidth: T, tileheight: T, columns: TILESET_COLS, tilecount: TILESET_COLS * TILESET_ROWS, margin: 0, spacing: 0 }],
       layers: [
-        tileLayer(1, 'Ground', ground, { offsetx: 8, offsety: 8 }),
+        tileLayer(1, 'Ground', this.noGround ? ground.map(() => 0) : ground, { offsetx: 8, offsety: 8 }),
         tileLayer(2, 'Decor', this.decor),
         tileLayer(3, 'Bridge', bridge),
         tileLayer(4, 'Collision', collision, { visible: false }),

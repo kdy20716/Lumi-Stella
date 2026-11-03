@@ -42,6 +42,26 @@ function swing(kind) {
     ];
   };
 }
+function fishing(dir) {
+  if (dir === 'down') return [
+    { grip: [16, 8], tip: [16, -6], kind: 'rod', raise: true },
+    { grip: [16, 17], tip: [16, 33], kind: 'rod', bob: 1 },
+    { grip: [16, 18], tip: [16, 33], kind: 'rod' },
+    { grip: [16, 18], tip: [16, 34], kind: 'rod', bob: 1 },
+  ];
+  if (dir === 'up') return [
+    { grip: [16, 12], tip: [16, -5], kind: 'rod', behind: true, raise: true },
+    { grip: [16, 16], tip: [16, -6], kind: 'rod', behind: true },
+    { grip: [16, 16], tip: [16, -6], kind: 'rod', behind: true, bob: 1 },
+    { grip: [16, 16], tip: [16, -7], kind: 'rod', behind: true },
+  ];
+  return [
+    { grip: [17, 12], tip: [26, -3], kind: 'rod', raise: true },
+    { grip: [12, 18], tip: [-4, 10], kind: 'rod', lean: 1 },
+    { grip: [12, 18], tip: [-4, 11], kind: 'rod' },
+    { grip: [12, 18], tip: [-4, 10], kind: 'rod', bob: 1 },
+  ];
+}
 const water = (dir) => [0, 1, 2, 3].map((f) => ({ can: { dir, tilt: f > 0, f } }));
 const interact = (dir) => dir === 'side'
   ? [{ reach: [12, 20] }, { reach: [8, 20], bob: 1 }, { reach: [8, 21], bob: 1 }, { reach: [12, 21] }]
@@ -57,6 +77,8 @@ export const ANIMS = [
   { key: 'axe', gen: swing('axe'), fps: 14, repeat: 0 },
   { key: 'water', gen: water, fps: 7, repeat: 0 },
   { key: 'interact', gen: interact, fps: 9, repeat: 0 },
+  { key: 'pick', gen: swing('pick'), fps: 14, repeat: 0 },
+  { key: 'fish', gen: fishing, fps: 6, repeat: 0 },
 ];
 
 // ── 그리기 ──────────────────────────────────────────────
@@ -252,6 +274,15 @@ function drawTool(p, kind, grip, tip) {
   } else if (kind === 'axe') {
     if (vertical) { p.rect(tx - 3, ty - 1, 4, 4, m.base); p.rect(tx - 3, ty - 1, 1, 4, m.l2); p.rect(tx, ty - 1, 1, 4, m.d1); p.px(tx + 1, ty, handle.d1); }
     else { const s = Math.sign(dx) || 1; p.rect(tx - 1, ty - 3, 3, 4, m.base); p.rect(tx - 1, ty - 3, 3, 1, m.l2); p.px(s < 0 ? tx - 1 : tx + 1, ty - 2, m.l2); p.rect(tx - 1, ty, 3, 1, m.d1); }
+  } else if (kind === 'pick') {
+    // 곡괭이: 양쪽으로 뻗은 휘어진 날
+    if (vertical) { p.line(tx - 4, ty + 1, tx - 1, ty - 1, m.base); p.line(tx + 1, ty - 1, tx + 4, ty + 1, m.base); p.px(tx, ty - 1, m.l2); p.px(tx - 4, ty + 2, m.d1); p.px(tx + 4, ty + 2, m.d1); }
+    else { p.line(tx, ty - 4, tx - 1, ty - 1, m.base); p.line(tx - 1, ty + 1, tx, ty + 4, m.base); p.px(tx - 1, ty, m.l2); p.px(tx + 1, ty - 4, m.d1); p.px(tx + 1, ty + 4, m.d1); }
+  } else if (kind === 'rod') {
+    // 낚싯대: 손잡이 + 가는 낚싯대 + 낚싯줄
+    p.line(grip[0], grip[1], tip[0], tip[1], '#c8a070');
+    p.px(grip[0], grip[1], '#7a2a2a'); p.px(tip[0], tip[1], '#ff5a5a');
+    if (!vertical || dy > 0) p.line(tx, ty, tx, ty + 6, '#eef6ff');
   }
 }
 

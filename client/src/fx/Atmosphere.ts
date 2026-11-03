@@ -25,6 +25,7 @@ export class Atmosphere {
   private fireflies: { img: Phaser.GameObjects.Image; t: number; bx: number; by: number }[] = [];
   light = 0;
   private weather: Weather = 'sunny';
+  private indoor = false;
 
   constructor(private scene: Phaser.Scene, private world: World) {
     // 화면을 덮는 곱하기(MULTIPLY) 레이어로 시간대 색감 연출
@@ -32,8 +33,9 @@ export class Atmosphere {
 
     for (const l of world.lights) this.addGlow(l.x, l.y, l.scale, l.tint, l.base);
 
+    this.indoor = world.interior;
     // 구름 그림자
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < (this.indoor ? 0 : 5); i++) {
       this.clouds.push(scene.add.image(Math.random() * world.widthPx, Math.random() * world.heightPx, 'cloud')
         .setScale(1.6 + Math.random()).setAlpha(0.13).setDepth(DEPTH.overlay - 5));
     }
@@ -48,6 +50,7 @@ export class Atmosphere {
       speedY: { min: 240, max: 300 }, speedX: { min: -50, max: -35 }, quantity: 3, frequency: 14, alpha: { start: 0.75, end: 0.2 }, emitting: false,
     }).setDepth(DEPTH.weather);
 
+    if (this.indoor) return;
     for (let i = 0; i < 9; i++) this.butterflies.push(new Butterfly(scene, 100 + Math.random() * (world.widthPx - 200), 80 + Math.random() * (world.heightPx - 160), { w: world.widthPx, h: world.heightPx }));
     for (let i = 0; i < 26; i++) {
       const water = world.mapId === 'town' ? { x: 360, y: 290, w: 270, h: 160 } : { x: 100, y: 400, w: 200, h: 180 };
@@ -63,7 +66,7 @@ export class Atmosphere {
     this.glows.push({ img, base, phase: Math.random() * 10 });
   }
 
-  setWeather(w: Weather) { this.weather = w; if (w === 'rain') this.rain.start(); else this.rain.stop(); }
+  setWeather(w: Weather) { this.weather = w; if (w === 'rain' && !this.indoor) this.rain.start(); else this.rain.stop(); }
 
   update(dt: number, minutes: number) {
     // 키프레임 보간
@@ -73,6 +76,8 @@ export class Atmosphere {
     let color = lerpColor(c0, c1, t);
     this.light = Phaser.Math.Linear(l0, l1, t);
     if (this.weather === 'rain') { color = lerpColor(color, 0x8a96b0, 0.45); this.light = Math.max(this.light, 0.35); }
+    // 실내: 바깥보다 훨씬 은은하게 (밤엔 따뜻한 조명)
+    if (this.indoor) { color = lerpColor(0xffffff, 0xe0cce0, this.light * 0.7); this.light = 0.35 + this.light * 0.6; }
 
     const v = this.scene.cameras.main.worldView;
     this.overlay.setPosition(v.x - 4, v.y - 4).setDisplaySize(v.width + 8, v.height + 8).setTint(color);

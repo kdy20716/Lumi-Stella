@@ -24,7 +24,7 @@ export function buildFarm() {
   for (let y = dockTop; y < dockTop + 4; y++) for (const x of [12, 13]) m.setBridge(x, y, ROW.WOOD, y === dockTop + 3 ? WOOD.DOCK_POST : WOOD.DOCK_H);
 
   // 4. 농가 + 마당
-  m.place('house', 20, 11, { w: 7, h: 4, force: true, props: { interact: 'door' } });
+  m.place('house', 20, 11, { w: 7, h: 4, force: true, props: { interact: 'door', doorCellX: 23 } });
   m.reserve(18, 4, 29, 13);
   m.place('well', 15, 11, { w: 2, h: 2, force: true }); m.reserve(14, 9, 17, 12);
   m.place('shipping_bin', 28, 11, { w: 2, force: true, props: { interact: 'ship' } }); m.reserve(27, 10, 30, 12);

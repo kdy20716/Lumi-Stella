@@ -1,0 +1,282 @@
+{
+  "tackle": {
+    "id": "tackle",
+    "name": "몸통박치기",
+    "type": "노말",
+    "power": 40,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "scratch": {
+    "id": "scratch",
+    "name": "할퀴기",
+    "type": "노말",
+    "power": 40,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "growl": {
+    "id": "growl",
+    "name": "으르렁",
+    "type": "노말",
+    "power": 0,
+    "accuracy": 100,
+    "category": "debuffAtk",
+    "priority": 0,
+    "description": "상대의 공격을 낮춘다"
+  },
+  "quick_attack": {
+    "id": "quick_attack",
+    "name": "전광석화",
+    "type": "노말",
+    "power": 40,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 1,
+    "description": "반드시 먼저 공격한다"
+  },
+  "rollout": {
+    "id": "rollout",
+    "name": "구르기",
+    "type": "노말",
+    "power": 60,
+    "accuracy": 90,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "leaf_toss": {
+    "id": "leaf_toss",
+    "name": "잎날리기",
+    "type": "풀",
+    "power": 45,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "vine_whip": {
+    "id": "vine_whip",
+    "name": "덩굴채찍",
+    "type": "풀",
+    "power": 60,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "photosynth": {
+    "id": "photosynth",
+    "name": "광합성",
+    "type": "풀",
+    "power": 0,
+    "accuracy": 100,
+    "category": "heal",
+    "priority": 0,
+    "description": "체력을 절반 회복한다"
+  },
+  "spore_burst": {
+    "id": "spore_burst",
+    "name": "포자폭발",
+    "type": "풀",
+    "power": 75,
+    "accuracy": 90,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "spore_powder": {
+    "id": "spore_powder",
+    "name": "포자가루",
+    "type": "풀",
+    "power": 0,
+    "accuracy": 95,
+    "category": "debuffDef",
+    "priority": 0,
+    "description": "상대의 방어를 낮춘다"
+  },
+  "bubble": {
+    "id": "bubble",
+    "name": "거품",
+    "type": "물",
+    "power": 40,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "water_gun": {
+    "id": "water_gun",
+    "name": "물대포",
+    "type": "물",
+    "power": 55,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "aqua_veil": {
+    "id": "aqua_veil",
+    "name": "물의 장막",
+    "type": "물",
+    "power": 0,
+    "accuracy": 100,
+    "category": "buffDef",
+    "priority": 0,
+    "description": "자신의 방어를 올린다"
+  },
+  "wave_ride": {
+    "id": "wave_ride",
+    "name": "파도타기",
+    "type": "물",
+    "power": 75,
+    "accuracy": 90,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "ember": {
+    "id": "ember",
+    "name": "불씨",
+    "type": "불",
+    "power": 45,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "flame_tail": {
+    "id": "flame_tail",
+    "name": "불꽃꼬리",
+    "type": "불",
+    "power": 60,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "heatwave": {
+    "id": "heatwave",
+    "name": "열기",
+    "type": "불",
+    "power": 80,
+    "accuracy": 85,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "rock_throw": {
+    "id": "rock_throw",
+    "name": "돌던지기",
+    "type": "땅",
+    "power": 50,
+    "accuracy": 90,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "sand_throw": {
+    "id": "sand_throw",
+    "name": "모래뿌리기",
+    "type": "땅",
+    "power": 0,
+    "accuracy": 100,
+    "category": "debuffDef",
+    "priority": 0,
+    "description": "상대의 방어를 낮춘다"
+  },
+  "quake": {
+    "id": "quake",
+    "name": "땅울림",
+    "type": "땅",
+    "power": 75,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "peck": {
+    "id": "peck",
+    "name": "쪼기",
+    "type": "바람",
+    "power": 40,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "gust": {
+    "id": "gust",
+    "name": "바람일으키기",
+    "type": "바람",
+    "power": 50,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "whirlwind": {
+    "id": "whirlwind",
+    "name": "회오리",
+    "type": "바람",
+    "power": 75,
+    "accuracy": 90,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "flash": {
+    "id": "flash",
+    "name": "섬광",
+    "type": "빛",
+    "power": 45,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "starlight": {
+    "id": "starlight",
+    "name": "별빛세례",
+    "type": "빛",
+    "power": 65,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "healing_light": {
+    "id": "healing_light",
+    "name": "치유의 빛",
+    "type": "빛",
+    "power": 0,
+    "accuracy": 100,
+    "category": "heal",
+    "priority": 0,
+    "description": "체력을 절반 회복한다"
+  },
+  "meteor": {
+    "id": "meteor",
+    "name": "유성낙하",
+    "type": "빛",
+    "power": 90,
+    "accuracy": 90,
+    "category": "atk",
+    "priority": 0,
+    "description": ""
+  },
+  "puff_up": {
+    "id": "puff_up",
+    "name": "으쓱으쓱",
+    "type": "노말",
+    "power": 0,
+    "accuracy": 100,
+    "category": "buffDef",
+    "priority": 0,
+    "description": "자신만만하게 몸을 부풀려 방어를 올린다."
+  }
+}

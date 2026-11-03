@@ -61,7 +61,17 @@ export function buildCrops() {
 }
 
 // ── 아이템 아이콘 16x16 ─────────────────────────────────
-export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_cauliflower', 'seeds_tomato', 'seeds_pumpkin', 'parsnip', 'cauliflower', 'tomato', 'pumpkin', 'gold', 'energy', 'sun', 'rain', 'heart', 'coffee', 'bread', 'cake'];
+function fish(t, b, l, d, stripe = false, whisker = false) {
+  t.ellipse(7, 8, 5.5, 3, b); t.ellipse(6, 7, 3.5, 1.5, l);
+  t.line(12, 8, 15, 5, b); t.line(12, 8, 15, 11, b); t.line(13, 8, 15, 8, d);
+  t.set(4, 7, '#1e1424'); t.hline(4, 10, 6, d);
+  if (stripe) t.hline(3, 8, 9, '#ff8ab0');
+  if (whisker) { t.line(2, 8, 0, 10, d); t.line(2, 9, 1, 11, d); }
+}
+function tri3(t) { t.set(8, 3, '#fff4b0'); t.set(7, 4, '#ffd65a'); t.set(9, 4, '#ffd65a'); }
+export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_cauliflower', 'seeds_tomato', 'seeds_pumpkin', 'parsnip', 'cauliflower', 'tomato', 'pumpkin', 'gold', 'energy', 'sun', 'rain', 'heart', 'coffee', 'bread', 'cake',
+  'pickaxe', 'rod', 'jar', 'super_jar', 'potion', 'badge_wind', 'fish_crucian', 'fish_trout', 'fish_catfish', 'fish_rainbow',
+  'berry', 'wild_mushroom', 'dandelion', 'herb', 'stone', 'copper_ore', 'iron_ore', 'star_shard', 'lumi'];
 export function buildIcons() {
   const img = new Img(16 * ICONS.length, 16);
   const m = P.metal, w = P.wood;
@@ -76,6 +86,25 @@ export function buildIcons() {
     coffee: (t) => { t.rect(3, 6, 8, 8, '#fff8ec'); t.rect(3, 6, 8, 1, '#ffffff'); t.rect(4, 7, 6, 2, '#6b3e22'); t.rect(10, 13, 1, 1, '#d9cbb3'); t.rect(11, 8, 2, 4, '#fff8ec'); t.set(12, 9, '#d9cbb3'); t.rect(2, 14, 11, 1, '#d9cbb3'); t.set(5, 3, '#c9c0b4'); t.set(6, 2, '#c9c0b4'); t.set(8, 4, '#c9c0b4'); t.set(8, 3, '#c9c0b4'); },
     bread: (t) => { t.ellipse(8, 9, 6.5, 4.5, '#c9853f'); t.ellipse(7.5, 8, 5.5, 3, '#e0a65a'); for (const x of [5, 8, 11]) t.line(x, 6, x - 1, 10, '#a8692c'); t.set(5, 7, '#f6d28e'); },
     cake: (t) => { t.rect(3, 8, 10, 6, '#f6e6c8'); t.rect(3, 8, 10, 2, '#ff9cbc'); t.set(4, 10, '#ff9cbc'); t.set(8, 10, '#ff9cbc'); t.set(11, 10, '#ff9cbc'); t.rect(3, 11, 10, 1, '#e8a0b0'); t.rect(7, 4, 2, 4, '#d8473b'); t.set(7, 4, '#ff8a7a'); t.vline(8, 2, 2, P.leaf.base); },
+    pickaxe: (t) => { t.line(4, 14, 10, 5, w.l1); t.line(5, 14, 11, 5, w.base); t.line(4, 5, 8, 3, m.base); t.line(8, 3, 13, 4, m.base); t.line(13, 4, 14, 8, m.base); t.set(4, 6, m.d1); t.set(14, 9, m.d1); t.set(8, 2, m.l2); },
+    rod: (t) => { t.line(3, 14, 13, 2, '#c8a070'); t.line(4, 14, 6, 11, '#7a2a2a'); t.set(13, 2, '#ff5a5a'); t.line(13, 3, 13, 9, '#eef6ff'); t.rect(12, 10, 3, 3, '#ff5a5a'); t.set(12, 10, '#ffffff'); },
+    jar: (t) => { t.rrect(3, 4, 10, 10, '#bfe8ff', 2); t.rect(4, 5, 2, 6, '#ffffff'); t.rect(5, 2, 6, 2, P.wood.l1); t.rect(5, 2, 6, 1, P.wood.l2); t.set(9, 9, '#ffd65a'); t.set(8, 10, '#fff4b0'); t.set(10, 8, '#ffd65a'); t.set(9, 11, '#ffd65a'); },
+    super_jar: (t) => { t.rrect(3, 4, 10, 10, '#d8c8ff', 2); t.rect(4, 5, 2, 6, '#ffffff'); t.rect(5, 2, 6, 2, P.gold.base); t.rect(5, 2, 6, 1, P.gold.l1); t.set(9, 9, '#ff9cbc'); t.set(8, 10, '#fff4b0'); t.set(10, 8, '#ffd65a'); t.set(9, 11, '#a88aff'); },
+    potion: (t) => { t.rrect(4, 6, 8, 8, '#ffd08a', 2); t.rect(5, 9, 6, 4, '#ff9a5a'); t.rect(6, 3, 4, 3, '#f2e6cf'); t.rect(5, 2, 6, 1, P.wood.base); t.rect(5, 7, 2, 2, '#ffffff'); t.rect(7, 10, 2, 2, '#ffffff'); },
+    badge_wind: (t) => { t.circle(8, 8, 6, '#3ab0a8'); t.circle(8, 8, 4, '#7ad8d0'); t.line(5, 7, 11, 6, '#ffffff'); t.line(5, 9, 10, 9, '#ffffff'); t.line(6, 11, 9, 11, '#ffffff'); t.set(8, 3, '#ffd65a'); },
+    berry: (t) => { for (const [x, y] of [[5, 8], [9, 7], [7, 11], [11, 10]]) { t.circle(x, y, 2.2, '#8f3cc4'); t.set(x - 1, y - 1, '#c58af0'); } t.line(7, 3, 8, 6, P.leaf.d1); t.rect(8, 3, 3, 2, P.leaf.base); },
+    wild_mushroom: (t) => { t.rect(7, 8, 3, 6, '#f1e3c8'); t.ellipse(8, 7, 5.5, 3.5, '#c9763b'); t.set(6, 5, '#f2b080'); t.set(10, 6, '#fff2dc'); t.hline(4, 9, 9, '#8a4a20'); },
+    dandelion: (t) => { t.vline(8, 7, 8, P.leaf.d1); t.set(7, 12, P.leaf.base); t.set(9, 11, P.leaf.base); t.circle(8, 5, 3.5, '#ffd65a'); t.circle(8, 5, 1.5, '#e0a43a'); t.set(6, 3, '#fff4b0'); },
+    herb: (t) => { for (const [dx, dy] of [[-1, -1], [1, -1], [0, -1.4]]) { for (let i = 0; i < 6; i++) t.set(8 + dx * i * 0.8, 13 + dy * i * 1.4, i > 3 ? '#9ae06a' : '#4fae4a'); } t.rect(6, 12, 5, 2, '#d8c8a0'); t.hline(6, 12, 5, '#b8a070'); },
+    stone: (t) => { t.ellipse(8, 9, 5.5, 4.5, P.stone.base); t.ellipse(7, 8, 3.5, 2.5, P.stone.l1); t.set(6, 7, P.stone.l2); t.hline(5, 12, 6, P.stone.d1); },
+    copper_ore: (t) => { t.ellipse(8, 9, 5.5, 4.5, P.stone.d1); for (const [x, y] of [[6, 8], [9, 7], [8, 10]]) { t.rect(x, y, 2, 2, '#c9733a'); t.set(x, y, '#f0a060'); } },
+    iron_ore: (t) => { t.ellipse(8, 9, 5.5, 4.5, P.stone.d1); for (const [x, y] of [[6, 8], [9, 7], [8, 10]]) { t.rect(x, y, 2, 2, '#a8b0c8'); t.set(x, y, '#e0e8f8'); } },
+    star_shard: (t) => { t.line(8, 2, 5, 9, '#8a7ae8'); t.line(8, 2, 11, 9, '#8a7ae8'); t.line(5, 9, 8, 14, '#5a4ab8'); t.line(11, 9, 8, 14, '#5a4ab8'); t.rect(7, 5, 2, 6, '#c8c0ff'); t.set(7, 5, '#ffffff'); t.set(12, 3, '#fff4b0'); t.set(3, 12, '#fff4b0'); },
+    lumi: (t) => { t.circle(8, 9, 5, '#ffd65a'); t.circle(7, 8, 3, '#fff4b0'); t.set(6, 8, '#1e1424'); t.set(9, 8, '#1e1424'); tri3(t); },
+    fish_crucian: (t) => fish(t, '#b8a060', '#e8d090', '#7a6a3a'),
+    fish_trout: (t) => fish(t, '#7a9a8a', '#c8e0d0', '#4a6a5a', true),
+    fish_catfish: (t) => fish(t, '#6a5a4a', '#a89070', '#3a3028', false, true),
+    fish_rainbow: (t) => fish(t, '#8a9ad8', '#ffb0d0', '#5a6aa8', true),
     heart: (t) => { const h = '#e0475b'; t.rect(3, 4, 4, 4, h); t.rect(9, 4, 4, 4, h); t.rect(4, 7, 8, 3, h); t.rect(5, 10, 6, 2, h); t.rect(7, 12, 2, 1, h); t.rect(4, 5, 2, 1, '#ff9fb0'); },
   };
   const seedCol = { parsnip: '#e6d29a', cauliflower: '#9fd06a', tomato: '#e0574b', pumpkin: '#e8892e' };

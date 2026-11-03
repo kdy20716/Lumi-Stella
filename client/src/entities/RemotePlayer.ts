@@ -6,6 +6,8 @@ import { Character } from './Character';
 /** 다른 접속자: 서버 스냅샷을 버퍼링 → 약간 과거 시점으로 선형 보간(Entity Interpolation) */
 export class RemotePlayer extends Character {
   private buf: { t: number; x: number; y: number; dir: Dir; anim: string }[] = [];
+  look = '';
+  battleEmote = false;
   private static DELAY = 110; // ms: 보간 지연 (스냅샷 15Hz 기준 1~2개 버퍼)
 
   constructor(scene: Phaser.Scene, sheet: string, x: number, y: number, meta: CharacterMeta, readonly id: string, name: string, zoom: number) {

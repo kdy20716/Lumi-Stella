@@ -15,7 +15,9 @@
     "server": "tsx server/index.ts"
   },
   "dependencies": {
-    "phaser": "^3.90.0"
+    "phaser": "^3.90.0",
+    "firebase": "^12.0.0",
+    "firebase-admin": "^13.0.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.8",

@@ -2,3 +2,8 @@ node_modules/
 dist/
 .DS_Store
 *.log
+
+# 서버 저장 데이터 / Firebase 비공개 키 (절대 커밋 금지)
+server/saves/
+server/serviceAccountKey.json
+*-firebase-adminsdk-*.json

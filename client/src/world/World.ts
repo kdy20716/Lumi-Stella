@@ -17,11 +17,12 @@ export interface WorldObject {
 }
 
 const TALL = new Set(['oak', 'oak_apple', 'pine', 'house', 'board', 'stall', 'stall_b']);
-const NON_BLOCKING = new Set(['tuft']);
+// 풍차 날개 회전 축 위치는 맵 스폰 'windmill_hub'
+const NON_BLOCKING = new Set(['tuft', 'tallgrass']);
 // 그림자 크기 (가로 배율, 세로 배율)
 const SHADOW: Record<string, [number, number, number]> = {
   oak: [1.25, 1.3, -1], oak_apple: [1.25, 1.3, -1], pine: [1, 1.1, -1], bush: [1, 0.9, -1], bush_berry: [1, 0.9, -1],
-  rock_big: [0.95, 0.8, -1], rock: [0.5, 0.55, 0], well: [1, 0.9, -1], shipping_bin: [0.95, 0.7, -1], house: [3.6, 1.6, -2],
+  rock_big: [0.95, 0.8, -1], rock: [0.5, 0.55, 0], ore_stone: [0.5, 0.55, 0], ore_copper: [0.5, 0.55, 0], ore_iron: [0.5, 0.55, 0], ore_star: [0.5, 0.55, 0], well: [1, 0.9, -1], shipping_bin: [0.95, 0.7, -1], house: [3.6, 1.6, -2],
   stump: [0.5, 0.5, 0], log: [0.95, 0.6, 0], barrel: [0.5, 0.5, 0], crate: [0.5, 0.5, 0], hay: [0.5, 0.5, 0],
   scarecrow: [0.5, 0.5, 0], mailbox: [0.4, 0.45, 0], lamp: [0.35, 0.4, 0], sign: [0.45, 0.45, 0],
   bench: [0.9, 0.5, 0], planter: [0.5, 0.45, 0], board: [0.9, 0.5, 0], stall: [1.4, 0.7, -1], stall_b: [1.4, 0.7, -1], cafe_table: [0.6, 0.45, 0], anvil: [0.5, 0.4, 0],
@@ -44,6 +45,11 @@ export class World {
   private water: Phaser.GameObjects.TileSprite[] = [];
   private waterFrame = 0; private waterT = 0;
   private tufts: Phaser.GameObjects.Sprite[] = [];
+  readonly grassCells = new Set<string>();
+  /** 건물 실내 맵 (방 배경 한 장 + 가구) */
+  readonly interior: boolean;
+  readonly title: string;
+  private tallGrass: Phaser.GameObjects.Sprite[] = [];
 
   constructor(private scene: Phaser.Scene, readonly manifest: Manifest, readonly mapId: MapId = 'farm') {
     const raw = scene.cache.tilemap.get(mapId).data as TiledMap;
@@ -51,16 +57,22 @@ export class World {
     this.grid = new Grid(this.info);
     this.widthPx = this.info.width * TILE; this.heightPx = this.info.height * TILE;
 
+    this.interior = String(prop(raw, 'interior', '')) === 'true';
+    this.title = String(prop(raw, 'title', ''));
+    const bg = String(prop(raw, 'bg', ''));
+    if (bg && scene.textures.exists(bg)) scene.add.image(0, 0, bg).setOrigin(0).setDepth(DEPTH.ground);
     // 물: 맵 전체 아래에 깔리는 애니메이션 타일스프라이트 (지면 타일의 투명 영역으로 비침)
-    for (let f = 0; f < 4; f++) this.water.push(scene.add.tileSprite(0, 0, this.widthPx + TILE, this.heightPx + TILE, `water${f}`).setOrigin(0).setDepth(DEPTH.water).setVisible(f === 0));
+    if (!this.interior) for (let f = 0; f < 4; f++) this.water.push(scene.add.tileSprite(0, 0, this.widthPx + TILE, this.heightPx + TILE, `water${f}`).setOrigin(0).setDepth(DEPTH.water).setVisible(f === 0));
 
     this.map = scene.make.tilemap({ key: mapId });
     const ts = this.map.addTilesetImage('tileset', 'tileset')!;
     const off = Number(prop(raw, 'groundOffset', 8));
-    this.map.createLayer('Ground', ts, off, off)!.setDepth(DEPTH.ground);
+    this.map.createLayer('Ground', ts, off, off)?.setDepth(DEPTH.ground - 1);
     this.soil = this.map.createBlankLayer('Soil', ts, 0, 0)!.setDepth(DEPTH.soil);
-    this.map.createLayer('Decor', ts, 0, 0)!.setDepth(DEPTH.decor);
-    this.map.createLayer('Bridge', ts, 0, 0)!.setDepth(DEPTH.bridge);
+    this.map.createLayer('Decor', ts, 0, 0)?.setDepth(DEPTH.decor);
+    this.map.createLayer('Bridge', ts, 0, 0)?.setDepth(DEPTH.bridge);
+    // 실내 조명 (벽난로·스탠드)
+    for (const l of this.info.spawnList.filter((o) => o.name === 'light')) this.lights.push({ x: l.x, y: l.y, scale: 1.6, tint: 0xffc070, base: 0.8 });
 
     this.buildObjects();
   }
@@ -87,7 +99,9 @@ export class World {
         sprite = sp;
       } else if (img) sprite = s.add.image(o.x, o.y, type).setOrigin(0.5, img.originY);
       else continue;
-      sprite.setDepth(o.y - (type === 'tuft' ? 6 : 0));
+      // 풀숲은 칸 아래쪽 기준 깊이 → 그 칸에 선 캐릭터의 다리를 덮음
+      sprite.setDepth(o.y - (type === 'tuft' ? 6 : type === 'tallgrass' ? 0.5 : 0));
+      if (type === 'tallgrass') { this.grassCells.add(`${cellX},${cellY}`); this.tallGrass.push(sprite as Phaser.GameObjects.Sprite); }
 
       const sh = SHADOW[type];
       let shadow: Phaser.GameObjects.Image | undefined;
@@ -140,6 +154,18 @@ export class World {
     } else { o.sprite.destroy(); o.shadow?.destroy(); }
   }
 
+  /** 매일 다시 생기는 채석장 바위 복원 */
+  restoreObject(id: number) {
+    const o = this.objects.find((ob) => ob.id === id);
+    if (!o || o.sprite.active) return;
+    const raw = this.info.objects.find((ob) => ob.id === id)!;
+    const img = this.manifest.images[o.type];
+    if (!img) return;
+    o.sprite = this.scene.add.image(raw.x, raw.y, o.type).setOrigin(0.5, img.originY).setDepth(raw.y);
+    for (let y = o.cellY - o.cellH + 1; y <= o.cellY; y++) for (let x = o.cellX; x < o.cellX + o.cellW; x++) this.grid.setBlocked(x, y, true);
+  }
+  mineKind(o: WorldObject) { return this.info.objects.find((ob) => ob.id === o.id)?.properties?.find((p) => p.name === 'mine')?.value as string | undefined ?? (o.type === 'rock' || o.type === 'rock_big' ? 'stone' : undefined); }
+
   /** 오브젝트 흔들기 (도끼질/스침 반응) */
   shake(o: WorldObject, power = 2) {
     const x0 = o.sprite.x;
@@ -149,8 +175,9 @@ export class World {
   update(dt: number, player: { x: number; y: number }) {
     // 물 애니메이션
     this.waterT += dt;
-    if (this.waterT > 280) { this.waterT = 0; this.water[this.waterFrame].setVisible(false); this.waterFrame = (this.waterFrame + 1) % 4; this.water[this.waterFrame].setVisible(true); }
+    if (this.water.length && this.waterT > 280) { this.waterT = 0; this.water[this.waterFrame].setVisible(false); this.waterFrame = (this.waterFrame + 1) % 4; this.water[this.waterFrame].setVisible(true); }
     for (const w of this.water) w.tilePositionX += dt * 0.002;
+    if (this.interior) return;
     // 플레이어가 큰 오브젝트 뒤에 가려지면 반투명
     for (const o of this.objects) {
       if (!o.tall || !o.sprite.active) continue;
@@ -161,6 +188,12 @@ export class World {
       o.sprite.alpha += (target - o.sprite.alpha) * Math.min(1, dt / 120);
     }
     // 풀숲 지나가면 흔들림
+    for (const t of this.tallGrass) {
+      if (Math.abs(t.x - player.x) < 9 && Math.abs(t.y - player.y) < 9 && !t.getData('rustle')) {
+        t.setData('rustle', true);
+        this.scene.tweens.add({ targets: t, scaleX: { from: 1.25, to: 1 }, scaleY: { from: 0.8, to: 1 }, duration: 260, ease: 'Back.Out', onComplete: () => t.setData('rustle', false) });
+      }
+    }
     for (const t of this.tufts) {
       if (Math.abs(t.x - player.x) < 8 && Math.abs(t.y - player.y) < 6 && !t.getData('rustle')) {
         t.setData('rustle', true);

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { Manifest } from '../config';
 import { ui } from '../ui/UI';
+import { MAP_IDS } from '@shared/types';
 
 /** 매니페스트 → 모든 에셋 로드 → 애니메이션 등록 */
 export class BootScene extends Phaser.Scene {
@@ -10,8 +11,7 @@ export class BootScene extends Phaser.Scene {
     ui.loading.show();
     this.load.on('progress', (v: number) => ui.loading.progress(v));
     this.load.json('manifest', 'assets/manifest.json');
-    this.load.tilemapTiledJSON('farm', 'assets/maps/farm.json');
-    this.load.tilemapTiledJSON('town', 'assets/maps/town.json');
+    for (const m of MAP_IDS) this.load.tilemapTiledJSON(m, `assets/maps/${m}.json`);
     this.load.on('filecomplete-json-manifest', (_k: string, _t: string, m: Manifest) => {
       this.load.image('tileset', m.tileset.path);
       for (const [key, im] of Object.entries(m.images)) this.load.image(key, im.path);
@@ -32,6 +32,11 @@ export class BootScene extends Phaser.Scene {
       this.anims.create({ key, frames: frames.map((f) => ({ key: sheet, frame: f })), frameRate: fps, repeat: -1 });
     for (const t of ['oak', 'oak_apple', 'pine']) loop(`${t}:sway`, t, [0, 1, 2, 3], 1.6);
     loop('tuft:sway', 'tuft', [0, 1, 2, 3], 2.5);
+    loop('tallgrass:sway', 'tallgrass', [0, 1, 0, 2], 2);
+    // 루미: [정면0, 정면1, 측면0, 측면1, 뒷면0, 뒷면1]
+    for (const key of Object.values((m as Manifest & { lumi: Record<string, string> }).lumi ?? {})) {
+      loop(`${key}:down`, key, [0, 1], 4); loop(`${key}:left`, key, [2, 3], 4); loop(`${key}:up`, key, [4, 5], 4);
+    }
     for (let i = 0; i < 4; i++) loop(`butterfly:${i}`, 'butterfly', [i * 2, i * 2 + 1], 8);
     for (const c of ['chicken_white', 'chicken_brown']) {
       ['down', 'side', 'up'].forEach((d, r) => {

@@ -70,3 +70,26 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 @keyframes float-title { 0%, 100% { transform: translateY(0) rotate(-1deg) } 50% { transform: translateY(-8px) rotate(1deg) } }
 .title-float { animation: float-title 4s ease-in-out infinite; }
 .vignette { background: radial-gradient(ellipse at center, transparent 55%, rgba(10, 6, 20, 0.35) 100%); }
+
+/* 루미 아이콘: 시트 첫 프레임(정면) */
+.lumi-icon { display: inline-block; width: 32px; height: 32px; background-size: 192px 32px; background-position: 0 0; background-repeat: no-repeat; image-rendering: pixelated; flex-shrink: 0; }
+.lumi-icon.lg { width: 96px; height: 96px; background-size: 576px 96px; }
+.lumi-icon.xl { width: 128px; height: 128px; background-size: 768px 128px; }
+@keyframes lumi-bounce { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+.lumi-bounce { animation: lumi-bounce 0.8s ease-in-out infinite; }
+button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite; }
+
+/* ── 대화창 일러스트 (스타듀/포켓몬 풍 하단 대화창) ── */
+@keyframes dlg-in { from { transform: translate(-50%, 24px); opacity: 0 } to { transform: translate(-50%, 0); opacity: 1 } }
+.dlg-in { animation: dlg-in 0.22s ease-out; }
+.dlg-portrait {
+  width: 196px; height: 196px; position: relative; overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, #fff6dc 0%, color-mix(in srgb, var(--pc) 35%, #f3dfb4) 70%, color-mix(in srgb, var(--pc) 60%, #6e4024) 100%);
+  border: 4px solid #6e4024; box-shadow: inset 0 0 0 3px #e6cb93, inset 0 -18px 30px rgba(110, 64, 36, .25);
+}
+.dlg-portrait img { position: absolute; left: 50%; bottom: -6px; width: 180px; height: 200px; transform: translateX(-50%); image-rendering: pixelated; }
+.dlg-name { min-width: 150px; text-align: center; padding: 2px 14px; color: #fff8ec; font-size: 18px; border: 3px solid #3b2414; box-shadow: 0 3px 0 rgba(0,0,0,.3);
+  text-shadow: -2px 0 #3b2414, 2px 0 #3b2414, 0 -2px #3b2414, 0 2px #3b2414; }
+@keyframes hop { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+@keyframes map-pin { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+.map-pin { animation: map-pin .8s ease-in-out infinite; }

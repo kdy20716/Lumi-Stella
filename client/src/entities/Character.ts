@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { josa } from '@shared/josa';
 import type { Dir } from '@shared/types';
 import { DEPTH, type CharacterMeta } from '../config';
 
@@ -59,7 +60,7 @@ export class Character {
   /** 채팅 말풍선 */
   say(text: string, zoom: number) {
     this.bubble?.destroy(); this.bubbleTimer?.remove();
-    const t = text.length > 40 ? text.slice(0, 39) + '…' : text;
+    const s = josa(text), t = s.length > 40 ? s.slice(0, 39) + '…' : s;
     this.bubble = this.scene.add.text(this.x, this.y - 40, t, {
       fontFamily: 'Galmuri11, Galmuri9, sans-serif', fontSize: '8px', color: '#3b2414', backgroundColor: '#fff8ec',
       padding: { x: 4, y: 3 }, resolution: zoom, wordWrap: { width: 110, useAdvancedWrap: true }, align: 'center',
