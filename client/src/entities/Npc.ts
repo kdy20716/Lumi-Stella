@@ -11,7 +11,9 @@ const cellCenter = (cx: number, cy: number) => ({ x: cx * TILE + 8, y: cy * TILE
 const DOOR_WP: Partial<Record<MapId, string>> = { in_store: 'wp_store', in_cafe: 'wp_cafe', in_lab: 'wp_lab', in_smithy: 'wp_smithy', in_center: 'wp_center', in_shop_w: 'wp_shop' };
 
 /** 맵 전환(씬 재시작)에도 유지되는 NPC 기억: 만남 여부, 호감도, 마지막으로 대화한 날 */
-const MEMORY = new Map<string, { met: boolean; hearts: number; talkedDay: number }>();
+type Mem = { met: boolean; hearts: number; talkedDay: number };
+const MEMORY = new Map<string, Mem>((() => { try { return Object.entries(JSON.parse(localStorage.getItem('sf:npcmem') ?? '{}') as Record<string, Mem>); } catch { return []; } })());
+const saveMemory = () => { try { localStorage.setItem('sf:npcmem', JSON.stringify(Object.fromEntries(MEMORY))); } catch { /* 저장 불가 환경 */ } };
 
 /**
  * 스케줄 기반 NPC (여러 맵을 오감)
@@ -112,7 +114,7 @@ export class Npc extends Character {
     if (!this.busy) this.play('idle', dir);
     this.greeting = false; this.hideEmote();
     const m = this.mem;
-    if (m.talkedDay !== day) { m.talkedDay = day; m.hearts = Math.min(5, m.hearts + 1); }
+    if (m.talkedDay !== day) { m.talkedDay = day; m.hearts = Math.min(5, m.hearts + 1); saveMemory(); }
   }
   endTalk() {
     this.state = this.resumeState === 'walk' && this.path.length ? 'walk' : 'idle';
@@ -122,8 +124,11 @@ export class Npc extends Character {
 
   pickLines(minutes: number, weather: Weather): string[] {
     const d = this.def.dialogue;
-    if (!this.mem.met) { this.mem.met = true; return d.first; }
+    if (!this.mem.met) { this.mem.met = true; saveMemory(); return d.first; }
     const r = Math.random();
+    // 친해질수록 속마음 (가장 높은 단계 대사를 가끔)
+    const tier = Object.keys(this.def.hearts ?? {}).map(Number).filter((h) => h <= this.mem.hearts).sort((a, b) => b - a)[0];
+    if (tier !== undefined && r < 0.22) return this.def.hearts![String(tier)];
     if (weather === 'rain' && r < 0.45) return [Phaser.Utils.Array.GetRandom(d.rain)];
     const pool = minutes < 11 * 60 ? d.morning : minutes < 17 * 60 ? d.afternoon : d.evening;
     return [Phaser.Utils.Array.GetRandom(r < 0.65 ? pool : d.random)];

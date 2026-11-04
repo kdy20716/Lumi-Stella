@@ -1,8 +1,9 @@
 // DOM 오버레이 UI: 로딩 / 타이틀 / HUD(시계·골드·에너지) / 핫바 / 대화창 / 토스트 / 힌트 / 하루 전환 / 채팅
-import { ITEMS, SPECIES, TYPE_COLORS } from '@shared/data';
+import { ITEMS, NPCS, RECIPES, SPECIES, TYPE_COLORS } from '@shared/data';
 import { josa } from '@shared/josa';
 import { creator, emoteWheel, invitePrompt, mailbox } from './Social';
 import { sfx } from '../audio/Sfx';
+import { music } from '../audio/Music';
 import { MAP_META, type CreatureInst, type InventorySlot, type MapMeta, type PlayerState, type ShopDef, type WorldTime } from '@shared/types';
 
 const root = () => document.getElementById('ui')!;
@@ -28,7 +29,7 @@ const loading = {
   show() {
     if (this.node) return;
     this.node = el('div', 'fixed inset-0 flex flex-col items-center justify-center gap-6 bg-[#14201a] text-[#f3dfb4] z-50 transition-opacity duration-500');
-    this.node.innerHTML = `<div class="text-4xl px-outline text-[#ffe58a] tracking-widest">별빛 농장</div>
+    this.node.innerHTML = `<div class="text-4xl px-outline text-[#ffe58a] tracking-widest">루미 몬스터즈</div>
       <div class="w-72 h-5 border-4 border-[#5e3620] bg-[#3b2414]"><div class="h-full bg-[#7cc45a] w-0 transition-all"></div></div>
       <div class="text-sm opacity-70">픽셀을 심는 중...</div>`;
     this.bar = this.node.querySelector('div > div > div');
@@ -48,8 +49,9 @@ const title = {
     const defUrl = qs || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname || 'localhost'}:2567`;
     n.innerHTML = `
       <div class="title-float flex flex-col items-center mb-8">
-        <div class="text-[64px] leading-none text-[#ffe58a] px-outline tracking-[0.15em]" style="text-shadow:-4px 0 #3b2414,4px 0 #3b2414,0 -4px #3b2414,0 4px #3b2414,4px 4px #3b2414,6px 8px 0 rgba(0,0,0,.35)">별빛 농장</div>
-        <div class="mt-3 text-xl text-[#fff8ec] px-outline tracking-[0.4em]">STARLIGHT FARM</div>
+        <div class="text-[64px] leading-none text-[#ffe58a] px-outline tracking-[0.12em]" style="text-shadow:-4px 0 #3b2414,4px 0 #3b2414,0 -4px #3b2414,0 4px #3b2414,4px 4px #3b2414,6px 8px 0 rgba(0,0,0,.35)">루미 몬스터즈</div>
+        <div class="mt-2 text-3xl text-[#bff0e0] px-outline tracking-[0.3em]">별빛의 씨앗</div>
+        <div class="mt-2 text-sm text-[#fff8ec] px-outline tracking-[0.35em] opacity-90">LUMI MONSTERS · SEEDS OF STARLIGHT</div>
       </div>
       <div class="px-panel flex flex-col items-center gap-3 w-[min(380px,92vw)]">
         <div data-c="user" class="text-sm text-[#8a5a32] min-h-5">로그인 상태 확인 중...</div>
@@ -60,7 +62,7 @@ const title = {
         <button data-a="logout" class="hidden text-xs underline text-[#8a5a32]">다른 계정으로 로그인</button>
         <div data-e class="text-[#c8453c] text-sm min-h-5 text-center"></div>
       </div>
-      <div class="absolute bottom-4 text-xs text-[#fff8ec] opacity-80 px-outline">로그인하면 진행상황이 자동 저장돼요 · WASD 이동 · E 상호작용 · Tab 감정표현 · H 도움말</div>`;
+      <div class="absolute bottom-4 text-xs text-[#fff8ec] opacity-80 px-outline">로그인하면 모험이 자동 저장돼요 · WASD 이동 · E 상호작용 · Tab 감정표현 · H 도움말</div>`;
     root().appendChild(n);
     const q = <T extends HTMLElement>(s: string) => n.querySelector<T>(s)!;
     const url = () => defUrl;
@@ -276,7 +278,7 @@ const help = {
       ${[['WASD / 방향키', '이동'], ['Shift', '달리기'], ['Space / 좌클릭', '도구 사용 · 씨앗 심기'], ['E / 우클릭', '대화 · 수확 · 출하 · 조사'], ['1~0, -, = / 휠', '핫바 선택'], ['Enter', '채팅 (말풍선으로 표시)'], ['Tab (누른 채 마우스)', '감정표현 휠 — 떼면 표현'], ['L', '접속자 목록 접기/펴기'], ['P', '나의 루미 (파티·도감·가방)'], ['Q', '핫바 1줄 ↔ 2줄 전환'], ['N', '(디버그) 다음 날로'], ['H', '도움말 닫기']]
         .map(([k, v]) => `<tr><td class="pr-6 text-[#a8683a]">${k}</td><td>${v}</td></tr>`).join('')}
       </tbody></table>
-      <div class="mt-3 text-sm text-[#8a5a32]">루미: 마을회관에서 파트너를 받고, 동쪽 1번 도로 풀숲을 걸으면 야생 루미가 나와요. 트레이너와 눈이 마주치면 배틀!<br>집: 문 앞에서 E 로 들어가요. 내 집 옷장에서 외형 변경, 침대에서 잠, 식탁에 음식을 차려 친구와 같이 먹을 수 있어요. 농장 우편함에서 친구 초대!<br>팁: 괭이로 밭을 갈고 → 씨앗 심고 → 매일 물을 주면 자랍니다. 다 자란 작물은 E로 수확, 출하 상자에 넣으면 다음 날 골드!</div>`;
+      <div class="mt-3 text-sm text-[#8a5a32]">모험: 마을회관 한별 박사님께 파트너 루미를 받고, 풀숲에서 야생 루미를 만나 루미볼로 잡아요. 트레이너와 눈이 마주치면 배틀! 도장 8곳을 돌아 배지를 모으면 루미나 리그로.<br>자급자족: 밭에 <b>루미풀·불꽃고추·단단콩</b>을 키우고, 채석장에서 <b>돌·구리·철</b>을 캐서 집 <b>작업대</b>에서 회복약 · 도핑약 · 루미볼을 직접 만들어요. 배지를 모을수록 민수(볼 공방)와 한별 박사(연구소)가 새 제작법을 가르쳐 줘요.<br>집: 옷장에서 외형 변경, 침대에서 잠, 식탁에 음식을 차려 친구와 같이 먹기. 농장 우편함에서 친구 초대!</div>`;
     n.onclick = () => this.toggle();
     root().appendChild(n); this.node = n;
   },
@@ -285,7 +287,8 @@ const help = {
 // ── 상점 ───────────────────────────────────────────────
 const shop = {
   node: null as HTMLDivElement | null,
-  get open() { return !!this.node; },
+  /** 상점 또는 작업대 창이 열려 있으면 true (둘 다 이동·도구를 막는 창) */
+  get open() { return !!this.node || craft.open; },
   show(def: ShopDef, gold: number, onBuy: (itemId: string, qty: number) => void, keeper?: { sprite: string; name: string }) {
     this.close();
     const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(640px,94vw)] pointer-events-auto toast-in');
@@ -311,7 +314,51 @@ const shop = {
     root().appendChild(n); this.node = n;
   },
   gold(g: number) { const e = this.node?.querySelector('[data-s=gold]'); if (e) e.textContent = `${g.toLocaleString()}G`; },
-  close() { this.node?.remove(); this.node = null; },
+  close() { this.node?.remove(); this.node = null; craft.close(); },
+};
+
+
+// ── 작업대 제작 ─────────────────────────────────────────
+// 작물·채집물·광석 → 루미볼 · 회복약 · 도핑약. 배우지 않은 제작법은 누구에게 배우는지 알려 줌
+interface CraftArgs { title: string; sub: string; me: () => PlayerState; onCraft: (id: string, times: number) => void; keeper?: { sprite: string; name: string }; teacher?: string }
+const craft = {
+  node: null as HTMLDivElement | null,
+  args: null as CraftArgs | null,
+  get open(): boolean { return !!this.node; },
+  show(a: CraftArgs) { this.close(); this.args = a; this.render(); },
+  refresh() { if (this.node) this.render(); },
+  render() {
+    const a = this.args!; const me = a.me();
+    const have = (id: string) => me.inventory.reduce((n, s) => n + (s.itemId === id ? s.quantity : 0), 0);
+    const list = Object.values(RECIPES).sort((x, y) => Number(!!y.starter) - Number(!!x.starter) || (x.badges ?? 0) - (y.badges ?? 0))
+      .filter((r) => !a.teacher || r.teacher === a.teacher || me.recipes.includes(r.id));
+    const rows = list.map((r) => {
+      const out = ITEMS[r.out]; const known = me.recipes.includes(r.id);
+      const mats = Object.entries(r.in).map(([id, n]) => { const h = have(id); return `<span class="inline-flex items-center gap-0.5 ${h >= n ? '' : 'text-[#c8453c]'}"><span class="px-icon" style="${iconStyle(ITEMS[id].icon, 20)}"></span>${ITEMS[id].name} ${h}/${n}</span>`; }).join(' ');
+      const can = known && Object.entries(r.in).every(([id, n]) => have(id) >= n);
+      const lock = r.teacher ? `${NPCS[r.teacher]?.name ?? '공방'}에게 배우기 · 배지 ${r.badges ?? 0}개 필요` : '';
+      return `<div class="flex items-center gap-3 border-2 px-2 py-1 ${known ? 'bg-[#fff8ec]/70 border-[#d8b67c]' : 'bg-[#e8dcc4]/60 border-[#c8b08a] opacity-80'}">
+        <span class="px-icon shrink-0" style="${iconStyle(out.icon, 40)}${known ? '' : ';filter:grayscale(1) brightness(.7)'}"></span>
+        <div class="flex-1 min-w-0"><div class="text-lg">${known ? out.name : '???'} ${r.qty > 1 ? `<span class="text-sm">×${r.qty}</span>` : ''}</div>
+          <div class="text-xs text-[#5a3a22] flex flex-wrap gap-x-2">${known ? mats : `🔒 ${lock}`}</div></div>
+        ${known ? `<button data-c="${r.id}" data-t="1" class="px-btn ${can ? 'green' : ''} text-sm !px-3 !py-1" ${can ? '' : 'disabled style="opacity:.5"'}>만들기</button>
+        <button data-c="${r.id}" data-t="5" class="px-btn text-sm !px-3 !py-1" ${Object.entries(r.in).every(([id, n]) => have(id) >= n * 5) ? '' : 'disabled style="opacity:.5"'}>×5</button>` : ''}
+      </div>`;
+    }).join('');
+    const n = this.node ?? el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(680px,94vw)] pointer-events-auto toast-in');
+    n.innerHTML = `<div class="px-panel">
+      <div class="flex items-center gap-4 mb-3">
+        ${a.keeper ? `<div class="portrait shrink-0" style="width:84px;height:84px;background-image:url(assets/characters/${a.keeper.sprite}.png);background-size:${384 * 3}px auto;background-position:-${9 * 3}px -${8 * 3}px"></div>` : `<span class="px-icon shrink-0" style="${iconStyle('craft', 64)}"></span>`}
+        <div class="flex-1"><div class="text-2xl text-[#8a5a32]">${a.title}</div><div class="text-base">${a.sub}</div></div>
+      </div>
+      <div class="flex flex-col gap-2 max-h-[52vh] overflow-y-auto pr-1">${rows}</div>
+      <div class="mt-3 flex justify-between items-center text-sm text-[#8a5a32]"><span>재료는 농사 · 채집 · 채광으로 모아요</span><button data-close class="px-btn text-base !py-1">닫기 (Esc)</button></div>
+    </div>`;
+    n.querySelectorAll<HTMLButtonElement>('[data-c]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); if (b.disabled) return; a.onCraft(b.dataset.c!, Number(b.dataset.t)); }; });
+    n.querySelector<HTMLButtonElement>('[data-close]')!.onclick = () => this.close();
+    if (!this.node) { root().appendChild(n); this.node = n; }
+  },
+  close() { this.node?.remove(); this.node = null; this.args = null; },
 };
 
 // ── 접속자 목록 (멀티플레이) ────────────────────────────
@@ -481,12 +528,13 @@ const menu = {
           <button data-a="resume" class="px-btn green text-lg">계속하기</button>
           ${o.canSave ? '<button data-a="save" class="px-btn text-lg">지금 저장하기</button>' : ''}
           <button data-a="sound" class="px-btn text-lg">효과음: ${sfx.muted ? '끔 🔇' : '켬 🔊'}</button>
+          <button data-a="music" class="px-btn text-lg">배경음악: ${music.on ? '켬 🎵' : '끔 🔇'}</button>
           <button data-a="reset" class="px-btn text-lg" style="background:linear-gradient(#e8705a,#c8453c)">저장 초기화</button>
           <button data-a="title" class="px-btn text-base !py-1.5">타이틀로</button>`}
       </div>`;
       const on = (k: string, f: () => void) => { const b = n.querySelector<HTMLButtonElement>(`[data-a=${k}]`); if (b) b.onclick = () => { sfx.play('blip'); f(); }; };
       on('resume', () => this.close()); on('save', () => { o.onSave(); this.close(); });
-      on('sound', () => { sfx.setMuted(!sfx.muted); render(); }); on('reset', () => render(true));
+      on('sound', () => { sfx.setMuted(!sfx.muted); render(); }); on('music', () => { music.setOn(!music.on); render(); }); on('reset', () => render(true));
       on('no', () => render()); on('yes', () => { this.close(); o.onReset(); }); on('title', () => { this.close(); o.onTitle(); });
     };
     render();
@@ -498,6 +546,6 @@ const menu = {
 let mounted = false;
 export const ui = {
   creator, emoteWheel, mailbox, invitePrompt, worldMap, menu,
-  loading, title, hud, hotbar, dialogue, toast, hint, transition, chat, help, shop, roster, banner, starter, party, fishing,
+  loading, title, hud, hotbar, dialogue, toast, hint, transition, chat, help, shop, craft, roster, banner, starter, party, fishing,
   mountGame() { if (mounted) return; mounted = true; hud.mount(); hotbar.mount(); toast.mount(); hint.mount(); chat.mount(); },
 };

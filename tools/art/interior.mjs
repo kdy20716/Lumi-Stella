@@ -290,6 +290,19 @@ function pedestal() { const t = new Img(32, 30), s = ramp('#e8e0c8'); t.rect(4, 
 function candle() { const t = new Img(16, 30), g = P.gold; t.rect(7, 8, 2, 18, g.d1); t.rect(3, 26, 10, 3, g.base); t.hline(2, 10, 12, g.base); for (const x of [2, 7, 12]) { t.rect(x, 4, 2, 6, '#f4efe6'); t.set(x, 2, '#ffd65a'); t.set(x, 3, '#ff9a3a'); t.set(x + 1, 2, '#fff4c0'); } return sheen(t); }
 function statue(col = '#9aa8b4') { const t = new Img(16, 34), s = ramp(col); t.rect(2, 26, 12, 8, s.d1); t.hline(2, 26, 12, s.l1); t.ellipse(8, 18, 5, 8, s.base); t.ellipse(7, 16, 3, 5, s.l1); t.circle(8, 7, 4, s.base); t.set(6, 5, s.l2); t.rect(3, 4, 2, 4, s.d1); t.rect(11, 4, 2, 4, s.d1); return sheen(t); }
 
+function workbench() {
+  // 집 작업대: 원목 상판 + 막자사발 · 약병 · 루미볼 반제품
+  const t = new Img(32, 30);
+  t.rect(1, 8, 30, 8, W_.l1); t.hline(1, 8, 30, W_.l2); t.rect(1, 16, 30, 3, W_.d1);
+  t.rect(2, 19, 3, 11, W_.d1); t.rect(27, 19, 3, 11, W_.d1); t.rect(5, 24, 22, 2, W_.base);
+  t.ellipse(8, 7, 4, 2.5, '#a8a0a0'); t.ellipse(8, 6, 3, 1.5, '#6a8a4a'); t.line(10, 6, 13, 1, W_.d1);
+  t.rect(16, 2, 3, 6, '#9ad8a0'); t.rect(16, 1, 3, 1, P.wood.base); t.set(16, 3, '#ffffff');
+  t.rect(20, 3, 3, 5, '#ff9a8a'); t.rect(20, 2, 3, 1, P.wood.base); t.set(20, 4, '#ffffff');
+  t.circle(26, 5, 2.5, '#8fe0d8'); t.rect(25, 1, 3, 2, '#c9733a'); t.set(25, 4, '#ffffff');
+  t.rect(6, 20, 6, 4, '#c9a070'); t.rect(19, 20, 6, 4, '#c9a070');
+  return sheen(t);
+}
+
 /** 가구 정의: w × h(막는 칸 수) */
 export const FURN = {
   bed: { w: 2, h: 2, build: () => bed() }, bed_pink: { w: 2, h: 2, build: () => bed('#e07a8a') }, bed_green: { w: 2, h: 2, build: () => bed('#4f9a5f') },
@@ -302,7 +315,7 @@ export const FURN = {
   shelf_goods: { w: 2, h: 1, build: () => shelfGoods(0) }, shelf_goods_b: { w: 2, h: 1, build: () => shelfGoods(3) },
   forge: { w: 2, h: 1, build: forge }, lab_machine: { w: 2, h: 1, build: labMachine }, starter_table: { w: 3, h: 1, build: starterTable },
   millstone: { w: 2, h: 2, build: millstone }, sacks: { w: 1, h: 1, build: sacks }, piano: { w: 2, h: 1, build: piano },
-  pillar: { w: 1, h: 1, build: pillar }, crystal: { w: 1, h: 1, build: () => crystal() }, crystal_red: { w: 1, h: 1, build: () => crystal('#ff8a6a') }, pedestal: { w: 2, h: 1, build: pedestal }, candle: { w: 1, h: 1, build: candle }, statue: { w: 1, h: 1, build: () => statue() }, table_small: { w: 2, h: 1, build: tableSmall }, heal_pad: { w: 2, h: 1, build: healPad },
+  pillar: { w: 1, h: 1, build: pillar }, crystal: { w: 1, h: 1, build: () => crystal() }, crystal_red: { w: 1, h: 1, build: () => crystal('#ff8a6a') }, pedestal: { w: 2, h: 1, build: pedestal }, candle: { w: 1, h: 1, build: candle }, statue: { w: 1, h: 1, build: () => statue() }, table_small: { w: 2, h: 1, build: tableSmall }, heal_pad: { w: 2, h: 1, build: healPad }, workbench: { w: 2, h: 1, build: workbench },
 };
 
 // ── 방 레이아웃 (아트 + 맵 생성기 공용) ─────────────────
@@ -315,11 +328,11 @@ export const ROOMS = {
     rugs: [[5, 6, 5, 3, '#a83c34']],
     furn: [['bed', 1, 4, { interact: 'bed' }], ['wardrobe', 4, 3, { interact: 'wardrobe' }], ['kitchen', 11, 3, { interact: 'kitchen' }],
       ['dtable', 10, 7, { interact: 'dtable' }], ['chair_l', 9, 7, { interact: 'dtable' }], ['chair_r', 13, 7, { interact: 'dtable' }],
-      ['sofa', 3, 9], ['plant', 1, 9], ['lamp_floor', 13, 9], ['bookshelf', 1, 6]],
+      ['sofa', 3, 9], ['plant', 1, 9], ['lamp_floor', 13, 9], ['bookshelf', 1, 6], ['workbench', 7, 3, { interact: 'workbench' }]],
     spawns: [['entry', 7, 9], ['wake', 3, 5]], lights: [[7, 2], [13, 8]],
   },
   in_store: {
-    name: '소라네 잡화점', W: 14, H: 10, door: 7, wall: { color: '#d8e8d0', pattern: 'dots', accent: '#a8c89a', wainscot: '#8c5a33' }, floor: { kind: 'tile', color: '#c9b08a', color2: '#e0caa0' },
+    name: '소라네 루미 마트', W: 14, H: 10, door: 7, wall: { color: '#d8e8d0', pattern: 'dots', accent: '#a8c89a', wainscot: '#8c5a33' }, floor: { kind: 'tile', color: '#c9b08a', color2: '#e0caa0' },
     decor: [['window', 9], ['shelf', 11], ['poster', 1], ['clock', 2]],
     rugs: [[5, 6, 4, 2, '#3f8fb5']],
     furn: [['shelf_goods', 1, 3], ['shelf_goods_b', 3, 3], ['shelf_goods', 5, 3], ['counter', 8, 5, { interact: 'shop:general' }], ['sacks', 12, 8], ['plant_b', 1, 8], ['sacks', 12, 7]],
@@ -334,15 +347,15 @@ export const ROOMS = {
     spawns: [['wp_clerk', 2, 4], ['wp_gate', 7, 8], ['entry', 7, 8]], lights: [[3, 3], [9, 6]],
   },
   in_lab: { // 마을회관 = 한별 박사의 루미 연구실
-    name: '마을회관 · 루미 연구실', W: 16, H: 11, door: 8, wall: { color: '#e4ecf2', pattern: 'tile' }, floor: { kind: 'tile', color: '#c8d8e4', color2: '#e8f0f6' },
+    name: '마을회관 · 한별 연구소', W: 16, H: 11, door: 8, wall: { color: '#e4ecf2', pattern: 'tile' }, floor: { kind: 'tile', color: '#c8d8e4', color2: '#e8f0f6' },
     decor: [['chart', 1], ['window', 4], ['window', 10], ['chart', 13]],
     rugs: [[6, 5, 5, 3, '#3a8ab0']],
-    furn: [['lab_machine', 1, 3], ['bookshelf', 3, 3], ['starter_table', 7, 4, { interact: 'starter_table' }], ['bookshelf', 11, 3], ['lab_machine', 13, 3],
+    furn: [['lab_machine', 1, 3, { interact: 'labcraft' }], ['bookshelf', 3, 3], ['starter_table', 7, 4, { interact: 'starter_table' }], ['bookshelf', 11, 3], ['lab_machine', 13, 3],
       ['counter_lab', 1, 7], ['plant', 14, 9], ['plant_b', 1, 9], ['table_small', 12, 7]],
     spawns: [['wp_prof', 12, 5], ['wp_mayor', 8, 6], ['wp_rival', 6, 7], ['wp_gate', 8, 9], ['entry', 8, 9]], lights: [[8, 2]],
   },
   in_smithy: {
-    name: '민수의 대장간', W: 12, H: 9, door: 6, wall: { color: '#7a6a6a', pattern: 'stone' }, floor: { kind: 'stone', color: '#7a7480' },
+    name: '민수의 볼 공방', W: 12, H: 9, door: 6, wall: { color: '#7a6a6a', pattern: 'stone' }, floor: { kind: 'stone', color: '#7a7480' },
     decor: [['toolrack', 5], ['toolrack', 8], ['window', 1]],
     rugs: [],
     furn: [['forge', 1, 4, { interact: 'smithy' }], ['anvil', 4, 5, { interact: 'smithy' }], ['barrel', 10, 3], ['crate', 9, 3], ['barrel', 10, 7], ['table_small', 7, 5]],
@@ -369,8 +382,8 @@ export const ROOMS = {
     furn: [['bed', 9, 4, { interact: 'nbed' }], ['piano', 1, 3, { interact: 'piano' }], ['bookshelf', 4, 3], ['table_small', 4, 6], ['plant', 1, 7], ['lamp_floor', 10, 7]],
     spawns: [['entry', 6, 7]], lights: [[10, 6]],
   },
-  in_center: { // 바람골 루미 쉼터
-    name: '루미 쉼터', W: 14, H: 10, door: 7, wall: { color: '#fbe4ea', pattern: 'stripe', accent: '#f4c8d4', wainscot: '#e8a0b0' }, floor: { kind: 'tile', color: '#f4dce4', color2: '#fff4f8' },
+  in_center: { // 루미 센터 (회복)
+    name: '루미 센터', W: 14, H: 10, door: 7, wall: { color: '#fbe4ea', pattern: 'stripe', accent: '#f4c8d4', wainscot: '#e8a0b0' }, floor: { kind: 'tile', color: '#f4dce4', color2: '#fff4f8' },
     decor: [['heartsign', 6], ['window', 2], ['window', 10], ['poster', 13]],
     rugs: [[5, 7, 4, 2, '#e07a8a']],
     furn: [['counter_heal', 5, 4, { interact: 'center' }], ['heal_pad', 1, 4], ['sofa_red', 1, 7], ['sofa', 10, 7], ['plant', 12, 4], ['plant_b', 1, 8]],

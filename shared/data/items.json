@@ -72,6 +72,36 @@
     "maxStack": 99,
     "description": "9일이면 자랍니다. 커다란 호박!"
   },
+  "seeds_lumi_herb": {
+    "id": "seeds_lumi_herb",
+    "name": "루미풀 씨앗",
+    "type": "seed",
+    "icon": "seeds_lumi_herb",
+    "sellPrice": 15,
+    "maxStack": 99,
+    "cropId": "lumi_herb",
+    "description": "회복약의 재료가 되는 루미풀 씨앗. 4일이면 자라고, 그 뒤 2일마다 다시 돋아나요."
+  },
+  "seeds_fire_pepper": {
+    "id": "seeds_fire_pepper",
+    "name": "불꽃고추 씨앗",
+    "type": "seed",
+    "icon": "seeds_fire_pepper",
+    "sellPrice": 30,
+    "maxStack": 99,
+    "cropId": "fire_pepper",
+    "description": "힘 도핑약의 재료. 6일이면 자라고, 3일마다 다시 열려요."
+  },
+  "seeds_iron_bean": {
+    "id": "seeds_iron_bean",
+    "name": "단단콩 씨앗",
+    "type": "seed",
+    "icon": "seeds_iron_bean",
+    "sellPrice": 30,
+    "maxStack": 99,
+    "cropId": "iron_bean",
+    "description": "철벽 도핑약의 재료. 6일이면 한 번에 콩이 주렁주렁!"
+  },
   "parsnip": {
     "id": "parsnip",
     "name": "파스닙",
@@ -107,6 +137,33 @@
     "sellPrice": 320,
     "maxStack": 99,
     "description": "묵직하고 반짝이는 호박."
+  },
+  "lumi_herb": {
+    "id": "lumi_herb",
+    "name": "루미풀",
+    "type": "crop",
+    "icon": "lumi_herb",
+    "sellPrice": 30,
+    "maxStack": 99,
+    "description": "은은하게 빛나는 약초. 루미의 상처를 아물게 해요. 작업대에서 회복약으로!"
+  },
+  "fire_pepper": {
+    "id": "fire_pepper",
+    "name": "불꽃고추",
+    "type": "crop",
+    "icon": "fire_pepper",
+    "sellPrice": 55,
+    "maxStack": 99,
+    "description": "한 입만 먹어도 몸이 후끈! 루미의 힘을 끌어올리는 도핑약 재료."
+  },
+  "iron_bean": {
+    "id": "iron_bean",
+    "name": "단단콩",
+    "type": "crop",
+    "icon": "iron_bean",
+    "sellPrice": 45,
+    "maxStack": 99,
+    "description": "돌처럼 단단한 콩. 루미의 몸을 단단하게 만드는 도핑약 재료."
   },
   "coffee": {
     "id": "coffee",
@@ -160,35 +217,99 @@
     "tool": "rod",
     "energyCost": 2
   },
-  "jar": {
-    "id": "jar",
-    "name": "별빛 병",
+  "lumi_ball": {
+    "id": "lumi_ball",
+    "name": "루미볼",
     "type": "battle",
-    "icon": "jar",
+    "icon": "lumi_ball",
     "sellPrice": 20,
     "maxStack": 99,
-    "description": "야생 루미를 담는 병. 체력이 적을수록 잘 잡혀요.",
+    "description": "야생 루미를 담는 기본 포획볼. 구리와 돌로 작업대에서 만들 수 있어요.",
     "catchBonus": 1
   },
-  "super_jar": {
-    "id": "super_jar",
-    "name": "반짝 별빛 병",
+  "super_ball": {
+    "id": "super_ball",
+    "name": "슈퍼 루미볼",
     "type": "battle",
-    "icon": "super_jar",
+    "icon": "super_ball",
     "sellPrice": 60,
     "maxStack": 99,
-    "description": "더 잘 잡히는 고급 별빛 병.",
-    "catchBonus": 1.8
+    "description": "쇠테를 두른 튼튼한 포획볼. 루미볼보다 잘 잡혀요.",
+    "catchBonus": 1.6
+  },
+  "hyper_ball": {
+    "id": "hyper_ball",
+    "name": "하이퍼 루미볼",
+    "type": "battle",
+    "icon": "hyper_ball",
+    "sellPrice": 120,
+    "maxStack": 99,
+    "description": "민수의 비법으로 벼린 고급 포획볼. 아주 잘 잡혀요.",
+    "catchBonus": 2.2
+  },
+  "star_ball": {
+    "id": "star_ball",
+    "name": "별빛 루미볼",
+    "type": "battle",
+    "icon": "star_ball",
+    "sellPrice": 300,
+    "maxStack": 99,
+    "description": "별가루 결정을 녹여 만든 전설의 포획볼. 거의 놓치지 않아요.",
+    "catchBonus": 3.5
   },
   "potion": {
     "id": "potion",
-    "name": "회복 꿀",
+    "name": "루미 회복약",
     "type": "battle",
     "icon": "potion",
     "sellPrice": 30,
     "maxStack": 99,
-    "description": "배틀 중 루미의 체력을 30 회복해요.",
+    "description": "루미풀을 달인 회복약. 배틀 중 루미의 체력을 30 회복해요.",
     "heal": 30
+  },
+  "super_potion": {
+    "id": "super_potion",
+    "name": "고급 회복약",
+    "type": "battle",
+    "icon": "super_potion",
+    "sellPrice": 80,
+    "maxStack": 99,
+    "description": "루미풀과 야생 버섯을 함께 달인 약. 체력을 80 회복해요.",
+    "heal": 80
+  },
+  "max_potion": {
+    "id": "max_potion",
+    "name": "만능 회복약",
+    "type": "battle",
+    "icon": "max_potion",
+    "sellPrice": 250,
+    "maxStack": 99,
+    "description": "별가루 결정을 한 방울 섞은 약. 체력을 모두 회복해요.",
+    "heal": 999
+  },
+  "atk_tonic": {
+    "id": "atk_tonic",
+    "name": "힘 도핑약",
+    "type": "battle",
+    "icon": "atk_tonic",
+    "sellPrice": 70,
+    "maxStack": 99,
+    "description": "불꽃고추 도핑약. 배틀 중 내 루미의 공격이 크게 올라요.",
+    "boost": {
+      "atk": 2
+    }
+  },
+  "def_tonic": {
+    "id": "def_tonic",
+    "name": "철벽 도핑약",
+    "type": "battle",
+    "icon": "def_tonic",
+    "sellPrice": 70,
+    "maxStack": 99,
+    "description": "단단콩 도핑약. 배틀 중 내 루미의 방어가 크게 올라요.",
+    "boost": {
+      "def": 2
+    }
   },
   "badge_wind": {
     "id": "badge_wind",

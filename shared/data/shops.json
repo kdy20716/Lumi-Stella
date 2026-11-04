@@ -1,12 +1,24 @@
 {
   "general": {
     "id": "general",
-    "name": "소라네 잡화점",
+    "name": "소라네 루미 마트",
     "owner": "sora",
     "open": 900,
     "close": 1700,
-    "greeting": "어서 와요! 오늘 들어온 씨앗은 전부 싱싱해요.",
+    "greeting": "어서 와요, 트레이너님! 약초 씨앗이랑 볼은 오늘도 넉넉해요.",
     "items": [
+      {
+        "itemId": "seeds_lumi_herb",
+        "price": 30
+      },
+      {
+        "itemId": "seeds_fire_pepper",
+        "price": 60
+      },
+      {
+        "itemId": "seeds_iron_bean",
+        "price": 60
+      },
       {
         "itemId": "seeds_parsnip",
         "price": 20
@@ -24,12 +36,12 @@
         "price": 100
       },
       {
-        "itemId": "jar",
-        "price": 50
+        "itemId": "lumi_ball",
+        "price": 80
       },
       {
         "itemId": "potion",
-        "price": 70
+        "price": 100
       }
     ]
   },
@@ -39,7 +51,7 @@
     "owner": "luna",
     "open": 730,
     "close": 2200,
-    "greeting": "따뜻한 커피 한 잔 어때요? 일하다 지치면 단 게 최고예요.",
+    "greeting": "어서 와요! 배틀하고 지친 몸엔 따뜻한 커피랑 빵이 최고죠.",
     "items": [
       {
         "itemId": "coffee",
@@ -57,49 +69,65 @@
   },
   "market": {
     "id": "market",
-    "name": "광장 가판대",
+    "name": "광장 씨앗 가판대",
     "owner": null,
     "open": 900,
     "close": 1800,
     "greeting": "(무인 가판대다. 돈을 넣는 통이 놓여 있다.)",
     "items": [
       {
+        "itemId": "seeds_lumi_herb",
+        "price": 35
+      },
+      {
         "itemId": "seeds_tomato",
-        "price": 45
+        "price": 50
       },
       {
         "itemId": "seeds_pumpkin",
-        "price": 95
+        "price": 100
       },
       {
         "itemId": "bread",
-        "price": 70
+        "price": 80
       }
     ]
   },
   "windvale": {
     "id": "windvale",
-    "name": "바람골 상점",
+    "name": "바람골 루미 마트",
     "owner": "gureum",
     "open": 800,
     "close": 2000,
-    "greeting": "바람골 상점입니다! 모험 준비물은 여기서 챙기세요.",
+    "greeting": "바람골 루미 마트예요. 먼 길 가기 전에 챙겨 가세요!",
     "items": [
       {
-        "itemId": "jar",
-        "price": 40
+        "itemId": "lumi_ball",
+        "price": 80
       },
       {
-        "itemId": "super_jar",
-        "price": 120
+        "itemId": "super_ball",
+        "price": 200
       },
       {
         "itemId": "potion",
+        "price": 100
+      },
+      {
+        "itemId": "super_potion",
+        "price": 260
+      },
+      {
+        "itemId": "seeds_fire_pepper",
+        "price": 60
+      },
+      {
+        "itemId": "seeds_iron_bean",
         "price": 60
       },
       {
         "itemId": "bread",
-        "price": 75
+        "price": 80
       }
     ]
   }

@@ -41,8 +41,17 @@ export interface ItemDef {
   cropId?: string;       // 씨앗 → 작물
   energyCost?: number;   // 도구 사용 시 소모 에너지
   energy?: number;       // 음식: 회복 에너지
-  catchBonus?: number;   // 별빛 병 포획 보정
+  catchBonus?: number;   // 루미볼 포획 보정
   heal?: number;         // 배틀 회복량
+  boost?: { atk?: number; def?: number }; // 도핑약: 배틀 중 능력 단계 상승
+}
+
+/** 작업대 제작법 (작물·채집물·광석 → 볼·회복약·도핑약) */
+export interface RecipeDef {
+  id: string; out: string; qty: number; in: Record<string, number>; description: string;
+  starter?: boolean;     // 처음부터 아는 제작법
+  teacher?: string;      // 가르쳐 주는 NPC id
+  badges?: number;       // 배우는 데 필요한 배지 수
 }
 
 export interface CropDef {
@@ -91,7 +100,8 @@ export interface PlayerState {
   // ── 루미 모험 ──
   party: CreatureInst[];          // 최대 6, [0] = 따라다니는 파트너
   box: CreatureInst[];            // 파티가 가득 차면 보관
-  bag: Record<string, number>;    // 배틀 아이템 (별빛 병, 회복 꿀)
+  bag: Record<string, number>;    // 배틀 아이템 (루미볼, 회복약, 도핑약)
+  recipes: string[];              // 배운 제작법 (+ 'gift:<npc>' 받은 선물 표시)
   badges: string[];
   defeated: string[];             // 이긴 트레이너 id
   seen: string[]; caught: string[];
@@ -145,6 +155,7 @@ export interface SaveData {
   farm: { tiles: FarmTile[]; removed: number[] };
   story?: number;
   visited?: string[];
+  recipes?: string[];
   savedAt: number;
 }
 
@@ -180,6 +191,8 @@ export type ActionIntent =
   | { kind: 'eatDish' }
   | { kind: 'story'; step: number }                   // 프롤로그 다음 단계로
   | { kind: 'rivalBattle' }                           // 마을회관에서 친구와 첫 대결
+  | { kind: 'craft'; recipe: string; times?: number }  // 작업대에서 제작
+  | { kind: 'learn'; npc: string }                  // 공방 NPC에게 제작법 배우기
   | { kind: 'resetSave' }
   | { kind: 'goHome' };                               // 친구 세계/농장에서 내 농장으로                            // 저장 초기화 (처음부터)
 

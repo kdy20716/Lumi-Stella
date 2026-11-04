@@ -1,18 +1,155 @@
 {
   "parsnip": {
-    "id": "parsnip", "name": "파스닙", "seedItem": "seeds_parsnip", "harvestItem": "parsnip",
-    "seasons": ["spring"], "growthDays": [1, 1, 1, 1], "regrowDays": 0, "harvestQty": [1, 1], "spriteRow": 0
+    "id": "parsnip",
+    "name": "파스닙",
+    "seedItem": "seeds_parsnip",
+    "harvestItem": "parsnip",
+    "seasons": [
+      "spring"
+    ],
+    "growthDays": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      1
+    ],
+    "spriteRow": 0
   },
   "cauliflower": {
-    "id": "cauliflower", "name": "콜리플라워", "seedItem": "seeds_cauliflower", "harvestItem": "cauliflower",
-    "seasons": ["spring"], "growthDays": [1, 2, 2, 2], "regrowDays": 0, "harvestQty": [1, 1], "spriteRow": 1
+    "id": "cauliflower",
+    "name": "콜리플라워",
+    "seedItem": "seeds_cauliflower",
+    "harvestItem": "cauliflower",
+    "seasons": [
+      "spring"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      2
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      1
+    ],
+    "spriteRow": 1
   },
   "tomato": {
-    "id": "tomato", "name": "토마토", "seedItem": "seeds_tomato", "harvestItem": "tomato",
-    "seasons": ["spring", "summer"], "growthDays": [1, 2, 2, 2], "regrowDays": 3, "harvestQty": [1, 3], "spriteRow": 2
+    "id": "tomato",
+    "name": "토마토",
+    "seedItem": "seeds_tomato",
+    "harvestItem": "tomato",
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      2
+    ],
+    "regrowDays": 3,
+    "harvestQty": [
+      1,
+      3
+    ],
+    "spriteRow": 2
   },
   "pumpkin": {
-    "id": "pumpkin", "name": "호박", "seedItem": "seeds_pumpkin", "harvestItem": "pumpkin",
-    "seasons": ["spring", "fall"], "growthDays": [1, 2, 3, 3], "regrowDays": 0, "harvestQty": [1, 1], "spriteRow": 3
+    "id": "pumpkin",
+    "name": "호박",
+    "seedItem": "seeds_pumpkin",
+    "harvestItem": "pumpkin",
+    "seasons": [
+      "spring",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      2,
+      3,
+      3
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      1
+    ],
+    "spriteRow": 3
+  },
+  "lumi_herb": {
+    "id": "lumi_herb",
+    "name": "루미풀",
+    "seedItem": "seeds_lumi_herb",
+    "harvestItem": "lumi_herb",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "regrowDays": 2,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 4
+  },
+  "fire_pepper": {
+    "id": "fire_pepper",
+    "name": "불꽃고추",
+    "seedItem": "seeds_fire_pepper",
+    "harvestItem": "fire_pepper",
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "growthDays": [
+      1,
+      1,
+      2,
+      2
+    ],
+    "regrowDays": 3,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 5
+  },
+  "iron_bean": {
+    "id": "iron_bean",
+    "name": "단단콩",
+    "seedItem": "seeds_iron_bean",
+    "harvestItem": "iron_bean",
+    "seasons": [
+      "spring",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      1
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      2,
+      3
+    ],
+    "spriteRow": 6
   }
 }

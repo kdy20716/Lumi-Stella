@@ -4,6 +4,7 @@ import type { BattleLog, BattleUpdate, CreatureView } from '@shared/types';
 import type { Authority } from '../net/Authority';
 import { BattleUI } from '../ui/BattleUI';
 import { sfx } from '../audio/Sfx';
+import { music } from '../audio/Music';
 
 export interface BattleData { auth: Authority; update: BattleUpdate; onEnd: (ended: NonNullable<BattleUpdate['ended']>) => void }
 
@@ -91,7 +92,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.busy) return;
     this.busy = true; this.ui.hideMenu();
     const r = await this.data_.auth.request(a);
-    if (r.battle) { await this.run(r.battle.log); this.busy = false; this.next(r.battle); }
+    if (r.battle) { await this.run(r.battle.log, r.battle.ended); this.busy = false; this.next(r.battle); }
     else { this.busy = false; this.next({ view: this.ui.view!, log: [] }); }
   }
 
@@ -101,15 +102,21 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // ── 로그 재생 ──────────────────────────────────────
-  private async run(log: BattleLog[]) {
-    for (const e of log) await this.play(e);
+  private async run(log: BattleLog[], ended?: BattleUpdate['ended']) {
+    // 이긴 배틀이면 마지막 상대가 쓰러지는 순간 승리 음악
+    const lastFaint = ended === 'win' ? log.map((e) => e.t === 'faint' && e.side === 'foe').lastIndexOf(true) : -1;
+    for (const [i, e] of log.entries()) {
+      await this.play(e);
+      if (i === lastFaint) music.play('victory');
+      if (ended === 'caught' && e.t === 'throw' && e.success) music.play('victory');
+    }
   }
   private wait(ms: number) { return new Promise<void>((r) => this.time.delayedCall(ms, r)); }
 
   private async play(e: BattleLog) {
     switch (e.t) {
       case 'text':
-        if (/올라갔다/.test(e.text)) sfx.play('buff'); else if (/떨어졌다/.test(e.text)) sfx.play('debuff'); else if (/레벨이/.test(e.text)) sfx.play('levelup'); else if (/승부에서 이겼다/.test(e.text)) sfx.play('win');
+        if (/올라갔다|올랐다/.test(e.text)) sfx.play('buff'); else if (/떨어졌다/.test(e.text)) sfx.play('debuff'); else if (/레벨이/.test(e.text)) sfx.play('levelup'); else if (/승부에서 이겼다/.test(e.text)) sfx.play('win');
         await this.ui.say(e.text); break;
       case 'attack': await this.attackFx(e.side, e.type); break;
       case 'hp': {

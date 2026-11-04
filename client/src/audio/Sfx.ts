@@ -4,7 +4,8 @@ type Wave = OscillatorType;
 interface Tone { f: number; f2?: number; t: number; d: number; w?: Wave; v?: number }
 
 let ctx: AudioContext | null = null;
-let master: GainNode | null = null;
+let master: GainNode | null = null;   // 최종 출력 (효과음 버스 + 음악 버스)
+let sfxBus: GainNode | null = null;
 let muted = (() => { try { return localStorage.getItem('sf:mute') === '1'; } catch { return false; } })();
 let noiseBuf: AudioBuffer | null = null;
 
@@ -13,7 +14,8 @@ function ac() {
     const C = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!C) return null;
     ctx = new C();
-    master = ctx.createGain(); master.gain.value = muted ? 0 : 0.32; master.connect(ctx.destination);
+    master = ctx.createGain(); master.gain.value = 1; master.connect(ctx.destination);
+    sfxBus = ctx.createGain(); sfxBus.gain.value = muted ? 0 : 0.32; sfxBus.connect(master);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
@@ -23,23 +25,23 @@ function ac() {
 for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => ac(), { once: false, passive: true });
 
 function tone({ f, f2, t, d, w = 'square', v = 0.5 }: Tone) {
-  const c = ac(); if (!c || !master || muted) return;
+  const c = ac(); if (!c || !sfxBus || muted) return;
   const o = c.createOscillator(), g = c.createGain();
   const t0 = c.currentTime + t;
   o.type = w; o.frequency.setValueAtTime(f, t0);
   if (f2) o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t0 + d);
   g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
-  o.connect(g).connect(master); o.start(t0); o.stop(t0 + d + 0.02);
+  o.connect(g).connect(sfxBus); o.start(t0); o.stop(t0 + d + 0.02);
 }
 function noise(t: number, d: number, v = 0.4, lp = 2400, hp = 0) {
-  const c = ac(); if (!c || !master || !noiseBuf || muted) return;
+  const c = ac(); if (!c || !sfxBus || !noiseBuf || muted) return;
   const s = c.createBufferSource(); s.buffer = noiseBuf;
   const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp;
   const g = c.createGain(); const t0 = c.currentTime + t;
   g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
   let node: AudioNode = s.connect(f);
   if (hp) { const h = c.createBiquadFilter(); h.type = 'highpass'; h.frequency.value = hp; node = node.connect(h); }
-  node.connect(g).connect(master); s.start(t0); s.stop(t0 + d + 0.02);
+  node.connect(g).connect(sfxBus); s.start(t0); s.stop(t0 + d + 0.02);
 }
 const seq = (notes: number[], step: number, w: Wave = 'square', v = 0.35, len = step * 0.9) => notes.forEach((f, i) => f && tone({ f, t: i * step, d: len, w, v }));
 const N = (n: string) => { const m = /^([A-G])(#?)(\d)$/.exec(n)!; const i = 'C D EF G A B'.indexOf(m[1]) + (m[2] ? 1 : 0); return 440 * 2 ** ((i - 9) / 12 + (Number(m[3]) - 4)); };
@@ -95,5 +97,8 @@ export type SfxName = keyof typeof SOUNDS;
 export const sfx = {
   play(name: string) { try { SOUNDS[name]?.(); } catch { /* 오디오 미지원 */ } },
   get muted() { return muted; },
-  setMuted(m: boolean) { muted = m; try { localStorage.setItem('sf:mute', m ? '1' : '0'); } catch { /* 무시 */ } if (master) master.gain.value = m ? 0 : 0.32; },
+  setMuted(m: boolean) { muted = m; try { localStorage.setItem('sf:mute', m ? '1' : '0'); } catch { /* 무시 */ } if (sfxBus) sfxBus.gain.value = m ? 0 : 0.32; },
 };
+
+/** 음악 모듈이 같은 오디오 컨텍스트를 쓰도록 (첫 입력 전에는 null) */
+export const audioOut = () => { const c = ac(); return c && master ? { ctx: c, out: master, noise: noiseBuf! } : null; };

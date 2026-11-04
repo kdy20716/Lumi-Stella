@@ -1,4 +1,4 @@
-// 별빛 마을 맵 (60x44): 중앙 호수 + 돌길 광장, 잡화점·카페·마을회관·대장간·주택, 시장 가판대, 부두
+// 별빛 마을 맵 (60x44): 중앙 호수 + 돌길 광장, 루미 마트·카페·마을회관(연구소)·볼 공방·주택, 시장 가판대, 부두
 import { ROW, WOOD } from '../art/tiles.mjs';
 import { BUILDINGS } from '../art/town.mjs';
 import { MapBuilder, G, S, Wt } from './lib.mjs';

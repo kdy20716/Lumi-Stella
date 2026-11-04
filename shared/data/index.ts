@@ -1,4 +1,4 @@
-import type { CropDef, ItemDef, MapId, MoveDef, ShopDef, SpeciesDef, TrainerDef, LumiType } from '../types';
+import type { CropDef, ItemDef, MapId, MoveDef, RecipeDef, ShopDef, SpeciesDef, TrainerDef, LumiType } from '../types';
 import cropsJson from './crops.json';
 import itemsJson from './items.json';
 import npcsJson from './npcs.json';
@@ -8,10 +8,12 @@ import movesJson from './moves.json';
 import trainersJson from './trainers.json';
 import encountersJson from './encounters.json';
 import regionJson from './region.json';
+import recipesJson from './recipes.json';
 
 export const CROPS = cropsJson as unknown as Record<string, CropDef>;
 export const ITEMS = itemsJson as unknown as Record<string, ItemDef>;
 export const SHOPS = shopsJson as unknown as Record<string, ShopDef>;
+export const RECIPES = recipesJson as unknown as Record<string, RecipeDef>;
 export const SPECIES = creaturesJson as unknown as Record<string, SpeciesDef>;
 export const MOVES = movesJson as unknown as Record<string, MoveDef>;
 export const TRAINERS = { ...(trainersJson as unknown as Record<string, TrainerDef>), ...(regionJson.trainers as unknown as Record<string, TrainerDef>) };
@@ -41,6 +43,8 @@ export interface NpcDef {
   id: string; name: string; title: string; sprite: string; speed: number; run?: boolean; color: string;
   schedule: NpcScheduleEntry[];
   dialogue: Record<'first' | 'morning' | 'afternoon' | 'evening' | 'rain' | 'random', string[]>;
+  /** 친밀도(하트)별 대사: { "2": [...], "4": [...] } — 친해질수록 속마음을 털어놓음 */
+  hearts?: Record<string, string[]>;
   /** 생성된 마을 주민 (자기 마을에만 있음) */
   gen?: boolean;
 }

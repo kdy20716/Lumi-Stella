@@ -1,8 +1,8 @@
 {
-  "name": "starlight-farm",
+  "name": "lumi-monsters",
   "private": true,
   "version": "0.1.0",
-  "description": "스타듀밸리 스타일 2D 픽셀 농장 멀티플레이 웹 게임 (Vite + TypeScript + Phaser 3)",
+  "description": "루미 몬스터즈: 별빛의 씨앗 — 몬스터 수집·배틀 RPG에 농사·채집·제작을 더한 2D 픽셀 멀티플레이 웹 게임 (Vite + TypeScript + Phaser 3)",
   "type": "module",
   "scripts": {
     "dev": "vite",

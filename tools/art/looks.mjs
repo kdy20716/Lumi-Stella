@@ -10,7 +10,7 @@ export const LOOKS = {
     shirt: tone('#2f6a8a', '#3f8fb5', '#73bfe0'), pants: tone('#3b3f6e', '#525a9a', '#7a83c4'),
     shoes: shoesBrown, outfit: 'overalls', sleeves: 'short', accent: tone('#8a2f2f', '#c44a3a', '#e8775a'),
   },
-  hana: { // 이웃 농부
+  hana: { // 이웃 약초 농사꾼
     skin: SKINS.pale, hair: tone('#a8562a', '#d8783a', '#f2a65a'), hairStyle: 'ponytail',
     shirt: tone('#c9a24a', '#f0d27a', '#fff0b0'), pants: tone('#2f6a4a', '#3f8a5f', '#6ab884'),
     shoes: shoesBrown, outfit: 'overalls', sleeves: 'short', accent: tone('#a83250', '#e0476b', '#ff8aa6'),
@@ -20,7 +20,7 @@ export const LOOKS = {
     shirt: tone('#8a3a2a', '#b8523a', '#d8775a'), pants: tone('#2a2a36', '#3d3d4e', '#5c5c70'),
     shoes: shoesDark, outfit: 'apron', sleeves: 'short', accent: tone('#4a3a2a', '#6a5440', '#8c7458'),
   },
-  sora: { // 잡화점 상인
+  sora: { // 루미 마트 주인
     skin: SKINS.light, hair: tone('#1f1a2e', '#2f2848', '#4a4070'), hairStyle: 'bun', glasses: true,
     shirt: tone('#5a3a8a', '#7d5aa8', '#a98ad0'), pants: tone('#3a2a4a', '#4a3a5e', '#6a5a80'),
     shoes: shoesDark, outfit: 'dress', sleeves: 'long', accent: tone('#c99a2a', '#f0c84a', '#ffe58a'),
@@ -91,7 +91,7 @@ export const LOOKS = {
     shirt: tone('#e0e8f0', '#ffffff', '#ffffff'), pants: tone('#1f3a4a', '#2a5068', '#4a7490'),
     shoes: shoesDark, outfit: 'vest', sleeves: 'long', accent: tone('#2a8a8a', '#3ab0a8', '#7ad8d0'),
   },
-  nurse: { // 루미 쉼터 직원 다온
+  nurse: { // 루미 센터 간호사 다온
     skin: SKINS.pale, hair: tone('#b85a6a', '#e07a8a', '#ffb0bc'), hairStyle: 'bun',
     shirt: tone('#e8a0b0', '#ffc8d4', '#fff0f4'), pants: tone('#c97a8a', '#e8a0b0', '#ffd0dc'),
     shoes: tone('#c8c8cc', '#f0f0f0', '#ffffff'), outfit: 'apron', sleeves: 'short', accent: tone('#e07a8a', '#ff9cb0', '#ffd0dc'),

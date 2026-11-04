@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T13:35:47.323Z",
+  "generatedAt": "2026-11-04T14:31:29.885Z",
   "tileSize": 16,
   "images": {
     "water0": {
@@ -665,7 +665,7 @@
     "jar_throw": {
       "path": "assets/fx/jar.png",
       "w": 12,
-      "h": 12,
+      "h": 14,
       "originY": 1
     },
     "sparkle": {
@@ -1022,6 +1022,12 @@
       "h": 18,
       "originY": 1
     },
+    "workbench": {
+      "path": "assets/objects/workbench.png",
+      "w": 32,
+      "h": 30,
+      "originY": 1
+    },
     "worldmap": {
       "path": "assets/ui/worldmap.png",
       "w": 360,
@@ -1130,13 +1136,16 @@
       "path": "assets/crops/crops.png",
       "frameWidth": 16,
       "frameHeight": 32,
-      "frames": 20,
+      "frames": 35,
       "originY": 0.90625,
       "ids": [
         "parsnip",
         "cauliflower",
         "tomato",
-        "pumpkin"
+        "pumpkin",
+        "lumi_herb",
+        "fire_pepper",
+        "iron_bean"
       ],
       "stages": 5
     },
@@ -1144,7 +1153,7 @@
       "path": "assets/ui/icons.png",
       "frameWidth": 16,
       "frameHeight": 16,
-      "frames": 45,
+      "frames": 58,
       "originY": 0.9375,
       "ids": [
         "hoe",
@@ -1168,9 +1177,15 @@
         "cake",
         "pickaxe",
         "rod",
-        "jar",
-        "super_jar",
+        "lumi_ball",
+        "super_ball",
+        "hyper_ball",
+        "star_ball",
         "potion",
+        "super_potion",
+        "max_potion",
+        "atk_tonic",
+        "def_tonic",
         "badge_wind",
         "fish_crucian",
         "fish_trout",
@@ -1191,7 +1206,14 @@
         "badge_flame",
         "badge_light",
         "badge_normal",
-        "badge_star"
+        "badge_star",
+        "seeds_lumi_herb",
+        "seeds_fire_pepper",
+        "seeds_iron_bean",
+        "lumi_herb",
+        "fire_pepper",
+        "iron_bean",
+        "craft"
       ]
     },
     "duck": {

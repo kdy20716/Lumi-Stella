@@ -1,0 +1,110 @@
+{
+  "lumi_ball": {
+    "id": "lumi_ball",
+    "out": "lumi_ball",
+    "qty": 2,
+    "in": {
+      "stone": 2,
+      "copper_ore": 1
+    },
+    "description": "채석장 돌과 구리로 만드는 기본 포획볼.",
+    "starter": true
+  },
+  "potion": {
+    "id": "potion",
+    "out": "potion",
+    "qty": 1,
+    "in": {
+      "lumi_herb": 2
+    },
+    "description": "루미풀 두 줌을 달여 만든 회복약.",
+    "starter": true
+  },
+  "super_ball": {
+    "id": "super_ball",
+    "out": "super_ball",
+    "qty": 1,
+    "in": {
+      "iron_ore": 1,
+      "copper_ore": 1,
+      "stone": 1
+    },
+    "description": "쇠테를 둘러 튼튼하게.",
+    "teacher": "minsu",
+    "badges": 1
+  },
+  "hyper_ball": {
+    "id": "hyper_ball",
+    "out": "hyper_ball",
+    "qty": 1,
+    "in": {
+      "iron_ore": 2,
+      "copper_ore": 2,
+      "herb": 1
+    },
+    "description": "약초 진액으로 이음매를 봉해 놓치지 않게.",
+    "teacher": "minsu",
+    "badges": 3
+  },
+  "star_ball": {
+    "id": "star_ball",
+    "out": "star_ball",
+    "qty": 1,
+    "in": {
+      "star_shard": 2,
+      "iron_ore": 2
+    },
+    "description": "별가루 결정을 녹여 부은 전설의 볼.",
+    "teacher": "minsu",
+    "badges": 6
+  },
+  "super_potion": {
+    "id": "super_potion",
+    "out": "super_potion",
+    "qty": 1,
+    "in": {
+      "lumi_herb": 3,
+      "wild_mushroom": 1
+    },
+    "description": "버섯 진액이 회복력을 끌어올린다.",
+    "teacher": "hanbyeol",
+    "badges": 1
+  },
+  "atk_tonic": {
+    "id": "atk_tonic",
+    "out": "atk_tonic",
+    "qty": 1,
+    "in": {
+      "fire_pepper": 2,
+      "herb": 1
+    },
+    "description": "불꽃고추의 매운 기운으로 공격력 상승.",
+    "teacher": "hanbyeol",
+    "badges": 2
+  },
+  "def_tonic": {
+    "id": "def_tonic",
+    "out": "def_tonic",
+    "qty": 1,
+    "in": {
+      "iron_bean": 2,
+      "herb": 1
+    },
+    "description": "단단콩의 단단함으로 방어력 상승.",
+    "teacher": "hanbyeol",
+    "badges": 2
+  },
+  "max_potion": {
+    "id": "max_potion",
+    "out": "max_potion",
+    "qty": 1,
+    "in": {
+      "lumi_herb": 4,
+      "star_shard": 1,
+      "berry": 2
+    },
+    "description": "별가루 한 방울로 모든 상처를 낫게.",
+    "teacher": "hanbyeol",
+    "badges": 5
+  }
+}

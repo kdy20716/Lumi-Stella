@@ -1,4 +1,5 @@
-// 모험 요소 에셋: 풀숲, 광석 바위, 배틀 배경, 풍차, 루미 쉼터/도장 건물 옵션, 별빛 병 투척 스프라이트
+// 모험 요소 에셋: 풀숲, 광석 바위, 배틀 배경, 풍차, 루미 쉼터/도장 건물 옵션, 루미볼 투척 스프라이트
+import { lumiBall } from './items.mjs';
 import { Img, mix, darken, lighten, withAlpha, hash2, fbm, rng } from './lib/img.mjs';
 import { P } from './lib/palette.mjs';
 
@@ -85,9 +86,9 @@ export function buildWindmillBlades() {
 
 /** 던지는 별빛 병 12x12 */
 export function buildJar() {
-  const t = new Img(12, 12);
-  t.rrect(2, 3, 8, 8, '#bfe8ff', 2); t.rect(3, 4, 2, 4, '#ffffff'); t.rect(4, 1, 4, 2, P.wood.l1); t.rect(4, 1, 4, 1, P.wood.l2);
-  t.set(7, 7, '#ffd65a'); t.set(6, 8, '#fff4b0'); t.set(8, 6, '#ffd65a');
+  // 던지는 루미볼 (12x14) — 아이콘과 같은 디자인
+  const t = new Img(12, 14);
+  lumiBall(t, 1, 1, 5, '#5ec8b8', '#c9733a', '#ffd65a');
   t.outline(O, 0.5);
   return t;
 }

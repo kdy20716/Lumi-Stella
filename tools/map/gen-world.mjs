@@ -59,6 +59,27 @@ const LINES = {
 };
 const VILLAGER_LOOKS = ['villager', 'hana', 'mio', 'teo', 'juni', 'park', 'lass', 'woodcutter', 'lady', 'gentleman', 'researcher'];
 
+/** 생성 마을 주민 대사: 지형별 채집·제작 팁 + 루미나 지방 공통 이야기 */
+const BIOME_TIP = {
+  meadow: '이 근처 들판엔 민들레랑 산딸기가 많아. 만능 회복약에 산딸기가 들어간대.',
+  forest: '숲에선 야생 버섯이 잘 나. 고급 회복약 재료라던데?',
+  rocky: '바위가 많아서 철광석 캐기 좋아. 슈퍼 루미볼 재료가 다 여기 있지.',
+  snow: '추운 데선 약초가 잘 안 자라. 회복약은 고향 밭에서 넉넉히 만들어 와.',
+  beach: '바닷가 바위 밑엔 별가루 결정이 숨어 있기도 해. 전설의 볼 재료래.',
+  swamp: '늪지대 풀숲은 깊어서 루미가 자주 튀어나와. 볼 많이 챙겨.',
+  desert: '모래바람 불면 앞이 안 보여. 도핑약이라도 챙겨 가.',
+  volcano: '화산 근처 흙은 뜨거워서 불꽃고추가 매콤하게 잘 자란다나 봐.',
+  city: '도시 사람들은 다 사서 쓰지만, 손으로 만든 볼이 더 잘 잡힌다는 말도 있어.',
+};
+const TOWN_LORE = [
+  '별빛 마을 트레이너들은 자기 밭에서 약을 만들어 다닌다며? 대단해.',
+  '배지를 여덟 개 모으면 승리의 길을 지나 루미 리그에 도전할 수 있어.',
+  '하늘에서 떨어진 \'별빛의 씨앗\'에서 첫 루미가 태어났다는 옛이야기, 들어 봤어?',
+  '세 호수 깊은 곳엔 오래된 루미가 잠들어 있대. 함부로 다가가면 안 된대.',
+  '루미 센터는 어느 마을이든 무료야. 그래도 먼 길엔 회복약이 최고지.',
+  '도장 관장들은 배지를 줄 때마다 트레이너의 눈빛을 본대.',
+];
+
 export function buildRegion() {
   const nodes = buildGraph();
   const builders = [];
@@ -272,7 +293,9 @@ export function buildRegion() {
       const tip = k === 1 ? n.desc : `${n.links.filter((l) => l.type === 'edge').map((l) => nodes[l.to].name.split(' · ')[0]).join(', ')}(으)로 길이 이어져 있어.`;
       data.npcs[id] = { id, gen: true, name: nextName(), title: `${n.name} 주민`, sprite: VILLAGER_LOOKS[Math.floor(R() * VILLAGER_LOOKS.length)], speed: 34, color: '#7a8a5a',
         schedule: [{ time: 600, map: n.id, to: `wp_npc${k}`, idle: 'wander', radius: 3 }],
-        dialogue: { first: [`어서 와! 여기는 ${n.name}이야.`, tip], morning: [tip], afternoon: [tip], evening: ['밤엔 풀숲에 다른 루미들이 나온대.'], rain: ['비 오는 날은 물가 루미가 많아져.'], random: [n.gym ? `우리 마을 도장 관장은 ${GYMS[n.id]?.type ?? ''} 타입 루미를 써. 단단히 준비해!` : '천천히 둘러보고 가!'] } };
+        dialogue: { first: [`어서 와, 트레이너! 여기는 ${n.name}이야.`, tip], morning: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow], afternoon: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow, TOWN_LORE[(k + n.tier) % TOWN_LORE.length]],
+          evening: ['밤엔 풀숲에 다른 루미들이 나온대.', TOWN_LORE[(k * 3 + n.tier) % TOWN_LORE.length]], rain: ['비 오는 날은 물가 루미가 많아져.'],
+          random: [n.gym ? `우리 마을 도장 관장은 ${GYMS[n.id]?.type ?? ''} 타입 루미를 써. 단단히 준비해!` : '천천히 둘러보고 가!', TOWN_LORE[(k + n.tier * 2) % TOWN_LORE.length]] } };
     }
     if (coastal) addEncounters(n.id, POOLS.beach, n.tier, 'beach', true); else if (n.biome === 'swamp') addEncounters(n.id, POOLS.swamp, n.tier, 'swamp', true);
     return m;

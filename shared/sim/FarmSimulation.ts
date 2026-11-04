@@ -2,7 +2,7 @@
 // 클라이언트는 결과가 아니라 ActionIntent 만 보내고, 여기서 거리/에너지/도구 소지를 검증한 뒤 상태를 바꾼다.
 //  - 농장/집은 주인별 인스턴스(초대받은 친구만 함께), 마을·도로·바람골·가게 실내는 모두가 공유
 //  - 골드·가방·루미는 플레이어별, 시간·날씨는 서버 전체 공통
-import { CROPS, ENCOUNTERS, ITEMS, SHOPS, SPECIES, TRAINERS, hhmmToMinutes } from '../data';
+import { CROPS, ENCOUNTERS, ITEMS, RECIPES, SHOPS, SPECIES, TRAINERS, hhmmToMinutes } from '../data';
 import { BattleEngine, healAll, makeCreature, type BattleState } from './Battle';
 import {
   SoilState, INTERIOR_OF, ALL_PLAYER_LOOKS, isInterior, roomOf, BADGE_GATES,
@@ -11,6 +11,17 @@ import {
 } from '../types';
 import { MapInfo, prop } from './MapInfo';
 import { RIVAL_PICK, STORY, rivalOf } from '../story';
+
+/** 처음부터 아는 제작법 (집 작업대) */
+const STARTER_RECIPES = () => Object.values(RECIPES).filter((r) => r.starter).map((r) => r.id);
+/** 처음 배우러 갔을 때 주는 선물 [아이템, 개수] */
+const TEACH_GIFTS: Record<string, [string, number]> = { hana: ['seeds_lumi_herb', 8], minsu: ['copper_ore', 3], hanbyeol: ['seeds_fire_pepper', 4] };
+/** 옛 세이브의 아이템 id → 새 id (별빛 병 → 루미볼) */
+const OLD_ITEMS: Record<string, string> = { jar: 'lumi_ball', super_jar: 'super_ball' };
+function migrateBag(bag: Record<string, number>) {
+  for (const [o, n] of Object.entries(OLD_ITEMS)) if (bag[o]) { bag[n] = (bag[n] ?? 0) + bag[o]; delete bag[o]; }
+  for (const k of Object.keys(bag)) if (!ITEMS[k]) delete bag[k];
+}
 
 export const DAY_START = 6 * 60;      // 06:00
 export const DAY_END = 26 * 60;       // 다음날 02:00 → 기절
@@ -29,7 +40,7 @@ export type SimEvent =
   | { type: 'objectRemoved'; key: string; owner?: string }
   | { type: 'objectRestored'; keys: string[] }
   | { type: 'forage'; spots: ForageSpot[] }
-  | { type: 'party'; id: string; party: PlayerState['party']; bag: PlayerState['bag']; badges: string[]; defeated: string[]; seen: string[]; caught: string[]; visited: string[] }
+  | { type: 'party'; id: string; party: PlayerState['party']; bag: PlayerState['bag']; badges: string[]; defeated: string[]; seen: string[]; caught: string[]; visited: string[]; recipes: string[] }
   | { type: 'help'; playerId: string; species: string; text: string }
   | { type: 'toast'; playerId?: string; room?: string; text: string; icon?: string }
   | { type: 'room'; playerId: string; map: MapId; inst: string; world: string; x: number; y: number; snapshot: FarmSnapshot }
@@ -104,13 +115,13 @@ export class FarmSimulation {
   // ── 접속 / 저장 ─────────────────────────────────────
   addPlayer(id: string, name: string, look = 'player', save?: SaveData | null, world = ''): PlayerState {
     const inv: InventorySlot[] = Array.from({ length: INVENTORY_SIZE }, (_, i) => ({ slotIndex: i, itemId: null, quantity: 0 }));
-    const give = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_cauliflower', 'seeds_tomato', 'seeds_pumpkin', 'pickaxe', 'rod'];
-    const qty: Record<string, number> = { seeds_parsnip: 15, seeds_cauliflower: 5, seeds_tomato: 8, seeds_pumpkin: 3 };
+    const give = ['hoe', 'watering_can', 'axe', 'seeds_lumi_herb', 'seeds_parsnip', 'seeds_tomato', 'seeds_pumpkin', 'pickaxe', 'rod'];
+    const qty: Record<string, number> = { seeds_lumi_herb: 10, seeds_parsnip: 10, seeds_tomato: 6, seeds_pumpkin: 3 };
     give.forEach((it, i) => { inv[i].itemId = it; inv[i].quantity = qty[it] ?? 1; });
     const home = this.homeSpot();
     const p: PlayerState = {
       id, name, look, map: 'farm', inst: id, x: home.x, y: home.y, dir: 'down', anim: 'idle', energy: 270, maxEnergy: 270, inventory: inv, gold: 500, bin: [], story: STORY.HOME, world, homeWorld: world,
-      party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [], visited: ['farm'],
+      party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [], visited: ['farm'], recipes: STARTER_RECIPES(),
     };
     if (save) {
       Object.assign(p, {
@@ -118,8 +129,10 @@ export class FarmSimulation {
         party: save.party ?? [], box: save.box ?? [], bag: save.bag ?? {}, badges: save.badges ?? [], defeated: save.defeated ?? [],
         seen: save.seen ?? [], caught: save.caught ?? [], bin: save.bin ?? [], visited: save.visited ?? ['farm', 'town', ...(save.party?.length ? ['route1', 'windvale'] : [])],
         story: save.story ?? ((save.party ?? []).length ? STORY.DONE : STORY.HOME),
+        recipes: [...new Set([...STARTER_RECIPES(), ...(save.recipes ?? [])])],
       });
-      if (save.inventory?.length) p.inventory = Array.from({ length: INVENTORY_SIZE }, (_, i) => ({ slotIndex: i, itemId: save.inventory[i]?.itemId ?? null, quantity: save.inventory[i]?.quantity ?? 0 }));
+      migrateBag(p.bag);
+      if (save.inventory?.length) p.inventory = Array.from({ length: INVENTORY_SIZE }, (_, i) => { const id = save.inventory[i]?.itemId ?? null; const ok = !!id && !!ITEMS[id]; return { slotIndex: i, itemId: ok ? id : null, quantity: ok ? save.inventory[i]?.quantity ?? 0 : 0 }; });
     }
     this.players.set(id, p);
     this.ensureFarm(id, save?.farm);
@@ -135,7 +148,7 @@ export class FarmSimulation {
     return JSON.parse(JSON.stringify({
       v: 1, name: p.name, look: p.look, gold: p.gold, energy: p.energy, maxEnergy: p.maxEnergy, inventory: p.inventory,
       party: p.party, box: p.box, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, bin: p.bin,
-      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [] }, story: p.story, visited: p.visited, savedAt: Date.now(),
+      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [] }, story: p.story, visited: p.visited, recipes: p.recipes, savedAt: Date.now(),
     } satisfies SaveData)) as SaveData;
   }
 
@@ -297,6 +310,8 @@ export class FarmSimulation {
       case 'eatDish': return this.eatDish(p);
       case 'story': return this.storyStep(p, a.step);
       case 'rivalBattle': return this.rivalBattle(p);
+      case 'craft': return this.craft(p, a.recipe, a.times ?? 1);
+      case 'learn': return this.learn(p, a.npc);
       case 'resetSave': return this.resetSave(p);
       case 'goHome': { p.world = p.homeWorld; const h = this.homeSpot(); this.relocate(p, 'farm', p.id, h.x, h.y); return { ok: true }; }
     }
@@ -349,7 +364,7 @@ export class FarmSimulation {
     const dx = doorX * T + 8, dy = (cellY + 1) * T + 13;
     if (Math.abs(p.x - dx) > T * 1.6 || Math.abs(p.y - dy) > T * 1.6) return { ok: false, reason: 'far' };
     // 내 집은 '지금 있는 농장의 주인' 집 (친구 농장에 놀러 왔으면 친구 집)
-    // 이름 붙은 실내(도장·리그·탑 …)는 한 곳뿐이라 모두 같은 방, 공용 실내(쉼터·상점·이웃집)는 건물마다 따로
+    // 이름 붙은 실내(도장·리그·탑 …)는 한 곳뿐이라 모두 같은 방, 공용 실내(센터·마트·이웃집)는 건물마다 따로
     const inst = target === 'home' ? p.inst || p.id : prop(o, 'interior', '') ? '' : `${p.map}:${o.id}`;
     const ret = { map: p.map, inst: p.inst, x: dx, y: dy };
     const s = this.maps[target].spawns.get('entry') ?? this.maps[target].spawns.get('player')!;
@@ -437,6 +452,55 @@ export class FarmSimulation {
     this.battles.set(p.id, state);
     return { ok: true, battle: update };
   }
+
+  // ── 작업대 제작 (서버 권한: 재료 확인 → 차감 → 결과 지급) ──
+  private countItem(p: PlayerState, itemId: string) { return p.inventory.reduce((n, s) => n + (s.itemId === itemId ? s.quantity : 0), 0); }
+  private takeItem(p: PlayerState, itemId: string, qty: number) {
+    for (const s of p.inventory) {
+      if (qty <= 0) break;
+      if (s.itemId !== itemId) continue;
+      const k = Math.min(qty, s.quantity); s.quantity -= k; qty -= k;
+      if (s.quantity <= 0) { s.itemId = null; s.quantity = 0; }
+    }
+  }
+  private craft(p: PlayerState, recipeId: string, times: number): ActionResult {
+    const r = RECIPES[recipeId];
+    if (!r) return { ok: false, reason: 'no-recipe' };
+    if (!p.recipes.includes(r.id)) return { ok: false, reason: 'unknown-recipe' };
+    times = Math.max(1, Math.min(20, Math.floor(times) || 1));
+    for (const [it, n] of Object.entries(r.in)) {
+      if (this.countItem(p, it) < n * times) { this.emit({ type: 'toast', playerId: p.id, text: `재료가 부족해요: ${ITEMS[it]?.name ?? it} ${n * times}개 필요` }); return { ok: false, reason: 'materials' }; }
+    }
+    const out = ITEMS[r.out];
+    if (out.type !== 'battle') {
+      const free = p.inventory.some((s) => !s.itemId || (s.itemId === r.out && s.quantity + r.qty * times <= out.maxStack));
+      if (!free) { this.emit({ type: 'toast', playerId: p.id, text: '가방이 가득 찼어요!' }); return { ok: false, reason: 'full' }; }
+    }
+    for (const [it, n] of Object.entries(r.in)) this.takeItem(p, it, n * times);
+    this.addItem(p, r.out, r.qty * times);
+    this.changed(p); this.emitParty(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${out.name} ×${r.qty * times} 완성!`, icon: out.icon });
+    return { ok: true, data: { item: r.out, qty: r.qty * times } };
+  }
+  /** 공방 NPC에게 배울 수 있는 제작법을 모두 배움 (+ 처음 만났을 때 선물) */
+  private learn(p: PlayerState, npc: string): ActionResult {
+    const learned: string[] = [];
+    for (const r of Object.values(RECIPES)) {
+      if (r.teacher !== npc || p.recipes.includes(r.id)) continue;
+      if (p.badges.length < (r.badges ?? 0)) continue;
+      p.recipes.push(r.id); learned.push(r.id);
+    }
+    const gift = TEACH_GIFTS[npc];
+    if (gift && !p.recipes.includes(`gift:${npc}`)) {
+      if (this.addItem(p, gift[0], gift[1])) { p.recipes.push(`gift:${npc}`); this.changed(p); this.emit({ type: 'toast', playerId: p.id, text: `${ITEMS[gift[0]].name} ×${gift[1]}을(를) 받았어요!`, icon: ITEMS[gift[0]].icon }); }
+    }
+    if (learned.length) {
+      this.emitParty(p);
+      this.emit({ type: 'toast', playerId: p.id, text: `새 제작법: ${learned.map((id) => ITEMS[RECIPES[id].out].name).join(', ')}`, icon: ITEMS[RECIPES[learned[0]].out].icon });
+    }
+    return { ok: true, data: { qty: learned.length } };
+  }
+
   private resetSave(p: PlayerState): ActionResult {
     const name = p.name;
     const world = p.homeWorld;
@@ -588,7 +652,7 @@ export class FarmSimulation {
 
   // ── 루미 모험 ──────────────────────────────────────
   private emitParty(p: PlayerState) {
-    this.emit({ type: 'party', id: p.id, party: p.party, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, visited: p.visited });
+    this.emit({ type: 'party', id: p.id, party: p.party, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, visited: p.visited, recipes: p.recipes });
   }
   private help(p: PlayerState, text: string) { const sp = p.party[0]?.species; if (sp) this.emit({ type: 'help', playerId: p.id, species: sp, text }); }
   private helps(p: PlayerState) { return SPECIES[p.party[0]?.species]?.helps; }
@@ -604,9 +668,9 @@ export class FarmSimulation {
     if (!ENCOUNTERS.starters.includes(species)) return { ok: false, reason: 'not-starter' };
     p.party.push(makeCreature(species, 5));
     p.seen.push(species); p.caught.push(species);
-    p.bag.jar = (p.bag.jar ?? 0) + 5; p.bag.potion = (p.bag.potion ?? 0) + 3;
+    p.bag.lumi_ball = (p.bag.lumi_ball ?? 0) + 5; p.bag.potion = (p.bag.potion ?? 0) + 3;
     this.emitParty(p);
-    this.emit({ type: 'toast', playerId: p.id, text: `${SPECIES[species].name}이(가) 파트너가 되었어요! 별빛 병 5개, 회복 꿀 3개를 받았어요.`, icon: 'lumi' });
+    this.emit({ type: 'toast', playerId: p.id, text: `${SPECIES[species].name}이(가) 파트너가 되었어요! 루미볼 5개, 루미 회복약 3개를 받았어요.`, icon: 'lumi' });
     return { ok: true };
   }
 

@@ -115,7 +115,7 @@ export class BattleEngine {
     return this.finish(p, st, log);
   }
 
-  /** 아이템 사용 (별빛 병 / 회복 꿀) — 상대가 공격할 기회를 가짐 */
+  /** 아이템 사용 (루미볼 / 회복약 / 도핑약) — 상대가 공격할 기회를 가짐 */
   item(p: PlayerState, st: BattleState, itemId: string) {
     const log: BattleLog[] = [];
     const def = ITEMS[itemId];
@@ -139,14 +139,23 @@ export class BattleEngine {
         st.over = true;
         return { ok: true as const, update: { view: this.view(p, st), log, ended: 'caught' as const } };
       }
-      log.push({ t: 'text', text: ['아깝다! 병에서 빠져나왔다!', '조금만 더였는데...!', '앗, 병이 흔들리더니 빠져나왔다!'][shakes] ?? '빠져나왔다!' });
+      log.push({ t: 'text', text: ['아깝다! 볼에서 빠져나왔다!', '조금만 더였는데...!', '앗, 볼이 흔들리더니 빠져나왔다!'][shakes] ?? '빠져나왔다!' });
     } else if (def.heal) {
       p.bag[itemId]--;
       const me = p.party[st.myIdx], max = stats(me).maxHp;
       me.hp = Math.min(max, me.hp + def.heal);
       log.push({ t: 'text', text: `${def.name}을(를) 사용했다! ${SPECIES[me.species].name}의 체력이 회복되었다.` });
       log.push({ t: 'hp', side: 'me', hp: me.hp, maxHp: max });
-    }
+    } else if (def.boost) {
+      p.bag[itemId]--;
+      const me = p.party[st.myIdx], name = SPECIES[me.species].name;
+      log.push({ t: 'text', text: `${def.name}을(를) 사용했다!` });
+      for (const [k, v] of Object.entries(def.boost) as ['atk' | 'def', number][]) {
+        const before = st.stage.me[k]; st.stage.me[k] = Math.min(6, before + v);
+        const stat = k === 'atk' ? ['공격은', '공격이'] : ['방어는', '방어가'];
+        log.push({ t: 'text', text: st.stage.me[k] === before ? `${name}의 ${stat[0]} 더 오르지 않는다!` : `${name}의 ${stat[1]} 크게 올랐다!` });
+      }
+    } else return { ok: false as const, reason: 'not-usable' };
     this.foeTurn(p, st, log);
     return { ok: true as const, update: this.finish(p, st, log) };
   }

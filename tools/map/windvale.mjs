@@ -1,4 +1,4 @@
-// 바람골 마을 (50x40): 루미 쉼터(회복), 상점(별빛 병·상처약), 바람골 도장(관장 세나), 풍차, 작은 분수 연못
+// 바람골 마을 (50x40): 루미 센터(회복), 루미 마트(루미볼·회복약), 바람골 도장(관장 세나), 풍차, 작은 분수 연못
 import { MapBuilder, G, S, Wt } from './lib.mjs';
 import { ADV_BUILDINGS } from '../art/adventure.mjs';
 import { BUILDINGS } from '../art/town.mjs';
@@ -31,7 +31,7 @@ export function buildWindvale() {
   for (const [x, y] of [[21, 22], [28, 26]]) m.place('bench', x, y, { w: 2, force: true, props: { interact: 'bench' } });
   for (const [x, y] of [[13, 17], [23, 17], [34, 17], [11, 21], [39, 21], [14, 35], [36, 35]]) m.place('lamp', x, y, { force: true });
   for (const [x, y] of [[centerDoor - 3, 16], [centerDoor + 2, 16], [shopDoor + 2, 16], [gymDoor - 3, 16], [gymDoor + 3, 16]]) m.place('planter', x, y, { force: true });
-  m.place('sign', 2, 17, { force: true, props: { interact: 'sign', text: '바람골 마을\n바람과 풍차의 마을 · 루미 쉼터 있음' } });
+  m.place('sign', 2, 17, { force: true, props: { interact: 'sign', text: '바람골 마을\n바람과 풍차의 마을 · 루미 센터 있음' } });
   m.place('sign', 46, 18, { force: true, props: { interact: 'sign', text: '→ 2번 도로 · 갯바람길\n바닷가 물결항으로 이어져요.' } });
   m.place('sign', 44, 4, { force: true, props: { interact: 'sign', text: '↑ 3번 도로 · 단풍오솔길\n단풍골 · 새벽호수 방면' } });
   m.place('hay', 40, 12, { force: true }); m.place('barrel', 41, 12, { force: true });
