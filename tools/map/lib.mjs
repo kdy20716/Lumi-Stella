@@ -78,7 +78,7 @@ export class MapBuilder {
   }
 
   /** 숲 테두리: gap(x,y) 가 true 인 곳은 비움 */
-  forest(gap = () => false, topExtra = 0.25) {
+  forest(gap = () => false, topExtra = 0.25, trees = null) {
     const { W, H } = this;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const edge = Math.min(x, y, W - 1 - x, H - 1 - y);
@@ -86,7 +86,7 @@ export class MapBuilder {
       const p = (edge === 0 ? 0.95 : edge === 1 ? 0.7 : edge === 2 ? 0.4 : 0.15) + (y < 6 ? topExtra : 0);
       if ((x + y * 3) % 2 === 0 && this.R() < p) {
         if (!this.inb(x, y) || this.reserved[y][x] || this.terrain[y][x] !== G || this.blocked[y][x]) continue;
-        const type = this.R() < 0.55 ? 'pine' : (this.R() < 0.2 ? 'oak_apple' : 'oak');
+        const type = trees ? trees[Math.floor(this.R() * trees.length)] : this.R() < 0.55 ? 'pine' : (this.R() < 0.2 ? 'oak_apple' : 'oak');
         this.place(type, x, y, { props: { frameOffset: Math.floor(this.R() * 4) } });
       }
     }

@@ -1,20 +1,21 @@
 // 클라이언트/서버 공용 타입
+import REGION from './data/region.json';
 export type Dir = 'down' | 'left' | 'right' | 'up';
 export const DIR_VEC: Record<Dir, [number, number]> = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
 
 export type ItemType = 'tool' | 'seed' | 'crop' | 'material' | 'food' | 'battle';
-export const OUTDOOR_IDS = ['farm', 'town', 'route1', 'windvale'] as const;
-export const INTERIOR_IDS = ['home', 'in_store', 'in_cafe', 'in_lab', 'in_smithy', 'in_house_a', 'in_house_b', 'in_house_c', 'in_center', 'in_shop_w', 'in_gym', 'in_windmill'] as const;
-export type MapId = (typeof OUTDOOR_IDS)[number] | (typeof INTERIOR_IDS)[number];
-export const MAP_IDS: MapId[] = [...OUTDOOR_IDS, ...INTERIOR_IDS];
-export const MAP_NAMES: Record<MapId, string> = {
-  farm: '별빛 농장', town: '별빛 마을', route1: '1번 도로 · 산들길', windvale: '바람골 마을',
-  home: '나의 집', in_store: '소라네 잡화점', in_cafe: '루나 카페', in_lab: '마을회관 · 루미 연구실', in_smithy: '민수의 대장간',
-  in_house_a: '이웃집', in_house_b: '이웃집', in_house_c: '이웃집', in_center: '루미 쉼터', in_shop_w: '바람골 상점', in_gym: '바람골 도장', in_windmill: '풍차 안',
-};
+/** 맵 목록·이름·지도 좌표는 맵 생성기(tools/map/generate-map.mjs)가 만든 region.json 에서 */
+export interface MapMeta { name: string; kind: 'farm' | 'town' | 'route' | 'cave' | 'area' | 'room'; biome: string; x: number; y: number; tier: number; interior?: boolean }
+export type MapId = string;
+export const MAP_IDS: MapId[] = REGION.ids;
+export const MAP_META = REGION.maps as unknown as Record<MapId, MapMeta>;
+export const MAP_NAMES: Record<MapId, string> = Object.fromEntries(Object.entries(MAP_META).map(([id, m]) => [id, m.name]));
+const INTERIOR_SET = new Set<string>(REGION.interior);
 /** 바깥 건물(오브젝트 타입) → 실내 맵 */
 export const INTERIOR_OF: Record<string, MapId> = { house: 'home', store: 'in_store', cafe: 'in_cafe', hall: 'in_lab', smithy: 'in_smithy', house_a: 'in_house_a', house_b: 'in_house_b', house_c: 'in_house_c', center: 'in_center', shop_w: 'in_shop_w', gym: 'in_gym', windmill: 'in_windmill' };
-export const isInterior = (m: MapId) => (INTERIOR_IDS as readonly string[]).includes(m);
+export const isInterior = (m: MapId) => INTERIOR_SET.has(m);
+/** 배지가 있어야 들어갈 수 있는 곳 */
+export const BADGE_GATES: Record<string, number> = { league: 8, origin: 8, distortion: 8 };
 /** 주인별로 따로 존재하는 공간 (초대받은 친구만 함께 보임) */
 export const isPrivateMap = (m: MapId) => m === 'farm' || m === 'home';
 /** 같은 방(room)에 있는 플레이어끼리만 서로 보인다: 공개 맵은 맵 이름, 개인 공간은 맵@주인, 건물 실내는 맵@바깥맵:건물id */
@@ -94,6 +95,7 @@ export interface PlayerState {
   badges: string[];
   defeated: string[];             // 이긴 트레이너 id
   seen: string[]; caught: string[];
+  visited: string[];              // 가 본 바깥 맵 (휴대폰 지도 안개 걷힘)
 }
 
 export type LumiType = '노말' | '풀' | '물' | '불' | '땅' | '바람' | '빛';
@@ -105,7 +107,7 @@ export interface SpeciesDef {
   helps: 'farm' | 'fish' | 'mine' | 'forage' | 'energy' | 'exp';
 }
 export interface MoveDef { id: string; name: string; type: LumiType; power: number; accuracy: number; category: 'atk' | 'heal' | 'debuffAtk' | 'debuffDef' | 'buffDef'; priority: number; description: string }
-export interface TrainerDef { id: string; name: string; title: string; sprite: string; map: MapId; sight: number; team: [string, number][]; reward: number; badge?: string; intro: string[]; defeat: string[]; after: string[] }
+export interface TrainerDef { id: string; name: string; title: string; sprite: string; map: MapId; sight: number; team: [string, number][]; reward: number; badge?: string; requires?: string[]; intro: string[]; defeat: string[]; after: string[] }
 
 export interface CreatureView { uid: string; species: string; name: string; type: LumiType; level: number; hp: number; maxHp: number; exp: number; expNext: number; moves: { id: string; name: string; type: LumiType; power: number; category: string }[] }
 export interface BattleView {
@@ -142,6 +144,7 @@ export interface SaveData {
   badges: string[]; defeated: string[]; seen: string[]; caught: string[]; bin: { itemId: string; quantity: number }[];
   farm: { tiles: FarmTile[]; removed: number[] };
   story?: number;
+  visited?: string[];
   savedAt: number;
 }
 

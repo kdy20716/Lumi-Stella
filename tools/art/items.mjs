@@ -71,7 +71,9 @@ function fish(t, b, l, d, stripe = false, whisker = false) {
 function tri3(t) { t.set(8, 3, '#fff4b0'); t.set(7, 4, '#ffd65a'); t.set(9, 4, '#ffd65a'); }
 export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_cauliflower', 'seeds_tomato', 'seeds_pumpkin', 'parsnip', 'cauliflower', 'tomato', 'pumpkin', 'gold', 'energy', 'sun', 'rain', 'heart', 'coffee', 'bread', 'cake',
   'pickaxe', 'rod', 'jar', 'super_jar', 'potion', 'badge_wind', 'fish_crucian', 'fish_trout', 'fish_catfish', 'fish_rainbow',
-  'berry', 'wild_mushroom', 'dandelion', 'herb', 'stone', 'copper_ore', 'iron_ore', 'star_shard', 'lumi'];
+  'berry', 'wild_mushroom', 'dandelion', 'herb', 'stone', 'copper_ore', 'iron_ore', 'star_shard', 'lumi',
+  'badge_water', 'badge_leaf', 'badge_earth', 'badge_flame', 'badge_light', 'badge_normal', 'badge_star'];
+function badge(t, d, l, sym) { for (let y = 1; y < 15; y++) { const hw = Math.round(6 - Math.abs(y - 7.5) * 0.35); for (let x = 8 - hw; x < 8 + hw; x++) t.set(x, y, (x + y) % 5 === 0 ? l : y < 8 ? l : d); } t.outline('#2a1b14', 0.6); sym(t); }
 export function buildIcons() {
   const img = new Img(16 * ICONS.length, 16);
   const m = P.metal, w = P.wood;
@@ -91,6 +93,13 @@ export function buildIcons() {
     jar: (t) => { t.rrect(3, 4, 10, 10, '#bfe8ff', 2); t.rect(4, 5, 2, 6, '#ffffff'); t.rect(5, 2, 6, 2, P.wood.l1); t.rect(5, 2, 6, 1, P.wood.l2); t.set(9, 9, '#ffd65a'); t.set(8, 10, '#fff4b0'); t.set(10, 8, '#ffd65a'); t.set(9, 11, '#ffd65a'); },
     super_jar: (t) => { t.rrect(3, 4, 10, 10, '#d8c8ff', 2); t.rect(4, 5, 2, 6, '#ffffff'); t.rect(5, 2, 6, 2, P.gold.base); t.rect(5, 2, 6, 1, P.gold.l1); t.set(9, 9, '#ff9cbc'); t.set(8, 10, '#fff4b0'); t.set(10, 8, '#ffd65a'); t.set(9, 11, '#a88aff'); },
     potion: (t) => { t.rrect(4, 6, 8, 8, '#ffd08a', 2); t.rect(5, 9, 6, 4, '#ff9a5a'); t.rect(6, 3, 4, 3, '#f2e6cf'); t.rect(5, 2, 6, 1, P.wood.base); t.rect(5, 7, 2, 2, '#ffffff'); t.rect(7, 10, 2, 2, '#ffffff'); },
+    badge_water: (t) => badge(t, '#2f6ac0', '#7ab8f0', (t) => { t.line(8, 4, 5, 9, '#ffffff'); t.line(8, 4, 11, 9, '#ffffff'); t.ellipse(8, 10, 3, 2, '#ffffff'); }),
+    badge_leaf: (t) => badge(t, '#3f8a3e', '#86c95b', (t) => { t.ellipse(8, 8, 2, 4, '#ffffff'); t.line(8, 5, 8, 12, '#3f8a3e'); }),
+    badge_earth: (t) => badge(t, '#8a5a2a', '#c99a62', (t) => { t.rect(5, 7, 6, 5, '#ffffff'); t.line(5, 7, 8, 4, '#ffffff'); t.line(11, 7, 8, 4, '#ffffff'); }),
+    badge_flame: (t) => badge(t, '#c03a1a', '#ff8a4a', (t) => { t.ellipse(8, 10, 3, 3, '#ffd65a'); t.line(8, 4, 6, 9, '#ffd65a'); t.line(8, 4, 10, 9, '#ffd65a'); t.set(8, 10, '#ffffff'); }),
+    badge_light: (t) => badge(t, '#c9921e', '#ffe08a', (t) => { t.circle(8, 8, 2, '#ffffff'); for (const [x, y] of [[8, 4], [8, 12], [4, 8], [12, 8]]) t.set(x, y, '#ffffff'); }),
+    badge_normal: (t) => badge(t, '#7a8a9a', '#d8e4ee', (t) => { t.line(8, 4, 8, 12, '#ffffff'); t.line(4, 8, 12, 8, '#ffffff'); t.line(5, 5, 11, 11, '#ffffff'); t.line(11, 5, 5, 11, '#ffffff'); }),
+    badge_star: (t) => badge(t, '#4a3a8a', '#a88ae0', (t) => { t.line(8, 4, 6, 11, '#ffd65a'); t.line(8, 4, 10, 11, '#ffd65a'); t.line(4, 7, 12, 7, '#ffd65a'); t.line(4, 7, 10, 11, '#ffd65a'); t.line(12, 7, 6, 11, '#ffd65a'); }),
     badge_wind: (t) => { t.circle(8, 8, 6, '#3ab0a8'); t.circle(8, 8, 4, '#7ad8d0'); t.line(5, 7, 11, 6, '#ffffff'); t.line(5, 9, 10, 9, '#ffffff'); t.line(6, 11, 9, 11, '#ffffff'); t.set(8, 3, '#ffd65a'); },
     berry: (t) => { for (const [x, y] of [[5, 8], [9, 7], [7, 11], [11, 10]]) { t.circle(x, y, 2.2, '#8f3cc4'); t.set(x - 1, y - 1, '#c58af0'); } t.line(7, 3, 8, 6, P.leaf.d1); t.rect(8, 3, 3, 2, P.leaf.base); },
     wild_mushroom: (t) => { t.rect(7, 8, 3, 6, '#f1e3c8'); t.ellipse(8, 7, 5.5, 3.5, '#c9763b'); t.set(6, 5, '#f2b080'); t.set(10, 6, '#fff2dc'); t.hline(4, 9, 9, '#8a4a20'); },

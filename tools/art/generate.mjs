@@ -14,7 +14,7 @@ import { LOOKS } from './looks.mjs';
 import * as OB from './objects.mjs';
 import { buildRoom, FURN, ROOMS } from './interior.mjs';
 import { buildPortrait } from './portrait.mjs';
-import { buildWorldMap } from './worldmap.mjs';
+import * as RG from './region.mjs';
 import { buildCrops, buildIcons, buildPanel, buildSlot, buildSlotActive, ICONS, CROP_IDS, CROP_STAGES } from './items.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../client/public/assets');
@@ -32,6 +32,14 @@ ts.save(out('tiles/tileset.png'));
 manifest.tileset = { path: 'assets/tiles/tileset.png', columns: TILESET_COLS, rows: ts.h / 16, ROW, DECOR, WOOD, MISC };
 const water = buildWater();
 for (let f = 0; f < 4; f++) { const t = new Img(64, 64); t.blit(water, 0, 0, { sx: f * 64, sw: 64, sh: 64 }); image(`water${f}`, `tiles/water_${f}.png`, t); }
+// 바이옴별 타일셋 · 물 (같은 타일 배치, 색만 다름)
+manifest.biomes = {};
+for (const biome of Object.keys(RG.BIOME_TINT)) {
+  RG.biomeTileset(ts, biome).save(out(`tiles/tileset_${biome}.png`));
+  const w = RG.biomeWater(water, biome);
+  if (w) for (let f = 0; f < 4; f++) { const t = new Img(64, 64); t.blit(w, 0, 0, { sx: f * 64, sw: 64, sh: 64 }); image(`water_${biome}${f}`, `tiles/water_${biome}_${f}.png`, t); }
+  manifest.biomes[biome] = { tileset: `assets/tiles/tileset_${biome}.png`, water: !!w };
+}
 
 // 캐릭터
 for (const [id, look] of Object.entries(LOOKS)) {
@@ -44,6 +52,9 @@ for (const [id, look] of Object.entries(LOOKS)) {
 sheet('oak', 'objects/oak.png', OB.buildOak({ seed: 3 }), 48, 64, { originY: 61 / 64 });
 sheet('oak_apple', 'objects/oak_apple.png', OB.buildOak({ seed: 9, fruit: '#d8473b' }), 48, 64, { originY: 61 / 64 });
 sheet('pine', 'objects/pine.png', OB.buildPine(), 40, 72, { originY: 69 / 72 });
+sheet('oak_autumn', 'objects/oak_autumn.png', OB.buildOak({ seed: 13, pal: RG.AUTUMN }), 48, 64, { originY: 61 / 64 });
+sheet('pine_snow', 'objects/pine_snow.png', OB.buildPine({ seed: 11, snow: true }), 40, 72, { originY: 69 / 72 });
+sheet('palm', 'objects/palm.png', RG.buildPalm(), 48, 64, { originY: 62 / 64 });
 sheet('fence', 'objects/fence.png', OB.buildFence(), 16, 24, { originY: 22 / 24 });
 sheet('tuft', 'objects/tuft.png', OB.buildTuft(), 16, 16, { originY: 15 / 16 });
 sheet('butterfly', 'fx/butterfly.png', OB.buildButterfly(), 8, 8);
@@ -61,6 +72,15 @@ image('bush_berry', 'objects/bush_berry.png', OB.buildBush({ seed: 8, berries: t
 image('rock', 'objects/rock.png', OB.buildRock(false));
 image('rock_big', 'objects/rock_big.png', OB.buildRock(true));
 image('stump', 'objects/stump.png', OB.buildStump());
+image('cactus', 'objects/cactus.png', RG.buildCactus());
+image('dead_tree', 'objects/dead_tree.png', RG.buildDeadTree());
+image('reeds', 'objects/reeds.png', RG.buildReeds());
+image('cave_mouth', 'objects/cave_mouth.png', RG.buildCaveMouth());
+image('ruin_pillar', 'objects/ruin_pillar.png', RG.buildRuinPillar(false));
+image('ruin_broken', 'objects/ruin_broken.png', RG.buildRuinPillar(true));
+image('altar_stone', 'objects/altar_stone.png', RG.buildAltarStone());
+image('portal', 'objects/portal.png', RG.buildPortal());
+image('stairs_up', 'objects/stairs_up.png', RG.buildStairsUp());
 image('log', 'objects/log.png', OB.buildLog());
 image('shipping_bin', 'objects/shipping_bin.png', OB.buildShippingBin());
 image('mailbox', 'objects/mailbox.png', OB.buildMailbox());
@@ -98,6 +118,9 @@ sheet('duck', 'animals/duck.png', TW.buildDuck(), 16, 16, { originY: 15 / 16 });
 sheet('tallgrass', 'objects/tallgrass.png', ADV.buildTallGrass(), 16, 16, { originY: 1 });
 for (const k of ['stone', 'copper', 'iron', 'star']) image(`ore_${k}`, `objects/ore_${k}.png`, ADV.buildOreRock(k));
 for (const k of ['grass', 'water', 'town']) image(`battle_${k}`, `battle/bg_${k}.png`, ADV.buildBattleBg(k));
+for (const k of ['cave', 'snow', 'sand']) image(`battle_${k}`, `battle/bg_${k}.png`, RG.buildBattleBg2(k));
+// 동굴 층 배경 (맵 생성기와 같은 레이아웃)
+for (const n of RG.caveNodes()) image(`cave_${n.id}`, `caves/${n.id}.png`, RG.buildCaveBg(n));
 image('windmill_blades', 'buildings/windmill_blades.png', ADV.buildWindmillBlades());
 image('jar_throw', 'fx/jar.png', ADV.buildJar());
 image('sparkle', 'fx/sparkle.png', ADV.buildSparkle());
@@ -115,7 +138,7 @@ for (const [type, f] of Object.entries(FURN)) image(type, `objects/${type}.png`,
 // 대화창 흉상 일러스트 (모든 인물)
 for (const [id, look] of Object.entries(LOOKS)) buildPortrait(look).save(out(`portraits/${id}.png`));
 // 휴대폰 지도
-image('worldmap', 'ui/worldmap.png', buildWorldMap());
+image('worldmap', 'ui/worldmap.png', RG.buildRegionMap());
 image('slot', 'ui/slot.png', buildSlot());
 image('slot_active', 'ui/slot_active.png', buildSlotActive());
 

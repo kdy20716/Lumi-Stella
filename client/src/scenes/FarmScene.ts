@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { ITEMS, NPCS, SHOPS, SPECIES, TRAINERS } from '@shared/data';
 import { HOTBAR_SIZE } from '@shared/sim/FarmSimulation';
 import { MapInfo, type TiledMap, type WarpDef } from '@shared/sim/MapInfo';
-import { DIR_VEC, INTERIOR_OF, MAP_IDS, MAP_NAMES, roomOf, type BattleUpdate, type MapId } from '@shared/types';
+import { BADGE_GATES, DIR_VEC, INTERIOR_OF, MAP_IDS, MAP_META, MAP_NAMES, roomOf, type BattleUpdate, type MapId } from '@shared/types';
 import type { RosterEntry } from '@shared/protocol';
 import { DEPTH, TILE, pickZoom, type Manifest } from '../config';
 import { Atmosphere } from '../fx/Atmosphere';
@@ -39,6 +39,10 @@ const FLAVOR: Record<string, string> = {
   stump: '오래된 그루터기. 도끼로 치울 수 있다.', log: '쓰러진 통나무. 도끼로 치울 수 있다.',
   planter: '마을 사람들이 정성껏 가꾼 꽃 화분.', cafe_table: '루나 카페의 야외 테이블. 커피 향이 은은하다.',
   stall: '광장의 무인 가판대.', stall_b: '광장의 무인 가판대.',
+  oak_autumn: '붉게 물든 단풍나무. 사계절 내내 잎이 지지 않는다고 한다.', pine_snow: '눈을 소복이 뒤집어쓴 전나무.',
+  palm: '바닷바람에 흔들리는 야자수.', cactus: '가시가 따끔한 선인장. 꼭대기에 분홍 꽃이 피었다.', dead_tree: '잎이 다 떨어진 앙상한 나무.',
+  reeds: '바람에 서걱거리는 갈대.', ruin_pillar: '이끼 낀 오래된 돌기둥. 알 수 없는 문양이 새겨져 있다.', ruin_broken: '부서진 돌기둥의 밑동.',
+  cave_mouth: '서늘한 바람이 불어 나오는 동굴 입구.', portal: '일렁이는 보랏빛 틈. 저 너머는 위아래가 뒤집혀 있다…', stairs_up: '위로 이어지는 돌계단.',
 };
 const LETTER = ['[별빛 마을 이장님의 편지]\n\n새 이웃이 된 것을 진심으로 환영합니다!\n(우편함에서 친구에게 농장·집 초대장을 보낼 수 있어요)', '이 농장은 오랫동안 비어 있었지만, 흙은 여전히 기름지답니다.\n괭이로 땅을 갈고, 씨앗을 심고, 매일 물을 주세요.', '농장 오른쪽 길을 따라가면 별빛 마을이 나와요.\n잡화점에서 씨앗을, 카페에서 간식을 살 수 있답니다.\n\n— 오 이장 드림'];
 const HOME_OWNER: Record<string, string> = { mayor: '오 이장', luna: '루나', teo: '태오', sora: '소라', mio: '미오', villager: '구름', leader: '세나' };
@@ -149,6 +153,7 @@ export class FarmScene extends Phaser.Scene {
 
     for (const def of Object.values(NPCS)) {
       if (!this.manifest.characters[def.sprite]) continue;
+      if (def.gen && def.schedule[0]?.map !== this.mapId) continue;   // 생성된 주민은 자기 마을에만
       const n = new Npc(this, def, this.manifest.characters[def.sprite], this.world.grid, info.spawns, this.zoom, this.mapId);
       n.resetForDay(this.auth.time.minutes);
       this.npcs.push(n);
@@ -157,7 +162,7 @@ export class FarmScene extends Phaser.Scene {
     this.atmo.setWeather(this.auth.time.weather);
 
     const cam = this.cameras.main;
-    cam.setZoom(this.zoom).setRoundPixels(true).setBackgroundColor(this.world.interior ? '#0d0a0c' : '#14201a');
+    cam.setZoom(this.zoom).setRoundPixels(true).setBackgroundColor(this.world.interior || this.world.cave ? '#0d0a0c' : '#14201a');
     this.fitCamera();
     this.renderDish();
     this.scale.on('resize', this.onResize, this);
@@ -270,9 +275,11 @@ export class FarmScene extends Phaser.Scene {
     const me = this.auth.me;
     if (me.story < STORY.PHONE) { sfx.play('error'); ui.toast.push('휴대폰이 없어요… 집에 두고 왔나?', 'heart'); return; }
     if (me.story < STORY.HALL) { sfx.play('error'); ui.toast.push('휴대폰에 아직 지도 앱이 없어요. 이장님을 만나 보자!', 'heart'); return; }
-    const parent = me.map === 'home' ? 'farm' : me.map.startsWith('in_') ? (me.inst.split(':')[0] || 'town') : me.map;
+    // 실내면 그 건물이 있는 바깥 맵 위치로
+    const meta = MAP_META[me.map];
+    const parent = me.map === 'home' ? 'farm' : meta?.interior && !meta.x ? (me.inst.split(':')[0] || me.ret?.map || 'town') : me.map;
     const owner = (me.map === 'farm' || me.map === 'home') && me.inst !== me.id ? ` (${this.auth.roster.get(me.inst)?.name ?? '친구'}님네)` : '';
-    ui.worldMap.toggle(parent, owner);
+    ui.worldMap.toggle(parent, owner, me.visited ?? []);
   }
   private openMenu() {
     const local = this.auth instanceof LocalAuthority;
@@ -446,7 +453,7 @@ export class FarmScene extends Phaser.Scene {
   private objectInteraction(o: WorldObject): { label: string; run: () => void } | null {
     const it = o.interact ?? '';
     // 건물: 문 앞에서 E → 실내로
-    const inside = INTERIOR_OF[o.type];
+    const inside = o.interior ?? INTERIOR_OF[o.type];
     if (inside && !this.world.interior) {
       const owner = it.startsWith('home:') ? HOME_OWNER[it.slice(5)] ?? '이웃' : '';
       const me = this.auth.me;
@@ -561,6 +568,13 @@ export class FarmScene extends Phaser.Scene {
       this.say([this.auth.me.story < STORY.MEET ? '저 너머는 1번 도로… 오늘은 먼저 마을에서 할 일이 있다!' : '아직은 갈 수 없어. 마을회관에서 이장님을 만나고 루미를 받아야 해!']);
       return;
     }
+    const gate = BADGE_GATES[w.to] ?? 0;
+    if (gate > this.auth.me.badges.length) {
+      const [dx, dy] = DIR_VEC[this.player.dir]; this.player.setPosition(this.player.x - dx * 14, this.player.y - dy * 14);
+      sfx.play('error');
+      this.say([`보이지 않는 힘이 앞을 가로막는다…`, `(배지를 ${gate}개 모으면 지나갈 수 있을 것 같다. 지금 ${this.auth.me.badges.length}개)`]);
+      return;
+    }
     const index = this.world.info.warps.indexOf(w);
     this.moveRoom(() => this.auth.request({ kind: 'warp', index }), () => this.player.setPosition(this.player.x, this.player.y - (w.to === '@exit' ? 8 : 0)));
   }
@@ -585,6 +599,7 @@ export class FarmScene extends Phaser.Scene {
         this.cameras.main.fadeIn(250);
         if (r.reason === 'far') ui.toast.push('문 앞에 바짝 서서 눌러 주세요.', 'heart');
         else if (r.reason === 'need-partner') ui.toast.push('먼저 마을회관에서 파트너 루미를 받아 오세요!', 'lumi');
+        else if (r.reason?.startsWith('need-badges:')) ui.toast.push(`배지 ${r.reason.slice(12)}개를 모은 트레이너만 들어갈 수 있어요. (지금 ${this.auth.me.badges.length}개)`, 'badge_wind');
       }
     });
   }
@@ -787,6 +802,7 @@ export class FarmScene extends Phaser.Scene {
     for (const d of this.ducks) d.update(dt, this.player);
     for (const r of this.remotes.values()) r.tick();
     this.world.update(dt, this.player);
+    this.atmo.follow(this.player.x, this.player.y);
     this.atmo.update(dt, minutes);
     this.updateCursor();
   }
@@ -856,7 +872,10 @@ export class FarmScene extends Phaser.Scene {
     ui.dialogue.show({ name: `${t.def.title} ${t.def.name}`, sprite: t.def.sprite, color: '#c8453c', pages: t.def.intro }, async () => {
       const r = await this.auth.request({ kind: 'trainer', trainerId: t.def.id });
       if (r.battle) this.startBattle(r.battle, () => { if (t.def.sight > 0) t.returnHome(); });
-      else { this.playing = true; t.returnHome(); }
+      else {
+        this.playing = true; t.returnHome();
+        if (r.reason?.startsWith('requires:')) { const need = TRAINERS[r.reason.slice(9)]; ui.toast.push(need ? `먼저 ${need.title} ${need.name}을(를) 이겨야 해요.` : '아직 도전할 수 없어요.'); }
+      }
     });
   }
 
@@ -865,8 +884,9 @@ export class FarmScene extends Phaser.Scene {
     const key = `${cx},${cy}`;
     if (key === this.lastCell) return;
     this.lastCell = key;
-    if (!this.world.grassCells.has(key) || !this.auth.me.party.some((c) => c.hp > 0)) return;
-    if (Math.random() > 0.11) return;
+    if (!this.auth.me.party.some((c) => c.hp > 0)) return;
+    if (this.world.cave) { if (this.world.info.warpAt(this.player.x, this.player.y) || Math.random() > 0.055) return; }
+    else { if (!this.world.grassCells.has(key)) return; if (Math.random() > 0.11) return; }
     this.playing = false;
     void this.auth.request({ kind: 'encounter' }).then((r) => { if (r.battle) this.startBattle(r.battle); else this.playing = true; });
   }

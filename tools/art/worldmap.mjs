@@ -7,6 +7,7 @@ function vn(x, y, per, seed) {
   const h = (i, j) => hash2(gx + i, gy + j, seed);
   return (h(0, 0) * (1 - fx) + h(1, 0) * fx) * (1 - fy) + (h(0, 1) * (1 - fx) + h(1, 1) * fx) * fy;
 }
+export const sfbm = (x, y, per, seed, oct = 4) => fbm(x, y, per, seed, oct);
 const fbm = (x, y, per, seed, oct = 4) => { let s = 0, a = 0.55, t = 0; for (let o = 0; o < oct; o++) { s += vn(x, y, per / 2 ** o, seed + o * 17) * a; t += a; a *= 0.5; } return s / t; };
 import { P } from './lib/palette.mjs';
 

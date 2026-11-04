@@ -156,4 +156,4 @@ process.on('SIGTERM', () => void shutdown());
 
 console.log(`🌾 별빛 농장 서버 실행 중 — ws://localhost:${PORT}`);
 console.log(`   저장소: ${storage.kind}${DEV_AUTH ? '  (DEV_AUTH: 토큰 없이 접속 허용)' : ''}`);
-console.log(`   맵: ${MAP_IDS.map((m) => MAP_NAMES[m]).join(', ')}`);
+console.log(`   맵: ${MAP_IDS.length}개 (${MAP_NAMES.town} 외)`);

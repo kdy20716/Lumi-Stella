@@ -5,7 +5,7 @@
 import { CROPS, ENCOUNTERS, ITEMS, SHOPS, SPECIES, TRAINERS, hhmmToMinutes } from '../data';
 import { BattleEngine, healAll, makeCreature, type BattleState } from './Battle';
 import {
-  SoilState, INTERIOR_OF, ALL_PLAYER_LOOKS, isInterior, roomOf,
+  SoilState, INTERIOR_OF, ALL_PLAYER_LOOKS, isInterior, roomOf, BADGE_GATES,
   type ActionIntent, type ActionResult, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type MapId,
   type PlayerState, type SaveData, type WorldTime, type Weather, type BattleUpdate,
 } from '../types';
@@ -29,7 +29,7 @@ export type SimEvent =
   | { type: 'objectRemoved'; key: string; owner?: string }
   | { type: 'objectRestored'; keys: string[] }
   | { type: 'forage'; spots: ForageSpot[] }
-  | { type: 'party'; id: string; party: PlayerState['party']; bag: PlayerState['bag']; badges: string[]; defeated: string[]; seen: string[]; caught: string[] }
+  | { type: 'party'; id: string; party: PlayerState['party']; bag: PlayerState['bag']; badges: string[]; defeated: string[]; seen: string[]; caught: string[]; visited: string[] }
   | { type: 'help'; playerId: string; species: string; text: string }
   | { type: 'toast'; playerId?: string; room?: string; text: string; icon?: string }
   | { type: 'room'; playerId: string; map: MapId; inst: string; world: string; x: number; y: number; snapshot: FarmSnapshot }
@@ -110,13 +110,13 @@ export class FarmSimulation {
     const home = this.homeSpot();
     const p: PlayerState = {
       id, name, look, map: 'farm', inst: id, x: home.x, y: home.y, dir: 'down', anim: 'idle', energy: 270, maxEnergy: 270, inventory: inv, gold: 500, bin: [], story: STORY.HOME, world, homeWorld: world,
-      party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [],
+      party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [], visited: ['farm'],
     };
     if (save) {
       Object.assign(p, {
         name: save.name || name, look: save.look ?? look, gold: save.gold ?? 500, energy: save.energy ?? 270, maxEnergy: save.maxEnergy ?? 270,
         party: save.party ?? [], box: save.box ?? [], bag: save.bag ?? {}, badges: save.badges ?? [], defeated: save.defeated ?? [],
-        seen: save.seen ?? [], caught: save.caught ?? [], bin: save.bin ?? [],
+        seen: save.seen ?? [], caught: save.caught ?? [], bin: save.bin ?? [], visited: save.visited ?? ['farm', 'town', ...(save.party?.length ? ['route1', 'windvale'] : [])],
         story: save.story ?? ((save.party ?? []).length ? STORY.DONE : STORY.HOME),
       });
       if (save.inventory?.length) p.inventory = Array.from({ length: INVENTORY_SIZE }, (_, i) => ({ slotIndex: i, itemId: save.inventory[i]?.itemId ?? null, quantity: save.inventory[i]?.quantity ?? 0 }));
@@ -135,7 +135,7 @@ export class FarmSimulation {
     return JSON.parse(JSON.stringify({
       v: 1, name: p.name, look: p.look, gold: p.gold, energy: p.energy, maxEnergy: p.maxEnergy, inventory: p.inventory,
       party: p.party, box: p.box, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, bin: p.bin,
-      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [] }, story: p.story, savedAt: Date.now(),
+      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [] }, story: p.story, visited: p.visited, savedAt: Date.now(),
     } satisfies SaveData)) as SaveData;
   }
 
@@ -162,6 +162,7 @@ export class FarmSimulation {
   private relocate(p: PlayerState, map: MapId, inst: string, x: number, y: number) {
     p.map = map; p.inst = inst; p.x = x; p.y = y; p.sleeping = false;
     if (map !== 'home' && !isInterior(map)) p.ret = undefined;
+    if (!isInterior(map) && !p.visited.includes(map)) { p.visited.push(map); this.emitParty(p); }
     this.emit({ type: 'room', playerId: p.id, map, inst, world: p.world, x, y, snapshot: this.snapshot(p.id) });
   }
   private toSpawn(p: PlayerState, map: MapId, inst: string, spawn: string) {
@@ -329,6 +330,7 @@ export class FarmSimulation {
     const to = w.to as MapId;
     if (!this.maps[to]) return { ok: false, reason: 'no-map' };
     if (to === 'route1' && (!p.party.length || p.story < STORY.DONE)) return { ok: false, reason: 'need-partner' };
+    if ((BADGE_GATES[to] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[to]}` };
     // 다른 맵에서 농장으로 가면 언제나 '내' 농장
     this.toSpawn(p, to, to === 'farm' ? p.id : '', w.spawn);
     return { ok: true };
@@ -338,15 +340,17 @@ export class FarmSimulation {
     if (isInterior(p.map)) return { ok: false, reason: 'inside' };
     const m = this.maps[p.map];
     const o = m.objects.find((ob) => ob.id === objectId);
-    const target = o ? INTERIOR_OF[o.type] : undefined;
+    const target = o ? String(prop(o, 'interior', '') || INTERIOR_OF[o.type] || '') : '';
     if (!o || !target || !this.maps[target]) return { ok: false, reason: 'no-door' };
+    if ((BADGE_GATES[target] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[target]}` };
     const T = m.tile;
     const cellX = Number(prop(o, 'cellX', 0)), cellY = Number(prop(o, 'cellY', 0)), cellW = Number(prop(o, 'cellW', 1));
     const doorX = Number(prop(o, 'doorCellX', cellX + Math.floor(cellW / 2)));
     const dx = doorX * T + 8, dy = (cellY + 1) * T + 13;
     if (Math.abs(p.x - dx) > T * 1.6 || Math.abs(p.y - dy) > T * 1.6) return { ok: false, reason: 'far' };
     // 내 집은 '지금 있는 농장의 주인' 집 (친구 농장에 놀러 왔으면 친구 집)
-    const inst = target === 'home' ? p.inst || p.id : `${p.map}:${o.id}`;
+    // 이름 붙은 실내(도장·리그·탑 …)는 한 곳뿐이라 모두 같은 방, 공용 실내(쉼터·상점·이웃집)는 건물마다 따로
+    const inst = target === 'home' ? p.inst || p.id : prop(o, 'interior', '') ? '' : `${p.map}:${o.id}`;
     const ret = { map: p.map, inst: p.inst, x: dx, y: dy };
     const s = this.maps[target].spawns.get('entry') ?? this.maps[target].spawns.get('player')!;
     this.relocate(p, target, inst, s.x, s.y + 5);
@@ -584,7 +588,7 @@ export class FarmSimulation {
 
   // ── 루미 모험 ──────────────────────────────────────
   private emitParty(p: PlayerState) {
-    this.emit({ type: 'party', id: p.id, party: p.party, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught });
+    this.emit({ type: 'party', id: p.id, party: p.party, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, visited: p.visited });
   }
   private help(p: PlayerState, text: string) { const sp = p.party[0]?.species; if (sp) this.emit({ type: 'help', playerId: p.id, species: sp, text }); }
   private helps(p: PlayerState) { return SPECIES[p.party[0]?.species]?.helps; }
@@ -621,13 +625,14 @@ export class FarmSimulation {
     // 플레이어가 실제로 풀숲 위에 있는지 검증
     const m = this.maps[p.map], T = m.tile;
     const cx = Math.floor(p.x / T), cy = Math.floor((p.y - 3) / T);
-    if (!m.objects.some((o) => o.type === 'tallgrass' && Math.floor(o.x / T) === cx && Math.floor(o.y / T) - 1 === cy)) return { ok: false, reason: 'not-grass' };
+    const cave = m.props.cave === 'true';
+    if (!cave && !m.objects.some((o) => o.type === 'tallgrass' && Math.floor(o.x / T) === cx && Math.floor(o.y / T) - 1 === cy)) return { ok: false, reason: 'not-grass' };
     const now = Date.now(); if (now - (this.lastEncounter.get(p.id) ?? 0) < 2500) return { ok: false, reason: 'cooldown' };
     this.lastEncounter.set(p.id, now);
     const night = this.time.minutes >= 19 * 60 || this.time.minutes < 6 * 60 + 30;
     const [sp, lo, hi] = this.pick(night ? table.night : table.day, (r) => r[3]);
     const lv = lo + Math.floor(this.rand() * (hi - lo + 1));
-    const { state, update } = this.engine.startWild(p, sp, lv, 'grass');
+    const { state, update } = this.engine.startWild(p, sp, lv, m.props.battleBg ?? 'grass');
     this.battles.set(p.id, state);
     return { ok: true, battle: update };
   }
@@ -635,7 +640,10 @@ export class FarmSimulation {
   private trainerBattle(p: PlayerState, trainerId: string): ActionResult {
     const tr = TRAINERS[trainerId];
     if (!tr || p.defeated.includes(trainerId) || tr.map !== p.map || !this.canBattle(p)) return { ok: false, reason: 'invalid-trainer' };
-    const { state, update } = this.engine.startTrainer(p, trainerId);
+    const need = (tr.requires ?? []).find((r) => !p.defeated.includes(r));
+    if (need) return { ok: false, reason: `requires:${need}` };
+    const bg = this.maps[p.map].props.battleBg ?? (isInterior(p.map) ? 'town' : undefined);
+    const { state, update } = this.engine.startTrainer(p, trainerId, undefined, bg);
     this.battles.set(p.id, state);
     return { ok: true, battle: update };
   }

@@ -26,6 +26,11 @@ export class Atmosphere {
   light = 0;
   private weather: Weather = 'sunny';
   private indoor = false;
+  /** 동굴: 어둡고 플레이어 주변만 밝음 */
+  private cave = false;
+  private caveTint = 0x6a6070;
+  private torch?: Phaser.GameObjects.Image;
+  private flakes?: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor(private scene: Phaser.Scene, private world: World) {
     // 화면을 덮는 곱하기(MULTIPLY) 레이어로 시간대 색감 연출
@@ -33,7 +38,22 @@ export class Atmosphere {
 
     for (const l of world.lights) this.addGlow(l.x, l.y, l.scale, l.tint, l.base);
 
-    this.indoor = world.interior;
+    this.cave = world.cave;
+    this.indoor = world.interior || world.cave;
+    if (this.cave) {
+      this.caveTint = ({ dark: 0x3a3444, lava: 0x9a6a5a, ice: 0x8a9ac0, crystal: 0x6a6490, sea: 0x5a7080, mine: 0x7a6a60 } as Record<string, number>)[world.theme] ?? 0x6a6070;
+      this.torch = scene.add.image(0, 0, 'glow').setScale(world.theme === 'dark' ? 1.5 : 2.4).setTint(0xffd8a0).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.glow).setAlpha(0.35);
+    }
+    // 눈 / 화산재
+    if (!this.indoor && (world.biome === 'snow' || world.biome === 'volcano' || world.biome === 'distortion')) {
+      if (!scene.textures.exists('flake')) { const g = scene.make.graphics({}, false); g.fillStyle(0xffffff, 1).fillRect(0, 0, 2, 2); g.generateTexture('flake', 2, 2); g.destroy(); }
+      const snow = world.biome === 'snow';
+      this.flakes = scene.add.particles(0, 0, 'flake', {
+        x: { min: -40, max: 1400 }, y: { min: -20, max: 0 }, lifespan: { min: 4000, max: 7000 },
+        speedY: snow ? { min: 20, max: 45 } : { min: -6, max: 14 }, speedX: { min: -18, max: 10 }, quantity: 1, frequency: snow ? 40 : 90,
+        alpha: { start: 0.9, end: 0.2 }, tint: snow ? 0xffffff : world.biome === 'volcano' ? 0x8a8288 : 0xc8a0ff, scale: { min: 0.6, max: 1.4 },
+      }).setDepth(DEPTH.weather);
+    }
     // 구름 그림자
     for (let i = 0; i < (this.indoor ? 0 : 5); i++) {
       this.clouds.push(scene.add.image(Math.random() * world.widthPx, Math.random() * world.heightPx, 'cloud')
@@ -66,6 +86,9 @@ export class Atmosphere {
     this.glows.push({ img, base, phase: Math.random() * 10 });
   }
 
+  /** 동굴 횃불 위치 (플레이어 발) */
+  follow(x: number, y: number) { this.torch?.setPosition(x, y - 10); }
+
   setWeather(w: Weather) { this.weather = w; if (w === 'rain' && !this.indoor) this.rain.start(); else this.rain.stop(); }
 
   update(dt: number, minutes: number) {
@@ -77,11 +100,13 @@ export class Atmosphere {
     this.light = Phaser.Math.Linear(l0, l1, t);
     if (this.weather === 'rain') { color = lerpColor(color, 0x8a96b0, 0.45); this.light = Math.max(this.light, 0.35); }
     // 실내: 바깥보다 훨씬 은은하게 (밤엔 따뜻한 조명)
-    if (this.indoor) { color = lerpColor(0xffffff, 0xe0cce0, this.light * 0.7); this.light = 0.35 + this.light * 0.6; }
+    if (this.cave) { color = this.caveTint; this.light = 1; this.torch?.setAlpha(0.32 + Math.sin(this.scene.time.now / 140) * 0.02); }
+    else if (this.indoor) { color = lerpColor(0xffffff, 0xe0cce0, this.light * 0.7); this.light = 0.35 + this.light * 0.6; }
 
     const v = this.scene.cameras.main.worldView;
     this.overlay.setPosition(v.x - 4, v.y - 4).setDisplaySize(v.width + 8, v.height + 8).setTint(color);
     this.rain.setPosition(v.x, v.y - 10);
+    this.flakes?.setPosition(v.x, v.y - 10);
 
     const now = this.scene.time.now;
     for (const g of this.glows) g.img.setAlpha(this.light * g.base * (0.85 + Math.sin(now / 180 + g.phase) * 0.05 + Math.sin(now / 47 + g.phase) * 0.03));

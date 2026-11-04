@@ -68,14 +68,14 @@ export class BattleEngine {
     return { state: st, update: { view: this.view(p, st), log } };
   }
 
-  startTrainer(p: PlayerState, trainer: string | TrainerDef, script?: 'rival'): { state: BattleState; update: BattleUpdate } {
+  startTrainer(p: PlayerState, trainer: string | TrainerDef, script?: 'rival', bg?: string): { state: BattleState; update: BattleUpdate } {
     const tr = typeof trainer === 'string' ? TRAINERS[trainer] : trainer;
     const trainerId = tr.id;
     const foes = tr.team.map(([s, l]) => makeCreature(s, l));
     // 라이벌 첫 대결: 기본 공격 + 울음소리 + 으쓱으쓱(버프)
     if (script === 'rival') for (const f of foes) f.moves = [f.moves[0], 'growl', 'puff_up'];
     const myIdx = Math.max(0, p.party.findIndex((c) => c.hp > 0));
-    const st: BattleState = { kind: 'trainer', trainerId, tr, script, turn: 0, bg: tr.map === 'route1' || tr.map === 'farm' ? 'grass' : 'town', foes, foeIdx: 0, myIdx, stage: { me: { atk: 0, def: 0 }, foe: { atk: 0, def: 0 } }, over: false, participants: new Set([p.party[myIdx].uid]) };
+    const st: BattleState = { kind: 'trainer', trainerId, tr, script, turn: 0, bg: bg ?? (tr.map === 'route1' || tr.map === 'farm' ? 'grass' : 'town'), foes, foeIdx: 0, myIdx, stage: { me: { atk: 0, def: 0 }, foe: { atk: 0, def: 0 } }, over: false, participants: new Set([p.party[myIdx].uid]) };
     for (const f of foes) if (!p.seen.includes(f.species)) p.seen.push(f.species);
     const log: BattleLog[] = [
       { t: 'text', text: `${tr.title} ${tr.name}이(가) 승부를 걸어왔다!` },

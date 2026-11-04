@@ -3,7 +3,7 @@ import { ITEMS, SPECIES, TYPE_COLORS } from '@shared/data';
 import { josa } from '@shared/josa';
 import { creator, emoteWheel, invitePrompt, mailbox } from './Social';
 import { sfx } from '../audio/Sfx';
-import type { CreatureInst, InventorySlot, PlayerState, ShopDef, WorldTime } from '@shared/types';
+import { MAP_META, type CreatureInst, type InventorySlot, type MapMeta, type PlayerState, type ShopDef, type WorldTime } from '@shared/types';
 
 const root = () => document.getElementById('ui')!;
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = '') => {
@@ -407,31 +407,56 @@ const fishing = {
   hide() { this.node?.remove(); this.node = null; },
 };
 
-// ── 휴대폰 지도 (M) ────────────────────────────────────
-const PLACES: Record<string, [number, number, string]> = { farm: [26, 128, '별빛 농장'], town: [50, 122, '별빛 마을'], route1: [74, 120, '1번 도로'], windvale: [98, 116, '바람골 마을'] };
-const LOCKED: [number, number][] = [[150, 112], [196, 70], [120, 52], [52, 40], [200, 128]];
+// ── 휴대폰 지도 (M): 루미나 지방 360×240, 가 본 곳만 안개가 걷힘 ─────────
 const worldMap = {
   node: null as HTMLDivElement | null,
   get open() { return !!this.node; },
-  toggle(here: string, ownerName = '') {
+  toggle(here: string, ownerName = '', visited: string[] = []) {
     if (this.node) { this.close(); return; }
     sfx.play('phone');
-    const S = 3;
+    const S = 2, MW = 360, MH = 240;
+    const seen = new Set([...visited, here]);
+    const places = Object.entries(MAP_META).filter(([id, m]) => (!m.interior && m.kind !== 'room') || (id === here && m.x > 0));
+    const known = places.filter(([id]) => seen.has(id));
     const n = el('div', 'fixed inset-0 z-40 flex items-center justify-center bg-[#0b0d18]/60 pointer-events-auto toast-in');
-    const pins = Object.entries(PLACES).map(([id, [x, y, name]]) => `
-      <div class="absolute -translate-x-1/2 -translate-y-full flex flex-col items-center" style="left:${x * S}px;top:${(y - 6) * S}px">
-        <span class="px-1.5 text-xs text-white px-outline whitespace-nowrap" style="background:${id === here ? '#e0473b' : '#3b2414cc'}">${name}</span>
-        ${id === here ? '<span class="text-2xl leading-none map-pin">📍</span>' : ''}</div>`).join('');
-    const locks = LOCKED.map(([x, y]) => `<span class="absolute -translate-x-1/2 -translate-y-1/2 text-lg text-[#7a8090] font-bold" style="left:${x * S}px;top:${y * S}px">???</span>`).join('');
-    n.innerHTML = `<div class="relative px-[26px] pt-[40px] pb-[26px] rounded-[28px] bg-[#2a2f3a] border-4 border-[#14161c] shadow-[0_10px_0_rgba(0,0,0,.35)]">
+    const pin = (id: string, m: MapMeta) => {
+      const town = m.kind === 'town' || m.kind === 'farm';
+      const cur = id === here;
+      return `<div class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center" style="left:${(m.x / MW) * 100}%;top:${(m.y / MH) * 100}%" title="${m.name}">
+        ${town ? `<span class="block w-[10px] h-[10px] border-2 border-[#3b2414]" style="background:${cur ? '#e0473b' : '#ffe58a'}"></span>`
+          : `<span class="block w-[6px] h-[6px] rounded-full border border-[#3b2414]" style="background:${cur ? '#e0473b' : m.kind === 'cave' ? '#9a8a7a' : '#fff8ec'}"></span>`}
+        ${town || cur ? `<span class="mt-0.5 px-1 text-[11px] leading-tight text-white px-outline whitespace-nowrap" style="background:${cur ? '#e0473b' : '#3b2414cc'}">${m.name.split(' · ')[0]}</span>` : ''}
+        ${cur ? '<span class="absolute -top-7 text-2xl leading-none map-pin">📍</span>' : ''}</div>`;
+    };
+    const towns = places.filter(([, m]) => m.kind === 'town').length, knownTowns = known.filter(([, m]) => m.kind === 'town').length;
+    const hereName = MAP_META[here]?.name ?? '?';
+    n.innerHTML = `<div class="relative px-[22px] pt-[38px] pb-[20px] rounded-[28px] bg-[#2a2f3a] border-4 border-[#14161c] shadow-[0_10px_0_rgba(0,0,0,.35)]">
       <div class="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-2 rounded-full bg-[#14161c]"></div>
+      <div class="absolute top-2 left-6 text-xs text-[#ffe58a]">루미나 지방</div>
       <div class="absolute top-2 right-6 text-xs text-[#c9d1e0]">📶 지도</div>
-      <div class="relative" style="width:${240 * S}px;height:${160 * S}px;max-width:90vw">
-        <img src="assets/ui/worldmap.png" style="width:100%;height:100%;image-rendering:pixelated;border-radius:6px" alt="">
-        ${pins}${locks}
+      <div class="relative" style="width:${MW * S}px;aspect-ratio:3/2;max-width:90vw">
+        <img src="assets/ui/worldmap.png" style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;border-radius:6px" alt="">
+        <canvas width="${MW}" height="${MH}" style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;border-radius:6px"></canvas>
+        ${known.map(([id, m]) => pin(id, m)).join('')}
       </div>
-      <div class="flex justify-between mt-2 text-sm text-[#c9d1e0]"><span>현재 위치: <b class="text-[#ffe58a]">${PLACES[here]?.[2] ?? '?'}${ownerName}</b></span><span>아직 가 보지 못한 곳은 구름에 가려져 있어요 · M / Esc 닫기</span></div>
+      <div class="flex justify-between gap-6 mt-2 text-sm text-[#c9d1e0]"><span>현재 위치: <b class="text-[#ffe58a]">${hereName}${ownerName}</b></span><span>마을 ${knownTowns}/${towns} · 가 본 곳 ${known.length}/${places.length} · M / Esc 닫기</span></div>
     </div>`;
+    // 안개: 구름 무늬로 덮고, 가 본 곳 주변만 둥글게 걷어 냄
+    const cv = n.querySelector('canvas')!, g = cv.getContext('2d')!;
+    const img = g.createImageData(MW, MH);
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+      const v = 0.5 + 0.25 * Math.sin(x / 9 + Math.sin(y / 13) * 2) * Math.cos(y / 11 - x / 31) + 0.1 * Math.sin((x + y) / 4.3);
+      const c = Math.round(196 + v * 50), i = (y * MW + x) * 4;
+      img.data[i] = c - 8; img.data[i + 1] = c - 4; img.data[i + 2] = c + 6; img.data[i + 3] = 238;
+    }
+    g.putImageData(img, 0, 0);
+    g.globalCompositeOperation = 'destination-out';
+    for (const [, m] of known) {
+      const r = m.kind === 'town' ? 22 : m.kind === 'route' ? 18 : 14;
+      const gr = g.createRadialGradient(m.x, m.y, r * 0.45, m.x, m.y, r);
+      gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(m.x, m.y, r, 0, Math.PI * 2); g.fill();
+    }
     n.onclick = (e) => { if (e.target === n) this.close(); };
     root().appendChild(n); this.node = n;
   },

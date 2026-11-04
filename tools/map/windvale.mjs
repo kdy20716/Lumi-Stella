@@ -12,7 +12,8 @@ export function buildWindvale() {
 
   m.ellipse(25, 24, 3.6, 2.4, Wt, 0.02);
   m.reserve(20, 20, 30, 28);
-  m.path(0, 19, 44, 19, 2, S);                 // 서쪽 입구 → 동쪽
+  m.path(0, 19, 49, 19, 2, S);                 // 서쪽 입구 → 동쪽 출구 (2번 도로)
+  m.path(44, 15, 47, 15, 2, S); m.path(46, 0, 46, 15, 2, S); // 북쪽 출구 (3번 도로)
   m.path(8, 15, 44, 15, 2, S);                 // 건물 앞 거리
   m.path(8, 15, 8, 33, 2, S);
   m.path(8, 33, 42, 33, 2, S);
@@ -31,10 +32,11 @@ export function buildWindvale() {
   for (const [x, y] of [[13, 17], [23, 17], [34, 17], [11, 21], [39, 21], [14, 35], [36, 35]]) m.place('lamp', x, y, { force: true });
   for (const [x, y] of [[centerDoor - 3, 16], [centerDoor + 2, 16], [shopDoor + 2, 16], [gymDoor - 3, 16], [gymDoor + 3, 16]]) m.place('planter', x, y, { force: true });
   m.place('sign', 2, 17, { force: true, props: { interact: 'sign', text: '바람골 마을\n바람과 풍차의 마을 · 루미 쉼터 있음' } });
-  m.place('sign', 46, 18, { force: true, props: { interact: 'sign', text: '→ 2번 도로 (공사 중)\n다음 모험은 곧 열려요!' } });
+  m.place('sign', 46, 18, { force: true, props: { interact: 'sign', text: '→ 2번 도로 · 갯바람길\n바닷가 물결항으로 이어져요.' } });
+  m.place('sign', 44, 4, { force: true, props: { interact: 'sign', text: '↑ 3번 도로 · 단풍오솔길\n단풍골 · 새벽호수 방면' } });
   m.place('hay', 40, 12, { force: true }); m.place('barrel', 41, 12, { force: true });
 
-  m.forest((x, y) => x < 5 && y >= 17 && y <= 22, 0.1);
+  m.forest((x, y) => (x < 5 && y >= 17 && y <= 22) || (x > 44 && y >= 17 && y <= 22) || (y < 6 && x >= 44 && x <= 49), 0.1);
   m.scatter('oak', 10); m.scatter('pine', 6); m.scatter('bush', 8, { w: 2 }); m.scatter('bush_berry', 4, { w: 2 });
   m.scatter('tuft', 40, { block: false });
   m.flowers(30, (x, y) => m.terrain[y][x] === G && !m.blocked[y][x]);
@@ -45,6 +47,8 @@ export function buildWindvale() {
   m.spawn('wp_plaza', 25, 21); m.spawn('wp_home_v', homeA, 33); m.spawn('wp_mill', 38, 16);
   m.spawn('windmill_hub', 38, 7);
   m.warp(0, 18, 1, 4, 'route1', 'from_windvale');
+  m.warp(49, 18, 1, 4, 'route2', 'from_windvale'); m.spawn('from_route2', 47, 19);
+  m.warp(45, 0, 4, 1, 'route3', 'from_windvale'); m.spawn('from_route3', 46, 2);
   void S;
   return m;
 }

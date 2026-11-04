@@ -20,7 +20,7 @@ export function buildInterior(id) {
   for (const [name, cx, cy, props] of s.spawns) m.spawn(name, cx, cy, props);
   m.spawn('player', s.door, s.H - 2);
   for (const [cx, cy] of s.lights ?? []) m.spawn('light', cx, cy);
-  m.warp(s.door, s.H - 1, 1, 1, '@exit', '');
+  m.warp(s.door, s.H - 1, 1, 1, s.exitTo?.[0] ?? '@exit', s.exitTo?.[1] ?? '');
   m.props.push({ name: 'interior', type: 'string', value: 'true' }, { name: 'bg', type: 'string', value: `room_${id}` }, { name: 'title', type: 'string', value: s.name });
   return m;
 }

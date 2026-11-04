@@ -308,5 +308,68 @@
     "sellPrice": 200,
     "maxStack": 99,
     "description": "밤하늘의 별빛이 굳은 듯한 신비한 결정."
+  },
+  "badge_water": {
+    "id": "badge_water",
+    "name": "물결 배지",
+    "type": "material",
+    "icon": "badge_water",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "물결항 도장을 제패한 증표."
+  },
+  "badge_leaf": {
+    "id": "badge_leaf",
+    "name": "새싹 배지",
+    "type": "material",
+    "icon": "badge_leaf",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "단풍골 도장을 제패한 증표."
+  },
+  "badge_earth": {
+    "id": "badge_earth",
+    "name": "바위 배지",
+    "type": "material",
+    "icon": "badge_earth",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "쇳불 도시 도장을 제패한 증표."
+  },
+  "badge_flame": {
+    "id": "badge_flame",
+    "name": "불꽃 배지",
+    "type": "material",
+    "icon": "badge_flame",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "잿빛 마을 도장을 제패한 증표."
+  },
+  "badge_light": {
+    "id": "badge_light",
+    "name": "샛별 배지",
+    "type": "material",
+    "icon": "badge_light",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "빛누리 시티 도장을 제패한 증표."
+  },
+  "badge_normal": {
+    "id": "badge_normal",
+    "name": "눈송이 배지",
+    "type": "material",
+    "icon": "badge_normal",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "서리 마을 도장을 제패한 증표."
+  },
+  "badge_star": {
+    "id": "badge_star",
+    "name": "별자리 배지",
+    "type": "material",
+    "icon": "badge_star",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "별마루 마을 도장을 제패한 증표."
   }
 }

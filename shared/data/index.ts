@@ -7,15 +7,16 @@ import creaturesJson from './creatures.json';
 import movesJson from './moves.json';
 import trainersJson from './trainers.json';
 import encountersJson from './encounters.json';
+import regionJson from './region.json';
 
 export const CROPS = cropsJson as unknown as Record<string, CropDef>;
 export const ITEMS = itemsJson as unknown as Record<string, ItemDef>;
 export const SHOPS = shopsJson as unknown as Record<string, ShopDef>;
 export const SPECIES = creaturesJson as unknown as Record<string, SpeciesDef>;
 export const MOVES = movesJson as unknown as Record<string, MoveDef>;
-export const TRAINERS = trainersJson as unknown as Record<string, TrainerDef>;
+export const TRAINERS = { ...(trainersJson as unknown as Record<string, TrainerDef>), ...(regionJson.trainers as unknown as Record<string, TrainerDef>) };
 type Range = [string, number, number, number]; // [종, 최소Lv, 최대Lv, 가중치]
-export const ENCOUNTERS = encountersJson as unknown as {
+const ENC = encountersJson as unknown as {
   grass: Record<string, { day: Range[]; night: Range[] }>;
   fish: Record<string, { items: [string, number][]; lumi: Range[] }>;
   forage: Record<string, string[]>;
@@ -23,6 +24,8 @@ export const ENCOUNTERS = encountersJson as unknown as {
   starters: string[];
   typeChart: Record<LumiType, Partial<Record<LumiType, number>>>;
 };
+// 생성된 지방 데이터(야생 루미 · 낚시 · 채집)를 손으로 만든 데이터 위에 합침
+export const ENCOUNTERS = { ...ENC, grass: { ...(regionJson.grass as unknown as typeof ENC.grass), ...ENC.grass }, fish: { ...(regionJson.fish as unknown as typeof ENC.fish), ...ENC.fish }, forage: { ...(regionJson.forage as unknown as typeof ENC.forage), ...ENC.forage } };
 export const TYPE_COLORS: Record<LumiType, string> = { 노말: '#a8a090', 풀: '#5fae4a', 물: '#3f8fc8', 불: '#e8642e', 땅: '#b8864a', 바람: '#7ab8d8', 빛: '#e0b830' };
 
 export interface NpcScheduleEntry {
@@ -38,8 +41,10 @@ export interface NpcDef {
   id: string; name: string; title: string; sprite: string; speed: number; run?: boolean; color: string;
   schedule: NpcScheduleEntry[];
   dialogue: Record<'first' | 'morning' | 'afternoon' | 'evening' | 'rain' | 'random', string[]>;
+  /** 생성된 마을 주민 (자기 마을에만 있음) */
+  gen?: boolean;
 }
-export const NPCS = npcsJson as unknown as Record<string, NpcDef>;
+export const NPCS = { ...(npcsJson as unknown as Record<string, NpcDef>), ...(regionJson.npcs as unknown as Record<string, NpcDef>) };
 
 /** HHMM → 분 */
 export const hhmmToMinutes = (t: number) => Math.floor(t / 100) * 60 + (t % 100);

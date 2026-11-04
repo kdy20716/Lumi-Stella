@@ -83,7 +83,9 @@ const DECOR = {
   menu(t, x, y) { t.rect(x + 2, y + 6, 28, 22, P.wood.base); t.rect(x + 4, y + 8, 24, 18, '#2e3a34'); for (let i = 0; i < 4; i++) { t.hline(x + 7, y + 11 + i * 4, 12 + (i % 2) * 4, '#e8e0d0'); t.rect(x + 23, y + 11 + i * 4, 2, 1, '#ffd65a'); } },
   toolrack(t, x, y) { t.rect(x + 2, y + 10, 28, 3, P.wood.base); const tools = [[5, P.metal.l1], [12, P.metal.base], [19, P.metal.d1], [26, P.metal.l1]]; for (const [tx, c] of tools) { t.vline(x + tx, y + 12, 14, P.wood.l1); t.rect(x + tx - 2, y + 24, 5, 3, c); } },
   chart(t, x, y) { t.rect(x + 2, y + 6, 28, 22, '#f4f4f8'); t.rect(x + 2, y + 6, 28, 2, '#3a8ab0'); for (let i = 0; i < 6; i++) t.rect(x + 5 + i * 4, y + 24 - (i * 3) % 12 - 3, 3, (i * 3) % 12 + 3, ['#7cc45a', '#5aa8e0', '#e8502e'][i % 3]); t.hline(x + 4, y + 25, 24, '#5a6273'); },
-  banner(t, x, y) { t.rect(x + 6, y + 4, 20, 34, '#2a8a8a'); t.rect(x + 6, y + 4, 20, 2, '#7ad8d0'); for (let i = 0; i < 10; i++) { t.set(x + 6 + i, y + 38 + Math.floor(i / 2), '#2a8a8a'); t.set(x + 25 - i, y + 38 + Math.floor(i / 2), '#2a8a8a'); } t.circle(x + 16, y + 18, 6, '#e8f6f4'); for (let a = 0; a < 3; a++) t.line(x + 16, y + 18, x + 16 + Math.round(Math.cos(a * 2.1) * 6), y + 18 + Math.round(Math.sin(a * 2.1) * 6), '#2a8a8a'); },
+  banner(t, x, y, col = '#2a8a8a') { t.rect(x + 6, y + 4, 20, 34, col); t.rect(x + 6, y + 4, 20, 2, lighten(col, 0.45)); for (let i = 0; i < 10; i++) { t.set(x + 6 + i, y + 38 + Math.floor(i / 2), col); t.set(x + 25 - i, y + 38 + Math.floor(i / 2), col); } t.circle(x + 16, y + 18, 6, '#e8f6f4'); for (let a = 0; a < 3; a++) t.line(x + 16, y + 18, x + 16 + Math.round(Math.cos(a * 2.1) * 6), y + 18 + Math.round(Math.sin(a * 2.1) * 6), col); },
+  stars(t, x, y) { for (let i = 0; i < 9; i++) { const sx = x + 2 + ((i * 11) % 28), sy = y + 8 + ((i * 7) % 22); t.set(sx, sy, '#fff4c0'); if (i % 3 === 0) { t.set(sx - 1, sy, '#ffe08a'); t.set(sx + 1, sy, '#ffe08a'); t.set(sx, sy - 1, '#ffe08a'); t.set(sx, sy + 1, '#ffe08a'); } } },
+  ghostframe(t, x, y) { t.rect(x + 3, y + 6, 26, 24, P.gold.d1); t.rect(x + 5, y + 8, 22, 20, '#2a2238'); t.ellipse(x + 16, y + 18, 5, 6, '#9a90b8'); t.rect(x + 13, y + 16, 2, 2, '#1e1418'); t.rect(x + 18, y + 16, 2, 2, '#1e1418'); },
   gear(t, x, y) { const cx = x + 16, cy = y + 22; for (let a = 0; a < 16; a++) { const r = a % 2 ? 13 : 11; t.line(cx, cy, cx + Math.round(Math.cos(a * Math.PI / 8) * r), cy + Math.round(Math.sin(a * Math.PI / 8) * r), P.wood.d1); } t.circle(cx, cy, 9, P.wood.base); t.circle(cx, cy, 3, P.wood.d2); },
   ladder(t, x, y) { t.vline(x + 4, y, 48, P.wood.d1); t.vline(x + 11, y, 48, P.wood.d1); for (let j = 4; j < 48; j += 6) t.hline(x + 4, y + j, 8, P.wood.l1); },
   poster(t, x, y) { t.rect(x + 3, y + 8, 10, 14, '#fff1dc'); t.circle(x + 8, y + 13, 3, '#e07a8a'); t.hline(x + 5, y + 19, 6, '#8a7a6a'); t.set(x + 8, y + 8, '#d8473b'); },
@@ -113,7 +115,7 @@ export function buildRoom(spec) {
   for (let x = fx0; x < fx0 + fw; x++) for (let k = 0; k < 4; k++) t.set(x, fy0 + k, mix(t.get(x, fy0 + k), '#000000', 0.28 - k * 0.07));
   for (let y = fy0; y < (H - 1) * T; y++) for (let k = 0; k < 3; k++) { t.set(fx0 + k, y, mix(t.get(fx0 + k, y), '#000000', 0.2 - k * 0.06)); }
   // 벽 장식
-  for (const [kind, dx] of spec.decor ?? []) DECOR[kind]?.(t, dx * T, 0);
+  for (const [kind, dx, arg] of spec.decor ?? []) DECOR[kind]?.(t, dx * T, 0, arg);
   // 벽 윗면 (어두운 테두리)
   const top = spec.trim ?? '#3a2418', topL = lighten(top, 0.25);
   const beam = (x, y, w, h) => { t.rect(x, y, w, h, top); };
@@ -283,6 +285,11 @@ function pillar() { const t = new Img(16, 42), s = P.stone; t.rect(3, 4, 10, 34,
 function tableSmall() { const t = new Img(32, 24); t.rect(1, 2, 30, 12, W_.l1); t.hline(1, 2, 30, W_.l2); t.rect(1, 14, 30, 3, W_.d1); t.rect(3, 17, 3, 7, W_.d1); t.rect(26, 17, 3, 7, W_.d1); t.rect(6, 5, 6, 5, '#fff8ec'); t.rect(20, 4, 5, 6, '#7fc0de'); return sheen(t); }
 function healPad() { const t = new Img(32, 18); t.ellipse(16, 11, 15, 6, '#e8a0b0'); t.ellipse(16, 10, 13, 5, '#ffc8d4'); t.ellipse(16, 9, 8, 3, '#fff0f4'); t.rect(14, 6, 4, 6, '#e0475b'); t.rect(12, 8, 8, 2, '#e0475b'); return sheen(t); }
 
+function crystal(col = '#9ad8ff') { const t = new Img(16, 30), c = ramp(col); for (let y = 0; y < 26; y++) { const hw = y < 8 ? Math.floor(y / 2) + 1 : Math.max(1, 5 - Math.floor((y - 8) / 6)); for (let x = 8 - hw; x < 8 + hw; x++) t.set(x, y + 2, x < 7 ? c.l2 : x < 9 ? c.l1 : c.d1); } t.vline(6, 6, 10, '#ffffff'); t.ellipse(8, 28, 6, 2, darken(col, 0.5)); return sheen(t); }
+function pedestal() { const t = new Img(32, 30), s = ramp('#e8e0c8'); t.rect(4, 10, 24, 16, s.base); t.vline(5, 10, 16, s.l2); t.vline(26, 10, 16, s.d1); t.rect(1, 24, 30, 6, s.d1); t.hline(1, 24, 30, s.l1); t.rect(2, 6, 28, 5, s.l1); t.hline(2, 6, 28, s.l2); t.circle(16, 3, 3, '#fff4c0'); t.circle(16, 3, 1, '#ffffff'); return sheen(t); }
+function candle() { const t = new Img(16, 30), g = P.gold; t.rect(7, 8, 2, 18, g.d1); t.rect(3, 26, 10, 3, g.base); t.hline(2, 10, 12, g.base); for (const x of [2, 7, 12]) { t.rect(x, 4, 2, 6, '#f4efe6'); t.set(x, 2, '#ffd65a'); t.set(x, 3, '#ff9a3a'); t.set(x + 1, 2, '#fff4c0'); } return sheen(t); }
+function statue(col = '#9aa8b4') { const t = new Img(16, 34), s = ramp(col); t.rect(2, 26, 12, 8, s.d1); t.hline(2, 26, 12, s.l1); t.ellipse(8, 18, 5, 8, s.base); t.ellipse(7, 16, 3, 5, s.l1); t.circle(8, 7, 4, s.base); t.set(6, 5, s.l2); t.rect(3, 4, 2, 4, s.d1); t.rect(11, 4, 2, 4, s.d1); return sheen(t); }
+
 /** 가구 정의: w × h(막는 칸 수) */
 export const FURN = {
   bed: { w: 2, h: 2, build: () => bed() }, bed_pink: { w: 2, h: 2, build: () => bed('#e07a8a') }, bed_green: { w: 2, h: 2, build: () => bed('#4f9a5f') },
@@ -295,7 +302,7 @@ export const FURN = {
   shelf_goods: { w: 2, h: 1, build: () => shelfGoods(0) }, shelf_goods_b: { w: 2, h: 1, build: () => shelfGoods(3) },
   forge: { w: 2, h: 1, build: forge }, lab_machine: { w: 2, h: 1, build: labMachine }, starter_table: { w: 3, h: 1, build: starterTable },
   millstone: { w: 2, h: 2, build: millstone }, sacks: { w: 1, h: 1, build: sacks }, piano: { w: 2, h: 1, build: piano },
-  pillar: { w: 1, h: 1, build: pillar }, table_small: { w: 2, h: 1, build: tableSmall }, heal_pad: { w: 2, h: 1, build: healPad },
+  pillar: { w: 1, h: 1, build: pillar }, crystal: { w: 1, h: 1, build: () => crystal() }, crystal_red: { w: 1, h: 1, build: () => crystal('#ff8a6a') }, pedestal: { w: 2, h: 1, build: pedestal }, candle: { w: 1, h: 1, build: candle }, statue: { w: 1, h: 1, build: () => statue() }, table_small: { w: 2, h: 1, build: tableSmall }, heal_pad: { w: 2, h: 1, build: healPad },
 };
 
 // ── 방 레이아웃 (아트 + 맵 생성기 공용) ─────────────────
@@ -391,5 +398,58 @@ export const ROOMS = {
     spawns: [['entry', 5, 8]], lights: [[5, 4]],
   },
 };
+
+// ── 루미나 지방 확장: 도장 7 · 리그 · 도전의 탑 · 폐저택 · 태초의 방 ──
+const GYM_ROOMS = {
+  harbor: ['물결항 도장', '#3f8fc8', { kind: 'tile', color: '#9cc8e0', color2: '#c4e2f0' }, { color: '#c8e4f2', pattern: 'tile' }],
+  maple: ['단풍골 도장', '#5fae4a', { kind: 'wood', color: '#a07848' }, { color: '#d8e8c0', pattern: 'plank' }],
+  forge: ['쇳불 도장', '#b8864a', { kind: 'stone', color: '#8a7a6a' }, { color: '#8a7a70', pattern: 'stone' }],
+  ember: ['잿빛 도장', '#e8642e', { kind: 'stone', color: '#7a5a50' }, { color: '#a87060', pattern: 'stone' }],
+  lumina: ['빛누리 도장', '#e0b830', { kind: 'tile', color: '#e8dcb0', color2: '#fff4d0' }, { color: '#f4ecd0', pattern: 'diamond', accent: '#e0c870' }],
+  frost: ['서리 도장', '#a8a090', { kind: 'tile', color: '#d8e4ee', color2: '#f4f8ff' }, { color: '#e4eef6', pattern: 'tile' }],
+  summit: ['별마루 도장', '#7d5aa8', { kind: 'carpet', color: '#3a3058' }, { color: '#4a4070', pattern: 'dots', accent: '#e0c870' }],
+};
+for (const [town, [name, col, floor, wall]] of Object.entries(GYM_ROOMS)) {
+  ROOMS[`gym_${town}`] = {
+    name, W: 14, H: 16, door: 7, wall, floor, trim: darken(col, 0.55),
+    decor: [['banner', 2, col], ['banner', 6, col], ['banner', 10, col]],
+    rugs: [[4, 4, 7, 10, col]],
+    furn: [['pillar', 2, 5], ['pillar', 11, 5], ['pillar', 2, 10], ['pillar', 11, 10], ['statue', 5, 13], ['statue', 9, 13], ['plant', 1, 14], ['plant', 12, 14]],
+    spawns: [[`trainer:leader_${town}`, 7, 4, { face: 'down' }], [`trainer:gym_${town}_t1`, 4, 9, { face: 'right' }], [`trainer:gym_${town}_t2`, 10, 7, { face: 'left' }], ['wp_gate', 7, 14], ['entry', 7, 14]], lights: [[7, 7], [7, 12]],
+  };
+}
+Object.assign(ROOMS, {
+  league: { // 루미 리그: 긴 전당 — 사천왕 4명 → 챔피언
+    name: '루미 리그 전당', W: 15, H: 34, door: 7, wall: { color: '#4a3a5a', pattern: 'diamond', accent: '#e0c870' }, floor: { kind: 'tile', color: '#5a4a6a', color2: '#6a5a7e' }, trim: '#1e1428',
+    decor: [['banner', 1, '#a83c34'], ['stars', 5], ['banner', 6, '#e0b830'], ['stars', 9], ['banner', 11, '#3f8fc8']],
+    rugs: [[6, 3, 3, 30, '#a83c34']],
+    furn: [...[6, 12, 18, 24, 30].flatMap((y) => [['pillar', 3, y], ['pillar', 11, y]]), ['statue', 5, 9], ['statue', 9, 9], ['candle', 1, 15], ['candle', 13, 15], ['candle', 1, 27], ['candle', 13, 27]],
+    spawns: [['trainer:elite1', 7, 27, { face: 'down' }], ['trainer:elite2', 7, 21, { face: 'down' }], ['trainer:elite3', 7, 15, { face: 'down' }], ['trainer:elite4', 7, 10, { face: 'down' }], ['trainer:champion', 7, 4, { face: 'down' }], ['wp_gate', 7, 32], ['entry', 7, 32]],
+    lights: [[7, 4], [7, 10], [7, 15], [7, 21], [7, 27]],
+  },
+  tower: {
+    name: '도전의 탑', W: 14, H: 14, door: 7, wall: { color: '#3a4a5a', pattern: 'tile' }, floor: { kind: 'tile', color: '#6a7a8a', color2: '#8090a0' }, trim: '#141c24',
+    decor: [['banner', 2, '#e0b830'], ['chart', 6], ['banner', 10, '#e0b830']],
+    rugs: [[3, 4, 8, 8, '#2a5a8a']],
+    furn: [['pillar', 1, 5], ['pillar', 12, 5], ['pillar', 1, 10], ['pillar', 12, 10], ['plant', 1, 12], ['plant', 12, 12]],
+    spawns: [['trainer:tower_1', 4, 9, { face: 'right' }], ['trainer:tower_2', 10, 7, { face: 'left' }], ['trainer:tower_3', 7, 4, { face: 'down' }], ['wp_gate', 7, 12], ['entry', 7, 12]], lights: [[7, 6], [7, 10]],
+  },
+  chateau: {
+    name: '숲속 폐저택', W: 18, H: 12, door: 9, wall: { color: '#4a3a40', pattern: 'stripe', accent: '#3a2a30', wainscot: '#3a2418' }, floor: { kind: 'woodDark', color: '#5a3a2a' }, trim: '#140c0e',
+    decor: [['ghostframe', 1], ['window', 4], ['ghostframe', 7], ['clock', 10], ['window', 12], ['ghostframe', 15]],
+    rugs: [[6, 5, 6, 4, '#5a2030']],
+    furn: [['bookshelf', 1, 3], ['piano', 15, 3, { interact: 'sign', text: '먼지 쌓인 피아노.\n건반 하나가 저절로 눌렸다… 띵.' }], ['dtable', 7, 6, { interact: 'sign', text: '식탁 위에 식은 차가 놓여 있다.\n방금 누군가 마신 것처럼 김이 오른다…' }], ['candle', 6, 6], ['candle', 10, 6],
+      ['sofa_red', 1, 9], ['lamp_floor', 16, 9], ['bed', 15, 7, { interact: 'sign', text: '아무도 자지 않은 침대인데 이불이 따뜻하다.' }], ['plant_b', 1, 6]],
+    spawns: [['trainer:chateau_ghost', 12, 9, { face: 'left' }], ['wp_gate', 9, 10], ['entry', 9, 10]], lights: [[6, 5], [10, 5], [16, 8]],
+  },
+  origin: { // 별의 제단 위 계단 → 태초의 방
+    name: '태초의 방', W: 13, H: 12, door: 6, exitTo: ['altar', 'from_origin'], wall: { color: '#f4ecd8', pattern: 'diamond', accent: '#e0c870' }, floor: { kind: 'tile', color: '#f4efe0', color2: '#fffaf0' }, trim: '#6a5a3a',
+    decor: [['stars', 1], ['stars', 4], ['stars', 7], ['stars', 10]],
+    rugs: [[3, 4, 7, 6, '#e0b830']],
+    furn: [['crystal', 2, 4], ['crystal', 10, 4], ['crystal_red', 2, 8], ['crystal_red', 10, 8],
+      ['pedestal', 5, 5, { interact: 'sign', text: '빛나는 받침돌 위에 별가루가 소용돌이친다.\n여기서 처음으로 세상이 빚어졌다고 한다…' }]],
+    spawns: [['entry', 6, 10], ['from_altar', 6, 10]], lights: [[6, 4], [3, 6], [9, 6]],
+  },
+});
 // 바깥 건물(오브젝트 타입) → 실내 맵
 export const INTERIOR_OF = { house: 'home', store: 'in_store', cafe: 'in_cafe', hall: 'in_lab', smithy: 'in_smithy', house_a: 'in_house_a', house_b: 'in_house_b', house_c: 'in_house_c', center: 'in_center', shop_w: 'in_shop_w', gym: 'in_gym', windmill: 'in_windmill' };

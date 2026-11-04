@@ -23,10 +23,13 @@ export class MapInfo {
   readonly farmZones: PlotDef[] = [];
   readonly warps: WarpDef[] = [];
   readonly name: string;
+  /** 맵 속성 (biome · battleBg · cave · title …) */
+  readonly props: Record<string, string> = {};
 
   constructor(map: TiledMap) {
     this.width = map.width; this.height = map.height; this.tile = map.tilewidth;
     this.name = String(map.properties?.find((p) => p.name === 'name')?.value ?? 'farm');
+    for (const pp of map.properties ?? []) if (pp.name !== 'terrain') this.props[pp.name] = String(pp.value);
     const col = map.layers.find((l) => l.name === 'Collision');
     this.blocked = new Uint8Array(this.width * this.height);
     col?.data?.forEach((g, i) => { if (g) this.blocked[i] = 1; });

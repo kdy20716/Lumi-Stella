@@ -26,7 +26,7 @@ function foliage(img, cx, cy, rx, ry, pal, seed, { shift = 0, bumpy = 0.18 } = {
   }
 }
 
-export function buildOak({ fruit = null, frames = 4, seed = 3 } = {}) {
+export function buildOak({ fruit = null, frames = 4, seed = 3, pal = P.leaf } = {}) {
   const W = 48, H = 64, img = new Img(W * frames, H);
   const shifts = [0, 1, 0, -1];
   for (let f = 0; f < frames; f++) {
@@ -42,10 +42,10 @@ export function buildOak({ fruit = null, frames = 4, seed = 3 } = {}) {
     t.line(21, 42, 15, 34, b.base); t.line(27, 41, 33, 33, b.d1);
     // 수관 (여러 덩어리)
     const s = shifts[f % 4];
-    foliage(t, 24, 30, 15, 10, P.leaf, seed + 11, { shift: s });
-    foliage(t, 14, 24, 11, 10, P.leaf, seed + 1, { shift: s });
-    foliage(t, 34, 24, 11, 10, P.leaf, seed + 2, { shift: s });
-    foliage(t, 24, 15, 13, 11, P.leaf, seed + 3, { shift: s });
+    foliage(t, 24, 30, 15, 10, pal, seed + 11, { shift: s });
+    foliage(t, 14, 24, 11, 10, pal, seed + 1, { shift: s });
+    foliage(t, 34, 24, 11, 10, pal, seed + 2, { shift: s });
+    foliage(t, 24, 15, 13, 11, pal, seed + 3, { shift: s });
     if (fruit) {
       const r = rng(seed * 99);
       for (let k = 0; k < 9; k++) {
@@ -60,7 +60,7 @@ export function buildOak({ fruit = null, frames = 4, seed = 3 } = {}) {
   return img;
 }
 
-export function buildPine({ frames = 4, seed = 7 } = {}) {
+export function buildPine({ frames = 4, seed = 7, snow = false } = {}) {
   const W = 40, H = 72, img = new Img(W * frames, H);
   const shifts = [0, 1, 0, -1];
   for (let f = 0; f < frames; f++) {
@@ -76,6 +76,7 @@ export function buildPine({ frames = 4, seed = 7 } = {}) {
           let c = edge < 0.25 ? pal.l1 : edge < 0.55 ? pal.base : edge < 0.85 ? pal.d1 : pal.d2;
           if (y >= by - 1 && hash2(x, y, seed) < 0.6) c = pal.d2;
           if (hash2(x, y, seed + ti) < 0.08) c = pal.l2;
+          if (snow && (y - (by - h) < 3 + (hash2(x, ti, 5) < 0.5 ? 1 : 0) || (edge < 0.4 && hash2(x, y, 9) < 0.35))) c = edge < 0.5 ? '#ffffff' : '#dce8f4';
           if (y === by && (x + ti) % 3 === 0) continue; // 들쭉날쭉한 아랫단
           t.set(x + sh, y, c);
         }

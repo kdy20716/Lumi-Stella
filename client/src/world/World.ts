@@ -12,16 +12,19 @@ export interface WorldObject {
   shadow?: Phaser.GameObjects.Image;
   interact?: string;
   text?: string;
+  /** 이 건물이 이어지는 실내 맵 (없으면 건물 종류로) */
+  interior?: string;
   tall: boolean;
   blocks: boolean;
 }
 
-const TALL = new Set(['oak', 'oak_apple', 'pine', 'house', 'board', 'stall', 'stall_b']);
+const TALL = new Set(['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm', 'dead_tree', 'cave_mouth', 'ruin_pillar', 'portal', 'house', 'board', 'stall', 'stall_b']);
 // 풍차 날개 회전 축 위치는 맵 스폰 'windmill_hub'
-const NON_BLOCKING = new Set(['tuft', 'tallgrass']);
+const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal']);
 // 그림자 크기 (가로 배율, 세로 배율)
 const SHADOW: Record<string, [number, number, number]> = {
-  oak: [1.25, 1.3, -1], oak_apple: [1.25, 1.3, -1], pine: [1, 1.1, -1], bush: [1, 0.9, -1], bush_berry: [1, 0.9, -1],
+  oak: [1.25, 1.3, -1], oak_apple: [1.25, 1.3, -1], oak_autumn: [1.25, 1.3, -1], pine: [1, 1.1, -1], pine_snow: [1, 1.1, -1], palm: [0.8, 0.8, -1], dead_tree: [0.9, 0.9, -1], cactus: [0.5, 0.5, 0],
+  cave_mouth: [1.6, 0.9, -1], ruin_pillar: [0.55, 0.5, 0], ruin_broken: [0.55, 0.5, 0], altar_stone: [1.5, 0.8, -1], reeds: [0.4, 0.4, 0], bush: [1, 0.9, -1], bush_berry: [1, 0.9, -1],
   rock_big: [0.95, 0.8, -1], rock: [0.5, 0.55, 0], ore_stone: [0.5, 0.55, 0], ore_copper: [0.5, 0.55, 0], ore_iron: [0.5, 0.55, 0], ore_star: [0.5, 0.55, 0], well: [1, 0.9, -1], shipping_bin: [0.95, 0.7, -1], house: [3.6, 1.6, -2],
   stump: [0.5, 0.5, 0], log: [0.95, 0.6, 0], barrel: [0.5, 0.5, 0], crate: [0.5, 0.5, 0], hay: [0.5, 0.5, 0],
   scarecrow: [0.5, 0.5, 0], mailbox: [0.4, 0.45, 0], lamp: [0.35, 0.4, 0], sign: [0.45, 0.45, 0],
@@ -48,6 +51,10 @@ export class World {
   readonly grassCells = new Set<string>();
   /** 건물 실내 맵 (방 배경 한 장 + 가구) */
   readonly interior: boolean;
+  /** 동굴 층 (배경 한 장 + 어둠) */
+  readonly cave: boolean;
+  readonly biome: string;
+  readonly theme: string;
   readonly title: string;
   private tallGrass: Phaser.GameObjects.Sprite[] = [];
 
@@ -58,14 +65,20 @@ export class World {
     this.widthPx = this.info.width * TILE; this.heightPx = this.info.height * TILE;
 
     this.interior = String(prop(raw, 'interior', '')) === 'true';
+    this.cave = String(prop(raw, 'cave', '')) === 'true';
+    this.biome = String(prop(raw, 'biome', 'meadow'));
+    this.theme = String(prop(raw, 'theme', ''));
     this.title = String(prop(raw, 'title', ''));
     const bg = String(prop(raw, 'bg', ''));
     if (bg && scene.textures.exists(bg)) scene.add.image(0, 0, bg).setOrigin(0).setDepth(DEPTH.ground);
     // 물: 맵 전체 아래에 깔리는 애니메이션 타일스프라이트 (지면 타일의 투명 영역으로 비침)
-    if (!this.interior) for (let f = 0; f < 4; f++) this.water.push(scene.add.tileSprite(0, 0, this.widthPx + TILE, this.heightPx + TILE, `water${f}`).setOrigin(0).setDepth(DEPTH.water).setVisible(f === 0));
+    const wKey = scene.textures.exists(`water_${this.biome}0`) ? `water_${this.biome}` : 'water';
+    if (!this.interior && !this.cave) for (let f = 0; f < 4; f++) this.water.push(scene.add.tileSprite(0, 0, this.widthPx + TILE, this.heightPx + TILE, `${wKey}${f}`).setOrigin(0).setDepth(DEPTH.water).setVisible(f === 0));
 
     this.map = scene.make.tilemap({ key: mapId });
-    const ts = this.map.addTilesetImage('tileset', 'tileset')!;
+    // 바이옴 타일셋 (눈·모래·화산재 …): 같은 배치에 색만 다른 이미지
+    const tsKey = scene.textures.exists(`tileset_${this.biome}`) ? `tileset_${this.biome}` : 'tileset';
+    const ts = this.map.addTilesetImage('tileset', tsKey)!;
     const off = Number(prop(raw, 'groundOffset', 8));
     this.map.createLayer('Ground', ts, off, off)?.setDepth(DEPTH.ground - 1);
     this.soil = this.map.createBlankLayer('Soil', ts, 0, 0)!.setDepth(DEPTH.soil);
@@ -110,7 +123,7 @@ export class World {
 
       const wo: WorldObject = {
         id: o.id, type, cellX, cellY, cellW, cellH, sprite, shadow, tall: TALL.has(type) || !!building, blocks: !NON_BLOCKING.has(type),
-        interact: prop<string | undefined>(o, 'interact', undefined), text: prop<string | undefined>(o, 'text', undefined),
+        interact: prop<string | undefined>(o, 'interact', undefined), text: prop<string | undefined>(o, 'text', undefined), interior: prop<string | undefined>(o, 'interior', undefined),
       };
       this.objects.push(wo);
       if (type === 'tuft') this.tufts.push(sprite as Phaser.GameObjects.Sprite);

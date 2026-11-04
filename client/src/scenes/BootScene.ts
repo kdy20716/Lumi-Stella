@@ -14,6 +14,7 @@ export class BootScene extends Phaser.Scene {
     for (const m of MAP_IDS) this.load.tilemapTiledJSON(m, `assets/maps/${m}.json`);
     this.load.on('filecomplete-json-manifest', (_k: string, _t: string, m: Manifest) => {
       this.load.image('tileset', m.tileset.path);
+      for (const [b, info] of Object.entries((m as Manifest & { biomes?: Record<string, { tileset: string }> }).biomes ?? {})) this.load.image(`tileset_${b}`, info.tileset);
       for (const [key, im] of Object.entries(m.images)) this.load.image(key, im.path);
       for (const [key, s] of Object.entries(m.spritesheets)) this.load.spritesheet(key, s.path, { frameWidth: s.frameWidth, frameHeight: s.frameHeight });
       for (const [key, c] of Object.entries(m.characters)) this.load.spritesheet(key, c.path, { frameWidth: c.frameWidth, frameHeight: c.frameHeight });
@@ -30,7 +31,7 @@ export class BootScene extends Phaser.Scene {
     }
     const loop = (key: string, sheet: string, frames: number[], fps: number) =>
       this.anims.create({ key, frames: frames.map((f) => ({ key: sheet, frame: f })), frameRate: fps, repeat: -1 });
-    for (const t of ['oak', 'oak_apple', 'pine']) loop(`${t}:sway`, t, [0, 1, 2, 3], 1.6);
+    for (const t of ['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm']) loop(`${t}:sway`, t, [0, 1, 2, 3], 1.6);
     loop('tuft:sway', 'tuft', [0, 1, 2, 3], 2.5);
     loop('tallgrass:sway', 'tallgrass', [0, 1, 0, 2], 2);
     // 루미: [정면0, 정면1, 측면0, 측면1, 뒷면0, 뒷면1]
