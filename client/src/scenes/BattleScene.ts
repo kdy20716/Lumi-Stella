@@ -33,8 +33,8 @@ export class BattleScene extends Phaser.Scene {
     this.add.image(0, 0, `battle_${v.bg}`).setOrigin(0);
     this.foeShadow = this.add.ellipse(FOE.x, FOE.y + 1, 34, 7, 0x203018, 0.35);
     this.meShadow = this.add.ellipse(ME.x, ME.y + 1, 42, 9, 0x203018, 0.35);
-    this.foe = this.add.sprite(FOE.x + 140, FOE.y, `lumi_${v.foe.species}`, 0).setOrigin(0.5, 30 / 32).setScale(1.6);
-    this.foe.play(`lumi_${v.foe.species}:down`);
+    this.foe = this.add.sprite(FOE.x + 140, FOE.y, `lumi_${v.foe.species}`, 0);
+    this.skinFoe(v.foe.species);
     this.me = this.add.sprite(ME.x - 140, ME.y, `lumi_${v.me.species}`, 4).setOrigin(0.5, 30 / 32).setScale(2);
     this.me.play(`lumi_${v.me.species}:up`);
 
@@ -53,7 +53,8 @@ export class BattleScene extends Phaser.Scene {
 
     // 등장 연출
     cam.flash(250, 255, 255, 255);
-    this.tweens.add({ targets: this.foe, x: FOE.x, duration: 700, ease: 'Cubic.Out' });
+    this.tweens.add({ targets: this.foe, x: FOE.x, duration: this.big ? 1100 : 700, ease: 'Cubic.Out' });
+    if (this.big) this.legendEntrance();
     this.tweens.add({ targets: this.me, x: ME.x, duration: 700, ease: 'Cubic.Out' });
     this.time.delayedCall(720, async () => {
       if (trainerSprite) {
@@ -65,6 +66,37 @@ export class BattleScene extends Phaser.Scene {
       this.ui.setSide('foe', v.foe); this.ui.setSide('me', v.me);
       this.next(data.update);
     });
+  }
+
+  /** 상대 그림: 전설 · 환상은 큰 그림(96px) + 후광 */
+  private big = false;
+  private foeScale = 1.6;
+  private aura?: Phaser.GameObjects.Image;
+  private skinFoe(species: string) {
+    const bigKey = `lumi_big_${species}`;
+    this.big = this.textures.exists(bigKey);
+    this.foeScale = this.big ? 0.86 : 1.6;
+    if (this.big) { this.foe.setTexture(bigKey, 0).setOrigin(0.5, 92 / 96).setScale(this.foeScale); this.foe.play(`${bigKey}:idle`); }
+    else { this.foe.setTexture(`lumi_${species}`, 0).setOrigin(0.5, 30 / 32).setScale(this.foeScale); this.foe.play(`lumi_${species}:down`); }
+    this.foeShadow.setScale(this.big ? 2.1 : 1, this.big ? 1.7 : 1);
+    this.aura?.destroy(); this.aura = undefined;
+    if (this.big && this.textures.exists('glow')) {
+      const tint = species === 'onnuri' ? 0xfff0c0 : 0x7ad8ff;
+      this.aura = this.add.image(FOE.x, FOE.y - 40, 'glow').setScale(0.85).setTint(tint).setAlpha(0.55).setBlendMode(Phaser.BlendModes.ADD).setDepth(-1);
+      this.foe.setDepth(1);
+      this.tweens.add({ targets: this.aura, scale: 1.05, alpha: 0.3, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      // 떠오르는 별빛
+      this.time.addEvent({ delay: 220, loop: true, callback: () => {
+        if (!this.foe.visible || this.foe.alpha < 0.5) return;
+        const p = this.add.image(FOE.x + Phaser.Math.Between(-36, 36), FOE.y - Phaser.Math.Between(0, 20), 'sparkle').setAlpha(0.9).setScale(0.6).setDepth(2).setBlendMode(Phaser.BlendModes.ADD);
+        this.tweens.add({ targets: p, y: p.y - Phaser.Math.Between(30, 60), alpha: 0, duration: 1400, onComplete: () => p.destroy() });
+      } });
+    }
+  }
+  /** 전설 등장: 화면 흔들림 · 포효 · 번쩍임 */
+  private legendEntrance() {
+    const cam = this.cameras.main;
+    this.time.delayedCall(900, () => { cam.shake(700, 0.012); cam.flash(400, 200, 230, 255); sfx.play('roar'); });
   }
 
   private popIn(s: Phaser.GameObjects.Sprite) {
@@ -150,9 +182,10 @@ export class BattleScene extends Phaser.Scene {
     const s = side === 'me' ? this.me : this.foe;
     const pos = side === 'me' ? ME : FOE;
     sfx.play('send');
-    s.setTexture(`lumi_${v.species}`, side === 'me' ? 4 : 0).setPosition(pos.x, pos.y).setAlpha(1);
+    s.setPosition(pos.x, pos.y).setAlpha(1);
     (side === 'me' ? this.meShadow : this.foeShadow).setAlpha(0.35);
-    s.play(`lumi_${v.species}:${side === 'me' ? 'up' : 'down'}`);
+    if (side === 'foe') this.skinFoe(v.species);
+    else { s.setTexture(`lumi_${v.species}`, 4); s.play(`lumi_${v.species}:up`); }
     this.popIn(s);
     this.ui.setSide(side, v);
     await this.wait(400);
@@ -194,7 +227,7 @@ export class BattleScene extends Phaser.Scene {
       this.tweens.add({ targets: jar, y: jar.y - 3, duration: 200, yoyo: true, repeat: 1 });
     } else {
       jar.destroy();
-      this.foe.setAlpha(1); this.foe.setScale(1.6); this.popIn(this.foe);
+      this.foe.setAlpha(1); this.foe.setScale(this.foeScale); this.popIn(this.foe);
     }
   }
 }

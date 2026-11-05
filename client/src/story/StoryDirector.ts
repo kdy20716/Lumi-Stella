@@ -140,7 +140,7 @@ export class StoryDirector {
       '멋진 여행이 너를 기다리고 있을 거라고, 엄마는 굳게 믿고 있단다!',
     ]);
     sfx.play('item');
-    ui.toast.push(`${name}은(는) 휴대폰을 받았다!`, 'heart');
+    ui.toast.push(`${name}은(는) 휴대폰을 받았다! (M 키로 열기)`, 'heart');
     await this.step(STORY.PHONE);
     await this.say(MOM, ['참, 그 애는 호수 왼쪽 가로등 밑에서 너를 기다리고 있더라. 어서 가 보렴!']);
     this.busy = false; this.h.unlock();
@@ -204,7 +204,7 @@ export class StoryDirector {
       ]);
       sfx.play('phone');
       await this.step(STORY.HALL);
-      ui.toast.push('휴대폰에 지도가 추가됐다! (M 키)', 'heart');
+      ui.toast.push('휴대폰에 지도 앱이 추가됐다! (M 키)', 'heart');
       await this.say(MAYOR, ['M 키를 누르면 지도를 볼 수 있지. 지금은 우리 마을 근처만 보이겠지만, 네가 걸어간 만큼 넓어질 게다.', '그럼 이제, 너와 함께할 루미를 골라 보거라!']);
     } else if (!this.me.party.length) {
       await this.say(MAYOR, ['돌아왔구나. 자, 함께할 루미를 골라 보거라!']);
@@ -245,7 +245,7 @@ export class StoryDirector {
       '마음껏 걷고, 키우고, 만나고 오너라. 너의 모험을 시작하거라!',
     ]);
     sfx.play('win');
-    ui.banner.show('모험의 시작!', '1번 도로가 열렸어요 · P: 나의 루미 · M: 지도');
+    ui.banner.show('모험의 시작!', '1번 도로가 열렸어요 · M: 휴대폰 (지도 · 나의 루미)');
     this.busy = false; this.h.unlock();
     await mayor.walkTo(mayor.cell()[0] - 3, mayor.cell()[1] - 1);
     mayor.face('down');

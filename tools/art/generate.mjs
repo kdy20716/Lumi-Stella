@@ -15,6 +15,7 @@ import * as OB from './objects.mjs';
 import { buildRoom, FURN, ROOMS } from './interior.mjs';
 import { buildPortrait } from './portrait.mjs';
 import * as RG from './region.mjs';
+import { LEGEND_ART, buildLegendBig, buildLegendSmall } from './legends.mjs';
 import { buildCrops, buildIcons, buildPanel, buildSlot, buildSlotActive, ICONS, CROP_IDS, CROP_STAGES } from './items.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../client/public/assets');
@@ -118,7 +119,7 @@ sheet('duck', 'animals/duck.png', TW.buildDuck(), 16, 16, { originY: 15 / 16 });
 sheet('tallgrass', 'objects/tallgrass.png', ADV.buildTallGrass(), 16, 16, { originY: 1 });
 for (const k of ['stone', 'copper', 'iron', 'star']) image(`ore_${k}`, `objects/ore_${k}.png`, ADV.buildOreRock(k));
 for (const k of ['grass', 'water', 'town']) image(`battle_${k}`, `battle/bg_${k}.png`, ADV.buildBattleBg(k));
-for (const k of ['cave', 'snow', 'sand']) image(`battle_${k}`, `battle/bg_${k}.png`, RG.buildBattleBg2(k));
+for (const k of ['cave', 'snow', 'sand', 'summit', 'origin']) image(`battle_${k}`, `battle/bg_${k}.png`, RG.buildBattleBg2(k));
 // 동굴 층 배경 (맵 생성기와 같은 레이아웃)
 for (const n of RG.caveNodes()) image(`cave_${n.id}`, `caves/${n.id}.png`, RG.buildCaveBg(n));
 image('windmill_blades', 'buildings/windmill_blades.png', ADV.buildWindmillBlades());
@@ -128,10 +129,13 @@ image('sparkle', 'fx/sparkle.png', ADV.buildSparkle());
 // 루미 (오리지널 몬스터) 시트: 열 = [정면0, 정면1, 측면0, 측면1, 뒷면0, 뒷면1]
 manifest.lumi = {};
 for (const [id, cfg] of Object.entries(SPECIES_ART)) {
-  const img = buildCreatureSheet(cfg);
+  const img = LEGEND_ART.includes(id) ? buildLegendSmall(id, CF) : buildCreatureSheet(cfg);
   sheet(`lumi_${id}`, `lumi/${id}.png`, img, CF, CF, { originY: 30 / 32 });
   manifest.lumi[id] = `lumi_${id}`;
 }
+// 전설 · 환상: 배틀용 큰 그림 (96px, 2프레임)
+manifest.lumiBig = {};
+for (const id of LEGEND_ART) { sheet(`lumi_big_${id}`, `lumi/big_${id}.png`, buildLegendBig(id), 96, 96, { originY: 92 / 96 }); manifest.lumiBig[id] = `lumi_big_${id}`; }
 // 건물 실내: 방 배경 + 가구
 for (const [id, spec] of Object.entries(ROOMS)) image(`room_${id}`, `interiors/${id}.png`, buildRoom(spec));
 for (const [type, f] of Object.entries(FURN)) image(type, `objects/${type}.png`, f.build());

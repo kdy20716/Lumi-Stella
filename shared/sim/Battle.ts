@@ -15,6 +15,8 @@ export function stats(c: CreatureInst) {
   };
 }
 export const expToNext = (level: number) => Math.floor(level * level * 4 + 10);
+/** 만렙 */
+export const MAX_LEVEL = 100;
 
 export function movesAt(species: string, level: number) {
   const learned = SPECIES[species].learnset.filter(([lv]) => lv <= level).map(([, m]) => m);
@@ -125,7 +127,9 @@ export class BattleEngine {
       p.bag[itemId]--;
       const foe = st.foes[st.foeIdx], s = stats(foe);
       const hpFactor = 1 - (foe.hp / s.maxHp) * 0.7;
-      const chance = Math.min(0.97, SPECIES[foe.species].catchRate * def.catchBonus * (0.35 + hpFactor * 1.1));
+      const sp = SPECIES[foe.species];
+      // 태초볼(catchBonus ≥ 100)은 반드시 · 환상 루미는 체력과 상관없이 고정 확률(0.1%)
+      const chance = def.catchBonus >= 100 ? 1 : sp.fixedCatch != null ? sp.fixedCatch : Math.min(0.97, sp.catchRate * def.catchBonus * (0.35 + hpFactor * 1.1));
       const success = this.rand() < chance;
       const shakes = success ? 3 : chance > 0.5 ? 2 : chance > 0.2 ? 1 : 0;
       log.push({ t: 'text', text: `${def.name}을(를) 던졌다!` });
@@ -290,7 +294,7 @@ export class BattleEngine {
       c.exp += gain;
       log.push({ t: 'text', text: `${SPECIES[c.species].name}은(는) 경험치 ${gain}을(를) 얻었다!` });
       let leveled = false;
-      while (c.exp >= expToNext(c.level) && c.level < 50) {
+      while (c.exp >= expToNext(c.level) && c.level < MAX_LEVEL) {
         c.exp -= expToNext(c.level); const before = stats(c).maxHp; c.level++; leveled = true;
         c.hp = Math.min(stats(c).maxHp, c.hp + (stats(c).maxHp - before));
         log.push({ t: 'text', text: `${SPECIES[c.species].name}의 레벨이 ${c.level}(으)로 올랐다!` });

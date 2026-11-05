@@ -5,8 +5,32 @@
     "owner": "sora",
     "open": 900,
     "close": 1700,
-    "greeting": "어서 와요, 트레이너님! 약초 씨앗이랑 볼은 오늘도 넉넉해요.",
+    "greeting": "어서 와요, 트레이너님! 밭 일굴 도구랑 약초 씨앗, 볼까지 다 있어요.",
     "items": [
+      {
+        "itemId": "hoe",
+        "price": 150
+      },
+      {
+        "itemId": "watering_can",
+        "price": 120
+      },
+      {
+        "itemId": "axe",
+        "price": 200
+      },
+      {
+        "itemId": "pickaxe",
+        "price": 250
+      },
+      {
+        "itemId": "hammer",
+        "price": 100
+      },
+      {
+        "itemId": "rod",
+        "price": 180
+      },
       {
         "itemId": "seeds_lumi_herb",
         "price": 30

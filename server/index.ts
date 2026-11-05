@@ -44,7 +44,7 @@ sim.on((event: SimEvent) => {
     case 'invite': return sendTo(event.to, m);
     case 'toast': if (event.playerId) return sendTo(event.playerId, m); if (event.room) return toRoom(event.room, m); return broadcast(m);
     case 'emote': case 'dish': return toRoom(event.room, m);
-    case 'tile': return toRoom(roomKey('farm', event.owner), m);
+    case 'tile': case 'placed': case 'unplaced': return toRoom(roomKey('farm', event.owner), m);
     case 'objectRemoved': if (event.owner) { toRoom(roomKey('farm', event.owner), m); return toRoom(roomKey('home', event.owner), m); } return broadcast(m);
     case 'look': rosterDirty = true; return broadcast(m);
     case 'newDay': broadcast(m); void saveAll('새 날'); return;
@@ -100,7 +100,7 @@ wss.on('connection', (ws) => {
         const now = Date.now(), dt = Math.max(16, now - client.lastMove) / 1000;
         client.lastMove = now;
         const dist = Math.hypot(m.x - p.x, m.y - p.y);
-        if (dist > MAX_SPEED * dt + 6 || !MAPS[p.map].canStand(m.x, m.y)) { send(ws, { t: 'correct', x: p.x, y: p.y }); break; } // 서버 보정
+        if (dist > MAX_SPEED * dt + 6 || !sim.canStand(p, m.x, m.y)) { send(ws, { t: 'correct', x: p.x, y: p.y }); break; } // 서버 보정
         if (dist > 2) p.sleeping = false;
         p.x = m.x; p.y = m.y; p.dir = m.dir; client.anim = m.anim;
         break;

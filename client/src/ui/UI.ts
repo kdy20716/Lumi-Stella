@@ -1,10 +1,10 @@
-// DOM 오버레이 UI: 로딩 / 타이틀 / HUD(시계·골드·에너지) / 핫바 / 대화창 / 토스트 / 힌트 / 하루 전환 / 채팅
+// DOM 오버레이 UI: 로딩 / 타이틀 / HUD(시계·골드·에너지) / 손에 든 도구 / 대화창 / 토스트 / 힌트 / 하루 전환 / 채팅
 import { ITEMS, NPCS, RECIPES, SPECIES, TYPE_COLORS } from '@shared/data';
 import { josa } from '@shared/josa';
 import { creator, emoteWheel, invitePrompt, mailbox } from './Social';
 import { sfx } from '../audio/Sfx';
 import { music } from '../audio/Music';
-import { MAP_META, type CreatureInst, type InventorySlot, type MapMeta, type PlayerState, type ShopDef, type WorldTime } from '@shared/types';
+import { type CreatureInst, type InventorySlot, type PlayerState, type ShopDef, type WorldTime } from '@shared/types';
 
 const root = () => document.getElementById('ui')!;
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = '') => {
@@ -116,38 +116,23 @@ const hud = {
   },
 };
 
-// ── 핫바 ───────────────────────────────────────────────
+// 손에 든 도구 표시 (아래 핫바 대신 — 도구는 휴대폰 › 가방에서 고름)
 const hotbar = {
-  node: null as HTMLDivElement | null, label: null as HTMLDivElement | null, selected: 0, labelTimer: 0,
-  onSelect: (_i: number) => {},
+  node: null as HTMLDivElement | null,
+  onClick: () => {},
   mount() {
-    const wrap = el('div', 'absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2');
-    this.label = el('div', 'px-3 py-1 bg-[#3b2414]/85 text-[#fff8ec] text-sm opacity-0 transition-opacity');
-    const bar = el('div', 'px-panel flex gap-1 pointer-events-auto');
-    wrap.append(this.label, bar);
-    root().appendChild(wrap);
-    this.node = bar;
+    if (this.node) return;
+    this.node = el('div', 'held-badge');
+    this.node.title = '휴대폰(M) › 가방에서 바꾸기';
+    this.node.onclick = () => this.onClick();
+    root().appendChild(this.node);
   },
-  row: 0,
-  render(all: InventorySlot[], selected?: number) {
+  render(all: InventorySlot[], selected: number) {
     if (!this.node) return;
-    this.selected = selected ?? this.selected;
-    selected = this.selected;
-    const slots = all.slice(this.row * 12, this.row * 12 + 12);
-    this.node.innerHTML = '';
-    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
-    slots.forEach((s, i) => {
-      const it = s.itemId ? ITEMS[s.itemId] : null;
-      const d = el('div', `px-slot flex items-center justify-center cursor-pointer ${i === selected ? 'active' : ''}`);
-      d.title = it ? `${it.name}\n${it.description}` : '';
-      d.innerHTML = `<span class="absolute top-0.5 left-1 text-[10px] text-[#6e4024] opacity-70">${keys[i]}</span>` +
-        (it ? `<span class="px-icon" style="${iconStyle(it.icon, 42)}"></span>${s.quantity > 1 || it.type !== 'tool' ? `<span class="absolute bottom-0 right-1 text-sm text-white px-outline">${s.quantity}</span>` : ''}` : '');
-      d.onclick = () => this.onSelect(i);
-      this.node!.appendChild(d);
-    });
-    const tag = el('div', 'flex flex-col items-center justify-center px-1 text-[10px] text-[#6e4024] leading-tight'); tag.innerHTML = `<span>${this.row + 1}/2</span><span class="opacity-70">Q</span>`; this.node!.appendChild(tag);
-    const cur = slots[selected]?.itemId; const it = cur ? ITEMS[cur] : null;
-    if (this.label) { this.label.textContent = it ? it.name : ''; this.label.style.opacity = it ? '1' : '0'; clearTimeout(this.labelTimer); this.labelTimer = window.setTimeout(() => { if (this.label) this.label.style.opacity = '0'; }, 1500); }
+    const s = all[selected]; const it = s?.itemId ? ITEMS[s.itemId] : null;
+    this.node.innerHTML = it
+      ? `<span class="px-icon" style="${iconStyle(it.icon, 32)}"></span><div><div class="nm">${it.name}${it.type !== 'tool' ? ` <span class="q">×${s.quantity}</span>` : ''}</div><div class="sub">Space 사용 · M › 가방에서 바꾸기</div></div>`
+      : '<span class="px-icon" style="opacity:.4;' + iconStyle('craft', 32) + '"></span><div><div class="nm">빈손</div><div class="sub">M › 가방에서 도구 들기</div></div>';
   },
 };
 
@@ -275,7 +260,7 @@ const help = {
     const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-panel text-lg leading-relaxed pointer-events-auto min-w-[420px]');
     n.innerHTML = `<div class="text-2xl mb-2 text-[#8a5a32]">조작법</div>
       <table class="w-full"><tbody>
-      ${[['WASD / 방향키', '이동'], ['Shift', '달리기'], ['Space / 좌클릭', '도구 사용 · 씨앗 심기'], ['E / 우클릭', '대화 · 수확 · 출하 · 조사'], ['1~0, -, = / 휠', '핫바 선택'], ['Enter', '채팅 (말풍선으로 표시)'], ['Tab (누른 채 마우스)', '감정표현 휠 — 떼면 표현'], ['L', '접속자 목록 접기/펴기'], ['P', '나의 루미 (파티·도감·가방)'], ['Q', '핫바 1줄 ↔ 2줄 전환'], ['N', '(디버그) 다음 날로'], ['H', '도움말 닫기']]
+      ${[['WASD / 방향키', '이동 (Shift 달리기)'], ['Space / 좌클릭', '손에 든 도구 사용 · 씨앗 · 낚시'], ['E / 우클릭', '대화 · 수확 · 출하 · 잡초 뽑기 · 조사'], ['M', '휴대폰 열기 · 닫기 (가방에서 도구 바꾸기)'], ['P', '휴대폰 › 나의 루미'], ['H', '도움말'], ['Esc', '휴대폰 뒤로 · 닫기 / 일시정지'], ['Enter', '채팅'], ['Tab (누른 채)', '감정표현 휠'], ['L', '접속자 목록 접기']]
         .map(([k, v]) => `<tr><td class="pr-6 text-[#a8683a]">${k}</td><td>${v}</td></tr>`).join('')}
       </tbody></table>
       <div class="mt-3 text-sm text-[#8a5a32]">모험: 마을회관 한별 박사님께 파트너 루미를 받고, 풀숲에서 야생 루미를 만나 루미볼로 잡아요. 트레이너와 눈이 마주치면 배틀! 도장 8곳을 돌아 배지를 모으면 루미나 리그로.<br>자급자족: 밭에 <b>루미풀·불꽃고추·단단콩</b>을 키우고, 채석장에서 <b>돌·구리·철</b>을 캐서 집 <b>작업대</b>에서 회복약 · 도핑약 · 루미볼을 직접 만들어요. 배지를 모을수록 민수(볼 공방)와 한별 박사(연구소)가 새 제작법을 가르쳐 줘요.<br>집: 옷장에서 외형 변경, 침대에서 잠, 식탁에 음식을 차려 친구와 같이 먹기. 농장 우편함에서 친구 초대!</div>`;
@@ -454,62 +439,6 @@ const fishing = {
   hide() { this.node?.remove(); this.node = null; },
 };
 
-// ── 휴대폰 지도 (M): 루미나 지방 360×240, 가 본 곳만 안개가 걷힘 ─────────
-const worldMap = {
-  node: null as HTMLDivElement | null,
-  get open() { return !!this.node; },
-  toggle(here: string, ownerName = '', visited: string[] = []) {
-    if (this.node) { this.close(); return; }
-    sfx.play('phone');
-    const S = 2, MW = 360, MH = 240;
-    const seen = new Set([...visited, here]);
-    const places = Object.entries(MAP_META).filter(([id, m]) => (!m.interior && m.kind !== 'room') || (id === here && m.x > 0));
-    const known = places.filter(([id]) => seen.has(id));
-    const n = el('div', 'fixed inset-0 z-40 flex items-center justify-center bg-[#0b0d18]/60 pointer-events-auto toast-in');
-    const pin = (id: string, m: MapMeta) => {
-      const town = m.kind === 'town' || m.kind === 'farm';
-      const cur = id === here;
-      return `<div class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center" style="left:${(m.x / MW) * 100}%;top:${(m.y / MH) * 100}%" title="${m.name}">
-        ${town ? `<span class="block w-[10px] h-[10px] border-2 border-[#3b2414]" style="background:${cur ? '#e0473b' : '#ffe58a'}"></span>`
-          : `<span class="block w-[6px] h-[6px] rounded-full border border-[#3b2414]" style="background:${cur ? '#e0473b' : m.kind === 'cave' ? '#9a8a7a' : '#fff8ec'}"></span>`}
-        ${town || cur ? `<span class="mt-0.5 px-1 text-[11px] leading-tight text-white px-outline whitespace-nowrap" style="background:${cur ? '#e0473b' : '#3b2414cc'}">${m.name.split(' · ')[0]}</span>` : ''}
-        ${cur ? '<span class="absolute -top-7 text-2xl leading-none map-pin">📍</span>' : ''}</div>`;
-    };
-    const towns = places.filter(([, m]) => m.kind === 'town').length, knownTowns = known.filter(([, m]) => m.kind === 'town').length;
-    const hereName = MAP_META[here]?.name ?? '?';
-    n.innerHTML = `<div class="relative px-[22px] pt-[38px] pb-[20px] rounded-[28px] bg-[#2a2f3a] border-4 border-[#14161c] shadow-[0_10px_0_rgba(0,0,0,.35)]">
-      <div class="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-2 rounded-full bg-[#14161c]"></div>
-      <div class="absolute top-2 left-6 text-xs text-[#ffe58a]">루미나 지방</div>
-      <div class="absolute top-2 right-6 text-xs text-[#c9d1e0]">📶 지도</div>
-      <div class="relative" style="width:${MW * S}px;aspect-ratio:3/2;max-width:90vw">
-        <img src="assets/ui/worldmap.png" style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;border-radius:6px" alt="">
-        <canvas width="${MW}" height="${MH}" style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;border-radius:6px"></canvas>
-        ${known.map(([id, m]) => pin(id, m)).join('')}
-      </div>
-      <div class="flex justify-between gap-6 mt-2 text-sm text-[#c9d1e0]"><span>현재 위치: <b class="text-[#ffe58a]">${hereName}${ownerName}</b></span><span>마을 ${knownTowns}/${towns} · 가 본 곳 ${known.length}/${places.length} · M / Esc 닫기</span></div>
-    </div>`;
-    // 안개: 구름 무늬로 덮고, 가 본 곳 주변만 둥글게 걷어 냄
-    const cv = n.querySelector('canvas')!, g = cv.getContext('2d')!;
-    const img = g.createImageData(MW, MH);
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
-      const v = 0.5 + 0.25 * Math.sin(x / 9 + Math.sin(y / 13) * 2) * Math.cos(y / 11 - x / 31) + 0.1 * Math.sin((x + y) / 4.3);
-      const c = Math.round(196 + v * 50), i = (y * MW + x) * 4;
-      img.data[i] = c - 8; img.data[i + 1] = c - 4; img.data[i + 2] = c + 6; img.data[i + 3] = 238;
-    }
-    g.putImageData(img, 0, 0);
-    g.globalCompositeOperation = 'destination-out';
-    for (const [, m] of known) {
-      const r = m.kind === 'town' ? 22 : m.kind === 'route' ? 18 : 14;
-      const gr = g.createRadialGradient(m.x, m.y, r * 0.45, m.x, m.y, r);
-      gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = gr; g.beginPath(); g.arc(m.x, m.y, r, 0, Math.PI * 2); g.fill();
-    }
-    n.onclick = (e) => { if (e.target === n) this.close(); };
-    root().appendChild(n); this.node = n;
-  },
-  close() { this.node?.remove(); this.node = null; },
-};
-
 // ── 일시정지 메뉴 (Esc) ────────────────────────────────
 const menu = {
   node: null as HTMLDivElement | null,
@@ -543,9 +472,31 @@ const menu = {
   close() { this.node?.remove(); this.node = null; },
 };
 
+// ── 오카리나 연출 (안개 · 별 · 하얀 빛) ─────────────────
+const mythFx = () => {
+  const n = el('div', 'fixed inset-0 z-50 pointer-events-none myth-fx');
+  n.innerHTML = '<div class="myth-sky"></div><div class="myth-fog a"></div><div class="myth-fog b"></div><div class="myth-stars"></div><div class="myth-flash"></div>';
+  root().appendChild(n);
+  requestAnimationFrame(() => n.classList.add('on'));
+  return {
+    fog: () => n.classList.add('fog'),
+    flash: () => n.classList.add('flash'),
+    done: () => { n.classList.add('out'); setTimeout(() => n.remove(), 900); },
+  };
+};
+
+// ── 정기선 (항구 ↔ 섬) ────────────────────────────────
+const ferry = (dest: string) => new Promise<void>((resolve) => {
+  const n = el('div', 'fixed inset-0 z-50 pointer-events-auto ferry-fx');
+  n.innerHTML = `<div class="ferry-sea"></div><div class="ferry-boat">⛴️</div><div class="ferry-text">⛵ 정기선 출항!<span>${dest}(으)로 가는 중…</span></div>`;
+  root().appendChild(n);
+  sfx.play('horn'); setTimeout(() => sfx.play('waves'), 600);
+  setTimeout(() => { n.classList.add('out'); setTimeout(() => { n.remove(); }, 500); resolve(); }, 2600);
+});
+
 let mounted = false;
 export const ui = {
-  creator, emoteWheel, mailbox, invitePrompt, worldMap, menu,
+  creator, emoteWheel, mailbox, invitePrompt, menu, mythFx, ferry,
   loading, title, hud, hotbar, dialogue, toast, hint, transition, chat, help, shop, craft, roster, banner, starter, party, fishing,
   mountGame() { if (mounted) return; mounted = true; hud.mount(); hotbar.mount(); toast.mount(); hint.mount(); chat.mount(); },
 };

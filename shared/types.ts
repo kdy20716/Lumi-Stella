@@ -3,7 +3,7 @@ import REGION from './data/region.json';
 export type Dir = 'down' | 'left' | 'right' | 'up';
 export const DIR_VEC: Record<Dir, [number, number]> = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
 
-export type ItemType = 'tool' | 'seed' | 'crop' | 'material' | 'food' | 'battle';
+export type ItemType = 'tool' | 'seed' | 'crop' | 'material' | 'food' | 'battle' | 'placeable' | 'key';
 /** 맵 목록·이름·지도 좌표는 맵 생성기(tools/map/generate-map.mjs)가 만든 region.json 에서 */
 export interface MapMeta { name: string; kind: 'farm' | 'town' | 'route' | 'cave' | 'area' | 'room'; biome: string; x: number; y: number; tier: number; interior?: boolean }
 export type MapId = string;
@@ -27,7 +27,7 @@ export const PLAYER_LOOKS = { male: ['m1', 'm2', 'm3', 'm4'], female: ['f1', 'f2
 export const ALL_PLAYER_LOOKS: string[] = [...PLAYER_LOOKS.male, ...PLAYER_LOOKS.female];
 /** 감정표현: emotes.png 프레임 번호 */
 export const EMOTES = [{ id: 5, name: '웃음' }, { id: 2, name: '하트' }, { id: 1, name: '놀람' }, { id: 3, name: '궁금' }, { id: 6, name: '슬픔' }, { id: 7, name: '화남' }] as const;
-export type ToolKind = 'hoe' | 'watering_can' | 'axe' | 'pickaxe' | 'rod';
+export type ToolKind = 'hoe' | 'watering_can' | 'axe' | 'pickaxe' | 'rod' | 'hammer';
 
 export interface ItemDef {
   id: string;
@@ -44,6 +44,7 @@ export interface ItemDef {
   catchBonus?: number;   // 루미볼 포획 보정
   heal?: number;         // 배틀 회복량
   boost?: { atk?: number; def?: number }; // 도핑약: 배틀 중 능력 단계 상승
+  place?: string;        // 설치물: 농장에 놓이는 오브젝트 종류 (망치로 부수면 아이템으로 돌아옴)
 }
 
 /** 작업대 제작법 (작물·채집물·광석 → 볼·회복약·도핑약) */
@@ -115,6 +116,10 @@ export interface SpeciesDef {
   base: { hp: number; atk: number; def: number; spd: number };
   catchRate: number; expYield: number; learnset: [number, string][];
   helps: 'farm' | 'fish' | 'mine' | 'forage' | 'energy' | 'exp';
+  /** 전설 · 환상: 야생에 나오지 않고 정해진 곳에서만 */
+  legend?: 'legend' | 'myth';
+  /** 체력과 볼에 상관없이 고정 포획률 (태초볼 제외) */
+  fixedCatch?: number;
 }
 export interface MoveDef { id: string; name: string; type: LumiType; power: number; accuracy: number; category: 'atk' | 'heal' | 'debuffAtk' | 'debuffDef' | 'buffDef'; priority: number; description: string }
 export interface TrainerDef { id: string; name: string; title: string; sprite: string; map: MapId; sight: number; team: [string, number][]; reward: number; badge?: string; requires?: string[]; intro: string[]; defeat: string[]; after: string[] }
@@ -139,6 +144,9 @@ export interface BattleUpdate { view: BattleView; log: BattleLog[]; ended?: 'win
 export interface WorldTime { day: number; minutes: number; season: Season; weather: Weather }
 
 export interface Dish { item: string; servings: number; by: string }
+/** 플레이어가 농장에 설치한 구조물 (울타리 · 상자 · 허수아비 …) */
+export interface PlacedObject { id: string; type: string; item: string; x: number; y: number; by: string }
+
 export interface FarmSnapshot {
   time: WorldTime;
   gold: number;
@@ -146,13 +154,14 @@ export interface FarmSnapshot {
   removedObjects: string[];   // `${map}:${objectId}` (농장은 지금 보고 있는 주인의 농장 기준)
   forage: ForageSpot[];
   dish: Dish | null;          // 집 식탁에 차려진 음식
+  placed?: PlacedObject[];    // 지금 있는 농장의 설치물
 }
 /** 저장 데이터 (Firestore / 로컬 파일) */
 export interface SaveData {
   v: 1; name: string; look: string; gold: number; energy: number; maxEnergy: number;
   inventory: InventorySlot[]; party: CreatureInst[]; box: CreatureInst[]; bag: Record<string, number>;
   badges: string[]; defeated: string[]; seen: string[]; caught: string[]; bin: { itemId: string; quantity: number }[];
-  farm: { tiles: FarmTile[]; removed: number[] };
+  farm: { tiles: FarmTile[]; removed: number[]; placed?: PlacedObject[]; ver?: number };
   story?: number;
   visited?: string[];
   recipes?: string[];
@@ -169,6 +178,13 @@ export type ActionIntent =
   | { kind: 'buy'; shop: string; itemId: string; qty: number }
   | { kind: 'eat'; slot: number }
   | { kind: 'sleep' }
+  | { kind: 'debugDay' }                              // 테스트용: 자리 그대로 다음 날 (혼자일 때만, 키는 없음)
+  | { kind: 'legend' }                                // 별의 제단: 전설 별무리
+  | { kind: 'ocarina' }                               // 별의 제단에서 오카리나: 환상 온누리
+  | { kind: 'rematch' }                               // 루미 리그: 루미 마스터 재대결 (도감 완성)
+  | { kind: 'pull'; objectId: number }               // 잡초 뽑기 (맨손)
+  | { kind: 'place'; slot: number; tx: number; ty: number }
+  | { kind: 'hammer'; tx: number; ty: number }
   | { kind: 'chooseStarter'; species: string }
   | { kind: 'setPartner'; index: number }
   | { kind: 'heal' }

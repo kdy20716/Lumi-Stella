@@ -278,5 +278,25 @@
     "category": "buffDef",
     "priority": 0,
     "description": "자신만만하게 몸을 부풀려 방어를 올린다."
+  },
+  "star_rain": {
+    "id": "star_rain",
+    "name": "별빛 폭우",
+    "type": "빛",
+    "power": 110,
+    "accuracy": 90,
+    "category": "atk",
+    "priority": 0,
+    "description": "수많은 별빛을 비처럼 쏟아붓는다."
+  },
+  "genesis": {
+    "id": "genesis",
+    "name": "태초의 빛",
+    "type": "노말",
+    "power": 120,
+    "accuracy": 100,
+    "category": "atk",
+    "priority": 0,
+    "description": "세상이 처음 빚어질 때의 빛을 내뿜는다."
   }
 }

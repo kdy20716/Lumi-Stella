@@ -1,476 +1,555 @@
 {
- "saerok": {
-  "id": "saerok",
-  "name": "새록",
-  "type": "풀",
-  "base": {
-   "hp": 45,
-   "atk": 49,
-   "def": 49,
-   "spd": 45
+  "saerok": {
+    "id": "saerok",
+    "name": "새록",
+    "type": "풀",
+    "base": {
+      "hp": 45,
+      "atk": 49,
+      "def": 49,
+      "spd": 45
+    },
+    "catchRate": 0.45,
+    "expYield": 64,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        9,
+        "vine_whip"
+      ],
+      [
+        13,
+        "photosynth"
+      ],
+      [
+        17,
+        "spore_burst"
+      ]
+    ],
+    "description": "잎사귀 귀를 가진 강아지 루미. 머리 위 새싹은 기분이 좋으면 쑥쑥 자란다. 밭일을 정말 좋아한다.",
+    "helps": "farm",
+    "kind": "강아지 루미"
   },
-  "catchRate": 0.45,
-  "expYield": 64,
-  "learnset": [
-   [
-    1,
-    "tackle"
-   ],
-   [
-    1,
-    "growl"
-   ],
-   [
-    5,
-    "leaf_toss"
-   ],
-   [
-    9,
-    "vine_whip"
-   ],
-   [
-    13,
-    "photosynth"
-   ],
-   [
-    17,
-    "spore_burst"
-   ]
-  ],
-  "description": "잎사귀 귀를 가진 강아지 루미. 머리 위 새싹은 기분이 좋으면 쑥쑥 자란다. 밭일을 정말 좋아한다.",
-  "helps": "farm",
-  "kind": "강아지 루미"
- },
- "chalang": {
-  "id": "chalang",
-  "name": "찰랑",
-  "type": "물",
-  "base": {
-   "hp": 44,
-   "atk": 48,
-   "def": 55,
-   "spd": 43
+  "chalang": {
+    "id": "chalang",
+    "name": "찰랑",
+    "type": "물",
+    "base": {
+      "hp": 44,
+      "atk": 48,
+      "def": 55,
+      "spd": 43
+    },
+    "catchRate": 0.45,
+    "expYield": 63,
+    "learnset": [
+      [
+        1,
+        "scratch"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        9,
+        "water_gun"
+      ],
+      [
+        13,
+        "aqua_veil"
+      ],
+      [
+        17,
+        "wave_ride"
+      ]
+    ],
+    "description": "귀 끝에 물방울이 맺힌 고양이 루미. 물고기 냄새를 귀신같이 맡아 낚시를 돕는다.",
+    "helps": "fish",
+    "kind": "고양이 루미"
   },
-  "catchRate": 0.45,
-  "expYield": 63,
-  "learnset": [
-   [
-    1,
-    "scratch"
-   ],
-   [
-    1,
-    "growl"
-   ],
-   [
-    5,
-    "bubble"
-   ],
-   [
-    9,
-    "water_gun"
-   ],
-   [
-    13,
-    "aqua_veil"
-   ],
-   [
-    17,
-    "wave_ride"
-   ]
-  ],
-  "description": "귀 끝에 물방울이 맺힌 고양이 루미. 물고기 냄새를 귀신같이 맡아 낚시를 돕는다.",
-  "helps": "fish",
-  "kind": "고양이 루미"
- },
- "morak": {
-  "id": "morak",
-  "name": "모락",
-  "type": "불",
-  "base": {
-   "hp": 39,
-   "atk": 52,
-   "def": 43,
-   "spd": 65
+  "morak": {
+    "id": "morak",
+    "name": "모락",
+    "type": "불",
+    "base": {
+      "hp": 39,
+      "atk": 52,
+      "def": 43,
+      "spd": 65
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "scratch"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        9,
+        "quick_attack"
+      ],
+      [
+        13,
+        "flame_tail"
+      ],
+      [
+        17,
+        "heatwave"
+      ]
+    ],
+    "description": "귀 끝에서 작은 불꽃이 피어오르는 토끼 루미. 단단한 바위도 열기로 달궈 쉽게 캐낸다.",
+    "helps": "mine",
+    "kind": "토끼 루미"
   },
-  "catchRate": 0.45,
-  "expYield": 62,
-  "learnset": [
-   [
-    1,
-    "scratch"
-   ],
-   [
-    1,
-    "growl"
-   ],
-   [
-    5,
-    "ember"
-   ],
-   [
-    9,
-    "quick_attack"
-   ],
-   [
-    13,
-    "flame_tail"
-   ],
-   [
-    17,
-    "heatwave"
-   ]
-  ],
-  "description": "귀 끝에서 작은 불꽃이 피어오르는 토끼 루미. 단단한 바위도 열기로 달궈 쉽게 캐낸다.",
-  "helps": "mine",
-  "kind": "토끼 루미"
- },
- "kongkong": {
-  "id": "kongkong",
-  "name": "콩콩",
-  "type": "노말",
-  "base": {
-   "hp": 40,
-   "atk": 40,
-   "def": 40,
-   "spd": 50
+  "kongkong": {
+    "id": "kongkong",
+    "name": "콩콩",
+    "type": "노말",
+    "base": {
+      "hp": 40,
+      "atk": 40,
+      "def": 40,
+      "spd": 50
+    },
+    "catchRate": 0.75,
+    "expYield": 40,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        6,
+        "quick_attack"
+      ],
+      [
+        10,
+        "rollout"
+      ]
+    ],
+    "description": "볼에 씨앗을 잔뜩 넣고 다니는 햄스터 루미. 같이 있으면 덜 지친다.",
+    "helps": "energy",
+    "kind": "털뭉치 루미"
   },
-  "catchRate": 0.75,
-  "expYield": 40,
-  "learnset": [
-   [
-    1,
-    "tackle"
-   ],
-   [
-    1,
-    "growl"
-   ],
-   [
-    6,
-    "quick_attack"
-   ],
-   [
-    10,
-    "rollout"
-   ]
-  ],
-  "description": "볼에 씨앗을 잔뜩 넣고 다니는 햄스터 루미. 같이 있으면 덜 지친다.",
-  "helps": "energy",
-  "kind": "털뭉치 루미"
- },
- "poreureu": {
-  "id": "poreureu",
-  "name": "포르르",
-  "type": "바람",
-  "base": {
-   "hp": 40,
-   "atk": 45,
-   "def": 40,
-   "spd": 56
+  "poreureu": {
+    "id": "poreureu",
+    "name": "포르르",
+    "type": "바람",
+    "base": {
+      "hp": 40,
+      "atk": 45,
+      "def": 40,
+      "spd": 56
+    },
+    "catchRate": 0.65,
+    "expYield": 45,
+    "learnset": [
+      [
+        1,
+        "peck"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        6,
+        "gust"
+      ],
+      [
+        9,
+        "quick_attack"
+      ],
+      [
+        14,
+        "whirlwind"
+      ]
+    ],
+    "description": "바람을 타고 들판을 누비는 작은 새 루미. 하늘에서 열매를 잘 찾아낸다.",
+    "helps": "forage",
+    "kind": "작은새 루미"
   },
-  "catchRate": 0.65,
-  "expYield": 45,
-  "learnset": [
-   [
-    1,
-    "peck"
-   ],
-   [
-    1,
-    "growl"
-   ],
-   [
-    6,
-    "gust"
-   ],
-   [
-    9,
-    "quick_attack"
-   ],
-   [
-    14,
-    "whirlwind"
-   ]
-  ],
-  "description": "바람을 타고 들판을 누비는 작은 새 루미. 하늘에서 열매를 잘 찾아낸다.",
-  "helps": "forage",
-  "kind": "작은새 루미"
- },
- "posil": {
-  "id": "posil",
-  "name": "포실",
-  "type": "풀",
-  "base": {
-   "hp": 50,
-   "atk": 40,
-   "def": 50,
-   "spd": 30
+  "posil": {
+    "id": "posil",
+    "name": "포실",
+    "type": "풀",
+    "base": {
+      "hp": 50,
+      "atk": 40,
+      "def": 50,
+      "spd": 30
+    },
+    "catchRate": 0.6,
+    "expYield": 48,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        4,
+        "spore_powder"
+      ],
+      [
+        7,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "photosynth"
+      ]
+    ],
+    "description": "버섯 모자를 쓴 숲의 루미. 비 온 다음 날 더 통통해진다.",
+    "helps": "farm",
+    "kind": "버섯 루미"
   },
-  "catchRate": 0.6,
-  "expYield": 48,
-  "learnset": [
-   [
-    1,
-    "tackle"
-   ],
-   [
-    4,
-    "spore_powder"
-   ],
-   [
-    7,
-    "leaf_toss"
-   ],
-   [
-    11,
-    "photosynth"
-   ]
-  ],
-  "description": "버섯 모자를 쓴 숲의 루미. 비 온 다음 날 더 통통해진다.",
-  "helps": "farm",
-  "kind": "버섯 루미"
- },
- "jagal": {
-  "id": "jagal",
-  "name": "자갈",
-  "type": "땅",
-  "base": {
-   "hp": 55,
-   "atk": 50,
-   "def": 70,
-   "spd": 20
+  "jagal": {
+    "id": "jagal",
+    "name": "자갈",
+    "type": "땅",
+    "base": {
+      "hp": 55,
+      "atk": 50,
+      "def": 70,
+      "spd": 20
+    },
+    "catchRate": 0.5,
+    "expYield": 55,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        4,
+        "sand_throw"
+      ],
+      [
+        7,
+        "rock_throw"
+      ],
+      [
+        12,
+        "quake"
+      ]
+    ],
+    "description": "등에 바위를 지고 다니는 거북 루미. 바위 속 광석의 소리를 듣는다.",
+    "helps": "mine",
+    "kind": "바위거북 루미"
   },
-  "catchRate": 0.5,
-  "expYield": 55,
-  "learnset": [
-   [
-    1,
-    "tackle"
-   ],
-   [
-    4,
-    "sand_throw"
-   ],
-   [
-    7,
-    "rock_throw"
-   ],
-   [
-    12,
-    "quake"
-   ]
-  ],
-  "description": "등에 바위를 지고 다니는 거북 루미. 바위 속 광석의 소리를 듣는다.",
-  "helps": "mine",
-  "kind": "바위거북 루미"
- },
- "pongpong": {
-  "id": "pongpong",
-  "name": "퐁퐁",
-  "type": "물",
-  "base": {
-   "hp": 50,
-   "atk": 45,
-   "def": 45,
-   "spd": 45
+  "pongpong": {
+    "id": "pongpong",
+    "name": "퐁퐁",
+    "type": "물",
+    "base": {
+      "hp": 50,
+      "atk": 45,
+      "def": 45,
+      "spd": 45
+    },
+    "catchRate": 0.6,
+    "expYield": 50,
+    "learnset": [
+      [
+        1,
+        "bubble"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        8,
+        "water_gun"
+      ],
+      [
+        14,
+        "wave_ride"
+      ]
+    ],
+    "description": "머리에 연잎을 얹은 개구리 루미. 연못과 개울 어디에나 산다.",
+    "helps": "fish",
+    "kind": "연잎 루미"
   },
-  "catchRate": 0.6,
-  "expYield": 50,
-  "learnset": [
-   [
-    1,
-    "bubble"
-   ],
-   [
-    1,
-    "growl"
-   ],
-   [
-    8,
-    "water_gun"
-   ],
-   [
-    14,
-    "wave_ride"
-   ]
-  ],
-  "description": "머리에 연잎을 얹은 개구리 루미. 연못과 개울 어디에나 산다.",
-  "helps": "fish",
-  "kind": "연잎 루미"
- },
- "banjjak": {
-  "id": "banjjak",
-  "name": "반짝",
-  "type": "빛",
-  "base": {
-   "hp": 40,
-   "atk": 45,
-   "def": 40,
-   "spd": 60
+  "banjjak": {
+    "id": "banjjak",
+    "name": "반짝",
+    "type": "빛",
+    "base": {
+      "hp": 40,
+      "atk": 45,
+      "def": 40,
+      "spd": 60
+    },
+    "catchRate": 0.4,
+    "expYield": 60,
+    "learnset": [
+      [
+        1,
+        "flash"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        8,
+        "starlight"
+      ],
+      [
+        12,
+        "healing_light"
+      ]
+    ],
+    "description": "밤 풀숲에서만 빛나는 반딧불 루미. 함께 있으면 경험이 쑥쑥 쌓인다.",
+    "helps": "exp",
+    "kind": "반딧불 루미"
   },
-  "catchRate": 0.4,
-  "expYield": 60,
-  "learnset": [
-   [
-    1,
-    "flash"
-   ],
-   [
-    1,
-    "growl"
-   ],
-   [
-    8,
-    "starlight"
-   ],
-   [
-    12,
-    "healing_light"
-   ]
-  ],
-  "description": "밤 풀숲에서만 빛나는 반딧불 루미. 함께 있으면 경험이 쑥쑥 쌓인다.",
-  "helps": "exp",
-  "kind": "반딧불 루미"
- },
- "busit": {
-  "id": "busit",
-  "name": "부싯",
-  "type": "불",
-  "base": {
-   "hp": 45,
-   "atk": 55,
-   "def": 40,
-   "spd": 60
+  "busit": {
+    "id": "busit",
+    "name": "부싯",
+    "type": "불",
+    "base": {
+      "hp": 45,
+      "atk": 55,
+      "def": 40,
+      "spd": 60
+    },
+    "catchRate": 0.4,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "ember"
+      ],
+      [
+        1,
+        "quick_attack"
+      ],
+      [
+        8,
+        "flame_tail"
+      ],
+      [
+        14,
+        "heatwave"
+      ]
+    ],
+    "description": "꼬리에 불꽃을 단 여우 루미. 성격은 새침하지만 불 지피기는 최고.",
+    "helps": "mine",
+    "kind": "불여우 루미"
   },
-  "catchRate": 0.4,
-  "expYield": 62,
-  "learnset": [
-   [
-    1,
-    "ember"
-   ],
-   [
-    1,
-    "quick_attack"
-   ],
-   [
-    8,
-    "flame_tail"
-   ],
-   [
-    14,
-    "heatwave"
-   ]
-  ],
-  "description": "꼬리에 불꽃을 단 여우 루미. 성격은 새침하지만 불 지피기는 최고.",
-  "helps": "mine",
-  "kind": "불여우 루미"
- },
- "mallang": {
-  "id": "mallang",
-  "name": "말랑",
-  "type": "물",
-  "base": {
-   "hp": 60,
-   "atk": 40,
-   "def": 55,
-   "spd": 30
+  "mallang": {
+    "id": "mallang",
+    "name": "말랑",
+    "type": "물",
+    "base": {
+      "hp": 60,
+      "atk": 40,
+      "def": 55,
+      "spd": 30
+    },
+    "catchRate": 0.5,
+    "expYield": 52,
+    "learnset": [
+      [
+        1,
+        "bubble"
+      ],
+      [
+        1,
+        "aqua_veil"
+      ],
+      [
+        8,
+        "water_gun"
+      ],
+      [
+        13,
+        "wave_ride"
+      ]
+    ],
+    "description": "호수에 사는 말랑말랑 젤리 루미. 물고기들과 친해서 낚시를 돕는다.",
+    "helps": "fish",
+    "kind": "젤리 루미"
   },
-  "catchRate": 0.5,
-  "expYield": 52,
-  "learnset": [
-   [
-    1,
-    "bubble"
-   ],
-   [
-    1,
-    "aqua_veil"
-   ],
-   [
-    8,
-    "water_gun"
-   ],
-   [
-    13,
-    "wave_ride"
-   ]
-  ],
-  "description": "호수에 사는 말랑말랑 젤리 루미. 물고기들과 친해서 낚시를 돕는다.",
-  "helps": "fish",
-  "kind": "젤리 루미"
- },
- "ikkigom": {
-  "id": "ikkigom",
-  "name": "이끼곰",
-  "type": "땅",
-  "base": {
-   "hp": 65,
-   "atk": 60,
-   "def": 55,
-   "spd": 30
+  "ikkigom": {
+    "id": "ikkigom",
+    "name": "이끼곰",
+    "type": "땅",
+    "base": {
+      "hp": 65,
+      "atk": 60,
+      "def": 55,
+      "spd": 30
+    },
+    "catchRate": 0.35,
+    "expYield": 70,
+    "learnset": [
+      [
+        1,
+        "scratch"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        6,
+        "rock_throw"
+      ],
+      [
+        9,
+        "vine_whip"
+      ],
+      [
+        12,
+        "quake"
+      ]
+    ],
+    "description": "등에 이끼가 자라는 곰 루미. 숲속 먹을거리를 잘 안다.",
+    "helps": "forage",
+    "kind": "이끼곰 루미"
   },
-  "catchRate": 0.35,
-  "expYield": 70,
-  "learnset": [
-   [
-    1,
-    "scratch"
-   ],
-   [
-    1,
-    "growl"
-   ],
-   [
-    6,
-    "rock_throw"
-   ],
-   [
-    9,
-    "vine_whip"
-   ],
-   [
-    12,
-    "quake"
-   ]
-  ],
-  "description": "등에 이끼가 자라는 곰 루미. 숲속 먹을거리를 잘 안다.",
-  "helps": "forage",
-  "kind": "이끼곰 루미"
- },
- "astra": {
-  "id": "astra",
-  "name": "아스트라",
-  "type": "빛",
-  "base": {
-   "hp": 60,
-   "atk": 65,
-   "def": 60,
-   "spd": 70
+  "astra": {
+    "id": "astra",
+    "name": "아스트라",
+    "type": "빛",
+    "base": {
+      "hp": 60,
+      "atk": 65,
+      "def": 60,
+      "spd": 70
+    },
+    "catchRate": 0.08,
+    "expYield": 140,
+    "learnset": [
+      [
+        1,
+        "flash"
+      ],
+      [
+        1,
+        "starlight"
+      ],
+      [
+        1,
+        "healing_light"
+      ],
+      [
+        10,
+        "meteor"
+      ]
+    ],
+    "description": "별이 떨어진 밤에 태어났다는 전설의 아기 별룡. 아주 드물게 풀숲에서 목격된다.",
+    "helps": "exp",
+    "kind": "별룡 루미"
   },
-  "catchRate": 0.08,
-  "expYield": 140,
-  "learnset": [
-   [
-    1,
-    "flash"
-   ],
-   [
-    1,
-    "starlight"
-   ],
-   [
-    1,
-    "healing_light"
-   ],
-   [
-    10,
-    "meteor"
-   ]
-  ],
-  "description": "별이 떨어진 밤에 태어났다는 전설의 아기 별룡. 아주 드물게 풀숲에서 목격된다.",
-  "helps": "exp",
-  "kind": "별룡 루미"
- }
+  "byeolmuri": {
+    "id": "byeolmuri",
+    "name": "별무리",
+    "type": "빛",
+    "kind": "성운 루미 · 전설",
+    "base": {
+      "hp": 100,
+      "atk": 105,
+      "def": 95,
+      "spd": 90
+    },
+    "catchRate": 0.05,
+    "expYield": 300,
+    "learnset": [
+      [
+        1,
+        "starlight"
+      ],
+      [
+        1,
+        "whirlwind"
+      ],
+      [
+        40,
+        "healing_light"
+      ],
+      [
+        50,
+        "meteor"
+      ],
+      [
+        65,
+        "star_rain"
+      ]
+    ],
+    "description": "별마루산 꼭대기 별의 제단에서 하늘의 별빛을 땅으로 나누어 주는 전설의 루미. 그믐단이 그 힘을 노렸다.",
+    "helps": "exp",
+    "legend": "legend"
+  },
+  "onnuri": {
+    "id": "onnuri",
+    "name": "온누리",
+    "type": "노말",
+    "kind": "태초의 루미 · 환상",
+    "base": {
+      "hp": 120,
+      "atk": 120,
+      "def": 120,
+      "spd": 120
+    },
+    "catchRate": 0,
+    "fixedCatch": 0.001,
+    "expYield": 400,
+    "learnset": [
+      [
+        1,
+        "starlight"
+      ],
+      [
+        1,
+        "wave_ride"
+      ],
+      [
+        1,
+        "heatwave"
+      ],
+      [
+        60,
+        "meteor"
+      ],
+      [
+        75,
+        "genesis"
+      ]
+    ],
+    "description": "하늘에서 떨어진 첫 별빛의 씨앗에서 태어나 루미나 지방을 빚었다는 환상의 루미. 시련의 오카리나 소리에만 모습을 드러낸다.",
+    "helps": "exp",
+    "legend": "myth"
+  }
 }

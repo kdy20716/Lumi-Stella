@@ -38,6 +38,7 @@ export class BootScene extends Phaser.Scene {
     for (const key of Object.values((m as Manifest & { lumi: Record<string, string> }).lumi ?? {})) {
       loop(`${key}:down`, key, [0, 1], 4); loop(`${key}:left`, key, [2, 3], 4); loop(`${key}:up`, key, [4, 5], 4);
     }
+    for (const key of Object.values((m as Manifest & { lumiBig?: Record<string, string> }).lumiBig ?? {})) loop(`${key}:idle`, key, [0, 1], 2);
     for (let i = 0; i < 4; i++) loop(`butterfly:${i}`, 'butterfly', [i * 2, i * 2 + 1], 8);
     for (const c of ['chicken_white', 'chicken_brown']) {
       ['down', 'side', 'up'].forEach((d, r) => {

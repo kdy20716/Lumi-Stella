@@ -215,6 +215,9 @@ export const SPECIES_ART = {
   busit: { pal: tone('#b85a1f', '#e8893a', '#ffbf6a'), belly: '#fff1dc', accent: tone('#e09a2a', '#ffd65a', '#fff4b0'), ears: 'pointy', tail: 'flame', bigTail: true, extras: ['mane'], faceMask: true, earInner: '#5a2a1a' },
   mallang: { pal: tone('#3a8aa8', '#6ad0e0', '#b8f4fa'), belly: '#e8fbff', extras: ['jelly'], legs: 'none', ears: 'none', tail: 'none', cheeks: '#ff9ccc' },
   ikkigom: { pal: tone('#5a3f2a', '#8a6440', '#b88a5a'), belly: '#d8c09a', accent: tone('#2f6a35', '#5dab4a', '#86c95b'), ears: 'round', tail: 'stub', extras: ['moss'], head: 7, body: [7, 6], faceMask: true },
+  // 전설: 별의 제단을 지키는 성운 루미 / 환상: 별빛의 씨앗에서 처음 태어난 태초의 루미
+  byeolmuri: { pal: tone('#1a1648', '#30307a', '#5a62b8'), belly: '#c8d0ff', accent: tone('#c9a23a', '#ffd65a', '#fff8c8'), wingPal: tone('#3a2a8a', '#7a6ae0', '#d8d0ff'), ears: 'horn', tail: 'star', extras: ['wings', 'stars', 'glow'], head: 8, body: [7, 6], eyeColor: '#ffe58a', faceMask: true, cheeks: '#8a7ae0' },
+  onnuri: { pal: tone('#b8a890', '#f4eee2', '#ffffff'), belly: '#fffaf0', accent: tone('#c98a2a', '#ffd65a', '#fff4b0'), wingPal: tone('#e0b0d8', '#ffe0f4', '#ffffff'), ears: 'feather', tail: 'star', extras: ['wings', 'stars', 'glow'], head: 8, body: [7, 6], eyeColor: '#5ac8a8', faceMask: true, cheeks: '#ffb0c8' },
   astra: { pal: tone('#2a2a6a', '#4a5ab8', '#8a9ae8'), belly: '#e8e0ff', accent: tone('#c99a2a', '#ffd65a', '#fff4b0'), wingPal: tone('#6a5ab8', '#a8a0f0', '#e0dcff'), ears: 'horn', tail: 'star', extras: ['wings', 'stars'], head: 7, body: [6, 5], eyeColor: '#ffd65a', faceMask: true },
 };
 

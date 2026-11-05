@@ -7,7 +7,7 @@ export interface TiledMap { width: number; height: number; tilewidth: number; la
 export const prop = <T = string | number>(o: { properties?: TiledProperty[] }, name: string, def?: T): T =>
   ((o.properties?.find((p) => p.name === name)?.value as T) ?? (def as T));
 
-export interface WarpDef { x: number; y: number; w: number; h: number; to: string; spawn: string }
+export interface WarpDef { x: number; y: number; w: number; h: number; to: string; spawn: string; ferry?: boolean }
 export interface PlotDef { name: string; x: number; y: number; w: number; h: number; crop: string; stage: number; watered: boolean }
 
 export class MapInfo {
@@ -22,6 +22,9 @@ export class MapInfo {
   readonly plots: PlotDef[] = [];
   readonly farmZones: PlotDef[] = [];
   readonly warps: WarpDef[] = [];
+  /** 2.5D: 아래로만 뛰어내리는 턱 · 계단 칸 (y * width + x) */
+  readonly ledges = new Set<number>();
+  readonly stairs = new Set<number>();
   readonly name: string;
   /** 맵 속성 (biome · battleBg · cave · title …) */
   readonly props: Record<string, string> = {};
@@ -40,10 +43,19 @@ export class MapInfo {
       const d: PlotDef = { name: p.name, x: p.x / this.tile, y: p.y / this.tile, w: p.width / this.tile, h: p.height / this.tile, crop: prop(p, 'crop', ''), stage: prop(p, 'stage', 0), watered: !!prop(p, 'watered', 0) };
       (d.crop === '*' ? this.farmZones : this.plots).push(d);
     }
+    // 타일셋 11번째 줄(0부터)이 절벽 줄: 3 = 계단, 4~6 = 턱
+    map.layers.find((l) => l.name === 'Cliff')?.data?.forEach((g, i) => {
+      if (!g) return;
+      const row = Math.floor((g - 1) / 16), col = (g - 1) % 16;
+      if (row !== 11) return;
+      if (col === 3) this.stairs.add(i); else if (col >= 4 && col <= 6) this.ledges.add(i);
+    });
     for (const w of map.layers.find((l) => l.name === 'Warps')?.objects ?? []) {
-      this.warps.push({ x: w.x, y: w.y, w: w.width, h: w.height, to: prop(w, 'to', 'farm'), spawn: prop(w, 'spawn', 'player') });
+      this.warps.push({ x: w.x, y: w.y, w: w.width, h: w.height, to: prop(w, 'to', 'farm'), spawn: prop(w, 'spawn', 'player'), ferry: String(prop(w, 'ferry', '')) === '1' });
     }
   }
+  isLedge(x: number, y: number) { return this.inBounds(x, y) && this.ledges.has(y * this.width + x); }
+  isStairs(x: number, y: number) { return this.inBounds(x, y) && this.stairs.has(y * this.width + x); }
   inBounds(x: number, y: number) { return x >= 0 && y >= 0 && x < this.width && y < this.height; }
   isBlocked(x: number, y: number) { return !this.inBounds(x, y) || this.blocked[y * this.width + x] === 1; }
   terrainAt(x: number, y: number) { return this.terrain[y]?.[x] ?? '0'; }

@@ -109,7 +109,8 @@ export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_caul
   'pickaxe', 'rod', 'lumi_ball', 'super_ball', 'hyper_ball', 'star_ball', 'potion', 'super_potion', 'max_potion', 'atk_tonic', 'def_tonic', 'badge_wind', 'fish_crucian', 'fish_trout', 'fish_catfish', 'fish_rainbow',
   'berry', 'wild_mushroom', 'dandelion', 'herb', 'stone', 'copper_ore', 'iron_ore', 'star_shard', 'lumi',
   'badge_water', 'badge_leaf', 'badge_earth', 'badge_flame', 'badge_light', 'badge_normal', 'badge_star',
-  'seeds_lumi_herb', 'seeds_fire_pepper', 'seeds_iron_bean', 'lumi_herb', 'fire_pepper', 'iron_bean', 'craft'];
+  'seeds_lumi_herb', 'seeds_fire_pepper', 'seeds_iron_bean', 'lumi_herb', 'fire_pepper', 'iron_bean', 'craft',
+  'hammer', 'wood', 'fiber', 'fence_wood', 'crate_wood', 'barrel_wood', 'scarecrow', 'lamp_post', 'planter_box', 'origin_ball', 'ocarina'];
 function badge(t, d, l, sym) { for (let y = 1; y < 15; y++) { const hw = Math.round(6 - Math.abs(y - 7.5) * 0.35); for (let x = 8 - hw; x < 8 + hw; x++) t.set(x, y, (x + y) % 5 === 0 ? l : y < 8 ? l : d); } t.outline('#2a1b14', 0.6); sym(t); }
 export function buildIcons() {
   const img = new Img(16 * ICONS.length, 16);
@@ -139,6 +140,17 @@ export function buildIcons() {
     lumi_herb: (t) => { for (const [dx, dy] of [[-1, -1], [1, -1], [0, -1.4], [-0.5, -1.2]]) { for (let i = 0; i < 6; i++) t.set(8 + dx * i * 0.9, 13 + dy * i * 1.3, i > 3 ? '#9af0dc' : '#3fae8a'); } t.set(4, 6, '#e8fff8'); t.set(12, 6, '#e8fff8'); t.set(8, 4, '#ffffff'); },
     fire_pepper: (t) => { for (let i = 0; i < 9; i++) { const x = 6 + Math.round(Math.sin(i / 3) * 2), y = 5 + i, w = i < 6 ? 2 : 1; t.rect(x - w + 1, y, w * 2, 1, i < 2 ? '#ff6a3a' : '#e0402a'); } t.set(6, 7, '#ffd08a'); t.set(6, 8, '#ffb08a'); t.rect(5, 3, 3, 2, P.leaf.base); t.set(7, 2, P.leaf.d1); t.set(8, 1, P.leaf.d1); },
     iron_bean: (t) => { for (let i = 0; i < 10; i++) { const x = 3 + i, y = 4 + i; t.rect(x - 1, y - 1, 3, 3, '#7a8aa8'); } for (let i = 0; i < 9; i++) t.set(3 + i, 3 + i, '#b8c8e0'); for (const k of [2, 5, 8]) { t.set(3 + k, 4 + k, '#e8f0ff'); t.set(4 + k, 4 + k, '#d8e4ee'); } t.rect(1, 2, 2, 2, P.leaf.base); },
+    origin_ball: (t) => { t.circle(8, 8, 6.5, '#2a1b14'); for (let y = 2; y <= 14; y++) for (let x = 2; x <= 14; x++) { const d = Math.hypot(x - 8, y - 8); if (d > 6) continue; t.set(x, y, y < 8 ? (d < 3.5 ? '#fff4b0' : '#c8a8ff') : '#fffaf0'); } t.hline(2, 8, 13, '#2a1b14'); t.circle(8, 8, 2, '#2a1b14'); t.circle(8, 8, 1.2, '#ffd65a'); t.set(5, 4, '#ffffff'); t.set(11, 5, '#ffe58a'); t.set(6, 11, '#e0c8ff'); },
+    ocarina: (t) => { t.ellipse(8, 9, 6, 4.5, '#2a1b14'); t.ellipse(8, 9, 5, 3.5, '#5ac8b8'); t.ellipse(7, 8, 3, 1.6, '#9ae8d8'); t.rect(12, 4, 3, 4, '#2a1b14'); t.rect(12, 5, 2, 3, '#5ac8b8'); for (const [x, y] of [[5, 10], [8, 11], [10, 9]]) t.set(x, y, '#1e4a44'); t.set(4, 8, '#ffe58a'); },
+    hammer: (t) => { t.line(4, 14, 9, 6, w.l1); t.line(5, 14, 10, 6, w.base); t.rect(7, 2, 7, 4, m.base); t.hline(7, 2, 7, m.l2); t.hline(7, 5, 7, m.d1); t.rect(13, 3, 1, 2, m.l1); },
+    wood: (t) => { for (const [y, x0] of [[10, 2], [7, 4]]) { t.rect(x0, y, 10, 4, w.base); t.hline(x0, y, 10, w.l1); t.hline(x0, y + 3, 10, w.d1); t.ellipse(x0 + 10, y + 2, 1.6, 2, '#e8c890'); t.set(x0 + 10, y + 2, w.base); } },
+    fiber: (t) => { for (const [dx, c] of [[-3, '#7ab84a'], [0, '#9ad06a'], [3, '#5e9a3e']]) t.line(8 + dx, 14, 8 + dx * 0.4, 3, c); t.hline(5, 9, 7, '#c8a868'); t.hline(5, 10, 7, '#a88848'); },
+    fence_wood: (t) => { for (const x of [3, 11]) { t.rect(x, 4, 3, 11, w.base); t.vline(x, 4, 11, w.l1); t.set(x + 1, 3, w.base); } t.rect(2, 7, 13, 2, w.l1); t.rect(2, 11, 13, 2, w.base); t.hline(2, 8, 13, w.d1); },
+    crate_wood: (t) => { t.rect(2, 4, 12, 10, w.base); t.rect(2, 4, 12, 1, w.l2); t.rect(2, 13, 12, 1, w.d1); t.line(3, 5, 12, 12, w.l1); t.line(3, 12, 12, 5, w.l1); t.rect(2, 4, 1, 10, w.d1); t.rect(13, 4, 1, 10, w.d1); },
+    barrel_wood: (t) => { t.ellipse(8, 9, 5, 6, w.base); t.rect(4, 4, 9, 1, w.l1); for (const y of [5, 12]) t.hline(3, y, 11, m.d1); t.vline(6, 4, 10, w.l1); t.vline(10, 4, 10, w.d1); },
+    scarecrow: (t) => { t.vline(8, 6, 9, w.d1); t.hline(3, 8, 11, w.base); t.circle(8, 4, 2.5, '#f0d8a0'); t.rect(5, 1, 7, 2, '#c8a040'); t.rect(6, 7, 5, 4, '#c8503a'); t.set(7, 4, '#3b2414'); t.set(9, 4, '#3b2414'); },
+    lamp_post: (t) => { t.vline(8, 6, 9, '#4a4a58'); t.rect(6, 14, 5, 1, '#2a2a34'); t.rect(5, 2, 7, 4, '#c88a3a'); t.rect(6, 3, 5, 2, '#ffe58a'); t.hline(5, 1, 7, '#6a4a2a'); },
+    planter_box: (t) => { t.rect(3, 9, 10, 5, P.stone.base); t.hline(3, 9, 10, P.stone.l1); t.hline(3, 13, 10, P.stone.d1); for (const [x, c] of [[5, '#f49ac0'], [8, '#f6e05a'], [11, '#ffffff']]) { t.vline(x, 5, 4, '#4f9a45'); t.set(x, 4, c); t.set(x - 1, 5, c); t.set(x + 1, 5, c); } },
     craft: (t) => { t.rect(2, 9, 12, 4, P.wood.l1); t.hline(2, 9, 12, P.wood.l2); t.rect(3, 13, 2, 2, P.wood.d1); t.rect(11, 13, 2, 2, P.wood.d1); t.ellipse(6, 8, 3, 1.5, '#a8a0a0'); t.line(7, 7, 9, 3, P.wood.d1); t.circle(11, 6, 2, '#5ec8b8'); t.set(10, 5, '#ffffff'); },
     badge_water: (t) => badge(t, '#2f6ac0', '#7ab8f0', (t) => { t.line(8, 4, 5, 9, '#ffffff'); t.line(8, 4, 11, 9, '#ffffff'); t.ellipse(8, 10, 3, 2, '#ffffff'); }),
     badge_leaf: (t) => badge(t, '#3f8a3e', '#86c95b', (t) => { t.ellipse(8, 8, 2, 4, '#ffffff'); t.line(8, 5, 8, 12, '#3f8a3e'); }),

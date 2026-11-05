@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T14:31:29.885Z",
+  "generatedAt": "2026-11-05T02:50:54.666Z",
   "tileSize": 16,
   "images": {
     "water0": {
@@ -566,6 +566,18 @@
       "h": 135,
       "originY": 1
     },
+    "battle_summit": {
+      "path": "assets/battle/bg_summit.png",
+      "w": 240,
+      "h": 135,
+      "originY": 1
+    },
+    "battle_origin": {
+      "path": "assets/battle/bg_origin.png",
+      "w": 240,
+      "h": 135,
+      "originY": 1
+    },
     "cave_coronet_1f": {
       "path": "assets/caves/coronet_1f.png",
       "w": 640,
@@ -1030,8 +1042,8 @@
     },
     "worldmap": {
       "path": "assets/ui/worldmap.png",
-      "w": 360,
-      "h": 240,
+      "w": 720,
+      "h": 480,
       "originY": 1
     },
     "slot": {
@@ -1153,7 +1165,7 @@
       "path": "assets/ui/icons.png",
       "frameWidth": 16,
       "frameHeight": 16,
-      "frames": 58,
+      "frames": 69,
       "originY": 0.9375,
       "ids": [
         "hoe",
@@ -1213,7 +1225,18 @@
         "lumi_herb",
         "fire_pepper",
         "iron_bean",
-        "craft"
+        "craft",
+        "hammer",
+        "wood",
+        "fiber",
+        "fence_wood",
+        "crate_wood",
+        "barrel_wood",
+        "scarecrow",
+        "lamp_post",
+        "planter_box",
+        "origin_ball",
+        "ocarina"
       ]
     },
     "duck": {
@@ -1314,12 +1337,40 @@
       "frames": 6,
       "originY": 0.9375
     },
+    "lumi_byeolmuri": {
+      "path": "assets/lumi/byeolmuri.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_onnuri": {
+      "path": "assets/lumi/onnuri.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
     "lumi_astra": {
       "path": "assets/lumi/astra.png",
       "frameWidth": 32,
       "frameHeight": 32,
       "frames": 6,
       "originY": 0.9375
+    },
+    "lumi_big_byeolmuri": {
+      "path": "assets/lumi/big_byeolmuri.png",
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "frames": 2,
+      "originY": 0.9583333333333334
+    },
+    "lumi_big_onnuri": {
+      "path": "assets/lumi/big_onnuri.png",
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "frames": 2,
+      "originY": 0.9583333333333334
     }
   },
   "characters": {
@@ -13079,7 +13130,7 @@
   "tileset": {
     "path": "assets/tiles/tileset.png",
     "columns": 16,
-    "rows": 11,
+    "rows": 12,
     "ROW": {
       "GRASS": 0,
       "DIRT": 1,
@@ -13091,7 +13142,8 @@
       "WOOD": 7,
       "MISC": 8,
       "STONE": 9,
-      "GRASS_STONE": 10
+      "GRASS_STONE": 10,
+      "CLIFF": 11
     },
     "DECOR": {
       "FLOWER0": 0,
@@ -13261,6 +13313,12 @@
     "busit": "lumi_busit",
     "mallang": "lumi_mallang",
     "ikkigom": "lumi_ikkigom",
+    "byeolmuri": "lumi_byeolmuri",
+    "onnuri": "lumi_onnuri",
     "astra": "lumi_astra"
+  },
+  "lumiBig": {
+    "byeolmuri": "lumi_big_byeolmuri",
+    "onnuri": "lumi_big_onnuri"
   }
 }

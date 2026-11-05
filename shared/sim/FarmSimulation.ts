@@ -7,7 +7,7 @@ import { BattleEngine, healAll, makeCreature, type BattleState } from './Battle'
 import {
   SoilState, INTERIOR_OF, ALL_PLAYER_LOOKS, isInterior, roomOf, BADGE_GATES,
   type ActionIntent, type ActionResult, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type MapId,
-  type PlayerState, type SaveData, type WorldTime, type Weather, type BattleUpdate,
+  type PlacedObject, type PlayerState, type SaveData, type TrainerDef, type WorldTime, type Weather, type BattleUpdate,
 } from '../types';
 import { MapInfo, prop } from './MapInfo';
 import { RIVAL_PICK, STORY, rivalOf } from '../story';
@@ -27,7 +27,7 @@ export const DAY_START = 6 * 60;      // 06:00
 export const DAY_END = 26 * 60;       // 다음날 02:00 → 기절
 export const MS_PER_10_MIN = 7000;    // 실제 7초 = 게임 10분
 export const HOTBAR_SIZE = 12;
-export const INVENTORY_SIZE = 24;     // 핫바 2줄 (Q 로 전환)
+export const INVENTORY_SIZE = 24;     // 소지품 칸 (휴대폰 › 가방)
 const REACH = 1.75;                   // 도구 사거리 (타일)
 const INVITE_TTL = 5 * 60_000;
 
@@ -49,10 +49,24 @@ export type SimEvent =
   | { type: 'dish'; room: string; dish: Dish | null }
   | { type: 'invite'; to: string; from: string; fromName: string; where: 'farm' | 'home' }
   | { type: 'sleep'; ready: number; total: number }
-  | { type: 'story'; id: string; story: number };
+  | { type: 'story'; id: string; story: number }
+  | { type: 'placed'; owner: string; obj: PlacedObject }
+  | { type: 'unplaced'; owner: string; id: string };
 
 type Listener = (e: SimEvent) => void;
-interface FarmState { owner: string; tiles: Map<string, FarmTile>; removed: Set<number>; dish: Dish | null }
+interface FarmState { owner: string; tiles: Map<string, FarmTile>; removed: Set<number>; placed: Map<string, PlacedObject>; dish: Dish | null }
+/** 농장 맵 배치 버전: 바뀌면 옛 세이브의 '치운 오브젝트' 목록은 맞지 않으므로 비움 (경작지는 유지) */
+const FARM_VER = 2;
+/** 지나갈 수 있는 오브젝트 (충돌 없음) */
+const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal']);
+const TREES = new Set(['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm', 'dead_tree']);
+const TREE_HITS = 5, STUMP_HITS = 2;
+/** 전설 · 환상 (별마루산 꼭대기 별의 제단) */
+export const LEGEND = 'byeolmuri', MYTH = 'onnuri';
+const LEGEND_LV = 70, MYTH_LV = 80, MASTER_LV = 100;
+/** 루미 도감 완성 = 환상(온누리)을 뺀 모든 루미를 잡음 */
+export const dexComplete = (p: { caught: string[] }) => Object.keys(SPECIES).filter((id) => id !== MYTH).every((id) => p.caught.includes(id));
+const oprop = (o: { properties?: { name: string; value: unknown }[] }, name: string) => o.properties?.find((pp) => pp.name === name)?.value;
 
 const cloneTile = (t: FarmTile): FarmTile => ({ ...t, crop: t.crop ? { ...t.crop } : null });
 
@@ -74,6 +88,12 @@ export class FarmSimulation {
   private acc = 0;
   private listeners: Listener[] = [];
   private seed = 1337;
+  /** 나무 · 그루터기에 남은 도끼질 (`${주인}:${id}` → 맞은 횟수) */
+  private chopHits = new Map<string, number>();
+  /** 맵별 칸 → 그 칸을 막는 오브젝트 id (치우면 지나갈 수 있음) */
+  private occCache = new Map<MapId, Map<number, number>>();
+  private weedCache = new Map<number, number[]>();
+  private placeSeq = 0;
 
   constructor(maps: Record<MapId, MapInfo>) {
     this.maps = maps;
@@ -92,7 +112,8 @@ export class FarmSimulation {
   private ensureFarm(owner: string, saved?: SaveData['farm']): FarmState {
     let f = this.farms.get(owner);
     if (f) return f;
-    f = { owner, tiles: new Map(), removed: new Set(saved?.removed ?? []), dish: null };
+    const sameLayout = saved?.ver === FARM_VER;
+    f = { owner, tiles: new Map(), removed: new Set(sameLayout ? saved?.removed ?? [] : []), placed: new Map((sameLayout ? saved?.placed ?? [] : []).map((o) => [o.id, { ...o }])), dish: null };
     if (saved) for (const t of saved.tiles) f.tiles.set(`${t.x},${t.y}`, cloneTile(t));
     else this.seedPlots(f);
     this.farms.set(owner, f);
@@ -115,8 +136,9 @@ export class FarmSimulation {
   // ── 접속 / 저장 ─────────────────────────────────────
   addPlayer(id: string, name: string, look = 'player', save?: SaveData | null, world = ''): PlayerState {
     const inv: InventorySlot[] = Array.from({ length: INVENTORY_SIZE }, (_, i) => ({ slotIndex: i, itemId: null, quantity: 0 }));
-    const give = ['hoe', 'watering_can', 'axe', 'seeds_lumi_herb', 'seeds_parsnip', 'seeds_tomato', 'seeds_pumpkin', 'pickaxe', 'rod'];
-    const qty: Record<string, number> = { seeds_lumi_herb: 10, seeds_parsnip: 10, seeds_tomato: 6, seeds_pumpkin: 3 };
+    // 도구는 마을(소라네 루미 마트)에서 직접 사서 쓰는 것이 시작: 씨앗만 챙겨 줌
+    const give = ['seeds_lumi_herb', 'seeds_parsnip', 'seeds_tomato'];
+    const qty: Record<string, number> = { seeds_lumi_herb: 10, seeds_parsnip: 8, seeds_tomato: 4 };
     give.forEach((it, i) => { inv[i].itemId = it; inv[i].quantity = qty[it] ?? 1; });
     const home = this.homeSpot();
     const p: PlayerState = {
@@ -148,7 +170,7 @@ export class FarmSimulation {
     return JSON.parse(JSON.stringify({
       v: 1, name: p.name, look: p.look, gold: p.gold, energy: p.energy, maxEnergy: p.maxEnergy, inventory: p.inventory,
       party: p.party, box: p.box, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, bin: p.bin,
-      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [] }, story: p.story, visited: p.visited, recipes: p.recipes, savedAt: Date.now(),
+      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [], placed: f ? [...f.placed.values()] : [], ver: FARM_VER }, story: p.story, visited: p.visited, recipes: p.recipes, savedAt: Date.now(),
     } satisfies SaveData)) as SaveData;
   }
 
@@ -192,6 +214,7 @@ export class FarmSimulation {
       tiles: farm && p?.map === 'farm' ? [...farm.tiles.values()].map(cloneTile) : [],
       removedObjects: [...this.removed, ...(farm ? [...farm.removed].map((id) => `farm:${id}`) : [])],
       forage: [...this.forage], dish: farm && p?.map === 'home' ? farm.dish : null,
+      placed: farm && p?.map === 'farm' ? [...farm.placed.values()].map((o) => ({ ...o })) : [],
     };
   }
 
@@ -210,7 +233,7 @@ export class FarmSimulation {
   /** 서버 재시작 후 이어가기용 */
   setWorld(time: WorldTime) { this.time = { ...time }; }
 
-  newDay() {
+  newDay(relocate = true) {
     const weather: Weather = this.rand() < 0.25 ? 'rain' : 'sunny';
     this.time = { day: this.time.day + 1, minutes: DAY_START, season: this.time.season, weather };
     if (this.time.day > 28) this.time.day = 1;
@@ -228,6 +251,7 @@ export class FarmSimulation {
         }
         t.soil = weather === 'rain' ? SoilState.Watered : SoilState.Plowed;
         if (!t.crop && weather !== 'rain' && this.rand() < 0.1) { f.tiles.delete(`${t.x},${t.y}`); t.soil = SoilState.Unplowed; }
+        this.tileEmit(f, t);   // 자리를 옮기지 않는 새 날(N)에도 밭 그림이 바로 바뀌도록
       }
       f.dish = null;
     }
@@ -258,6 +282,7 @@ export class FarmSimulation {
       this.battles.delete(p.id);
       this.emit({ type: 'player', id: p.id, energy: p.energy, inventory: p.inventory });
       this.emitParty(p);
+      if (!relocate) continue;
       p.world = p.homeWorld;
       this.relocate(p, 'farm', p.id, home.x, home.y);
     }
@@ -269,7 +294,7 @@ export class FarmSimulation {
     if (!p) return { ok: false, reason: 'no-player' };
     if (!p.look && a.kind !== 'setLook') return { ok: false, reason: 'no-character' };
     // 농사 관련 행동은 농장 맵에서만
-    if (['useTool', 'plant', 'harvest', 'ship', 'chop'].includes(a.kind) && p.map !== 'farm') return { ok: false, reason: 'wrong-map' };
+    if (['useTool', 'plant', 'harvest', 'ship', 'chop', 'pull', 'place', 'hammer'].includes(a.kind) && p.map !== 'farm') return { ok: false, reason: 'wrong-map' };
     // 배틀 중에는 배틀 행동만
     const battleKinds = ['battleMove', 'battleItem', 'battleSwitch', 'battleRun', 'emote'];
     if (this.battles.has(p.id) && !battleKinds.includes(a.kind)) return { ok: false, reason: 'in-battle' };
@@ -300,6 +325,13 @@ export class FarmSimulation {
       case 'ship': return this.ship(p, a.slot);
       case 'chop': return this.chop(p, a.objectId);
       case 'sleep': return this.sleep(p);
+      case 'legend': return this.legendBattle(p);
+      case 'ocarina': return this.ocarinaBattle(p);
+      case 'rematch': return this.masterRematch(p);
+      case 'debugDay': if (this.players.size > 1) return { ok: false, reason: 'multi' }; this.newDay(false); return { ok: true };
+      case 'pull': return this.pull(p, a.objectId);
+      case 'place': return this.place(p, a.slot, a.tx, a.ty);
+      case 'hammer': return this.hammer(p, a.tx, a.ty);
       case 'warp': return this.warp(p, a.index);
       case 'enter': return this.enter(p, a.objectId);
       case 'invite': return this.invite(p, a.to, a.where);
@@ -550,7 +582,7 @@ export class FarmSimulation {
     const key = `${tx},${ty}`; const tile = f.tiles.get(key);
     const cost = item.energyCost ?? 1;
     if (item.tool === 'hoe') {
-      if (tile || !this.map.isTillable(tx, ty)) return { ok: false, reason: 'cannot-till', anim: 'hoe' };
+      if (tile || !this.canTill(f, tx, ty)) return { ok: false, reason: 'cannot-till', anim: 'hoe' };
       if (!this.spend(p, cost)) return { ok: false, reason: 'tired' };
       const t: FarmTile = { x: tx, y: ty, soil: this.time.weather === 'rain' ? SoilState.Watered : SoilState.Plowed, crop: null };
       f.tiles.set(key, t); this.tileEmit(f, t); this.changed(p);
@@ -606,21 +638,124 @@ export class FarmSimulation {
     return { ok: true, anim: 'interact' };
   }
 
+  /** 도끼: 안쪽에 선 나무(chop 표시) 5번 · 그루터기 2번이면 쓰러짐 → 나무 조각. 쓰러진 통나무 · 숲 테두리 나무는 못 벰 */
   private chop(p: PlayerState, objectId: number): ActionResult {
     const o = this.map.objects.find((ob) => ob.id === objectId);
     const f = this.farmOf(p);
     if (!o || f.removed.has(objectId)) return { ok: false };
-    const slot = p.inventory.findIndex((s) => s.itemId === 'axe');
-    if (slot < 0) return { ok: false, reason: 'no-axe' };
+    if (!p.inventory.some((s) => s.itemId === 'axe')) return { ok: false, reason: 'no-axe' };
+    const T = this.map.tile; if (Math.hypot(o.x / T - p.x / T, o.y / T - 0.5 - (p.y - 4) / T) > 2.8) return { ok: false, reason: 'far' };
+    const tree = TREES.has(o.type) && !!oprop(o, 'chop');
+    const stump = o.type === 'stump';
+    if (o.type === 'log') { this.emit({ type: 'toast', playerId: p.id, text: '쓰러진 커다란 통나무다. 도끼로는 꿈쩍도 안 한다.', icon: 'axe' }); return { ok: false, reason: 'too-big', anim: 'axe' }; }
+    if (!tree && !stump) { if (TREES.has(o.type)) this.emit({ type: 'toast', playerId: p.id, text: '농장을 둘러싼 숲의 나무는 베지 않기로 했다.', icon: 'axe' }); return { ok: true, anim: 'axe', reason: 'shake' }; }
     if (!this.spend(p, ITEMS.axe.energyCost ?? 2)) return { ok: false, reason: 'tired' };
+    const key = `${f.owner}:${objectId}`, hits = (this.chopHits.get(key) ?? 0) + 1;
     this.changed(p);
-    if (o.type === 'stump' || o.type === 'log') {
-      f.removed.add(objectId);
-      this.emit({ type: 'objectRemoved', key: `farm:${objectId}`, owner: f.owner });
-      this.setGold(p, o.type === 'log' ? 15 : 8);
-      return { ok: true, anim: 'axe' };
+    if (hits < (tree ? TREE_HITS : STUMP_HITS)) { this.chopHits.set(key, hits); return { ok: true, anim: 'axe', reason: 'shake' }; }
+    this.chopHits.delete(key);
+    f.removed.add(objectId);
+    this.emit({ type: 'objectRemoved', key: `farm:${objectId}`, owner: f.owner });
+    const wood = tree ? 5 + Math.floor(this.rand() * 3) : 2;
+    this.addItem(p, 'wood', wood); this.changed(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${tree ? '나무가 쓰러졌다!' : '그루터기를 치웠다.'} 나무 조각 +${wood}`, icon: 'wood' });
+    return { ok: true, anim: 'axe', reason: 'felled' };
+  }
+
+  /** 잡초 뽑기 (맨손): 밭을 갈려면 먼저 뽑아야 함 */
+  private pull(p: PlayerState, objectId: number): ActionResult {
+    const o = this.map.objects.find((ob) => ob.id === objectId);
+    const f = this.farmOf(p);
+    if (!o || o.type !== 'tuft' || f.removed.has(objectId)) return { ok: false };
+    const cx = Number(oprop(o, 'cellX')), cy = Number(oprop(o, 'cellY'));
+    if (!this.inReach(p, cx, cy)) return { ok: false, reason: 'far' };
+    // 같은 칸에 겹친 풀포기는 한 번에
+    this.weedAt(f, cx, cy);
+    for (const id of new Set([objectId, ...(this.weedCache.get(cy * this.map.width + cx) ?? [])])) {
+      if (f.removed.has(id)) continue;
+      f.removed.add(id);
+      this.emit({ type: 'objectRemoved', key: `farm:${id}`, owner: f.owner });
     }
-    return { ok: true, anim: 'axe', reason: 'shake' };
+    if (this.rand() < 0.5) { this.addItem(p, 'fiber', 1); this.changed(p); }
+    return { ok: true, anim: 'interact' };
+  }
+
+  /** 설치물 놓기 (농장: 내 농장 또는 초대받은 친구 농장) */
+  private place(p: PlayerState, slot: number, tx: number, ty: number): ActionResult {
+    const s = p.inventory[slot]; const item = ITEMS[s?.itemId ?? ''];
+    if (!item?.place || item.type !== 'placeable') return { ok: false, reason: 'not-placeable' };
+    if (!this.inReach(p, tx, ty)) return { ok: false, reason: 'far' };
+    const f = this.farmOf(p);
+    const T = this.map.tile;
+    const onPlayer = [...this.players.values()].some((q) => this.room(q) === this.room(p) && Math.floor(q.x / T) === tx && Math.floor((q.y - 3) / T) === ty);
+    if (!this.map.inBounds(tx, ty) || this.map.terrainAt(tx, ty) === '2' || this.blockedAt('farm', f, tx, ty) || f.tiles.has(`${tx},${ty}`) || this.weedAt(f, tx, ty) || onPlayer || this.map.warps.some((w) => tx * T >= w.x - T && tx * T < w.x + w.w + T && ty * T >= w.y - T && ty * T < w.y + w.h + T)) {
+      this.emit({ type: 'toast', playerId: p.id, text: '여기에는 놓을 수 없어요.', icon: item.icon }); return { ok: false, reason: 'blocked' };
+    }
+    const obj: PlacedObject = { id: `p${Date.now().toString(36)}${(this.placeSeq++).toString(36)}`, type: item.place, item: item.id, x: tx, y: ty, by: p.id };
+    f.placed.set(obj.id, obj);
+    s.quantity--; if (s.quantity <= 0) { s.itemId = null; s.quantity = 0; }
+    this.changed(p);
+    this.emit({ type: 'placed', owner: f.owner, obj: { ...obj } });
+    return { ok: true, anim: 'interact' };
+  }
+
+  /** 망치: 설치물 부수기 → 아이템으로 돌려받음 (누가 설치했든 그 농장에 있으면) */
+  private hammer(p: PlayerState, tx: number, ty: number): ActionResult {
+    if (!p.inventory.some((s) => s.itemId === 'hammer')) return { ok: false, reason: 'no-hammer' };
+    if (!this.inReach(p, tx, ty)) return { ok: false, reason: 'far', anim: 'pick' };
+    const f = this.farmOf(p);
+    const obj = [...f.placed.values()].find((o) => o.x === tx && o.y === ty);
+    if (!obj) return { ok: false, reason: 'nothing', anim: 'pick' };
+    if (!this.spend(p, ITEMS.hammer?.energyCost ?? 2)) return { ok: false, reason: 'tired' };
+    if (!this.addItem(p, obj.item, 1)) { this.emit({ type: 'toast', playerId: p.id, text: '가방이 가득 찼어요!' }); return { ok: false, reason: 'full', anim: 'pick' }; }
+    f.placed.delete(obj.id);
+    this.changed(p);
+    this.emit({ type: 'unplaced', owner: f.owner, id: obj.id });
+    return { ok: true, anim: 'pick' };
+  }
+
+  // ── 칸 막힘 (치운 오브젝트 · 설치물 반영) ─────────────
+  private occOf(mapId: MapId) {
+    let m = this.occCache.get(mapId);
+    if (m) return m;
+    m = new Map(); const info = this.maps[mapId];
+    for (const o of info.objects) {
+      if (NON_BLOCKING.has(o.type)) continue;
+      const cx = Number(oprop(o, 'cellX') ?? -1), cy = Number(oprop(o, 'cellY') ?? -1), w = Number(oprop(o, 'cellW') ?? 1), h = Number(oprop(o, 'cellH') ?? 1);
+      if (cx < 0) continue;
+      for (let y = cy - h + 1; y <= cy; y++) for (let x = cx; x < cx + w; x++) if (info.inBounds(x, y)) m.set(y * info.width + x, o.id);
+    }
+    this.occCache.set(mapId, m);
+    return m;
+  }
+  /** 이 칸이 막혔나: 맵 충돌 중 치운 오브젝트 자리는 열림 + 농장 설치물은 막음 */
+  private blockedAt(mapId: MapId, f: FarmState | null, x: number, y: number) {
+    const info = this.maps[mapId];
+    if (!info.inBounds(x, y)) return true;
+    if (f) for (const o of f.placed.values()) if (o.x === x && o.y === y) return true;
+    if (!info.isBlocked(x, y)) return false;
+    const occ = this.occOf(mapId).get(y * info.width + x);
+    if (occ == null) return true;
+    return f ? !f.removed.has(occ) : !this.removed.has(`${mapId}:${occ}`);
+  }
+  private weedAt(f: FarmState, x: number, y: number) {
+    if (!this.weedCache.size) for (const o of this.map.objects) if (o.type === 'tuft') { const k = Number(oprop(o, 'cellY')) * this.map.width + Number(oprop(o, 'cellX')); this.weedCache.set(k, [...(this.weedCache.get(k) ?? []), o.id]); }
+    return (this.weedCache.get(y * this.map.width + x) ?? []).some((id) => !f.removed.has(id));
+  }
+  /** 괭이질: 농지 구역 · 흙길/물 아님 · 막힘 · 잡초 · 설치물 없음 */
+  private canTill(f: FarmState, x: number, y: number) {
+    const t = this.map.terrainAt(x, y);
+    if (t === '2' || t === '1' || this.blockedAt('farm', f, x, y) || this.weedAt(f, x, y)) return false;
+    return this.map.farmZones.some((z) => x >= z.x && y >= z.y && x < z.x + z.w && y < z.y + z.h);
+  }
+  /** 서버 이동 검증용: 치운 나무 · 바위 자리는 지나갈 수 있고 설치물은 못 지나감 */
+  canStand(p: PlayerState, px: number, py: number, hw = 5, hh = 5) {
+    const info = this.maps[p.map]; if (!info) return false;
+    const f = p.map === 'farm' ? this.farmOf(p) : null;
+    const T = info.tile;
+    for (let cy = Math.floor((py - hh) / T); cy <= Math.floor((py - 0.01) / T); cy++)
+      for (let cx = Math.floor((px - hw) / T); cx <= Math.floor((px + hw - 0.01) / T); cx++) if (this.blockedAt(p.map, f, cx, cy)) return false;
+    return true;
   }
 
   private buy(p: PlayerState, shopId: string, itemId: string, qty: number): ActionResult {
@@ -701,6 +836,49 @@ export class FarmSimulation {
     return { ok: true, battle: update };
   }
 
+  private hasCaught(p: PlayerState, sp: string) { return p.caught.includes(sp) || p.party.some((c) => c.species === sp) || p.box.some((c) => c.species === sp); }
+  /** 별의 제단: 본편(챔피언)을 깬 트레이너 앞에만 전설 별무리가 내려옴 */
+  private legendBattle(p: PlayerState): ActionResult {
+    if (p.map !== 'altar') return { ok: false, reason: 'wrong-map' };
+    if (!p.defeated.includes('champion')) return { ok: false, reason: 'story' };
+    if (this.hasCaught(p, LEGEND)) return { ok: false, reason: 'caught' };
+    if (!this.canBattle(p)) return { ok: false, reason: 'no-lumi' };
+    const { state, update } = this.engine.startWild(p, LEGEND, LEGEND_LV, 'summit');
+    update.log.splice(0, 1, { t: 'text', text: '별의 제단 위로 별빛이 쏟아져 내린다…!' }, { t: 'text', text: `전설의 루미 ${SPECIES[LEGEND].name}이(가) 모습을 드러냈다!` });
+    this.battles.set(p.id, state);
+    return { ok: true, battle: update };
+  }
+  /** 시련의 오카리나를 별의 제단에서 불면: 환상의 루미 온누리 (포획률 0.1% · 태초볼은 100%) */
+  private ocarinaBattle(p: PlayerState): ActionResult {
+    if (p.map !== 'altar') return { ok: false, reason: 'wrong-map' };
+    if (!p.inventory.some((s) => s.itemId === 'ocarina')) return { ok: false, reason: 'no-ocarina' };
+    if (this.hasCaught(p, MYTH)) return { ok: false, reason: 'caught' };
+    if (!this.canBattle(p)) return { ok: false, reason: 'no-lumi' };
+    const { state, update } = this.engine.startWild(p, MYTH, MYTH_LV, 'origin');
+    update.log.splice(0, 1, { t: 'text', text: '오카리나 소리가 구름 너머 태초의 길을 열었다…' }, { t: 'text', text: `환상의 루미 ${SPECIES[MYTH].name}이(가) 나타났다!` });
+    this.battles.set(p.id, state);
+    return { ok: true, battle: update };
+  }
+  /** 루미 도감을 완성하면 루미 리그에서 루미 마스터 하람과 재대결 (모든 루미 만렙) */
+  private masterRematch(p: PlayerState): ActionResult {
+    if (p.map !== 'league') return { ok: false, reason: 'wrong-map' };
+    if (!p.defeated.includes('champion')) return { ok: false, reason: 'story' };
+    if (!dexComplete(p)) return { ok: false, reason: 'dex' };
+    if (!this.canBattle(p)) return { ok: false, reason: 'no-lumi' };
+    const base = TRAINERS.champion;
+    const def: TrainerDef = {
+      ...base, id: 'champion_ex', title: '루미 마스터', sight: 0, reward: 20000, requires: [],
+      team: (['astra', 'busit', 'mallang', 'ikkigom', 'poreureu', 'posil'] as const).map((sp) => [sp, MASTER_LV] as [string, number]),
+      intro: ['도감을 전부 채웠다고? …하나 누나가 그랬지. 땅을 아는 트레이너가 결국 이긴다고.', '좋아. 이번엔 봐주지 않아. 내 루미 전원, 끝까지 키운 모습이다!'],
+      defeat: ['…졌다. 완벽하게.', '이걸 받아. 별의 제단에서 불면, 처음 그 빛이 대답해 줄 거야.'],
+      after: ['별마루산 꼭대기, 별의 제단에서 오카리나를 불어 봐.'],
+    };
+    const { state, update } = this.engine.startTrainer(p, def, undefined, 'town');
+    update.log.splice(1, 0, ...def.intro.map((text) => ({ t: 'text' as const, text: `${def.name}: "${text}"` })));
+    this.battles.set(p.id, state);
+    return { ok: true, battle: update };
+  }
+
   private trainerBattle(p: PlayerState, trainerId: string): ActionResult {
     const tr = TRAINERS[trainerId];
     if (!tr || p.defeated.includes(trainerId) || tr.map !== p.map || !this.canBattle(p)) return { ok: false, reason: 'invalid-trainer' };
@@ -724,10 +902,16 @@ export class FarmSimulation {
       if (up.ended === 'win' && st.trainerId) {
         const tr = st.tr ?? TRAINERS[st.trainerId];
         if (st.script === 'rival') this.setStory(p, STORY.DONE);
-        p.defeated.push(st.trainerId);
+        const first = !p.defeated.includes(st.trainerId);
+        if (first) p.defeated.push(st.trainerId);
         p.gold += tr.reward;
         up.log.push({ t: 'text', text: `${tr.title} ${tr.name}과(와)의 승부에서 이겼다!` }, ...tr.defeat.map((text) => ({ t: 'text' as const, text: `${tr.name}: "${text}"` })), { t: 'text', text: `상금으로 ${tr.reward}G를 받았다!` });
         if (tr.badge && !p.badges.includes(tr.badge)) { p.badges.push(tr.badge); up.log.push({ t: 'text', text: `${ITEMS[tr.badge].name}을(를) 받았다!` }); }
+        if (st.trainerId === 'champion' && first) up.log.push({ t: 'text', text: '축하합니다! 루미 리그 챔피언이 되었다 — 이제 당신이 루미 마스터!' }, { t: 'text', text: '(별마루산 꼭대기 별의 제단에서 무언가가 기다리고 있다…)' });
+        if (st.trainerId === 'champion_ex' && !p.inventory.some((s) => s.itemId === 'ocarina')) {
+          this.addItem(p, 'ocarina', 1); this.addItem(p, 'origin_ball', 1); this.changed(p);
+          up.log.push({ t: 'text', text: '시련의 오카리나를 받았다!' }, { t: 'text', text: '태초볼을 받았다! (어떤 루미든 반드시 잡히는 볼)' });
+        }
         this.emit({ type: 'gold', playerId: p.id, gold: p.gold, delta: tr.reward });
       }
       if (up.ended === 'lose') {

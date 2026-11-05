@@ -56,7 +56,7 @@ export function buildTown() {
   // 5. 소품
   m.place('anvil', smithDoor + 2, 14, { force: true, props: { interact: 'smithy' } });
   m.place('cafe_table', cafeDoor - 3, 15, { w: 2, force: true }); m.place('cafe_table', cafeDoor + 2, 15, { w: 2, force: true });
-  m.place('board', 2, 17, { w: 2, force: true, props: { interact: 'board' } });
+  m.place('board', 2, 15, { w: 2, force: true, props: { interact: 'board' } });
   m.place('sign', 1, 23, { force: true, props: { interact: 'sign', text: '← 별빛 농장' } });
   m.place('stall', 52, 19, { w: 3, force: true, props: { interact: 'shop:market' } });
   m.place('stall_b', 52, 24, { w: 3, force: true, props: { interact: 'shop:market' } });
@@ -64,6 +64,9 @@ export function buildTown() {
   for (const [x, y] of [[19, 22], [43, 22], [27, 16], [34, 16], [27, 31], [34, 31], [12, 20], [47, 20], [10, 38], [48, 38]]) m.place('lamp', x, y, { force: true });
   for (const [x, y] of [[storeDoor - 3, 14], [storeDoor + 2, 14], [hallDoor - 3, 14], [hallDoor + 3, 14], [homeA + 2, 14], [homeB + 2, 39], [homeC - 2, 39], [homeD + 2, 39], [homeE + 2, 39]]) m.place('planter', x, y, { force: true });
   m.place('barrel', smithDoor - 3, 12, { force: true }); m.place('crate', smithDoor - 2, 12, { force: true });
+
+  // 2.5D: 북쪽 상점가는 한 단 높은 언덕 — 17번 줄이 절벽, 길 · 광장이 지나는 곳은 계단
+  m.terrace(16);
 
   // 6. 숲 테두리 (서쪽 입구 비움) + 자연
   m.forest((x, y) => (x < 6 && y >= 17 && y <= 24) || (x > W - 6 && y >= 19 && y <= 24), 0.1);
@@ -77,9 +80,9 @@ export function buildTown() {
   // 7. 스폰 / 웨이포인트 / 워프
   m.spawn('player', 3, 20); m.spawn('from_farm', 2, 20); m.spawn('wp_gate', 0, 20);
   m.spawn('wp_store', storeDoor + 1, 14); m.spawn('wp_cafe', cafeDoor + 1, 14); m.spawn('wp_hall', hallDoor, 15);
-  m.spawn('wp_smithy', smithDoor + 1, 15); m.spawn('wp_market', 53, 22); m.spawn('wp_board', 4, 18);
+  m.spawn('wp_smithy', smithDoor + 1, 15); m.spawn('wp_market', 53, 22); m.spawn('wp_board', 4, 16);
   m.spawn('wp_lake_n', 31, 15); m.spawn('wp_lake_s', 30, 31); m.spawn('wp_lake_w', 19, 24); m.spawn('wp_lake_e', 43, 24);
-  m.spawn('wp_pier', 31, bottom - 3); m.spawn('wp_bench_n', 25, 17); m.spawn('wp_bench_s', 23, 31);
+  m.spawn('wp_pier', 31, bottom - 3); m.spawn('wp_bench_n', 26, 15); m.spawn('wp_bench_s', 23, 31);
   m.spawn('wp_plaza_e', 46, 21); m.spawn('wp_south', 30, 38); m.spawn('wp_entrance', 6, 21);
   m.spawn('wp_home_mayor', homeA, 13); m.spawn('wp_home_luna', homeB, 37); m.spawn('wp_home_teo', homeC, 37);
   m.spawn('wp_home_sora', homeD, 37); m.spawn('wp_home_mio', homeE, 37);

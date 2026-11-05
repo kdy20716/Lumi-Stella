@@ -17,16 +17,16 @@ export const TOWNS = [
   { id: 'ember', name: '잿빛 마을', x: 240, y: 212, tier: 5, biome: 'volcano', coastal: true, gym: '불', desc: '불꽃산 아래 온천이 솟는 마을.' },
   { id: 'pinecone', name: '솔방울 마을', x: 140, y: 92, tier: 5, biome: 'forest', desc: '안개숲 곁 나무꾼들의 마을.' },
   { id: 'lumina', name: '빛누리 시티', x: 246, y: 128, tier: 6, biome: 'city', city: true, gym: '빛', desc: '지방에서 가장 큰 도시. 밤하늘보다 밝다.' },
-  { id: 'summit', name: '별마루 마을', x: 186, y: 104, tier: 7, biome: 'rocky', gym: '별', desc: '별마루산 기슭, 별을 섬기는 오래된 마을.' },
+  { id: 'summit', name: '별마루 마을', x: 186, y: 104, tier: 7, biome: 'rocky', gym: '혼합', desc: '별마루산 기슭, 별을 섬기는 오래된 마을.' },
   { id: 'shell', name: '조개 마을', x: 300, y: 214, tier: 6, biome: 'beach', coastal: true, desc: '조개껍질 지붕이 반짝이는 동쪽 해변 마을.' },
   { id: 'sand', name: '모래바람 마을', x: 306, y: 166, tier: 6, biome: 'desert', desc: '사막 오아시스에 기댄 교역 마을.' },
   { id: 'canyon', name: '바위골', x: 96, y: 56, tier: 6, biome: 'rocky', desc: '깎아지른 협곡 사이의 마을.' },
   { id: 'moon', name: '달맞이 마을', x: 40, y: 62, tier: 7, biome: 'meadow', coastal: true, desc: '달이 가장 크게 뜨는 서쪽 바닷가.' },
   { id: 'frost', name: '서리 마을', x: 150, y: 30, tier: 7, biome: 'snow', gym: '노말', desc: '일 년 내내 눈이 쌓인 북쪽 마을.' },
-  { id: 'crown', name: '왕관 시티', x: 304, y: 46, tier: 9, biome: 'city', city: true, league: true, desc: '루미 리그가 열리는 꿈의 도시.' },
+  { id: 'crown', name: '왕관 시티', x: 304, y: 46, tier: 9, biome: 'city', city: true, coastal: true, league: true, desc: '루미 리그가 열리는 꿈의 도시.' },
 ];
 
-/** 도로 30: [번호, A, B, 이름, biome] — A·B 는 마을/도로/랜드마크 id (1번 도로는 기존) */
+/** 도로 28 (22 · 30번은 뱃길로 바뀜 — 섬은 항구의 정기선으로만): [번호, A, B, 이름, biome] */
 export const ROUTES = [
   [1, 'town', 'windvale', '산들길', 'meadow'],
   [2, 'windvale', 'harbor', '갯바람길', 'beach'],
@@ -49,7 +49,6 @@ export const ROUTES = [
   [19, 'route18', 'crown', '얼음 강변', 'snow'],
   [20, 'lumina', 'victory_1f', '도전자의 길', 'rocky'],
   [21, 'victory_3f', 'crown', '왕관 계단', 'meadow'],
-  [22, 'crown', 'battle', '해협 다리', 'beach'],
   [23, 'sand', 'route24', '마른 바람길', 'desert'],
   [24, 'route23', 'crown', '동쪽 해안길', 'beach'],
   [25, 'moon', 'route26', '서해 절벽길', 'beach'],
@@ -57,7 +56,6 @@ export const ROUTES = [
   [27, 'summit', 'frost', '하늘 잔도', 'snow'],
   [28, 'mist', 'summit', '안개 비탈', 'swamp'],
   [29, 'pinecone', 'canyon', '솔바람 계곡', 'forest'],
-  [30, 'shell', 'iron', '쪽빛 바닷길', 'beach'],
 ];
 
 /** 던전 · 랜드마크 · 특별 구역 · 시설
@@ -77,7 +75,7 @@ export const PLACES = [
   // 불꽃산 · 무쇠섬 · 승리의 길
   { id: 'stark_1f', name: '불꽃산 입구', kind: 'cave', theme: 'lava', tier: 7, x: 244, y: 196, attach: ['ember', 'mouth'], floor: 1, desc: '지금도 연기를 뿜는 활화산.' },
   { id: 'stark_2f', name: '불꽃산 화구', kind: 'cave', theme: 'lava', tier: 8, x: 246, y: 188, attach: ['stark_1f', 'stairs'], floor: 2 },
-  { id: 'iron', name: '무쇠섬', kind: 'area', tpl: 'island', biome: 'rocky', tier: 7, x: 336, y: 228, desc: '쇳덩이 같은 바위로 된 외딴 섬. 옛 광산이 있다.' },
+  { id: 'iron', name: '무쇠섬', kind: 'area', tpl: 'island', biome: 'rocky', tier: 7, x: 336, y: 228, attach: ['shell', 'dock'], desc: '쇳덩이 같은 바위로 된 외딴 섬. 옛 광산이 있다.' },
   { id: 'iron_1f', name: '무쇠섬 갱도', kind: 'cave', theme: 'mine', tier: 7, x: 338, y: 222, attach: ['iron', 'mouth'], floor: 1 },
   { id: 'iron_2f', name: '무쇠섬 깊은 갱도', kind: 'cave', theme: 'mine', tier: 8, x: 340, y: 216, attach: ['iron_1f', 'stairs'], floor: 2 },
   { id: 'victory_1f', name: '승리의 길 1층', kind: 'cave', theme: 'rock', tier: 9, x: 262, y: 96, floor: 1, desc: '리그에 도전하는 이들만 지나는 험한 동굴.' },
@@ -97,7 +95,7 @@ export const PLACES = [
   { id: 'newmoon', name: '그믐달섬', kind: 'area', tpl: 'island', biome: 'forest', tier: 8, x: 16, y: 86, attach: ['moon', 'dock'], desc: '빛 한 줄기 없는 어둠의 섬.' },
   { id: 'paradise', name: '꽃구름 정원', kind: 'area', tpl: 'garden', biome: 'meadow', tier: 7, x: 196, y: 232, attach: ['bloom', 'dock'], desc: '바다 건너 꽃이 끝없이 피어 있는 비밀 정원.' },
   // 시설
-  { id: 'battle', name: '도전의 섬', kind: 'area', tpl: 'battle', biome: 'beach', tier: 9, x: 344, y: 24, desc: '강자들이 모여드는 섬. 도전의 탑이 서 있다.' },
+  { id: 'battle', name: '도전의 섬', kind: 'area', tpl: 'battle', biome: 'beach', tier: 9, x: 344, y: 24, attach: ['crown', 'dock'], desc: '강자들이 모여드는 섬. 도전의 탑이 서 있다.' },
   { id: 'tower', name: '도전의 탑', kind: 'room', room: 'tower', tier: 9, x: 346, y: 18, attach: ['battle', 'door'], desc: '끝없이 이어지는 승부의 탑.' },
   { id: 'palpark', name: '추억 공원', kind: 'area', tpl: 'park', biome: 'meadow', tier: 6, x: 320, y: 190, attach: ['route8', 'side'], desc: '먼 곳의 루미들과 다시 만나는 공원.' },
   { id: 'amity', name: '자랑 뒷동산', kind: 'area', tpl: 'park', biome: 'meadow', tier: 6, x: 266, y: 128, attach: ['lumina', 'side'], desc: '파트너 루미와 산책하며 자랑하는 언덕 공원.' },
@@ -113,5 +111,5 @@ export const GYMS = {
   ember: { type: '불', name: '화련', badge: 'badge_flame', badgeName: '불꽃 배지', species: ['busit', 'morak', 'busit'] },
   lumina: { type: '빛', name: '샛별', badge: 'badge_light', badgeName: '샛별 배지', species: ['banjjak', 'banjjak', 'astra'] },
   frost: { type: '노말', name: '설아', badge: 'badge_normal', badgeName: '눈송이 배지', species: ['kongkong', 'kongkong', 'ikkigom'] },
-  summit: { type: '별', name: '천문', badge: 'badge_star', badgeName: '별자리 배지', species: ['astra', 'busit', 'mallang', 'ikkigom'] },
+  summit: { type: '혼합', name: '천문', badge: 'badge_star', badgeName: '별자리 배지', species: ['astra', 'busit', 'mallang', 'ikkigom'] },
 };

@@ -1,4 +1,4 @@
-// 농장 맵 (56x42): 농가, 연못과 부두, 울타리 밭, 닭 놀이터, 동쪽 길 → 마을
+// 농장 맵 (56x42): 농가, 왼쪽 아래 낚시 연못과 부두, 닭 놀이터, 동쪽 길 → 마을. 나머지는 직접 일구는 빈 땅
 import { ROW, WOOD } from '../art/tiles.mjs';
 import { MapBuilder, G, D, Wt } from './lib.mjs';
 
@@ -36,18 +36,9 @@ export function buildFarm() {
   m.place('sign', 14, 19, { force: true, props: { interact: 'sign', text: '은빛 연못 · 낚시 금지 구역 아님!' } });
   m.setBridge(23, 12, ROW.WOOD, WOOD.STEP0);
 
-  // 5. 울타리 밭 + 초기 작물
-  const F = { x0: 30, y0: 23, x1: 46, y1: 35 };
-  m.reserve(F.x0, F.y0, F.x1, F.y1);
-  for (let x = F.x0; x <= F.x1; x++) for (const y of [F.y0, F.y1]) { if (y === F.y0 && (x === 37 || x === 38)) continue; m.place('fence', x, y, { force: true }); }
-  for (let y = F.y0 + 1; y < F.y1; y++) for (const x of [F.x0, F.x1]) m.place('fence', x, y, { force: true });
-  m.place('scarecrow', 38, 29, { force: true });
-  m.plot('parsnips', 32, 25, 5, 3, 'parsnip', 4);
-  m.plot('cauliflower', 40, 25, 5, 3, 'cauliflower', 3, 1);
-  m.plot('tomatoes', 32, 31, 4, 3, 'tomato', 4);
-  m.plot('pumpkins', 41, 31, 4, 3, 'pumpkin', 2);
-  m.plot('tilled', 36, 31, 4, 2, '', 0);
-  m.plot('farm_zone', F.x0 + 1, F.y0 + 1, F.x1 - F.x0 - 1, F.y1 - F.y0 - 1, '*', 0);
+  // 5. 밭이 될 빈 땅: 농장 전체가 농지 (흙길 · 물 · 집 마당 제외는 시뮬레이션이 판정)
+  //    잡초 · 돌 · 그루터기 · 안쪽 나무를 직접 치우고 괭이로 갈아 밭을 만든다
+  m.plot('farm_zone', 2, 3, W - 4, H - 5, '*', 0);
 
   // 6. 닭 놀이터
   m.reserve(31, 13, 37, 17);
@@ -55,10 +46,12 @@ export function buildFarm() {
 
   // 7. 숲 (동쪽 출구 비움) + 흩뿌리기
   m.forest((x, y) => x > W - 6 && y >= 18 && y <= 22);
-  m.scatter('oak', 12); m.scatter('oak_apple', 4); m.scatter('pine', 6);
-  m.scatter('bush', 10, { w: 2 }); m.scatter('bush_berry', 5, { w: 2 });
-  m.scatter('rock', 10); m.scatter('rock_big', 4, { w: 2 }); m.scatter('stump', 6); m.scatter('log', 4, { w: 2 });
-  m.scatter('tuft', 70, { block: false });
+  // 안쪽에 선 나무는 도끼로 벨 수 있음 (chop) — 숲 테두리 나무 · 쓰러진 통나무는 그대로
+  const cut = { props: { chop: 1 } };
+  m.scatter('oak', 16, cut); m.scatter('oak_apple', 5, cut); m.scatter('pine', 9, cut);
+  m.scatter('bush', 6, { w: 2 }); m.scatter('bush_berry', 4, { w: 2 });
+  m.scatter('rock', 26); m.scatter('rock_big', 5, { w: 2 }); m.scatter('stump', 12); m.scatter('log', 3, { w: 2 });
+  m.scatter('tuft', 170, { block: false });
   m.flowers(26, (x, y) => x < 18 && y > 21);
   m.sprinkle(90);
 

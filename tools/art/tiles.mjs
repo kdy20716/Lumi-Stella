@@ -5,8 +5,10 @@ import { P } from './lib/palette.mjs';
 export const T = 16;
 export const TILESET_COLS = 16;
 // 타일셋 행 정의 (맵 생성기와 게임 코드가 공유)
-export const ROW = { GRASS: 0, DIRT: 1, GRASS_DIRT: 2, GRASS_WATER: 3, TILLED: 4, TILLED_WET: 5, DECOR: 6, WOOD: 7, MISC: 8, STONE: 9, GRASS_STONE: 10 };
-export const TILESET_ROWS = 11;
+export const ROW = { GRASS: 0, DIRT: 1, GRASS_DIRT: 2, GRASS_WATER: 3, TILLED: 4, TILLED_WET: 5, DECOR: 6, WOOD: 7, MISC: 8, STONE: 9, GRASS_STONE: 10, CLIFF: 11 };
+export const TILESET_ROWS = 12;
+/** 2.5D 높낮이: 절벽 앞면(왼끝 · 가운데 · 오른끝 · 변형) · 계단 · 턱(한 방향 뛰어내리기) */
+export const CLIFF = { FACE_L: 0, FACE: 1, FACE_R: 2, STAIRS: 3, LEDGE_L: 4, LEDGE: 5, LEDGE_R: 6, FACE2: 7, BASE_L: 8, BASE: 9, BASE_R: 10, BASE2: 11, SHADE: 12 };
 export const DECOR = { FLOWER0: 0, FLOWER_COUNT: 6, PEBBLE0: 6, CLOVER0: 8, MUSHROOM: 10, LEAVES: 11, DAISY: 12, STONES: 13, GRASS_DARK: 14, PATCH: 15 };
 export const WOOD = { DOCK_H: 0, DOCK_POST: 1, PORCH: 2, STEP0: 3, STEP1: 4, BRIDGE_TOP: 5, BRIDGE_MID: 6, BRIDGE_BOT: 7 };
 export const MISC = { COLLIDE: 0, TILE_CURSOR: 1 };
@@ -269,6 +271,55 @@ export function buildTileset() {
   wood(WOOD.BRIDGE_TOP, (t) => { planksV(t); t.rect(0, 0, T, 3, P.wood.d1); t.hline(0, 0, T, P.wood.l1); });
   wood(WOOD.BRIDGE_MID, (t) => planksV(t));
   wood(WOOD.BRIDGE_BOT, (t) => { planksV(t); t.rect(0, 13, T, 3, P.wood.d2); });
+
+  // Row 11: 2.5D 절벽 · 계단 · 턱
+  {
+    const R = { d2: '#3e332c', d1: '#5e4e42', base: '#806e5c', l1: '#a08c74', l2: '#bcaa8e' };
+    const G = P.grass;
+    const face = (col, { l = false, r = false, seed = 0, base = false } = {}) => {
+      const [ox, oy] = at(col, ROW.CLIFF);
+      for (let py = 0; py < T; py++) for (let px = 0; px < T; px++) {
+        // 끝 모서리는 둥글게 깎음
+        if ((l && px + py < 2) || (r && (T - 1 - px) + py < 2)) continue;
+        let c;
+        if (!base && py < 3) c = py === 0 ? G.l2 : hash2(px, py, 31 + seed) < 0.3 ? G.l1 : G.base;      // 위 잔디 처마
+        else if (!base && py === 3) c = R.d2;                                                // 처마 그림자
+        else if (base && py >= 13) c = py === 15 ? '#221a14' : py === 14 ? '#2e241c' : R.d2;  // 땅에 닿는 그늘
+        else {
+          const st = (py + (base ? 0 : -4) + 16) % 4;                                         // 지층
+          c = st === 0 ? R.l1 : st === 3 ? R.d1 : (hash2(px >> 1, py, 37 + seed) < 0.2 ? R.l2 : R.base);
+          if (hash2(px, (py - 4) >> 2, 41 + seed) < 0.12) c = R.d2;                           // 세로 금
+        }
+        if ((l && px === 0) || (r && px === T - 1)) c = !base && py < 3 ? G.d1 : R.d2;        // 옆 끝선
+        if (base && !l && !r && py < 13) c = mix(c, '#000000', py / 40);                    // 아래로 갈수록 어둡게
+        else if (l && px === 1 && py > 3) c = R.l1; else if (r && px === T - 2 && py > 3) c = R.d1;
+        img.put(ox + px, oy + py, c);
+      }
+    };
+    face(CLIFF.FACE_L, { l: true }); face(CLIFF.FACE); face(CLIFF.FACE_R, { r: true }); face(CLIFF.FACE2, { seed: 5 });
+    face(CLIFF.BASE_L, { l: true, base: true }); face(CLIFF.BASE, { base: true }); face(CLIFF.BASE_R, { r: true, base: true }); face(CLIFF.BASE2, { seed: 9, base: true });
+    // 절벽 아래 땅에 드리우는 그늘 (반투명)
+    { const [ox, oy] = at(CLIFF.SHADE, ROW.CLIFF); for (let py = 0; py < 6; py++) for (let px = 0; px < T; px++) img.put(ox + px, oy + py, withAlpha('#0e1408', 0.34 - py * 0.055)); }
+    // 계단: 돌 4단 + 양옆 난간
+    { const [ox, oy] = at(CLIFF.STAIRS, ROW.CLIFF); const S = P.stone;
+      for (let py = 0; py < T; py++) for (let px = 0; px < T; px++) {
+        const k = py % 4;
+        let c = k === 0 ? S.l2 : k === 1 ? S.l1 : k === 2 ? S.base : S.d1;
+        if (px === 0 || px === T - 1) c = S.d2; else if (px === 1) c = S.l1; else if (px === T - 2) c = S.d1;
+        img.put(ox + px, oy + py, c);
+      } }
+    // 턱: 칸 아래쪽에 잔디 처마 + 흙 단면 (위는 투명 → 아래 잔디가 비침)
+    const ledge = (col, l, r) => {
+      const [ox, oy] = at(col, ROW.CLIFF);
+      for (let py = 8; py < T; py++) for (let px = 0; px < T; px++) {
+        if ((l && px + (py - 8) < 2) || (r && (T - 1 - px) + (py - 8) < 2)) continue;
+        let c = py === 8 ? G.l2 : py <= 10 ? (hash2(px, py, 51) < 0.3 ? G.l1 : G.base) : py === 11 ? '#3a2a1a' : py <= 13 ? (hash2(px, py, 53) < 0.25 ? '#9a7a50' : '#7a5c3a') : withAlpha('#1a1208', py === 14 ? 0.45 : 0.22);
+        if ((l && px === 0) || (r && px === T - 1)) c = py <= 10 ? G.d1 : '#3a2a1a';
+        img.put(ox + px, oy + py, c);
+      }
+    };
+    ledge(CLIFF.LEDGE_L, true, false); ledge(CLIFF.LEDGE, false, false); ledge(CLIFF.LEDGE_R, false, true);
+  }
 
   // Row 8: 기타 (충돌 마커, 커서)
   { const [x, y] = at(MISC.COLLIDE, ROW.MISC); img.rect(x, y, T, T, withAlpha('#ff3355', 0.45)); }

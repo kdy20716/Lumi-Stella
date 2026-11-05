@@ -1,7 +1,7 @@
 import type { NetPlayer, RosterEntry, S2C, C2S } from '@shared/protocol';
 import { FarmSimulation, MS_PER_10_MIN, type SimEvent } from '@shared/sim/FarmSimulation';
 import type { MapInfo } from '@shared/sim/MapInfo';
-import { SoilState, roomOf, type ForageSpot, type ActionIntent, type ActionResult, type Dir, type Dish, type FarmSnapshot, type FarmTile, type MapId, type PlayerState, type SaveData, type WorldTime } from '@shared/types';
+import { SoilState, roomOf, type ForageSpot, type ActionIntent, type ActionResult, type Dir, type Dish, type FarmSnapshot, type FarmTile, type MapId, type PlacedObject, type PlayerState, type SaveData, type WorldTime } from '@shared/types';
 
 export type AuthorityEvent =
   | { type: 'sim'; event: SimEvent }
@@ -31,6 +31,8 @@ export abstract class Authority {
   readonly removed = new Set<string>();
   forage: ForageSpot[] = [];
   dish: Dish | null = null;
+  /** 지금 있는 농장의 설치물 */
+  readonly placed = new Map<string, PlacedObject>();
   /** 접속 중인 다른 플레이어 전원 (어느 방이든) */
   readonly roster = new Map<string, RosterEntry>();
   /** 받은 초대장 */
@@ -47,6 +49,7 @@ export abstract class Authority {
     for (const id of s.removedObjects) this.removed.add(id);
     this.forage = [...(s.forage ?? [])];
     this.dish = s.dish ?? null;
+    this.placed.clear(); for (const o of s.placed ?? []) this.placed.set(o.id, { ...o });
     this.time = { ...s.time }; this.gold = s.gold; this.me.gold = s.gold;
   }
   protected listeners: ((e: AuthorityEvent) => void)[] = [];
@@ -72,6 +75,8 @@ export abstract class Authority {
       case 'dish': if (e.room === this.room) this.dish = e.dish; break;
       case 'invite': if (e.to === me.id) this.invites.set(e.from, { from: e.from, name: e.fromName, where: e.where, t: Date.now() }); break;
       case 'story': if (e.id === me.id) me.story = e.story; break;
+      case 'placed': if (me.map === 'farm' && e.owner === this.farmOwner) this.placed.set(e.obj.id, { ...e.obj }); break;
+      case 'unplaced': if (me.map === 'farm' && e.owner === this.farmOwner) this.placed.delete(e.id); break;
     }
   }
   protected subMs = 0;

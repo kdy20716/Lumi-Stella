@@ -51,6 +51,8 @@ const CLASSES = {
   snow: [['스키어', 'skier'], ['등산가', 'hiker']], desert: [['탐험가', 'explorer'], ['등산가', 'hiker']], swamp: [['낚시꾼', 'fisher'], ['연구원', 'researcher']],
   volcano: [['불꽃쟁이', 'explorer'], ['광부', 'miner']], city: [['신사', 'gentleman'], ['숙녀', 'lady']], cave: [['등산가', 'hiker'], ['광부', 'miner'], ['탐험가', 'explorer']],
 };
+/** 도장 속성 말투: 별마루 도장은 새 속성 없이 여러 속성 혼합 팀 */
+const typeTalk = (t) => (t === '혼합' ? '여러 속성을 섞은' : `${t ?? ''} 타입`);
 const NAMES = ['도현', '서연', '지호', '하은', '민준', '수아', '예준', '지유', '시우', '채원', '주원', '윤서', '건우', '다인', '우진', '나은', '선우', '소율', '현우', '아린', '태민', '가은', '로운', '세아', '준서', '하율', '은호', '서진', '이안', '보민', '재윤', '라희', '동하', '유진', '시안', '태오', '나래', '한빛', '보람', '슬기'];
 const LINES = {
   intro: [['눈이 마주쳤으니 승부다!'], ['내 루미 실력 좀 볼래?'], ['여기를 지나가려면 나를 이겨야 해!'], ['오늘 컨디션 최고야. 덤벼!'], ['너도 리그를 목표로 하는구나?']],
@@ -222,7 +224,7 @@ export function buildRegion() {
   /** 부두 (배 타기): 바다 쪽으로 다리 + 끝에 워프 */
   function dock(m, link, x, seaTop) {
     for (let y = seaTop - 1; y <= seaTop + 3; y++) { m.setBridge(x, y, ROW.WOOD, WOOD.DOCK_H); m.setBridge(x + 1, y, ROW.WOOD, WOOD.DOCK_H); m.reserved[y][x] = m.reserved[y][x + 1] = true; }
-    m.warp(x, seaTop + 3, 2, 1, link.to, `from_${m.name}`);
+    m.warp(x, seaTop + 3, 2, 1, link.to, `from_${m.name}`, { ferry: 1 });
     m.spawn(`from_${link.to}`, x, seaTop - 2);
     m.place('sign', x - 1, seaTop - 2, { force: true, props: { interact: 'sign', text: `⛵ 정기선 선착장\n부두 끝까지 걸어가면 배를 타고 「${nodes[link.to].name}」(으)로 가요.` } });
   }
@@ -285,6 +287,8 @@ export function buildRegion() {
     m.place('bench', cx - 5, cy + 3, { w: 2, force: true, props: { interact: 'bench' } });
     signAt(m, cx + 4, cy + 3, `${n.name}\n${n.desc ?? ''}`);
     m.spawn('wp_npc1', cx - 4, cy); m.spawn('wp_npc2', cx + 5, cy - 1); m.spawn('wp_plaza', cx, cy + 1);
+    // 2.5D: 북쪽 건물 줄은 한 단 높은 언덕 (문 앞 두 줄 아래가 절벽, 길이 지나는 곳은 계단)
+    m.terrace(rowN + 2);
     nature(m, n.biome === 'city' ? 'city' : n.biome, R, exits, n.city ? 0.5 : 0.8);
     finish(m, n, R);
     // 주민 2명
@@ -295,7 +299,7 @@ export function buildRegion() {
         schedule: [{ time: 600, map: n.id, to: `wp_npc${k}`, idle: 'wander', radius: 3 }],
         dialogue: { first: [`어서 와, 트레이너! 여기는 ${n.name}이야.`, tip], morning: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow], afternoon: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow, TOWN_LORE[(k + n.tier) % TOWN_LORE.length]],
           evening: ['밤엔 풀숲에 다른 루미들이 나온대.', TOWN_LORE[(k * 3 + n.tier) % TOWN_LORE.length]], rain: ['비 오는 날은 물가 루미가 많아져.'],
-          random: [n.gym ? `우리 마을 도장 관장은 ${GYMS[n.id]?.type ?? ''} 타입 루미를 써. 단단히 준비해!` : '천천히 둘러보고 가!', TOWN_LORE[(k + n.tier * 2) % TOWN_LORE.length]] } };
+          random: [n.gym ? `우리 마을 도장 관장은 ${typeTalk(GYMS[n.id]?.type)} 루미를 써. 단단히 준비해!` : '천천히 둘러보고 가!', TOWN_LORE[(k + n.tier * 2) % TOWN_LORE.length]] } };
     }
     if (coastal) addEncounters(n.id, POOLS.beach, n.tier, 'beach', true); else if (n.biome === 'swamp') addEncounters(n.id, POOLS.swamp, n.tier, 'swamp', true);
     return m;
@@ -339,6 +343,16 @@ export function buildRegion() {
     if (biome === 'rocky' || biome === 'volcano') ores(m, R, 7, n.tier);
     for (const ex of exits) { const [x, y] = inward(W, H, ex.side, ex.p, 4); signAt(m, x + (ex.side === 'N' || ex.side === 'S' ? 2 : 0), y + (ex.side === 'E' || ex.side === 'W' ? 2 : 0), `${n.name}\n→ ${nodes[ex.link.to].name}`); }
     nature(m, biome, R, exits);
+    // 2.5D 턱: 아래로만 뛰어내릴 수 있는 짧은 턱 (길 · 풀숲 · 물은 피함)
+    if (biome !== 'city') {
+      const grass = new Set(m.objects.filter((o) => o.type === 'tallgrass').map((o) => `${o.properties.find((pp) => pp.name === 'cellX').value},${o.properties.find((pp) => pp.name === 'cellY').value}`));
+      let placed = 0;
+      for (let k = 0; k < 60 && placed < 3; k++) {
+        const len = 5 + Math.floor(R() * 5), y = 5 + Math.floor(R() * (H - 11)), x0 = 3 + Math.floor(R() * (W - len - 6));
+        let clear = true; for (let x = x0; x <= x0 + len - 1; x++) if (grass.has(`${x},${y}`) || grass.has(`${x},${y + 1}`)) clear = false;
+        if (clear && m.ledge(x0, x0 + len - 1, y)) placed++;
+      }
+    }
     forageSpots(m, R, 10);
     finish(m, n, R);
     addEncounters(n.id, POOLS[biome] ?? POOLS.meadow, n.tier, biome, water);
@@ -363,7 +377,7 @@ export function buildRegion() {
     if (n.tpl === 'altar') {
       for (let y = 4; y < H - 3; y++) for (let x = 4; x < W - 4; x++) m.setT(x, y, S);
       for (let a = 0; a < 10; a++) { const x = Math.round(cx + Math.cos((a / 10) * Math.PI * 2) * 12), y = Math.round(cy + Math.sin((a / 10) * Math.PI * 2) * 8); m.place(a % 3 === 1 ? 'ruin_broken' : 'ruin_pillar', x, y, { force: true }); }
-      m.place('altar_stone', cx - 1, cy, { w: 3, force: true, props: { interact: 'sign', text: '별의 제단.\n아주 먼 옛날, 이곳에서 시간과 공간이 태어났다고 전해진다.\n(배지 8개를 모으면 무언가 일어날지도…)' } });
+      m.place('altar_stone', cx - 1, cy, { w: 3, force: true, props: { interact: 'altar', text: '별의 제단.\n아주 먼 옛날, 하늘에서 떨어진 첫 별빛의 씨앗이 이곳에 빛을 남겼다고 전해진다.' } });
     }
     if (n.tpl === 'marsh') { for (let k = 0; k < 18; k++) m.ellipse(4 + R() * (W - 8), 5 + R() * (H - 10), 1.5 + R() * 2.5, 1 + R() * 1.6, Wt, 0.15); water = true; }
     if (n.tpl === 'distortion') { for (let k = 0; k < 7; k++) m.ellipse(4 + R() * (W - 8), 4 + R() * (H - 8), 2 + R() * 3, 1.5 + R() * 2, Wt, 0.2); }
@@ -373,7 +387,7 @@ export function buildRegion() {
     // 동굴 입구 · 부두 · 건물 · 계단 · 차원문
     for (const l of n.links) {
       if (l.type === 'mouth' || l.type === 'mouthBack') caveMouth(m, { ...l, side: l.side ?? 'N' }, hub, R);
-      else if (l.type === 'dock') { const x = cx - 1; for (let y = H - 9; y < H - 1; y++) { m.setBridge(x, y, ROW.WOOD, WOOD.DOCK_H); m.setBridge(x + 1, y, ROW.WOOD, WOOD.DOCK_H); m.reserved[y][x] = m.reserved[y][x + 1] = true; } m.warp(x, H - 2, 2, 1, l.to, `from_${m.name}`); m.spawn(`from_${l.to}`, x, H - 10); meander(m, hub, [x, H - 10], R, D); m.place('sign', x + 2, H - 10, { force: true, props: { interact: 'sign', text: `⛵ 선착장 → ${nodes[l.to].name}` } }); }
+      else if (l.type === 'dock') { const x = cx - 1; for (let y = H - 9; y < H - 1; y++) { m.setBridge(x, y, ROW.WOOD, WOOD.DOCK_H); m.setBridge(x + 1, y, ROW.WOOD, WOOD.DOCK_H); m.reserved[y][x] = m.reserved[y][x + 1] = true; } m.warp(x, H - 2, 2, 1, l.to, `from_${m.name}`, { ferry: 1 }); m.spawn(`from_${l.to}`, x, H - 10); meander(m, hub, [x, H - 10], R, D); m.place('sign', x + 2, H - 10, { force: true, props: { interact: 'sign', text: `⛵ 선착장 → ${nodes[l.to].name}` } }); }
       else if (l.type === 'door') {
         const key = l.to === 'tower' ? 'hall' : 'house_c', c = cells(key), x0 = cx - Math.floor(c.w / 2), row = cy - 3;
         m.place(key, x0, row, { w: c.w, h: c.h, force: true, props: { interact: 'enter', doorCellX: x0 + c.door, interior: l.to } });
@@ -435,14 +449,14 @@ export function buildRegion() {
       data.trainers[`leader_${town}`] = {
         id: `leader_${town}`, name: g.name, title: `${nodes[town].name} 관장`, sprite: `leader_${town}`, map: `gym_${town}`, sight: 0,
         team: g.species.map((s, k) => [s, lv + k]), reward: 300 + i * 150, badge: g.badge,
-        intro: [`${nodes[town].name} 도장에 잘 왔어. 나는 관장 ${g.name}.`, `${g.type} 타입의 진짜 힘, 보여 줄게!`],
+        intro: [`${nodes[town].name} 도장에 잘 왔어. 나는 관장 ${g.name}.`, g.type === '혼합' ? '별자리처럼 여러 속성을 엮은 내 팀, 하나의 상성으로는 못 이길걸!' : `${g.type} 타입의 진짜 힘, 보여 줄게!`],
         defeat: [`…훌륭해. 이 「${g.badgeName}」를 받아.`], after: ['다음 도시의 관장은 더 강할 거야. 계속 나아가!'],
       };
       // 도장 관원 2명
       [['도장 관원', 'ace_m'], ['도장 관원', 'ace_f']].forEach(([title, sprite], k) => {
         const id = `gym_${town}_t${k + 1}`;
         data.trainers[id] = { id, name: nextName(), title, sprite, map: `gym_${town}`, sight: 3, team: [[g.species[k % g.species.length], lv - 4 + k], [g.species[(k + 1) % g.species.length], lv - 3 + k]], reward: 40 * lv,
-          intro: [`관장님께 가려면 나부터 넘어야 해! ${g.type} 타입의 힘을 보여 주지!`], defeat: ['관장님은 나보다 훨씬 강해!'], after: [`관장님은 ${g.type} 타입이야. 상성을 잘 생각해 봐.`] };
+          intro: [`관장님께 가려면 나부터 넘어야 해! ${typeTalk(g.type)} 힘을 보여 주지!`], defeat: ['관장님은 나보다 훨씬 강해!'], after: [g.type === '혼합' ? '관장님은 여러 속성을 섞어 써. 파티를 고르게 꾸려 와!' : `관장님은 ${g.type} 타입이야. 상성을 잘 생각해 봐.`] };
       });
     });
     const elites = [['elite1', '바람결', '사천왕', ['poreureu', 'busit', 'jagal'], 50], ['elite2', '물안개', '사천왕', ['mallang', 'pongpong', 'chalang'], 51], ['elite3', '화톳불', '사천왕', ['busit', 'morak', 'jagal'], 52], ['elite4', '숲그늘', '사천왕', ['posil', 'saerok', 'ikkigom'], 53], ['champion', '하람', '챔피언', ['astra', 'ikkigom', 'mallang', 'busit', 'banjjak'], 56]];

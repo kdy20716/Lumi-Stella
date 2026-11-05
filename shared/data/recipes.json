@@ -106,5 +106,70 @@
     "description": "별가루 한 방울로 모든 상처를 낫게.",
     "teacher": "hanbyeol",
     "badges": 5
+  },
+  "fence_wood": {
+    "id": "fence_wood",
+    "out": "fence_wood",
+    "qty": 4,
+    "in": {
+      "wood": 2
+    },
+    "description": "나무 조각으로 엮은 울타리.",
+    "starter": true
+  },
+  "crate_wood": {
+    "id": "crate_wood",
+    "out": "crate_wood",
+    "qty": 1,
+    "in": {
+      "wood": 6
+    },
+    "description": "튼튼한 나무 상자.",
+    "starter": true
+  },
+  "barrel_wood": {
+    "id": "barrel_wood",
+    "out": "barrel_wood",
+    "qty": 1,
+    "in": {
+      "wood": 5,
+      "stone": 1
+    },
+    "description": "돌 테를 두른 나무 통.",
+    "starter": true
+  },
+  "scarecrow": {
+    "id": "scarecrow",
+    "out": "scarecrow",
+    "qty": 1,
+    "in": {
+      "wood": 4,
+      "fiber": 6
+    },
+    "description": "풀 섬유로 옷을 입힌 허수아비.",
+    "starter": true
+  },
+  "lamp_post": {
+    "id": "lamp_post",
+    "out": "lamp_post",
+    "qty": 1,
+    "in": {
+      "wood": 3,
+      "copper_ore": 1,
+      "stone": 2
+    },
+    "description": "구리 갓을 씌운 가로등.",
+    "starter": true
+  },
+  "planter_box": {
+    "id": "planter_box",
+    "out": "planter_box",
+    "qty": 1,
+    "in": {
+      "stone": 4,
+      "fiber": 2
+    },
+    "description": "돌로 만든 작은 화분.",
+    "starter": true
   }
 }

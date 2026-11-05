@@ -3,6 +3,7 @@ import { MapInfo, prop, type TiledMap } from '@shared/sim/MapInfo';
 import type { MapId } from '@shared/types';
 import { DEPTH, TILE, type Manifest } from '../config';
 import { Grid } from './Grid';
+import type { Surface } from '../audio/Sfx';
 
 export interface WorldObject {
   id: number;
@@ -30,6 +31,9 @@ const SHADOW: Record<string, [number, number, number]> = {
   scarecrow: [0.5, 0.5, 0], mailbox: [0.4, 0.45, 0], lamp: [0.35, 0.4, 0], sign: [0.45, 0.45, 0],
   bench: [0.9, 0.5, 0], planter: [0.5, 0.45, 0], board: [0.9, 0.5, 0], stall: [1.4, 0.7, -1], stall_b: [1.4, 0.7, -1], cafe_table: [0.6, 0.45, 0], anvil: [0.5, 0.4, 0],
 };
+
+/** 바닥이 매끈한 타일인 실내 (나머지 실내는 나무 바닥) */
+const TILE_FLOORS = new Set(['in_center', 'in_lab', 'in_gym', 'league', 'tower', 'origin', 'in_shop_w', 'in_store']);
 
 export interface LightSource { x: number; y: number; scale: number; tint: number; base: number }
 
@@ -84,6 +88,8 @@ export class World {
     this.soil = this.map.createBlankLayer('Soil', ts, 0, 0)!.setDepth(DEPTH.soil);
     this.map.createLayer('Decor', ts, 0, 0)?.setDepth(DEPTH.decor);
     this.map.createLayer('Bridge', ts, 0, 0)?.setDepth(DEPTH.bridge);
+    // 2.5D 절벽 · 계단 · 턱 (바닥 장식 위, 캐릭터 아래)
+    if (raw.layers.some((l) => l.name === 'Cliff')) this.map.createLayer('Cliff', ts, 0, 0)?.setDepth(DEPTH.decor + 5);
     // 실내 조명 (벽난로·스탠드)
     for (const l of this.info.spawnList.filter((o) => o.name === 'light')) this.lights.push({ x: l.x, y: l.y, scale: 1.6, tint: 0xffc070, base: 0.8 });
 
@@ -153,6 +159,65 @@ export class World {
     }).setDepth(DEPTH.overlay - 10);
   }
 
+  /** 발밑 재질 (발소리용): 다리 · 부두 → 실내 → 동굴 → 풀숲 → 갈아 둔 밭 → 지형 + 바이옴 */
+  surfaceAt(px: number, py: number): Surface {
+    const cx = Math.floor(px / TILE), cy = Math.floor((py - 3) / TILE);
+    if (this.map.getTileAt(cx, cy, false, 'Bridge')) return 'wood';
+    if (this.info.isStairs(cx, cy)) return 'stone';
+    if (this.interior) return TILE_FLOORS.has(this.mapId) || this.mapId.startsWith('gym_') ? 'tile' : 'wood';
+    if (this.cave) return this.theme === 'ice' ? 'ice' : 'cave';
+    if (this.grassCells.has(`${cx},${cy}`)) return 'tallgrass';
+    if (this.soil.getTileAt(cx, cy)) return 'dirt';
+    const t = this.info.terrainAt(cx, cy), b = this.biome;
+    if (t === '2') return 'water';
+    if (t === '3' || b === 'distortion') return 'stone';
+    if (b === 'snow') return 'snow';
+    if (b === 'desert' || b === 'beach') return t === '1' || b === 'desert' ? 'sand' : 'grass';
+    if (t === '1') return b === 'swamp' ? 'water' : b === 'city' ? 'stone' : 'dirt';
+    return b === 'volcano' ? 'dirt' : 'grass';
+  }
+
+  // ── 설치물 (플레이어가 놓은 울타리 · 상자 …) ────────────
+  readonly placed = new Map<string, { type: string; x: number; y: number; sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image; shadow?: Phaser.GameObjects.Image }>();
+  addPlaced(id: string, type: string, cx: number, cy: number, fx = true) {
+    if (this.placed.has(id)) return;
+    const s = this.scene, m = this.manifest;
+    const x = cx * TILE + TILE / 2, y = (cy + 1) * TILE;
+    const sheet = m.spritesheets[type], img = m.images[type];
+    let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
+    if (sheet) sprite = s.add.sprite(x, y, type, 0).setOrigin(0.5, sheet.originY);
+    else if (img) sprite = s.add.image(x, y, type).setOrigin(0.5, img.originY);
+    else return;
+    sprite.setDepth(y);
+    const sh = SHADOW[type];
+    const shadow = sh ? s.add.image(x, y + sh[2], 'shadow').setScale(sh[0], sh[1]).setDepth(DEPTH.cursor - 1).setAlpha(0.9) : undefined;
+    this.placed.set(id, { type, x: cx, y: cy, sprite, shadow });
+    this.grid.setBlocked(cx, cy, true);
+    if (type === 'lamp') this.lights.push({ x, y: y - 37, scale: 0.75, tint: 0xffd88a, base: 1 }, { x, y: y - 7, scale: 1.2, tint: 0xffb860, base: 0.5 });
+    if (type === 'fence') this.linkFences();
+    if (fx) s.tweens.add({ targets: sprite, scaleY: { from: 0.3, to: 1 }, duration: 220, ease: 'Back.Out' });
+  }
+  removePlaced(id: string) {
+    const o = this.placed.get(id); if (!o) return;
+    this.placed.delete(id);
+    this.grid.setBlocked(o.x, o.y, false);
+    if (o.type === 'lamp') { const px = o.x * TILE + TILE / 2; for (let i = this.lights.length - 1; i >= 0; i--) if (this.lights[i].x === px && Math.abs(this.lights[i].y - (o.y + 1) * TILE) < 40) this.lights.splice(i, 1); }
+    this.scene.tweens.add({ targets: [o.sprite, o.shadow].filter(Boolean), alpha: 0, scaleY: 0.2, duration: 200, onComplete: () => { o.sprite.destroy(); o.shadow?.destroy(); } });
+    if (o.type === 'fence') this.linkFences();
+  }
+  /** 이 칸의 잡초(아직 안 뽑은 풀포기) */
+  weedAt(cx: number, cy: number) { return this.objects.find((o) => o.type === 'tuft' && o.sprite.active && o.cellX === cx && o.cellY === cy); }
+    placedAt(cx: number, cy: number) { for (const [id, o] of this.placed) if (o.x === cx && o.y === cy) return id; return undefined; }
+  /** 울타리: 좌우 이웃(맵 울타리 + 설치 울타리)과 이어진 모양 */
+  private linkFences() {
+    const has = (x: number, y: number) => [...this.placed.values()].some((o) => o.type === 'fence' && o.x === x && o.y === y) || this.objects.some((o) => o.type === 'fence' && o.sprite.active && o.cellX === x && o.cellY === y);
+    for (const o of this.placed.values()) {
+      if (o.type !== 'fence' || !(o.sprite instanceof Phaser.GameObjects.Sprite)) continue;
+      const l = has(o.x - 1, o.y), r = has(o.x + 1, o.y);
+      o.sprite.setFrame(l && r ? 3 : r ? 1 : l ? 2 : 0);
+    }
+  }
+
   /** 셀 (cx,cy)를 점유한 오브젝트 */
   objectAt(cx: number, cy: number): WorldObject | undefined {
     return this.objects.find((o) => o.sprite.active && o.blocks && cy <= o.cellY && cy > o.cellY - o.cellH && cx >= o.cellX && cx < o.cellX + o.cellW);
@@ -208,6 +273,7 @@ export class World {
       }
     }
     for (const t of this.tufts) {
+      if (!t.active) continue;
       if (Math.abs(t.x - player.x) < 8 && Math.abs(t.y - player.y) < 6 && !t.getData('rustle')) {
         t.setData('rustle', true);
         this.scene.tweens.add({ targets: t, angle: { from: -12, to: 12 }, duration: 70, yoyo: true, repeat: 2, onComplete: () => { t.setAngle(0); t.setData('rustle', false); } });

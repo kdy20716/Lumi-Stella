@@ -254,10 +254,15 @@ export function buildBattleBg2(kind) {
     cave: { sky: ['#1e1a22', '#3a3240'], far: '#2a2430', near: '#3a3238', ground: ['#5a4c44', '#6a5a50'], plat: ['#7a6a5c', '#9a8a78', '#4a3e36'] },
     snow: { sky: ['#a8c4e0', '#e8f2fa'], far: '#c8d8e8', near: '#e0eaf4', ground: ['#e4eef6', '#f6faff'], plat: ['#c8d8e8', '#ffffff', '#9ab0c8'] },
     sand: { sky: ['#f0b878', '#fde8c0'], far: '#d8a868', near: '#c89858', ground: ['#e2c88e', '#f0dca8'], plat: ['#d0b078', '#ecd09a', '#a88a5a'] },
+    // 별의 제단 (산꼭대기 밤하늘) · 태초의 길 (오카리나로 열리는 구름 위 세계)
+    summit: { sky: ['#0e1230', '#3a3a78'], far: '#4a4a7a', near: '#6a6890', ground: ['#8a86a0', '#a8a4bc'], plat: ['#b0aac4', '#d8d4e6', '#6a6488'] },
+    origin: { sky: ['#f6d8f0', '#fff6e0'], far: '#e8e0ff', near: '#f4f0ff', ground: ['#fff8ec', '#ffffff'], plat: ['#f0e4c8', '#fffaf0', '#d8c8a0'] },
   }[kind];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) t.put(x, y, rgba(mix(k.sky[0], k.sky[1], Math.min(1, y / 75))));
   if (kind === 'cave') for (let x = 0; x < W; x++) { const h = 10 + Math.sin(x / 7) * 4 + hash2(x >> 2, 3, 1) * 8; for (let y = 0; y < h; y++) t.put(x, y, rgba('#121014')); if (x % 23 === 5) for (let y = 0; y < h + 10; y++) t.put(x, y, rgba(mix('#121014', '#3a3240', y / (h + 10)))); }
   if (kind === 'snow') { const R = rng(5); for (let i = 0; i < 70; i++) t.set(Math.floor(R() * W), Math.floor(R() * 80), '#ffffff'); }
+  if (kind === 'summit') { const R = rng(9); for (let i = 0; i < 110; i++) t.set(Math.floor(R() * W), Math.floor(R() * 70), R() < 0.2 ? '#ffe58a' : '#ffffff'); for (const px of [40, 200]) for (let y = 30; y < 82; y++) for (let x = px - 4; x < px + 4; x++) t.put(x, y, rgba(x < px - 2 ? '#d8d4e6' : '#9a96b4')); }
+  if (kind === 'origin') { for (let r = 0; r < 6; r++) { const c = ['#ffb0c8', '#ffd08a', '#fff08a', '#b0f0c0', '#a8d8ff', '#d0b8ff'][r]; for (let x = 0; x < W; x++) { const y = Math.round(70 - Math.sqrt(Math.max(0, 1 - ((x - 120) / 130) ** 2)) * (60 - r * 3)); t.set(x, y, c); t.set(x, y + 1, c); } } const R = rng(13); for (let i = 0; i < 60; i++) t.set(Math.floor(R() * W), Math.floor(R() * 75), '#ffffff'); }
   for (let x = 0; x < W; x++) {
     const h1 = (kind === 'snow' ? 44 : 56) + Math.sin(x / 19) * (kind === 'snow' ? 12 : 6) + Math.sin(x / 7) * 2;
     for (let y = Math.floor(h1); y < 80; y++) t.put(x, y, rgba(kind === 'snow' && y < h1 + 4 ? '#ffffff' : k.far));
@@ -270,48 +275,5 @@ export function buildBattleBg2(kind) {
 }
 
 // ── 휴대폰 지도: 루미나 지방 전체 (360×240) ──────────────
-const BIOME_COL = { meadow: '#6ab84a', forest: '#3f8a3e', beach: '#cdbb7e', rocky: '#a09078', snow: '#e8f0f6', desert: '#e2c88e', swamp: '#6a8a5a', volcano: '#7a5a50', city: '#9ab86a', distortion: '#6a5a8a' };
-export function buildRegionMap() {
-  const g = buildGraph(), nodes = Object.values(g).filter((n) => n.kind !== 'room');
-  const W = WORLD_W, H = WORLD_H, t = new Img(W, H);
-  const segs = [];
-  for (const [n, a, b] of ROUTES) { const r = g[`route${n}`]; segs.push([g[a], r], [r, g[b]]); }
-  for (const n of nodes) for (const l of n.links) if (g[l.to] && g[l.to].kind !== 'room' && (l.type === 'edge' || l.type === 'mouth' || l.type === 'stairsUp')) segs.push([n, g[l.to]]);
-  const farm = { x: 24, y: 206, biome: 'meadow' }; segs.push([farm, g.town]);
-  const segDist = (px, py, a, b) => { const vx = b.x - a.x, vy = b.y - a.y, L = vx * vx + vy * vy || 1; const u = Math.max(0, Math.min(1, ((px - a.x) * vx + (py - a.y) * vy) / L)); return Math.hypot(px - a.x - u * vx, py - a.y - u * vy); };
-  const all = [...nodes, farm];
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let land = 0, best = null, bd = 1e9;
-    for (const n of all) { const d = Math.hypot(x - n.x, y - n.y); if (d < bd) { bd = d; best = n; } }
-    let sd = 1e9; for (const [a, b] of segs) sd = Math.min(sd, segDist(x, y, a, b));
-    const noise = (sfbm(x, y, 40, 11, 4) - 0.5) * 26;
-    land = Math.min(bd - 16, sd - 13) + noise;
-    const isl = ['iron', 'fullmoon', 'newmoon', 'paradise', 'battle'].includes(best.id);
-    if (isl) land = bd - 10 + noise * 0.4;
-    let c;
-    if (land > 6) c = land > 14 ? P.water.deep : P.water.d1;
-    else if (land > 2) c = P.water.base;
-    else if (land > 0) c = P.water.l1;
-    else {
-      c = BIOME_COL[best.biome ?? 'meadow'] ?? BIOME_COL.meadow;
-      if (best.kind === 'cave') c = BIOME_COL.rocky;
-      const shade = sfbm(x, y, 22, 4, 3);
-      c = mix(c, shade > 0.5 ? lighten(c, 0.22) : darken(c, 0.18), Math.min(1, Math.abs(shade - 0.5) * 2.2));
-      if (land > -2) c = mix(c, '#f0dca8', 0.55);
-    }
-    t.put(x, y, rgba(c));
-  }
-  // 별마루산 산맥 (지방 한가운데를 남북으로)
-  for (let y = 54; y < 118; y++) for (let x = 168; x < 214; x++) {
-    const ridge = Math.abs(x - (192 + Math.sin(y / 9) * 5)) + (sfbm(x, y, 12, 5, 2) - 0.5) * 10;
-    if (ridge < 9) t.put(x, y, rgba(ridge < 3 ? (y < 80 ? '#f4f6fa' : '#c8c0b4') : mix('#8a7a6a', '#a8988a', sfbm(x, y, 6, 3, 2))));
-  }
-  // 길
-  for (const [a, b] of segs) {
-    const n = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y));
-    for (let i = 0; i <= n; i++) { const x = Math.round(a.x + ((b.x - a.x) * i) / n), y = Math.round(a.y + ((b.y - a.y) * i) / n); const sea = segs && (a.tpl === 'island' || b.tpl === 'island'); t.put(x, y, rgba(sea ? '#cfe8f6' : '#f2e0b4')); if (!sea) t.put(x, y + 1, rgba('#c9a870')); }
-  }
-  // 배 항로 (점선)
-  for (const n of nodes) for (const l of n.links) if (l.type === 'dock' && g[l.to]) { const a = n, b = g[l.to], m = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y)); for (let i = 0; i <= m; i += 3) t.put(Math.round(a.x + ((b.x - a.x) * i) / m), Math.round(a.y + ((b.y - a.y) * i) / m), rgba('#e2f6ff')); }
-  return t;
-}
+// 휴대폰 지도는 tools/art/regionmap.mjs (지형 음영 · 곡선 도로 · 스탬프)
+export { buildRegionMap } from './regionmap.mjs';

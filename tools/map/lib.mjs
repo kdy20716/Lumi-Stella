@@ -5,7 +5,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { rng } from '../art/lib/img.mjs';
-import { ROW, DECOR, MISC, TILESET_COLS, TILESET_ROWS } from '../art/tiles.mjs';
+import { ROW, DECOR, MISC, CLIFF, TILESET_COLS, TILESET_ROWS } from '../art/tiles.mjs';
 
 export const T = 16;
 export const G = 0, D = 1, Wt = 2, S = 3; // 잔디, 흙길, 물, 돌길
@@ -20,6 +20,7 @@ export class MapBuilder {
     this.reserved = Array.from({ length: H }, () => new Array(W).fill(false));
     this.decor = new Array(W * H).fill(0);
     this.bridge = new Array(W * H).fill(0);
+    this.cliff = new Array(W * H).fill(0);   // 2.5D: 절벽 앞면 · 계단 · 턱
     this.objects = []; this.spawns = []; this.plots = []; this.warps = [];
     this.oid = 1;
     this.props = [];
@@ -28,6 +29,43 @@ export class MapBuilder {
   setT(x, y, v) { if (this.inb(x, y)) this.terrain[y][x] = v; }
   reserve(x0, y0, x1, y1) { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (this.inb(x, y)) this.reserved[y][x] = true; }
   setBridge(x, y, row, col) { if (this.inb(x, y)) this.bridge[y * this.W + x] = gid(row, col); }
+
+  /** 2.5D 단: y <= faceY 는 윗단, 그 아래 두 줄이 절벽(위 · 아래 조각, 막힘) + 그 아래 그늘. 절벽을 지나는 길(흙 · 돌)은 계단 */
+  terrace(faceY, x0 = 0, x1 = this.W - 1) {
+    const f1 = faceY + 1, f2 = faceY + 2, { W } = this;
+    if (!this.inb(0, f2)) return;
+    const isPath = (x, y) => this.terrain[y][x] === D || this.terrain[y][x] === S;
+    const kind = [];
+    for (let x = x0; x <= x1; x++) {
+      const water = this.terrain[f1][x] === Wt || this.terrain[f2][x] === Wt || this.bridge[f1 * W + x] || this.bridge[f2 * W + x];
+      kind[x] = water ? '' : isPath(x, f1) || isPath(x, f2) ? 'stairs' : 'face';
+    }
+    const wall = (x) => kind[x] === 'face';
+    for (let x = x0; x <= x1; x++) {
+      if (!kind[x]) continue;
+      for (const [y, top] of [[f1, true], [f2, false]]) {
+        const i = y * W + x;
+        this.reserved[y][x] = true; this.decor[i] = 0;
+        if (kind[x] === 'stairs') { this.cliff[i] = gid(ROW.CLIFF, CLIFF.STAIRS); if (!isPath(x, y)) this.terrain[y][x] = S; continue; }
+        const edgeL = !wall(x - 1), edgeR = !wall(x + 1), alt = (x * 7 + y) % 5 === 0;
+        this.cliff[i] = gid(ROW.CLIFF, top ? (edgeL ? CLIFF.FACE_L : edgeR ? CLIFF.FACE_R : alt ? CLIFF.FACE2 : CLIFF.FACE) : (edgeL ? CLIFF.BASE_L : edgeR ? CLIFF.BASE_R : alt ? CLIFF.BASE2 : CLIFF.BASE));
+        this.blocked[y][x] = true;
+      }
+      const s3 = (f2 + 1) * W + x;
+      if (kind[x] === 'face' && this.inb(x, f2 + 1) && this.terrain[f2 + 1][x] !== Wt && !this.cliff[s3]) this.cliff[s3] = gid(ROW.CLIFF, CLIFF.SHADE);
+    }
+  }
+  /** 턱: (x0..x1, y) 를 한 방향(아래로만) 뛰어내리는 턱으로. 양 끝 옆칸이 걸어 다닐 수 있어야 함 → 놓은 칸 수 */
+  ledge(x0, x1, y) {
+    const { W } = this;
+    if (!this.inb(x0 - 1, y) || !this.inb(x1 + 1, y)) return 0;
+    const ok = (x) => this.terrain[y][x] === G && !this.blocked[y][x] && !this.reserved[y][x] && !this.bridge[y * W + x] && !this.cliff[y * W + x];
+    for (let x = x0; x <= x1; x++) if (!ok(x)) return 0;
+    for (const x of [x0 - 1, x1 + 1]) if (this.blocked[y][x] || this.terrain[y][x] === Wt) return 0;
+    for (const yy of [y - 1, y + 1]) for (let x = x0; x <= x1; x++) if (!this.inb(x, yy) || this.blocked[yy][x] || this.terrain[yy][x] === Wt) return 0;
+    for (let x = x0; x <= x1; x++) { this.cliff[y * W + x] = gid(ROW.CLIFF, x === x0 ? CLIFF.LEDGE_L : x === x1 ? CLIFF.LEDGE_R : CLIFF.LEDGE); this.reserved[y][x] = true; this.decor[y * W + x] = 0; }
+    return x1 - x0 + 1;
+  }
 
   /** 사각 길 (수평이면 아래로 wdt, 수직이면 오른쪽으로 wdt 만큼 두께) */
   path(x0, y0, x1, y1, wdt = 2, type = D) {
@@ -73,8 +111,8 @@ export class MapBuilder {
     this.plots.push({ id: this.oid++, name, type: 'plot', x: x * T, y: y * T, width: w * T, height: h * T, rotation: 0, visible: true, properties: [{ name: 'crop', type: 'string', value: crop }, { name: 'stage', type: 'int', value: stage }, { name: 'watered', type: 'int', value: watered }] });
   }
   /** 다른 맵으로 넘어가는 영역 (셀 단위) */
-  warp(x, y, w, h, to, spawn) {
-    this.warps.push({ id: this.oid++, name: `to_${to}`, type: 'warp', x: x * T, y: y * T, width: w * T, height: h * T, rotation: 0, visible: true, properties: [{ name: 'to', type: 'string', value: to }, { name: 'spawn', type: 'string', value: spawn }] });
+  warp(x, y, w, h, to, spawn, extra = {}) {
+    this.warps.push({ id: this.oid++, name: `to_${to}`, type: 'warp', x: x * T, y: y * T, width: w * T, height: h * T, rotation: 0, visible: true, properties: [{ name: 'to', type: 'string', value: to }, { name: 'spawn', type: 'string', value: spawn }, ...Object.entries(extra).map(([name, value]) => ({ name, type: 'string', value: String(value) }))] });
   }
 
   /** 숲 테두리: gap(x,y) 가 true 인 곳은 비움 */
@@ -141,7 +179,7 @@ export class MapBuilder {
     const objLayer = (id, name, objs) => ({ id, name, type: 'objectgroup', draworder: 'topdown', x: 0, y: 0, opacity: 1, visible: true, objects: objs });
     return {
       type: 'map', version: '1.10', tiledversion: '1.10.2', orientation: 'orthogonal', renderorder: 'right-down',
-      width: W, height: H, tilewidth: T, tileheight: T, infinite: false, nextlayerid: 9, nextobjectid: this.oid,
+      width: W, height: H, tilewidth: T, tileheight: T, infinite: false, nextlayerid: 10, nextobjectid: this.oid,
       properties: [
         { name: 'name', type: 'string', value: this.name }, { name: 'groundOffset', type: 'int', value: 8 },
         { name: 'terrain', type: 'string', value: terrain.map((r) => r.join('')).join('|') }, ...this.props,
@@ -151,6 +189,7 @@ export class MapBuilder {
         tileLayer(1, 'Ground', this.noGround ? ground.map(() => 0) : ground, { offsetx: 8, offsety: 8 }),
         tileLayer(2, 'Decor', this.decor),
         tileLayer(3, 'Bridge', bridge),
+        ...(this.cliff.some(Boolean) ? [tileLayer(9, 'Cliff', this.cliff)] : []),
         tileLayer(4, 'Collision', collision, { visible: false }),
         objLayer(5, 'Objects', this.objects),
         objLayer(6, 'Spawns', this.spawns),
