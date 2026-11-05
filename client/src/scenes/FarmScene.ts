@@ -101,6 +101,8 @@ export class FarmScene extends Phaser.Scene {
   private lastCell = '';
   private battling = false;
   private musicTick = 0;
+  private lastTick = 0;
+  private titleStart?: { map: string; x: number; y: number };
   private badgeCount = -1;
   private badgeJingle = false;
   private fishing?: { phase: 'cast' | 'wait' | 'bite'; t: number; tx: number; ty: number; bobber: Phaser.GameObjects.Arc; window: number };
@@ -128,7 +130,11 @@ export class FarmScene extends Phaser.Scene {
       const maps = Object.fromEntries(MAP_IDS.map((id) => [id, id === 'farm' ? farmInfo : new MapInfo(this.cache.tilemap.get(id).data as TiledMap)])) as Record<MapId, MapInfo>;
       this.auth = new LocalAuthority(maps);
     } else this.auth = data.authority;
-    this.mapId = data?.map ?? this.auth.me.map ?? 'farm';
+    // 타이틀 화면(로그인 전): 마지막으로 있던 곳을 배경으로, 처음이면 내 집 방 안
+    const titleMode = !data?.authority && !data?.map;
+    const last = titleMode ? FarmScene.readLast() : null;
+    this.titleStart = last && this.cache.tilemap.exists(last.map) ? last : undefined;
+    this.mapId = data?.map ?? (titleMode ? (this.titleStart?.map ?? 'home') : this.auth.me.map ?? 'farm');
 
     this.world = new World(this, this.manifest, this.mapId);
     const info = this.world.info;
@@ -150,7 +156,8 @@ export class FarmScene extends Phaser.Scene {
 
     // 플레이어 시작 위치: 워프 도착 지점 > (멀티) 서버 위치 > 맵 기본 스폰
     const sp = data?.spawn ? info.spawns.get(data.spawn) : undefined;
-    const start = data?.pos ?? (sp ? { x: sp.x, y: sp.y + 5 }
+    const titleAt = !data?.authority && !data?.pos && this.titleStart && this.titleStart.map === this.mapId ? { x: this.titleStart.x, y: this.titleStart.y } : undefined;
+    const start = data?.pos ?? titleAt ?? (sp ? { x: sp.x, y: sp.y + 5 }
       : this.auth.me.x ? { x: this.auth.me.x, y: this.auth.me.y }
       : { x: (info.spawns.get('player') ?? farmSpawn).x, y: (info.spawns.get('player') ?? farmSpawn).y + 5 });
     const look = this.manifest.characters[this.auth.me.look] ? this.auth.me.look : 'm1';
@@ -196,6 +203,9 @@ export class FarmScene extends Phaser.Scene {
     this.fitCamera();
     this.renderDish();
     this.scale.on('resize', this.onResize, this);
+    const onHide = () => this.writeLast();
+    window.addEventListener('pagehide', onHide);
+    this.events.once('shutdown', () => window.removeEventListener('pagehide', onHide));
     this.events.once('shutdown', () => { this.scale.off('resize', this.onResize, this); this.input.keyboard?.off('keydown'); this.input.off('pointerdown'); this.input.off('pointermove'); this.input.off('wheel'); });
 
     this.setupInput();
@@ -222,14 +232,21 @@ export class FarmScene extends Phaser.Scene {
     const points = [[370, 250], [560, 420], [200, 470], [700, 300], [380, 200]];
     let i = 0;
     const next = () => { if (this.playing) return; const [x, y] = points[i++ % points.length]; cam.pan(x, y, 7000, 'Sine.easeInOut', false, (_c: Phaser.Cameras.Scene2D.Camera, p: number) => { if (p === 1) next(); }); };
-    cam.centerOn(370, 250); next();
+    if (this.world.interior || this.mapId !== 'farm') cam.centerOn(this.player.x, this.player.y);   // 실내: 그 자리에 고정
+    else { cam.centerOn(370, 250); next(); }
     const dev = new URLSearchParams(location.search).get('dev');
     type Fb = typeof import('../net/firebase');
     let fb: Fb | null = null;
     const loadFb = async () => (fb ??= await import('../net/firebase'));
     music.play('title');
     const t: TitleHandle & { url: () => string } = ui.title.show({
-      onLogout: async () => { try { await (await loadFb()).logout(); t.setUser(null); } catch (e) { t.error((e as Error).message); } },
+      onLogout: async () => {
+        try {
+          await (await loadFb()).logout();
+          try { localStorage.removeItem('sf:last'); } catch { /* 무시 */ }
+          location.reload();   // 집 실내가 배경인 처음 화면으로
+        } catch (e) { t.error((e as Error).message); }
+      },
       onGoogle: async (mode) => {
         try {
           let cred: { token?: string; dev?: string; mode?: 'public' | 'friends' };
@@ -258,11 +275,12 @@ export class FarmScene extends Phaser.Scene {
             this.startSolo();
             return;
           }
-          t.error(/popup-closed|cancelled/.test(msg) ? '로그인 창이 닫혔어요.' : /unauthorized-domain/.test(msg) ? 'Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 이 주소를 추가해 주세요.' : /configuration-not-found|operation-not-allowed/.test(msg) ? 'Firebase 콘솔에서 Google 로그인 제공업체를 사용 설정해 주세요.' : `${msg}`);
+          t.error(/popup-closed|cancelled/.test(msg) ? '로그인 창이 닫혔어요.' : /unauthorized-domain/.test(msg) ? `Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 ${location.hostname} 을(를) 추가해 주세요.` : /configuration-not-found|operation-not-allowed/.test(msg) ? 'Firebase 콘솔에서 Google 로그인 제공업체를 사용 설정해 주세요.' : `${msg}`);
         }
       },
     });
     if (dev) t.setUser(`${dev} (테스트)`);
+    // 이미 로그인된 브라우저: 이름만 보여 주고, '구글 계정으로 시작'을 눌러야 들어감 (팝업 없이 그 계정으로)
     else void loadFb().then((f) => f.currentUser()).then((u) => t.setUser(u ? (u.displayName ?? u.email ?? '트레이너') : null)).catch(() => t.setUser(null));
   }
 
@@ -358,6 +376,15 @@ export class FarmScene extends Phaser.Scene {
     if (!this.hasPhone()) { sfx.play('error'); ui.toast.push('아직 휴대폰이 없어요. 엄마가 생일 선물을 준비해 두셨대요!', 'heart'); return; }
     if (home) { if (phone.open && phone.app === 'home') phone.close(); else phone.show('home'); return; }
     phone.toggle(app);
+  }
+  /** 마지막으로 있던 곳 (타이틀 배경 · 다음 접속 시작 위치). 이 브라우저에만 저장 */
+  private static LAST_KEY = 'sf:last';
+  static readLast(): { map: string; x: number; y: number } | null {
+    try { const r = localStorage.getItem(FarmScene.LAST_KEY); return r ? JSON.parse(r) : null; } catch { return null; }
+  }
+  private writeLast() {
+    if (!this.playing || !this.player) return;
+    try { localStorage.setItem(FarmScene.LAST_KEY, JSON.stringify({ map: this.mapId, x: Math.round(this.player.x), y: Math.round(this.player.y) })); } catch { /* 용량 초과 등 무시 */ }
   }
   private saveNow() { if (this.auth instanceof LocalAuthority) { this.auth.save(); sfx.play('confirm'); ui.toast.push('이 브라우저에 저장했어요!', 'heart'); } }
   private async resetSave() {
@@ -956,6 +983,7 @@ export class FarmScene extends Phaser.Scene {
   // ── 메인 루프 ───────────────────────────────────────
   update(_t: number, dt: number) {
     dt = Math.min(dt, 50);
+    if (this.playing && (this.lastTick += dt) > 2000) { this.lastTick = 0; this.writeLast(); }
     if (this.playing && (this.musicTick += dt) > 3000) { this.musicTick = 0; this.playMapMusic(); }
     // 싱글플레이는 타이틀 화면/화면 전환 중에는 시간이 흐르지 않음 (멀티는 서버 시계)
     if (this.playing || this.auth.online) this.auth.update(dt);

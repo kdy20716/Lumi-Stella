@@ -49,6 +49,7 @@ const title = {
     // 서버 주소는 화면에 보이지 않음: VITE_SERVER_URL → ?server= → 같은 PC 2567 (net/serverUrl.ts)
     const defUrl = serverUrl();
     n.innerHTML = `
+      <button data-a="logout" class="hidden absolute top-4 right-4 px-btn text-base !py-1.5">로그아웃</button>
       <div class="title-float flex flex-col items-center mb-8">
         <div class="text-[64px] leading-none text-[#ffe58a] px-outline tracking-[0.12em]" style="text-shadow:-4px 0 #3b2414,4px 0 #3b2414,0 -4px #3b2414,0 4px #3b2414,4px 4px #3b2414,6px 8px 0 rgba(0,0,0,.35)">루미 스텔라</div>
         <div class="mt-2 text-3xl text-[#bff0e0] px-outline tracking-[0.3em]">별빛의 씨앗</div>
@@ -60,7 +61,6 @@ const title = {
         <div class="-mt-2 text-[11px] text-[#8a5a32]">접속한 모든 사람과 같은 서버에서 함께해요</div>
         <button data-a="solo" class="px-btn text-lg w-full">혼자하기 <span class="text-sm opacity-85">(친구들만)</span></button>
         <div class="-mt-2 text-[11px] text-[#8a5a32] text-center">나만의 세계 — 우편함으로 초대한 친구만 보여요</div>
-        <button data-a="logout" class="hidden text-xs underline text-[#8a5a32]">다른 계정으로 로그인</button>
         <div data-e class="text-[#c8453c] text-sm min-h-5 text-center"></div>
       </div>
       <div class="absolute bottom-4 text-xs text-[#fff8ec] opacity-80 px-outline">로그인하면 모험이 자동 저장돼요 · WASD 이동 · E 상호작용 · Tab 감정표현 · H 도움말</div>`;
@@ -77,8 +77,8 @@ const title = {
       error: (m) => { err.style.color = '#c8453c'; err.textContent = m; },
       busy: (m) => { err.style.color = '#2f7a3a'; err.textContent = m; },
       setUser: (name) => {
-        q('[data-c=user]').textContent = name ? `${name} 님으로 로그인됨` : '로그인하면 진행상황이 자동 저장돼요';
-        q('[data-c=gtext]').textContent = name ? `${name}(으)로 시작` : '구글 계정으로 시작';
+        q('[data-c=user]').textContent = name ? `${name} 님으로 로그인됨 · 아래 버튼을 눌러 시작해요` : '로그인하면 진행상황이 자동 저장돼요';
+        q('[data-c=gtext]').textContent = '구글 계정으로 시작';
         q('[data-a=logout]').classList.toggle('hidden', !name);
       },
     };
