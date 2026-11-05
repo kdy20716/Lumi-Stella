@@ -28,8 +28,9 @@ const here = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 const safe = (uid: string) => uid.replace(/[^a-zA-Z0-9_-]/g, '_');
 
 class FileStorage implements Storage {
-  readonly kind = '로컬 파일 (server/saves)';
-  private dir = here('./saves/');
+  // SAVE_DIR: 저장 폴더 (Azure Linux 는 /home 아래가 배포 · 재시작에도 유지됨 → SAVE_DIR=/home/data/saves)
+  private dir = process.env.SAVE_DIR ? `${process.env.SAVE_DIR.replace(/[\\/]+$/, '')}/` : here('./saves/');
+  readonly kind = process.env.SAVE_DIR ? `로컬 파일 (${process.env.SAVE_DIR})` : '로컬 파일 (server/saves)';
   constructor() { mkdirSync(this.dir, { recursive: true }); }
   async load(uid: string) { const f = `${this.dir}${safe(uid)}.json`; return existsSync(f) ? (JSON.parse(readFileSync(f, 'utf8')) as SaveData) : null; }
   async save(uid: string, data: SaveData) { writeFileSync(`${this.dir}${safe(uid)}.json`, JSON.stringify(data)); }
