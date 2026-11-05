@@ -1,1 +1,24 @@
-{"ids":[],"files":{}}
+{
+  "ids": [
+    "mom",
+    "rival_m",
+    "rival_f",
+    "professor",
+    "mayor",
+    "sora",
+    "hana",
+    "minsu"
+  ],
+  "files": {
+    "mom": "mom.jpg",
+    "rival_m": "rival_m.jpg",
+    "rival_f": "rival_f.jpg",
+    "professor": "professor.jpg",
+    "mayor": "mayor.jpg",
+    "sora": "sora.jpg",
+    "hana": "hana.jpg",
+    "minsu": "minsu.jpg"
+  },
+  "model": "gemini-3.1-flash-image (Nano Banana)",
+  "updatedAt": "2026-11-05T15:57:54.786Z"
+}

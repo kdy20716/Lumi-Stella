@@ -16,8 +16,13 @@ function ac() {
   if (!ctx) {
     const C = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!C) return null;
-    ctx = new C();
-    master = ctx.createGain(); master.gain.value = 1; master.connect(ctx.destination);
+    // 'playback': 버퍼를 넉넉히 잡아서 다른 작업으로 컴퓨터가 바빠도 소리가 갈라지지 않게 (지연은 조금 늘어남)
+    try { ctx = new C({ latencyHint: 'playback' }); } catch { ctx = new C(); }
+    master = ctx.createGain(); master.gain.value = 1;
+    // 음악 + 효과음이 겹쳐 합이 1 을 넘으면 '치직' 하고 깨지므로, 최종 출력 앞에 부드러운 리미터를 둠
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -14; limiter.knee.value = 12; limiter.ratio.value = 6; limiter.attack.value = 0.004; limiter.release.value = 0.2;
+    master.connect(limiter).connect(ctx.destination);
     sfxBus = ctx.createGain(); sfxBus.gain.value = muted ? 0 : 0.32; sfxBus.connect(master);
     stepBus = ctx.createGain(); stepBus.gain.value = 1.9; stepBus.connect(sfxBus);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 1.5, ctx.sampleRate);
@@ -27,6 +32,8 @@ function ac() {
   return ctx;
 }
 for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => ac(), { once: false, passive: true });
+// 탭이 다시 보일 때 오디오가 멈춰 있으면 깨움
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ctx && ctx.state !== 'running') void ctx.resume().catch(() => { /* 무시 */ }); });
 
 function tone({ f, f2, t, d, w = 'square', v = 0.5 }: Tone) {
   const c = ac(); if (!c || !sfxBus || muted) return;

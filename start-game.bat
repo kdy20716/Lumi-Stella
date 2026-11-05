@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-title Starlight Farm - Dev
+title Lumi Stella - Dev
 echo.
 echo  ==== 별빛 농장 개발 서버 ====
 echo.
@@ -26,7 +26,7 @@ if "%NEED_INSTALL%"=="1" (
   copy /y package.json node_modules\.pkg-stamp >nul
 )
 echo [2/3] 멀티플레이 서버 시작 (새 창, http://localhost:2567, Socket.io)
-start "Starlight Farm - Multiplayer Server" cmd /k "npm run server"
+start "Lumi Stella - Multiplayer Server" cmd /k "npm run server"
 echo [3/3] 게임 실행: http://localhost:5173  (브라우저가 자동으로 열려요)
 call npm run dev
 pause

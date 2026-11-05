@@ -62,7 +62,14 @@ function genPart(track: Track, part: Part, out: Ev[]) {
   return t;
 }
 
+/** 악보 → 이벤트 변환은 곡마다 한 번만 (맵이 바뀔 때마다 다시 계산하면 순간적으로 CPU 를 먹어 소리가 끊길 수 있음) */
+const compiled = new WeakMap<Track, { evs: Ev[]; len: number }>();
 function compile(track: Track) {
+  let c = compiled.get(track);
+  if (!c) { c = compileTrack(track); compiled.set(track, c); }
+  return c;
+}
+function compileTrack(track: Track) {
   const evs: Ev[] = [];
   const len = track.bars * 16;
   for (const part of track.parts) {
@@ -97,9 +104,27 @@ function organWave(c: BaseAudioContext) {
 const VOL: Record<Inst, number> = { lead: 0.16, lead2: 0.13, pulse: 0.07, brass: 0.11, strings: 0.06, bass: 0.26, sbass: 0.12, bell: 0.14, flute: 0.16, pluck: 0.15, organ: 0.07, drum: 1 };
 const SEND: Partial<Record<Inst, number>> = { lead: 0.25, lead2: 0.2, bell: 0.45, flute: 0.35, pluck: 0.3, pulse: 0.2, strings: 0.2, organ: 0.35, brass: 0.15 };
 
+/**
+ * 시퀀서 박자기: 웹 워커 타이머를 씀.
+ *  - 일반 setInterval 은 탭이 가려지면 브라우저가 1초(오래 가려지면 1분)에 한 번으로 늦춰서 음이 끊기고 치지직거림
+ *  - 워커 안의 타이머는 그렇게 늦춰지지 않음. 워커를 못 만들면(막힌 환경) 일반 setInterval 로 대체
+ */
+function makeTicker(cb: () => void, ms: number) {
+  let worker: Worker | null = null, id = 0;
+  try {
+    const src = 'let t=0;onmessage=(e)=>{clearInterval(t);if(e.data>0)t=setInterval(()=>postMessage(0),e.data)};';
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+    worker.onmessage = () => cb();
+  } catch { worker = null; }
+  return {
+    start() { if (worker) worker.postMessage(ms); else { clearInterval(id); id = window.setInterval(cb, ms); } },
+    stop() { if (worker) worker.postMessage(0); else clearInterval(id); },
+  };
+}
+
 class Engine {
   private c: BaseAudioContext; private bus: GainNode; private filter: BiquadFilterNode; private delay: DelayNode; private send: GainNode; private noise: AudioBuffer;
-  private timer = 0; private cur: { track: Track; evs: Ev[]; len: number; step: number; t0: number; idx: number; loopN: number } | null = null;
+  private ticker = makeTicker(() => this.pump(), 25); private cur: { track: Track; evs: Ev[]; len: number; step: number; t0: number; idx: number; loopN: number } | null = null;
   private voices: AudioScheduledSourceNode[] = [];
   volume = 0.55;
   constructor(o: { ctx: BaseAudioContext; out: AudioNode; noise: AudioBuffer }) {
@@ -128,13 +153,12 @@ class Engine {
     this.delay.delayTime.setValueAtTime(Math.min(0.9, step * 3), now);
     const g = this.bus.gain; g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(this.volume, now + 0.5);
     this.filter.frequency.setTargetAtTime(night && track.night !== false ? 2200 : 18000, now, 0.4);
-    clearInterval(this.timer);
-    this.timer = window.setInterval(() => this.pump(), 25);
+    this.ticker.start();
     this.pump();
   }
   /** 끝내기 (페이드 아웃) */
   stop(fade = 0.6) {
-    clearInterval(this.timer); this.cur = null;
+    this.ticker.stop(); this.cur = null;
     const now = this.c.currentTime, g = this.bus.gain;
     g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(0, now + fade);
     this.stopVoices(fade);
@@ -147,6 +171,12 @@ class Engine {
   }
   setVolume(v: number) { this.volume = v; if (this.cur) this.bus.gain.setTargetAtTime(v, this.c.currentTime, 0.05); }
   get playing() { return this.cur?.track.id ?? null; }
+  /** 탭이 다시 보일 때: 멈춘 오디오를 깨우고 밀린 박자를 바로 따라잡음 */
+  wake() {
+    const c = this.c as Partial<AudioContext>;
+    if (c.state && c.state !== 'running' && c.resume) void c.resume().catch(() => { /* 무시 */ });
+    this.pump();
+  }
 
   private stopVoices(after: number) {
     const t = this.c.currentTime + after;
@@ -156,18 +186,20 @@ class Engine {
 
   private pump() {
     const s = this.cur; if (!s) return;
-    // 미리 예약 0.6초: 맵 로딩 · 씬 전환처럼 메인 스레드가 잠깐 멈춰도 음이 끊기지 않게
-    const until = this.c.currentTime + 0.6;
-    // 탭이 오래 멈췄다 돌아오면(1초 넘게 밀림) 박자를 현재로 당겨서 한꺼번에 몰아 치지 않게
-    if (s.idx < s.evs.length && s.t0 + s.evs[s.idx].t * s.step < this.c.currentTime - 1) { const behind = this.c.currentTime - s.t0; const loops = Math.floor(behind / (s.len * s.step)); if (loops > 0 && !s.track.once) { s.t0 += loops * s.len * s.step; s.loopN += loops; } const pos = (this.c.currentTime - s.t0) / s.step; while (s.idx < s.evs.length && s.evs[s.idx].t < pos) s.idx++; }
+    // 미리 예약: 평소 0.6초 (맵 로딩 · 씬 전환처럼 메인 스레드가 잠깐 멈춰도 끊기지 않게),
+    //  탭이 가려졌을 땐 6초 (브라우저가 타이머를 늦추더라도 소리는 미리 예약된 만큼 계속 나옴)
+    const until = this.c.currentTime + (document.hidden ? 6 : 0.6);
+    // 오래 멈췄다 돌아와서 박자가 0.5초 넘게 밀렸으면 박자를 현재로 당겨서 한꺼번에 몰아 치지 않게
+    if (s.idx < s.evs.length && s.t0 + s.evs[s.idx].t * s.step < this.c.currentTime - 0.5) { const behind = this.c.currentTime - s.t0; const loops = Math.floor(behind / (s.len * s.step)); if (loops > 0 && !s.track.once) { s.t0 += loops * s.len * s.step; s.loopN += loops; } const pos = (this.c.currentTime - s.t0) / s.step; while (s.idx < s.evs.length && s.evs[s.idx].t < pos) s.idx++; }
     for (;;) {
       if (s.idx >= s.evs.length) {
-        if (s.track.once) { const end = s.t0 + s.len * s.step; if (until >= end) { const cb = this.onEnd; this.cur = null; clearInterval(this.timer); window.setTimeout(() => cb?.(), Math.max(0, (end - this.c.currentTime) * 1000)); } return; }
+        if (s.track.once) { const end = s.t0 + s.len * s.step; if (until >= end) { const cb = this.onEnd; this.cur = null; this.ticker.stop(); window.setTimeout(() => cb?.(), Math.max(0, (end - this.c.currentTime) * 1000)); } return; }
         s.idx = 0; s.loopN++; s.t0 += s.len * s.step;
       }
       const e = s.evs[s.idx]; const at = s.t0 + e.t * s.step;
       if (at > until) break;
-      if (at >= this.c.currentTime - 0.02) this.note(e, at, e.d * s.step);
+      // 과거 시각으로 예약하면 시작 순간에 '틱' 소리가 나므로, 조금이라도 늦었으면 지금 시각으로 당겨서 연주
+      { const now = this.c.currentTime; if (at >= now - 0.05) this.note(e, Math.max(at, now), e.d * s.step); }
       s.idx++;
     }
     // 끝난 보이스 정리
@@ -310,6 +342,8 @@ function start(id: string, night: boolean) {
   e.onEnd = null;
   e.play(t, night);
 }
+// 탭을 오가거나 다른 작업을 하다 돌아왔을 때 오디오를 깨우고 박자를 따라잡음
+document.addEventListener('visibilitychange', () => { if (!document.hidden) engine?.wake(); });
 // 브라우저 자동재생 정책: 첫 입력 때 원하던 곡을 시작
 for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => { if (want && !engine?.playing && musicOn) start(want.id, want.night); }, { passive: true });
 

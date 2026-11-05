@@ -361,12 +361,8 @@ export class FarmSimulation {
     const px = p.x / T, py = (p.y - 4) / T;
     return Math.hypot(tx + 0.5 - px, ty + 0.5 - py) <= REACH + 0.5;
   }
-  private spend(p: PlayerState, cost: number) {
-    if (SPECIES[p.party[0]?.species]?.helps === 'energy') cost = Math.max(1, cost - 1);
-    if (cost <= 0) return true;
-    if (p.energy < cost) { this.emit({ type: 'toast', playerId: p.id, text: '너무 지쳤어요... 잠을 자야 해요.', icon: 'energy' }); return false; }
-    p.energy -= cost; return true;
-  }
+  /** 에너지 게이지는 없앴음: 도구는 에너지를 쓰지 않고 언제든 쓸 수 있음 (저장 호환을 위해 energy 값은 그대로 둠) */
+  private spend(_p: PlayerState, _cost: number) { return true; }
   private changed(p: PlayerState) { this.emit({ type: 'player', id: p.id, energy: p.energy, inventory: p.inventory }); }
   private setGold(p: PlayerState, delta: number) { p.gold += delta; this.emit({ type: 'gold', playerId: p.id, gold: p.gold, delta }); }
 
@@ -573,7 +569,7 @@ export class FarmSimulation {
     this.changed(p);
     this.emit({ type: 'dish', room: this.room(p), dish: f.dish });
     this.emit({ type: 'emote', playerId: p.id, room: this.room(p), emote: 5 });
-    this.emit({ type: 'toast', room: this.room(p), text: `${p.name}님이 ${item.name}을(를) 맛있게 먹었어요! (에너지 +${gain})`, icon: 'energy' });
+    this.emit({ type: 'toast', room: this.room(p), text: `${p.name}님이 ${item.name}을(를) 맛있게 먹었어요!`, icon: 'energy' });
     return { ok: true, anim: 'interact' };
   }
 
@@ -785,11 +781,9 @@ export class FarmSimulation {
   private eat(p: PlayerState, slot: number): ActionResult {
     const s = p.inventory[slot]; const item = ITEMS[s?.itemId ?? ''];
     if (!item || item.type !== 'food') return { ok: false, reason: 'not-food' };
-    if (p.energy >= p.maxEnergy) { this.emit({ type: 'toast', playerId: p.id, text: '배가 불러요. 에너지가 가득 차 있어요.', icon: 'energy' }); return { ok: false, reason: 'full' }; }
-    p.energy = Math.min(p.maxEnergy, p.energy + (item.energy ?? 0));
     s.quantity--; if (s.quantity <= 0) { s.itemId = null; s.quantity = 0; }
     this.changed(p);
-    this.emit({ type: 'toast', playerId: p.id, text: `${item.name}을(를) 먹었어요. 에너지 +${item.energy}`, icon: 'energy' });
+    this.emit({ type: 'toast', playerId: p.id, text: `${item.name}을(를) 먹었어요. 맛있다!`, icon: 'energy' });
     return { ok: true, anim: 'interact' };
   }
 

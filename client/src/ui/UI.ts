@@ -97,11 +97,6 @@ const hud = {
         <div class="mt-1 flex items-center justify-end gap-2 bg-[#e6cb93] px-2 py-0.5 border-2 border-[#a8683a]"><span class="px-icon" style="${iconStyle('gold', 24)}"></span><span data-h="gold" class="text-xl tabular-nums"></span></div>
       </div>`;
     root().appendChild(n);
-    const e = el('div', 'absolute right-4 bottom-4 flex flex-col items-center gap-1');
-    e.innerHTML = `<div class="relative w-[30px] h-[170px] border-4 border-[#5e3620] bg-[#3b2414] shadow-[0_4px_0_rgba(0,0,0,.35)]">
-      <div data-h="energy" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#4f9a45] to-[#9bd165] transition-all duration-300"></div></div>
-      <div class="px-icon" style="${iconStyle('energy', 32)}"></div>`;
-    root().appendChild(e);
     this.node = n;
   },
   time(t: WorldTime) {

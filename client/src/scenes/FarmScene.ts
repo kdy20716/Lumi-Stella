@@ -310,7 +310,7 @@ export class FarmScene extends Phaser.Scene {
     }
     const [title, sub] = this.placeName();
     ui.banner.show(title, sub);
-    if (firstTime) ui.toast.push('루미 몬스터즈: 별빛의 씨앗에 오신 걸 환영해요! (H: 조작법 · Esc: 메뉴)', 'heart');
+    if (firstTime) ui.toast.push('루미 스텔라에 오신 걸 환영해요! (H: 조작법 · Esc: 메뉴)', 'heart');
     this.time.delayedCall(fromWarp ? 350 : 900, () => this.story.begin());
   }
 
@@ -961,8 +961,10 @@ export class FarmScene extends Phaser.Scene {
     if (this.playing || this.auth.online) this.auth.update(dt);
     const k = this.keys;
     const canMove = this.playing && !ui.confirm.open && !ui.dialogue.open && !ui.chat.typing && !ui.shop.open && !this.battling && !this.fishing && !ui.party.open;
-    const vx = canMove ? Math.sign((k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0) + touch.vx) : 0;
-    const vy = canMove ? Math.sign((k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0) + touch.vy) : 0;
+    // 키보드(-1/0/1) + 모바일 조이스틱(연속값) → 합쳐서 -1~1 로. 대각선은 Player.move 에서 속도를 맞춤
+    const clamp1 = (n: number) => Math.max(-1, Math.min(1, n));
+    const vx = canMove ? clamp1((k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0) + touch.vx) : 0;
+    const vy = canMove ? clamp1((k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0) + touch.vy) : 0;
     const run = k.SHIFT.isDown || touch.run;
     this.player.move(dt, { vx, vy, run }, this.npcs.filter((n) => n.state !== 'gone' && n.sprite.visible));
     this.player.update();

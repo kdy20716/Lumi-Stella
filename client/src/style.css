@@ -299,11 +299,11 @@ button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite;
 .tc-root button { pointer-events: auto; touch-action: none; -webkit-tap-highlight-color: transparent; }
 .tc-left { position: absolute; left: max(16px, env(safe-area-inset-left)); bottom: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .tc-right { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: 18px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-.tc-pad { pointer-events: auto; position: relative; width: 150px; height: 150px; border-radius: 50%; background: rgba(20, 16, 24, .28); border: 3px solid rgba(255, 248, 236, .35); }
-.tc-d { position: absolute; width: 52px; height: 52px; border-radius: 12px; border: 3px solid #3b2414; background: rgba(255, 248, 236, .82); color: #3b2414; font-size: 20px; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
-.tc-d.up { left: 46px; top: 2px; } .tc-d.down { left: 46px; bottom: 2px; } .tc-d.left { left: 2px; top: 46px; } .tc-d.right { right: 2px; top: 46px; }
-.tc-mid { position: absolute; left: 60px; top: 60px; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,248,236,.5); }
-.tc-pad[data-dir="0,-1"] .up, .tc-pad[data-dir="0,1"] .down, .tc-pad[data-dir="-1,0"] .left, .tc-pad[data-dir="1,0"] .right { background: #ffe58a; transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.35); }
+/* 조이스틱: 둥근 판 위에서 손가락을 끌면 그 방향 · 세기로 이동 (대각선 가능) */
+.tc-stick { pointer-events: auto; touch-action: none; position: relative; width: 150px; height: 150px; border-radius: 50%; background: rgba(20, 16, 24, .28); border: 3px solid rgba(255, 248, 236, .35); }
+.tc-stick::before { content: ""; position: absolute; inset: 30px; border-radius: 50%; border: 2px dashed rgba(255, 248, 236, .25); }
+.tc-knob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; border: 4px solid #3b2414; background: radial-gradient(circle at 35% 30%, #fff3d6, #e6cb93); box-shadow: 0 4px 0 rgba(0,0,0,.35); transition: transform .08s ease-out; will-change: transform; }
+.tc-stick.active .tc-knob { transition: none; background: radial-gradient(circle at 35% 30%, #fff0a8, #ffe58a); }
 .tc-btn { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #3b2414; font-size: 26px; color: #fff8ec; text-shadow: 0 2px 0 #3b2414; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; box-shadow: 0 5px 0 rgba(0,0,0,.35); }
 .tc-btn small { font-size: 11px; margin-top: 2px; }
 .tc-btn.a { background: radial-gradient(circle at 35% 30%, #ff9a7a, #d8473b); margin-bottom: 34px; }
@@ -315,7 +315,7 @@ button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite;
 .tc-run.on { background: #ffe58a; }
 .tc-rotate { display: none; position: absolute; inset: 0; pointer-events: auto; background: rgba(20, 16, 24, .9); color: #fff8ec; font-size: 22px; text-align: center; padding-top: 40vh; line-height: 1.8; }
 @media (orientation: portrait) { .tc-rotate { display: block; } }
-@media (max-height: 420px) { .tc-pad { width: 128px; height: 128px; } .tc-d { width: 44px; height: 44px; } .tc-d.up, .tc-d.down { left: 39px; } .tc-d.left, .tc-d.right { top: 39px; } .tc-mid { left: 50px; top: 50px; } .tc-btn { width: 64px; height: 64px; } }
+@media (max-height: 420px) { .tc-stick { width: 128px; height: 128px; } .tc-stick::before { inset: 24px; } .tc-knob { width: 54px; height: 54px; margin: -27px 0 0 -27px; } .tc-btn { width: 64px; height: 64px; } }
 /* 터치 화면: 대화창은 양손 버튼 사이로 · 손에 든 도구 표시는 위로 */
 .tc-on .dlg-in { width: min(980px, calc(100vw - 400px)) !important; bottom: 6px !important; }
 .tc-on .dlg-in .px-panel { min-height: 110px; padding-right: 16px !important; padding-top: 22px !important; }

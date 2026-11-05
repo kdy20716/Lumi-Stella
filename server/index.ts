@@ -144,7 +144,7 @@ const http = createServer((req, res) => {
     res.writeHead(204); res.end(); return;
   }
   // Azure App Service 상태 확인 · 브라우저로 열어 봤을 때
-  if (req.url === '/' || req.url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(`lumi-monsters server ok · ${hub.clients.size} online`); return; }
+  if (req.url === '/' || req.url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(`lumi-stella server ok · ${hub.clients.size} online`); return; }
   res.writeHead(404); res.end();
 });
 const io = new IOServer(http, {
@@ -212,7 +212,7 @@ const shutdown = async () => { console.log('\n서버 종료 — 저장 중...');
 process.on('SIGINT', () => void shutdown());
 process.on('SIGTERM', () => void shutdown());
 
-console.log(`✨ 루미 몬스터즈: 별빛의 씨앗 서버 실행 중 — http://localhost:${PORT} (Socket.io)`);
+console.log(`✨ 루미 스텔라 서버 실행 중 — http://localhost:${PORT} (Socket.io)`);
 console.log(`   허용 출처(CORS): ${CLIENT_ORIGINS.length ? CLIENT_ORIGINS.join(', ') : '모두 (CLIENT_ORIGIN 미설정)'}`);
 console.log(`   저장소: ${storage.kind}${DEV_AUTH ? '  (DEV_AUTH: 토큰 없이 접속 허용 · 관리자 불가)' : ''}`);
 console.log(`   맵: ${MAP_IDS.length}개 (${MAP_NAMES.town} 외)`);
