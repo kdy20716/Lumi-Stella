@@ -4,6 +4,7 @@
 export const touch = {
   vx: 0, vy: 0, run: false,
   enabled: false,
+  wanted: true,
   onKey: null as null | ((key: string) => void),
   node: null as HTMLDivElement | null,
 
@@ -29,7 +30,10 @@ export const touch = {
       </div>
       <div class="tc-rotate">📱↻<br>가로로 돌려서 양손으로 플레이해 주세요!</div>`;
     document.body.appendChild(n); this.node = n;
-    document.body.classList.add('tc-on');
+    // 화면 비율이 바뀔 때(회전, 창 크기 변경)마다 다시 판단
+    window.addEventListener('resize', () => this.refresh());
+    window.addEventListener('orientationchange', () => this.refresh());
+    this.refresh();
     // 십자키: 손가락이 있는 방향 (미끄러져도 따라감)
     const pad = n.querySelector<HTMLElement>('[data-pad]')!;
     const fromPoint = (x: number, y: number) => {
@@ -51,5 +55,19 @@ export const touch = {
     });
   },
   /** 대화 · 상점 등 화면이 열렸을 때도 A 는 그대로 동작 (대화 넘기기) */
-  setVisible(v: boolean) { if (this.node) this.node.style.display = v ? '' : 'none'; },
+  setVisible(v: boolean) { this.wanted = v; this.refresh(); },
+  /** 모바일 비율: 가로로 긴 휴대폰(약 1.9 이상) 또는 세로로 긴 휴대폰(약 0.6 이하). 데스크톱 · 태블릿 비율은 제외 */
+  shapeOk(): boolean {
+    const w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) return false;
+    const r = w / h;
+    return r >= 1.9 || r <= 0.6;
+  },
+  /** 터치 기기 + 모바일 비율 + 화면이 열려 있을 때만 컨트롤러 표시 */
+  refresh() {
+    if (!this.node) return;
+    const shape = this.shapeOk();
+    this.node.style.display = shape && this.wanted ? '' : 'none';
+    document.body.classList.toggle('tc-on', shape);
+  },
 };
