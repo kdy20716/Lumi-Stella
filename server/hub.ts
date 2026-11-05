@@ -31,7 +31,7 @@ export class Hub {
   private route(event: SimEvent) {
     const m: S2C = { t: 'sim', event };
     switch (event.type) {
-      case 'player': case 'party': return this.sendTo(event.id, m);
+      case 'player': case 'party': case 'story': return this.sendTo(event.id, m);
       case 'help': case 'gold': return this.sendTo(event.playerId, m);
       case 'room': this.rosterDirty = true; return this.sendTo(event.playerId, m);
       case 'invite': return this.sendTo(event.to, m);

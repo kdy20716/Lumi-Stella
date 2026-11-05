@@ -1,4 +1,5 @@
 // 서버 설정 (환경 변수로 바꿀 수 있는 값은 여기 한곳에)
+try { (process as { loadEnvFile?: () => void }).loadEnvFile?.(); } catch { /* .env 없음 무시 */ }
 import { DEFAULT_PORT } from '../shared/protocol';
 
 export const PORT = Number(process.env.PORT ?? DEFAULT_PORT);   // Azure App Service 는 PORT 를 넣어 줌

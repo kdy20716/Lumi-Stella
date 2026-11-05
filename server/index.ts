@@ -131,6 +131,18 @@ async function onMessage(client: Client, m: C2S) {
 
 // ── HTTP 서버 (상태 확인용) + Socket.io ─────────────
 const http = createServer((req, res) => {
+  const origin = req.headers.origin;
+  if (origin && (CLIENT_ORIGINS.length === 0 || CLIENT_ORIGINS.includes(origin))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else if (!CLIENT_ORIGINS.length) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.writeHead(204); res.end(); return;
+  }
   // Azure App Service 상태 확인 · 브라우저로 열어 봤을 때
   if (req.url === '/' || req.url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(`lumi-monsters server ok · ${hub.clients.size} online`); return; }
   res.writeHead(404); res.end();

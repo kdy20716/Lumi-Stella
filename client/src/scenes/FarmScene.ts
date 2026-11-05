@@ -248,7 +248,16 @@ export class FarmScene extends Phaser.Scene {
         } catch (e) {
           const msg = (e as Error).message ?? String(e);
           // 혼자하기: 로그인/서버가 안 되면 이 브라우저에서 혼자 진행 (자동 저장)
-          if (mode === 'friends' && !/popup-closed|cancelled/.test(msg)) { t.close(); ui.toast.push('서버에 연결할 수 없어 이 브라우저에서 혼자 진행해요 (자동 저장)', 'heart'); this.startSolo(); return; }
+          // 혼자하기: 로그인 취소/실패 또는 서버 접속 불가 시 이 브라우저에서 혼자 진행 (자동 저장)
+          if (mode === 'friends') {
+            t.close();
+            const toastMsg = /popup-closed|cancelled/.test(msg)
+              ? '로그인 없이 이 브라우저에서 혼자 진행해요 (자동 저장)'
+              : '서버에 연결할 수 없어 이 브라우저에서 혼자 진행해요 (자동 저장)';
+            ui.toast.push(toastMsg, 'heart');
+            this.startSolo();
+            return;
+          }
           t.error(/popup-closed|cancelled/.test(msg) ? '로그인 창이 닫혔어요.' : /unauthorized-domain/.test(msg) ? 'Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 이 주소를 추가해 주세요.' : /configuration-not-found|operation-not-allowed/.test(msg) ? 'Firebase 콘솔에서 Google 로그인 제공업체를 사용 설정해 주세요.' : `${msg}`);
         }
       },
