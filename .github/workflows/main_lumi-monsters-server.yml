@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - lumi-monsters-server
+name: Build and deploy Node.js app to Azure Web App - lumi-stella-server (Linux)
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest   # 서버가 Linux 라서 Linux 에서 설치 · 빌드
     permissions:
       contents: read #This is required for actions/checkout
 
@@ -59,7 +59,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'lumi-monsters-server'
+          app-name: 'lumi-stella-server'
           slot-name: 'Production'
           package: .
           
