@@ -1,3 +1,4 @@
+import type { AdminCmd, BugReport, S2C as _S2C } from '@shared/protocol';
 import type { NetPlayer, RosterEntry, S2C, C2S } from '@shared/protocol';
 import { FarmSimulation, MS_PER_10_MIN, type SimEvent } from '@shared/sim/FarmSimulation';
 import type { MapInfo } from '@shared/sim/MapInfo';
@@ -11,7 +12,9 @@ export type AuthorityEvent =
   | { type: 'anim'; id: string; anim: string; dir: Dir }
   | { type: 'chat'; from: string; name: string; text: string }
   | { type: 'correct'; x: number; y: number }
-  | { type: 'disconnected'; message?: string };
+  | { type: 'disconnected'; message?: string }
+  | { type: 'adminReport'; report: BugReport }
+  | { type: 'reported' };
 
 export interface PendingInvite { from: string; name: string; where: 'farm' | 'home'; t: number }
 
@@ -21,6 +24,7 @@ export interface PendingInvite { from: string; name: string; where: 'farm' | 'ho
  *  - NetworkAuthority: WebSocket 서버가 권한을 가짐 (구글 로그인 멀티플레이, 서버가 저장)
  * 씬 코드는 어느 쪽이든 동일하게 동작한다.
  */
+export type AdminReply = Omit<Extract<_S2C, { t: 'adminResult' }>, 't' | 'reqId'>;
 export abstract class Authority {
   abstract readonly online: boolean;
   me!: PlayerState;
@@ -83,6 +87,11 @@ export abstract class Authority {
   /** 조명 보간용 소수점 분 */
   get minutesSmooth() { return this.time.minutes + Math.min(10, (this.subMs / MS_PER_10_MIN) * 10); }
   abstract request(a: ActionIntent): Promise<ActionResult>;
+  /** 서버가 확인한 관리자 계정이면 true (멀티 전용). 화면 표시용일 뿐, 실제 권한 검사는 서버가 함 */
+  isAdmin = false;
+  admin(_cmd: AdminCmd): Promise<AdminReply> { void _cmd; return Promise.resolve({ ok: false, message: '멀티플레이에서만 쓸 수 있어요' }); }
+  /** 버그 신고 → 관리자 휴대폰으로 */
+  report(_text: string, _where: string): boolean { void _text; void _where; return false; }
   abstract sendMove(x: number, y: number, dir: Dir, anim: string): void;
   abstract sendAnim(anim: string, dir: Dir): void;
   abstract chat(text: string): void;
@@ -157,7 +166,7 @@ export class NetworkAuthority extends Authority {
         const msg = JSON.parse(String(ev.data)) as S2C;
         if (msg.t === 'welcome') {
           clearTimeout(timeout); joined = true;
-          a.me = msg.you; a.storageKind = msg.storage;
+          a.me = msg.you; a.storageKind = msg.storage; a.isAdmin = msg.admin === true;
           a.applySnapshot(msg.snapshot);
           for (const p of msg.roster) if (p.id !== msg.id) a.roster.set(p.id, p);
           resolve(a);
@@ -179,6 +188,9 @@ export class NetworkAuthority extends Authority {
       case 'chat': this.emit({ type: 'chat', from: m.from, name: m.name, text: m.text }); break;
       case 'correct': this.emit({ type: 'correct', x: m.x, y: m.y }); break;
       case 'error': this.emit({ type: 'disconnected', message: m.message }); break;
+      case 'adminResult': { const { t: _t2, reqId, ...r } = m; void _t2; this.adminPending.get(reqId)?.(r); this.adminPending.delete(reqId); break; }
+      case 'adminReport': this.emit({ type: 'adminReport', report: m.report }); break;
+      case 'reported': this.emit({ type: 'reported' }); break;
       case 'actionResult': { const { t: _t, reqId, ...r } = m; void _t; this.pending.get(reqId)?.(r); this.pending.delete(reqId); break; }
     }
   }
@@ -198,6 +210,13 @@ export class NetworkAuthority extends Authority {
   /** 방 이동 직후 잠깐 위치 전송을 멈춤 (서버가 새 위치를 기준으로 검증하도록) */
   holdMoves(ms = 300) { this.lastSent = performance.now() + ms; }
   sendAnim(anim: string, dir: Dir) { this.send({ t: 'anim', anim, dir }); }
+  private adminPending = new Map<number, (r: AdminReply) => void>();
+  admin(cmd: AdminCmd): Promise<AdminReply> {
+    const reqId = ++this.reqId;
+    this.send({ t: 'admin', cmd, reqId });
+    return new Promise((res) => { this.adminPending.set(reqId, res); setTimeout(() => { if (this.adminPending.delete(reqId)) res({ ok: false, message: '응답 없음' }); }, 8000); });
+  }
+  report(text: string, where: string) { this.send({ t: 'report', text, where }); return true; }
   chat(text: string) { this.send({ t: 'chat', text }); }
   override close() { this.closedByUser = true; this.ws.close(); }
 }

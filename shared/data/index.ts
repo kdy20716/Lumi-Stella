@@ -16,6 +16,8 @@ export const SHOPS = shopsJson as unknown as Record<string, ShopDef>;
 export const RECIPES = recipesJson as unknown as Record<string, RecipeDef>;
 export const SPECIES = creaturesJson as unknown as Record<string, SpeciesDef>;
 export const MOVES = movesJson as unknown as Record<string, MoveDef>;
+/** 지방 맵 메타 (이름 · 종류 · 휴대폰 지도 좌표) */
+export const REGION_MAPS = regionJson.maps as unknown as Record<string, { name: string; kind: string; biome: string; x: number; y: number; tier: number; interior?: boolean }>;
 export const TRAINERS = { ...(trainersJson as unknown as Record<string, TrainerDef>), ...(regionJson.trainers as unknown as Record<string, TrainerDef>) };
 type Range = [string, number, number, number]; // [종, 최소Lv, 최대Lv, 가중치]
 const ENC = encountersJson as unknown as {

@@ -551,5 +551,5115 @@
     "description": "하늘에서 떨어진 첫 별빛의 씨앗에서 태어나 루미나 지방을 빚었다는 환상의 루미. 시련의 오카리나 소리에만 모습을 드러낸다.",
     "helps": "exp",
     "legend": "myth"
+  },
+  "g1a": {
+    "id": "g1a",
+    "name": "싹뚝",
+    "type": "풀",
+    "base": {
+      "hp": 76,
+      "atk": 69,
+      "def": 76,
+      "spd": 69
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "새싹 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "farm",
+    "kind": "새싹 루미",
+    "evolves": {
+      "to": "g1b",
+      "level": 16
+    }
+  },
+  "g1b": {
+    "id": "g1b",
+    "name": "싹나무",
+    "type": "풀",
+    "base": {
+      "hp": 107,
+      "atk": 97,
+      "def": 107,
+      "spd": 97
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        16,
+        "photosynth"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "새싹 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "farm",
+    "kind": "새싹 루미",
+    "evolves": {
+      "to": "g1c",
+      "level": 32
+    }
+  },
+  "g1c": {
+    "id": "g1c",
+    "name": "숲거인",
+    "type": "풀",
+    "base": {
+      "hp": 138,
+      "atk": 125,
+      "def": 138,
+      "spd": 125
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        16,
+        "photosynth"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ],
+      [
+        32,
+        "spore_burst"
+      ]
+    ],
+    "description": "새싹 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "farm",
+    "kind": "새싹 루미"
+  },
+  "g2a": {
+    "id": "g2a",
+    "name": "꽃망울",
+    "type": "풀",
+    "base": {
+      "hp": 78,
+      "atk": 71,
+      "def": 78,
+      "spd": 71
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "꽃 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "farm",
+    "kind": "꽃 루미",
+    "evolves": {
+      "to": "g2b",
+      "level": 18
+    }
+  },
+  "g2b": {
+    "id": "g2b",
+    "name": "꽃송이",
+    "type": "풀",
+    "base": {
+      "hp": 109,
+      "atk": 99,
+      "def": 109,
+      "spd": 99
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        18,
+        "photosynth"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "꽃 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "farm",
+    "kind": "꽃 루미",
+    "evolves": {
+      "to": "g2c",
+      "level": 35
+    }
+  },
+  "g2c": {
+    "id": "g2c",
+    "name": "꽃여왕",
+    "type": "풀",
+    "base": {
+      "hp": 140,
+      "atk": 127,
+      "def": 140,
+      "spd": 127
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        18,
+        "photosynth"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ],
+      [
+        35,
+        "spore_burst"
+      ]
+    ],
+    "description": "꽃 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "farm",
+    "kind": "꽃 루미"
+  },
+  "g3a": {
+    "id": "g3a",
+    "name": "솔톨",
+    "type": "풀",
+    "base": {
+      "hp": 80,
+      "atk": 72,
+      "def": 80,
+      "spd": 72
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "솔방울 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "forage",
+    "kind": "솔방울 루미",
+    "evolves": {
+      "to": "g3b",
+      "level": 20
+    }
+  },
+  "g3b": {
+    "id": "g3b",
+    "name": "솔잎곰",
+    "type": "풀",
+    "base": {
+      "hp": 111,
+      "atk": 100,
+      "def": 111,
+      "spd": 100
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        20,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "솔방울 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "forage",
+    "kind": "솔방울 루미",
+    "evolves": {
+      "to": "g3c",
+      "level": 38
+    }
+  },
+  "g3c": {
+    "id": "g3c",
+    "name": "솔숲거인",
+    "type": "풀",
+    "base": {
+      "hp": 137,
+      "atk": 124,
+      "def": 137,
+      "spd": 124
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        20,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ],
+      [
+        38,
+        "spore_burst"
+      ]
+    ],
+    "description": "솔방울 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "forage",
+    "kind": "솔방울 루미"
+  },
+  "g4a": {
+    "id": "g4a",
+    "name": "버섯돌",
+    "type": "풀",
+    "base": {
+      "hp": 76,
+      "atk": 69,
+      "def": 76,
+      "spd": 69
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "버섯 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "forage",
+    "kind": "버섯 루미",
+    "evolves": {
+      "to": "g4b",
+      "level": 16
+    }
+  },
+  "g4b": {
+    "id": "g4b",
+    "name": "버섯모자",
+    "type": "풀",
+    "base": {
+      "hp": 107,
+      "atk": 97,
+      "def": 107,
+      "spd": 97
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        16,
+        "photosynth"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "버섯 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "forage",
+    "kind": "버섯 루미",
+    "evolves": {
+      "to": "g4c",
+      "level": 41
+    }
+  },
+  "g4c": {
+    "id": "g4c",
+    "name": "버섯성",
+    "type": "풀",
+    "base": {
+      "hp": 138,
+      "atk": 125,
+      "def": 138,
+      "spd": 125
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        16,
+        "photosynth"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ],
+      [
+        41,
+        "spore_burst"
+      ]
+    ],
+    "description": "버섯 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "forage",
+    "kind": "버섯 루미"
+  },
+  "g5a": {
+    "id": "g5a",
+    "name": "덩굴이",
+    "type": "풀",
+    "base": {
+      "hp": 78,
+      "atk": 71,
+      "def": 78,
+      "spd": 71
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "덩굴 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "farm",
+    "kind": "덩굴 루미",
+    "evolves": {
+      "to": "g5b",
+      "level": 18
+    }
+  },
+  "g5b": {
+    "id": "g5b",
+    "name": "덩굴뱀",
+    "type": "풀",
+    "base": {
+      "hp": 109,
+      "atk": 99,
+      "def": 109,
+      "spd": 99
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        18,
+        "photosynth"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ]
+    ],
+    "description": "덩굴 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "farm",
+    "kind": "덩굴 루미",
+    "evolves": {
+      "to": "g5c",
+      "level": 32
+    }
+  },
+  "g5c": {
+    "id": "g5c",
+    "name": "덩굴용",
+    "type": "풀",
+    "base": {
+      "hp": 140,
+      "atk": 127,
+      "def": 140,
+      "spd": 127
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "leaf_toss"
+      ],
+      [
+        11,
+        "vine_whip"
+      ],
+      [
+        18,
+        "photosynth"
+      ],
+      [
+        19,
+        "photosynth"
+      ],
+      [
+        28,
+        "spore_burst"
+      ],
+      [
+        32,
+        "spore_burst"
+      ]
+    ],
+    "description": "덩굴 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "farm",
+    "kind": "덩굴 루미"
+  },
+  "w1a": {
+    "id": "w1a",
+    "name": "물방울",
+    "type": "물",
+    "base": {
+      "hp": 80,
+      "atk": 69,
+      "def": 73,
+      "spd": 69
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "물방울 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "fish",
+    "kind": "물방울 루미",
+    "evolves": {
+      "to": "w1b",
+      "level": 16
+    }
+  },
+  "w1b": {
+    "id": "w1b",
+    "name": "물보라",
+    "type": "물",
+    "base": {
+      "hp": 112,
+      "atk": 97,
+      "def": 102,
+      "spd": 97
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        16,
+        "aqua_veil"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "물방울 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "fish",
+    "kind": "물방울 루미",
+    "evolves": {
+      "to": "w1c",
+      "level": 32
+    }
+  },
+  "w1c": {
+    "id": "w1c",
+    "name": "해일왕",
+    "type": "물",
+    "base": {
+      "hp": 145,
+      "atk": 125,
+      "def": 132,
+      "spd": 125
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        16,
+        "aqua_veil"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ],
+      [
+        32,
+        "wave_ride"
+      ]
+    ],
+    "description": "물방울 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "fish",
+    "kind": "물방울 루미"
+  },
+  "w2a": {
+    "id": "w2a",
+    "name": "조개미",
+    "type": "물",
+    "base": {
+      "hp": 82,
+      "atk": 71,
+      "def": 74,
+      "spd": 71
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "조개 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "fish",
+    "kind": "조개 루미",
+    "evolves": {
+      "to": "w2b",
+      "level": 18
+    }
+  },
+  "w2b": {
+    "id": "w2b",
+    "name": "조개탑",
+    "type": "물",
+    "base": {
+      "hp": 114,
+      "atk": 99,
+      "def": 104,
+      "spd": 99
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        18,
+        "aqua_veil"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "조개 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "fish",
+    "kind": "조개 루미",
+    "evolves": {
+      "to": "w2c",
+      "level": 35
+    }
+  },
+  "w2c": {
+    "id": "w2c",
+    "name": "진주성",
+    "type": "물",
+    "base": {
+      "hp": 147,
+      "atk": 127,
+      "def": 133,
+      "spd": 127
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        18,
+        "aqua_veil"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ],
+      [
+        35,
+        "wave_ride"
+      ]
+    ],
+    "description": "조개 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "fish",
+    "kind": "조개 루미"
+  },
+  "w3a": {
+    "id": "w3a",
+    "name": "올챙",
+    "type": "물",
+    "base": {
+      "hp": 84,
+      "atk": 72,
+      "def": 76,
+      "spd": 72
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "개구리 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "fish",
+    "kind": "개구리 루미",
+    "evolves": {
+      "to": "w3b",
+      "level": 20
+    }
+  },
+  "w3b": {
+    "id": "w3b",
+    "name": "개굴랑",
+    "type": "물",
+    "base": {
+      "hp": 116,
+      "atk": 100,
+      "def": 106,
+      "spd": 100
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        20,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "개구리 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "fish",
+    "kind": "개구리 루미",
+    "evolves": {
+      "to": "w3c",
+      "level": 38
+    }
+  },
+  "w3c": {
+    "id": "w3c",
+    "name": "늪대장",
+    "type": "물",
+    "base": {
+      "hp": 143,
+      "atk": 124,
+      "def": 130,
+      "spd": 124
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        20,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ],
+      [
+        38,
+        "wave_ride"
+      ]
+    ],
+    "description": "개구리 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "fish",
+    "kind": "개구리 루미"
+  },
+  "w4a": {
+    "id": "w4a",
+    "name": "해초랑",
+    "type": "물",
+    "base": {
+      "hp": 80,
+      "atk": 69,
+      "def": 73,
+      "spd": 69
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "해초 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "fish",
+    "kind": "해초 루미",
+    "evolves": {
+      "to": "w4b",
+      "level": 16
+    }
+  },
+  "w4b": {
+    "id": "w4b",
+    "name": "해초룡",
+    "type": "물",
+    "base": {
+      "hp": 112,
+      "atk": 97,
+      "def": 102,
+      "spd": 97
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        16,
+        "aqua_veil"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "해초 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "fish",
+    "kind": "해초 루미",
+    "evolves": {
+      "to": "w4c",
+      "level": 41
+    }
+  },
+  "w4c": {
+    "id": "w4c",
+    "name": "심해룡",
+    "type": "물",
+    "base": {
+      "hp": 145,
+      "atk": 125,
+      "def": 132,
+      "spd": 125
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        16,
+        "aqua_veil"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ],
+      [
+        41,
+        "wave_ride"
+      ]
+    ],
+    "description": "해초 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "fish",
+    "kind": "해초 루미"
+  },
+  "w5a": {
+    "id": "w5a",
+    "name": "소라게",
+    "type": "물",
+    "base": {
+      "hp": 82,
+      "atk": 71,
+      "def": 75,
+      "spd": 71
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "소라 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "mine",
+    "kind": "소라 루미",
+    "evolves": {
+      "to": "w5b",
+      "level": 18
+    }
+  },
+  "w5b": {
+    "id": "w5b",
+    "name": "소라성",
+    "type": "물",
+    "base": {
+      "hp": 114,
+      "atk": 99,
+      "def": 104,
+      "spd": 99
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        18,
+        "aqua_veil"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ]
+    ],
+    "description": "소라 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "mine",
+    "kind": "소라 루미",
+    "evolves": {
+      "to": "w5c",
+      "level": 32
+    }
+  },
+  "w5c": {
+    "id": "w5c",
+    "name": "파도기사",
+    "type": "물",
+    "base": {
+      "hp": 147,
+      "atk": 127,
+      "def": 134,
+      "spd": 127
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "bubble"
+      ],
+      [
+        11,
+        "water_gun"
+      ],
+      [
+        18,
+        "aqua_veil"
+      ],
+      [
+        19,
+        "aqua_veil"
+      ],
+      [
+        28,
+        "wave_ride"
+      ],
+      [
+        32,
+        "wave_ride"
+      ]
+    ],
+    "description": "소라 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "mine",
+    "kind": "소라 루미"
+  },
+  "f1a": {
+    "id": "f1a",
+    "name": "불씨",
+    "type": "불",
+    "base": {
+      "hp": 69,
+      "atk": 83,
+      "def": 65,
+      "spd": 73
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "불새 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "energy",
+    "kind": "불새 루미",
+    "evolves": {
+      "to": "f1b",
+      "level": 16
+    }
+  },
+  "f1b": {
+    "id": "f1b",
+    "name": "불꽃새",
+    "type": "불",
+    "base": {
+      "hp": 97,
+      "atk": 117,
+      "def": 92,
+      "spd": 102
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        16,
+        "heatwave"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "불새 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "energy",
+    "kind": "불새 루미",
+    "evolves": {
+      "to": "f1c",
+      "level": 32
+    }
+  },
+  "f1c": {
+    "id": "f1c",
+    "name": "태양새",
+    "type": "불",
+    "base": {
+      "hp": 125,
+      "atk": 151,
+      "def": 118,
+      "spd": 132
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        16,
+        "heatwave"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ],
+      [
+        32,
+        "heatwave"
+      ]
+    ],
+    "description": "불새 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "energy",
+    "kind": "불새 루미"
+  },
+  "f2a": {
+    "id": "f2a",
+    "name": "숯돌이",
+    "type": "불",
+    "base": {
+      "hp": 71,
+      "atk": 85,
+      "def": 67,
+      "spd": 74
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "숯 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "mine",
+    "kind": "숯 루미",
+    "evolves": {
+      "to": "f2b",
+      "level": 18
+    }
+  },
+  "f2b": {
+    "id": "f2b",
+    "name": "숯곰",
+    "type": "불",
+    "base": {
+      "hp": 99,
+      "atk": 119,
+      "def": 93,
+      "spd": 104
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        18,
+        "heatwave"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "숯 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "mine",
+    "kind": "숯 루미",
+    "evolves": {
+      "to": "f2c",
+      "level": 35
+    }
+  },
+  "f2c": {
+    "id": "f2c",
+    "name": "용광곰",
+    "type": "불",
+    "base": {
+      "hp": 127,
+      "atk": 153,
+      "def": 120,
+      "spd": 133
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        18,
+        "heatwave"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ],
+      [
+        35,
+        "heatwave"
+      ]
+    ],
+    "description": "숯 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "mine",
+    "kind": "숯 루미"
+  },
+  "f3a": {
+    "id": "f3a",
+    "name": "초롱이",
+    "type": "불",
+    "base": {
+      "hp": 72,
+      "atk": 87,
+      "def": 68,
+      "spd": 76
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "등불 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "energy",
+    "kind": "등불 루미",
+    "evolves": {
+      "to": "f3b",
+      "level": 20
+    }
+  },
+  "f3b": {
+    "id": "f3b",
+    "name": "초롱불",
+    "type": "불",
+    "base": {
+      "hp": 100,
+      "atk": 121,
+      "def": 95,
+      "spd": 106
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        20,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "등불 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "energy",
+    "kind": "등불 루미",
+    "evolves": {
+      "to": "f3c",
+      "level": 38
+    }
+  },
+  "f3c": {
+    "id": "f3c",
+    "name": "등불령",
+    "type": "불",
+    "base": {
+      "hp": 124,
+      "atk": 150,
+      "def": 117,
+      "spd": 130
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        20,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ],
+      [
+        38,
+        "heatwave"
+      ]
+    ],
+    "description": "등불 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "energy",
+    "kind": "등불 루미"
+  },
+  "f4a": {
+    "id": "f4a",
+    "name": "화끈",
+    "type": "불",
+    "base": {
+      "hp": 69,
+      "atk": 84,
+      "def": 65,
+      "spd": 73
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "사자 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "mine",
+    "kind": "사자 루미",
+    "evolves": {
+      "to": "f4b",
+      "level": 16
+    }
+  },
+  "f4b": {
+    "id": "f4b",
+    "name": "화르륵",
+    "type": "불",
+    "base": {
+      "hp": 97,
+      "atk": 118,
+      "def": 92,
+      "spd": 102
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        16,
+        "heatwave"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "사자 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "mine",
+    "kind": "사자 루미",
+    "evolves": {
+      "to": "f4c",
+      "level": 41
+    }
+  },
+  "f4c": {
+    "id": "f4c",
+    "name": "화염사자",
+    "type": "불",
+    "base": {
+      "hp": 125,
+      "atk": 152,
+      "def": 119,
+      "spd": 132
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        16,
+        "heatwave"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ],
+      [
+        41,
+        "heatwave"
+      ]
+    ],
+    "description": "사자 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "mine",
+    "kind": "사자 루미"
+  },
+  "f5a": {
+    "id": "f5a",
+    "name": "불티",
+    "type": "불",
+    "base": {
+      "hp": 71,
+      "atk": 86,
+      "def": 67,
+      "spd": 75
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "여우 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "forage",
+    "kind": "여우 루미",
+    "evolves": {
+      "to": "f5b",
+      "level": 18
+    }
+  },
+  "f5b": {
+    "id": "f5b",
+    "name": "불티여우",
+    "type": "불",
+    "base": {
+      "hp": 99,
+      "atk": 120,
+      "def": 94,
+      "spd": 104
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        18,
+        "heatwave"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ]
+    ],
+    "description": "여우 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "forage",
+    "kind": "여우 루미",
+    "evolves": {
+      "to": "f5c",
+      "level": 32
+    }
+  },
+  "f5c": {
+    "id": "f5c",
+    "name": "불꽃여우",
+    "type": "불",
+    "base": {
+      "hp": 127,
+      "atk": 154,
+      "def": 120,
+      "spd": 134
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "ember"
+      ],
+      [
+        11,
+        "flame_tail"
+      ],
+      [
+        18,
+        "heatwave"
+      ],
+      [
+        19,
+        "heatwave"
+      ],
+      [
+        28,
+        "heatwave"
+      ],
+      [
+        32,
+        "heatwave"
+      ]
+    ],
+    "description": "여우 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "forage",
+    "kind": "여우 루미"
+  },
+  "e1a": {
+    "id": "e1a",
+    "name": "모래알",
+    "type": "땅",
+    "base": {
+      "hp": 76,
+      "atk": 76,
+      "def": 83,
+      "spd": 54
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "모래 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "mine",
+    "kind": "모래 루미",
+    "evolves": {
+      "to": "e1b",
+      "level": 16
+    }
+  },
+  "e1b": {
+    "id": "e1b",
+    "name": "모래성",
+    "type": "땅",
+    "base": {
+      "hp": 107,
+      "atk": 107,
+      "def": 117,
+      "spd": 77
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        16,
+        "quake"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "모래 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "mine",
+    "kind": "모래 루미",
+    "evolves": {
+      "to": "e1c",
+      "level": 32
+    }
+  },
+  "e1c": {
+    "id": "e1c",
+    "name": "사막왕",
+    "type": "땅",
+    "base": {
+      "hp": 138,
+      "atk": 138,
+      "def": 151,
+      "spd": 99
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        16,
+        "quake"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ],
+      [
+        32,
+        "quake"
+      ]
+    ],
+    "description": "모래 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "mine",
+    "kind": "모래 루미"
+  },
+  "e2a": {
+    "id": "e2a",
+    "name": "두더지",
+    "type": "땅",
+    "base": {
+      "hp": 78,
+      "atk": 78,
+      "def": 85,
+      "spd": 56
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "두더지 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "mine",
+    "kind": "두더지 루미",
+    "evolves": {
+      "to": "e2b",
+      "level": 18
+    }
+  },
+  "e2b": {
+    "id": "e2b",
+    "name": "두더쿵",
+    "type": "땅",
+    "base": {
+      "hp": 109,
+      "atk": 109,
+      "def": 119,
+      "spd": 78
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        18,
+        "quake"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "두더지 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "mine",
+    "kind": "두더지 루미",
+    "evolves": {
+      "to": "e2c",
+      "level": 35
+    }
+  },
+  "e2c": {
+    "id": "e2c",
+    "name": "땅울림",
+    "type": "땅",
+    "base": {
+      "hp": 140,
+      "atk": 140,
+      "def": 153,
+      "spd": 100
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        18,
+        "quake"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ],
+      [
+        35,
+        "quake"
+      ]
+    ],
+    "description": "두더지 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "mine",
+    "kind": "두더지 루미"
+  },
+  "e3a": {
+    "id": "e3a",
+    "name": "자갈콩",
+    "type": "땅",
+    "base": {
+      "hp": 80,
+      "atk": 80,
+      "def": 87,
+      "spd": 57
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "바위 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "mine",
+    "kind": "바위 루미",
+    "evolves": {
+      "to": "e3b",
+      "level": 20
+    }
+  },
+  "e3b": {
+    "id": "e3b",
+    "name": "바위콩",
+    "type": "땅",
+    "base": {
+      "hp": 111,
+      "atk": 111,
+      "def": 121,
+      "spd": 79
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        20,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "바위 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "mine",
+    "kind": "바위 루미",
+    "evolves": {
+      "to": "e3c",
+      "level": 38
+    }
+  },
+  "e3c": {
+    "id": "e3c",
+    "name": "산맥콩",
+    "type": "땅",
+    "base": {
+      "hp": 137,
+      "atk": 137,
+      "def": 150,
+      "spd": 98
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        20,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ],
+      [
+        38,
+        "quake"
+      ]
+    ],
+    "description": "바위 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "mine",
+    "kind": "바위 루미"
+  },
+  "e4a": {
+    "id": "e4a",
+    "name": "진흙이",
+    "type": "땅",
+    "base": {
+      "hp": 76,
+      "atk": 76,
+      "def": 84,
+      "spd": 55
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "진흙 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "farm",
+    "kind": "진흙 루미",
+    "evolves": {
+      "to": "e4b",
+      "level": 16
+    }
+  },
+  "e4b": {
+    "id": "e4b",
+    "name": "진흙곰",
+    "type": "땅",
+    "base": {
+      "hp": 107,
+      "atk": 107,
+      "def": 118,
+      "spd": 77
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        16,
+        "quake"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "진흙 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "farm",
+    "kind": "진흙 루미",
+    "evolves": {
+      "to": "e4c",
+      "level": 41
+    }
+  },
+  "e4c": {
+    "id": "e4c",
+    "name": "늪지거인",
+    "type": "땅",
+    "base": {
+      "hp": 138,
+      "atk": 138,
+      "def": 152,
+      "spd": 99
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        16,
+        "quake"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ],
+      [
+        41,
+        "quake"
+      ]
+    ],
+    "description": "진흙 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "farm",
+    "kind": "진흙 루미"
+  },
+  "e5a": {
+    "id": "e5a",
+    "name": "화석이",
+    "type": "땅",
+    "base": {
+      "hp": 78,
+      "atk": 78,
+      "def": 86,
+      "spd": 56
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "화석 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "exp",
+    "kind": "화석 루미",
+    "evolves": {
+      "to": "e5b",
+      "level": 18
+    }
+  },
+  "e5b": {
+    "id": "e5b",
+    "name": "화석룡",
+    "type": "땅",
+    "base": {
+      "hp": 109,
+      "atk": 109,
+      "def": 120,
+      "spd": 78
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        18,
+        "quake"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ]
+    ],
+    "description": "화석 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "exp",
+    "kind": "화석 루미",
+    "evolves": {
+      "to": "e5c",
+      "level": 32
+    }
+  },
+  "e5c": {
+    "id": "e5c",
+    "name": "고대룡",
+    "type": "땅",
+    "base": {
+      "hp": 140,
+      "atk": 140,
+      "def": 154,
+      "spd": 100
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "sand_throw"
+      ],
+      [
+        11,
+        "rock_throw"
+      ],
+      [
+        18,
+        "quake"
+      ],
+      [
+        19,
+        "quake"
+      ],
+      [
+        28,
+        "quake"
+      ],
+      [
+        32,
+        "quake"
+      ]
+    ],
+    "description": "화석 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "exp",
+    "kind": "화석 루미"
+  },
+  "a1a": {
+    "id": "a1a",
+    "name": "깃털이",
+    "type": "바람",
+    "base": {
+      "hp": 65,
+      "atk": 73,
+      "def": 62,
+      "spd": 91
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "새 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "forage",
+    "kind": "새 루미",
+    "evolves": {
+      "to": "a1b",
+      "level": 16
+    }
+  },
+  "a1b": {
+    "id": "a1b",
+    "name": "깃바람",
+    "type": "바람",
+    "base": {
+      "hp": 92,
+      "atk": 102,
+      "def": 87,
+      "spd": 128
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        16,
+        "whirlwind"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "새 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "forage",
+    "kind": "새 루미",
+    "evolves": {
+      "to": "a1c",
+      "level": 32
+    }
+  },
+  "a1c": {
+    "id": "a1c",
+    "name": "폭풍새",
+    "type": "바람",
+    "base": {
+      "hp": 118,
+      "atk": 132,
+      "def": 112,
+      "spd": 164
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        16,
+        "whirlwind"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ],
+      [
+        32,
+        "whirlwind"
+      ]
+    ],
+    "description": "새 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "forage",
+    "kind": "새 루미"
+  },
+  "a2a": {
+    "id": "a2a",
+    "name": "솜구름",
+    "type": "바람",
+    "base": {
+      "hp": 67,
+      "atk": 74,
+      "def": 63,
+      "spd": 93
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "구름 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "energy",
+    "kind": "구름 루미",
+    "evolves": {
+      "to": "a2b",
+      "level": 18
+    }
+  },
+  "a2b": {
+    "id": "a2b",
+    "name": "구름양",
+    "type": "바람",
+    "base": {
+      "hp": 93,
+      "atk": 104,
+      "def": 88,
+      "spd": 130
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        18,
+        "whirlwind"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "구름 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "energy",
+    "kind": "구름 루미",
+    "evolves": {
+      "to": "a2c",
+      "level": 35
+    }
+  },
+  "a2c": {
+    "id": "a2c",
+    "name": "천둥양",
+    "type": "바람",
+    "base": {
+      "hp": 120,
+      "atk": 133,
+      "def": 113,
+      "spd": 167
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        18,
+        "whirlwind"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ],
+      [
+        35,
+        "whirlwind"
+      ]
+    ],
+    "description": "구름 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "energy",
+    "kind": "구름 루미"
+  },
+  "a3a": {
+    "id": "a3a",
+    "name": "나풀이",
+    "type": "바람",
+    "base": {
+      "hp": 68,
+      "atk": 76,
+      "def": 65,
+      "spd": 95
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "나비 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "forage",
+    "kind": "나비 루미",
+    "evolves": {
+      "to": "a3b",
+      "level": 20
+    }
+  },
+  "a3b": {
+    "id": "a3b",
+    "name": "나비바람",
+    "type": "바람",
+    "base": {
+      "hp": 95,
+      "atk": 106,
+      "def": 90,
+      "spd": 132
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        20,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "나비 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "forage",
+    "kind": "나비 루미",
+    "evolves": {
+      "to": "a3c",
+      "level": 38
+    }
+  },
+  "a3c": {
+    "id": "a3c",
+    "name": "무지개나비",
+    "type": "바람",
+    "base": {
+      "hp": 117,
+      "atk": 130,
+      "def": 111,
+      "spd": 163
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        20,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ],
+      [
+        38,
+        "whirlwind"
+      ]
+    ],
+    "description": "나비 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "forage",
+    "kind": "나비 루미"
+  },
+  "a4a": {
+    "id": "a4a",
+    "name": "회오리",
+    "type": "바람",
+    "base": {
+      "hp": 65,
+      "atk": 73,
+      "def": 62,
+      "spd": 91
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "바람여우 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "exp",
+    "kind": "바람여우 루미",
+    "evolves": {
+      "to": "a4b",
+      "level": 16
+    }
+  },
+  "a4b": {
+    "id": "a4b",
+    "name": "회오리여우",
+    "type": "바람",
+    "base": {
+      "hp": 92,
+      "atk": 102,
+      "def": 87,
+      "spd": 128
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        16,
+        "whirlwind"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "바람여우 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "exp",
+    "kind": "바람여우 루미",
+    "evolves": {
+      "to": "a4c",
+      "level": 41
+    }
+  },
+  "a4c": {
+    "id": "a4c",
+    "name": "태풍여우",
+    "type": "바람",
+    "base": {
+      "hp": 119,
+      "atk": 132,
+      "def": 112,
+      "spd": 165
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        16,
+        "whirlwind"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ],
+      [
+        41,
+        "whirlwind"
+      ]
+    ],
+    "description": "바람여우 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "exp",
+    "kind": "바람여우 루미"
+  },
+  "a5a": {
+    "id": "a5a",
+    "name": "박쥐롱",
+    "type": "바람",
+    "base": {
+      "hp": 67,
+      "atk": 75,
+      "def": 63,
+      "spd": 93
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "박쥐 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "exp",
+    "kind": "박쥐 루미",
+    "evolves": {
+      "to": "a5b",
+      "level": 18
+    }
+  },
+  "a5b": {
+    "id": "a5b",
+    "name": "박쥐날개",
+    "type": "바람",
+    "base": {
+      "hp": 94,
+      "atk": 104,
+      "def": 88,
+      "spd": 130
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        18,
+        "whirlwind"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ]
+    ],
+    "description": "박쥐 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "exp",
+    "kind": "박쥐 루미",
+    "evolves": {
+      "to": "a5c",
+      "level": 32
+    }
+  },
+  "a5c": {
+    "id": "a5c",
+    "name": "밤하늘박쥐",
+    "type": "바람",
+    "base": {
+      "hp": 120,
+      "atk": 134,
+      "def": 113,
+      "spd": 167
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "peck"
+      ],
+      [
+        11,
+        "gust"
+      ],
+      [
+        18,
+        "whirlwind"
+      ],
+      [
+        19,
+        "whirlwind"
+      ],
+      [
+        28,
+        "whirlwind"
+      ],
+      [
+        32,
+        "whirlwind"
+      ]
+    ],
+    "description": "박쥐 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "exp",
+    "kind": "박쥐 루미"
+  },
+  "l1a": {
+    "id": "l1a",
+    "name": "반디",
+    "type": "빛",
+    "base": {
+      "hp": 69,
+      "atk": 76,
+      "def": 69,
+      "spd": 76
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "반딧불 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "energy",
+    "kind": "반딧불 루미",
+    "evolves": {
+      "to": "l1b",
+      "level": 16
+    }
+  },
+  "l1b": {
+    "id": "l1b",
+    "name": "반디등",
+    "type": "빛",
+    "base": {
+      "hp": 97,
+      "atk": 107,
+      "def": 97,
+      "spd": 107
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        16,
+        "starlight"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "반딧불 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "energy",
+    "kind": "반딧불 루미",
+    "evolves": {
+      "to": "l1c",
+      "level": 32
+    }
+  },
+  "l1c": {
+    "id": "l1c",
+    "name": "은하반디",
+    "type": "빛",
+    "base": {
+      "hp": 125,
+      "atk": 138,
+      "def": 125,
+      "spd": 138
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        16,
+        "starlight"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ],
+      [
+        32,
+        "meteor"
+      ]
+    ],
+    "description": "반딧불 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "energy",
+    "kind": "반딧불 루미"
+  },
+  "l2a": {
+    "id": "l2a",
+    "name": "별사탕",
+    "type": "빛",
+    "base": {
+      "hp": 71,
+      "atk": 78,
+      "def": 71,
+      "spd": 78
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "별 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "exp",
+    "kind": "별 루미",
+    "evolves": {
+      "to": "l2b",
+      "level": 18
+    }
+  },
+  "l2b": {
+    "id": "l2b",
+    "name": "별무늬",
+    "type": "빛",
+    "base": {
+      "hp": 99,
+      "atk": 109,
+      "def": 99,
+      "spd": 109
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        18,
+        "starlight"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "별 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "exp",
+    "kind": "별 루미",
+    "evolves": {
+      "to": "l2c",
+      "level": 35
+    }
+  },
+  "l2c": {
+    "id": "l2c",
+    "name": "유성",
+    "type": "빛",
+    "base": {
+      "hp": 127,
+      "atk": 140,
+      "def": 127,
+      "spd": 140
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        18,
+        "starlight"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ],
+      [
+        35,
+        "meteor"
+      ]
+    ],
+    "description": "별 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "exp",
+    "kind": "별 루미"
+  },
+  "l3a": {
+    "id": "l3a",
+    "name": "달토끼",
+    "type": "빛",
+    "base": {
+      "hp": 72,
+      "atk": 80,
+      "def": 72,
+      "spd": 80
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "달 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "energy",
+    "kind": "달 루미",
+    "evolves": {
+      "to": "l3b",
+      "level": 20
+    }
+  },
+  "l3b": {
+    "id": "l3b",
+    "name": "달빛토끼",
+    "type": "빛",
+    "base": {
+      "hp": 100,
+      "atk": 111,
+      "def": 100,
+      "spd": 111
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        20,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "달 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "energy",
+    "kind": "달 루미",
+    "evolves": {
+      "to": "l3c",
+      "level": 38
+    }
+  },
+  "l3c": {
+    "id": "l3c",
+    "name": "월광토끼",
+    "type": "빛",
+    "base": {
+      "hp": 124,
+      "atk": 137,
+      "def": 124,
+      "spd": 137
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        20,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ],
+      [
+        38,
+        "meteor"
+      ]
+    ],
+    "description": "달 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "energy",
+    "kind": "달 루미"
+  },
+  "l4a": {
+    "id": "l4a",
+    "name": "수정이",
+    "type": "빛",
+    "base": {
+      "hp": 69,
+      "atk": 76,
+      "def": 69,
+      "spd": 76
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "수정 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "mine",
+    "kind": "수정 루미",
+    "evolves": {
+      "to": "l4b",
+      "level": 16
+    }
+  },
+  "l4b": {
+    "id": "l4b",
+    "name": "수정사슴",
+    "type": "빛",
+    "base": {
+      "hp": 97,
+      "atk": 107,
+      "def": 97,
+      "spd": 107
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        16,
+        "starlight"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "수정 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "mine",
+    "kind": "수정 루미",
+    "evolves": {
+      "to": "l4c",
+      "level": 41
+    }
+  },
+  "l4c": {
+    "id": "l4c",
+    "name": "오로라사슴",
+    "type": "빛",
+    "base": {
+      "hp": 125,
+      "atk": 138,
+      "def": 125,
+      "spd": 138
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        16,
+        "starlight"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ],
+      [
+        41,
+        "meteor"
+      ]
+    ],
+    "description": "수정 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "mine",
+    "kind": "수정 루미"
+  },
+  "l5a": {
+    "id": "l5a",
+    "name": "햇살이",
+    "type": "빛",
+    "base": {
+      "hp": 71,
+      "atk": 78,
+      "def": 71,
+      "spd": 78
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "햇살 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "farm",
+    "kind": "햇살 루미",
+    "evolves": {
+      "to": "l5b",
+      "level": 18
+    }
+  },
+  "l5b": {
+    "id": "l5b",
+    "name": "햇살새",
+    "type": "빛",
+    "base": {
+      "hp": 99,
+      "atk": 109,
+      "def": 99,
+      "spd": 109
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        18,
+        "starlight"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ]
+    ],
+    "description": "햇살 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "farm",
+    "kind": "햇살 루미",
+    "evolves": {
+      "to": "l5c",
+      "level": 32
+    }
+  },
+  "l5c": {
+    "id": "l5c",
+    "name": "새벽새",
+    "type": "빛",
+    "base": {
+      "hp": 127,
+      "atk": 140,
+      "def": 127,
+      "spd": 140
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "flash"
+      ],
+      [
+        11,
+        "healing_light"
+      ],
+      [
+        18,
+        "starlight"
+      ],
+      [
+        19,
+        "starlight"
+      ],
+      [
+        28,
+        "meteor"
+      ],
+      [
+        32,
+        "meteor"
+      ]
+    ],
+    "description": "햇살 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "farm",
+    "kind": "햇살 루미"
+  },
+  "n1a": {
+    "id": "n1a",
+    "name": "뭉치",
+    "type": "노말",
+    "base": {
+      "hp": 83,
+      "atk": 73,
+      "def": 69,
+      "spd": 65
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "곰 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "mine",
+    "kind": "곰 루미",
+    "evolves": {
+      "to": "n1b",
+      "level": 16
+    }
+  },
+  "n1b": {
+    "id": "n1b",
+    "name": "뭉치곰",
+    "type": "노말",
+    "base": {
+      "hp": 117,
+      "atk": 102,
+      "def": 97,
+      "spd": 92
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        16,
+        "rollout"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "곰 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "mine",
+    "kind": "곰 루미",
+    "evolves": {
+      "to": "n1c",
+      "level": 32
+    }
+  },
+  "n1c": {
+    "id": "n1c",
+    "name": "털보곰",
+    "type": "노말",
+    "base": {
+      "hp": 151,
+      "atk": 132,
+      "def": 125,
+      "spd": 118
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        16,
+        "rollout"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ],
+      [
+        32,
+        "rollout"
+      ]
+    ],
+    "description": "곰 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "mine",
+    "kind": "곰 루미"
+  },
+  "n2a": {
+    "id": "n2a",
+    "name": "다람",
+    "type": "노말",
+    "base": {
+      "hp": 85,
+      "atk": 74,
+      "def": 71,
+      "spd": 67
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "다람쥐 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "forage",
+    "kind": "다람쥐 루미",
+    "evolves": {
+      "to": "n2b",
+      "level": 18
+    }
+  },
+  "n2b": {
+    "id": "n2b",
+    "name": "다람쥐왕",
+    "type": "노말",
+    "base": {
+      "hp": 119,
+      "atk": 104,
+      "def": 99,
+      "spd": 93
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        18,
+        "rollout"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "다람쥐 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "forage",
+    "kind": "다람쥐 루미",
+    "evolves": {
+      "to": "n2c",
+      "level": 35
+    }
+  },
+  "n2c": {
+    "id": "n2c",
+    "name": "도토리왕",
+    "type": "노말",
+    "base": {
+      "hp": 153,
+      "atk": 133,
+      "def": 127,
+      "spd": 120
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        18,
+        "rollout"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ],
+      [
+        35,
+        "rollout"
+      ]
+    ],
+    "description": "다람쥐 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "forage",
+    "kind": "다람쥐 루미"
+  },
+  "n3a": {
+    "id": "n3a",
+    "name": "냥냥",
+    "type": "노말",
+    "base": {
+      "hp": 87,
+      "atk": 76,
+      "def": 72,
+      "spd": 68
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "고양이 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "fish",
+    "kind": "고양이 루미",
+    "evolves": {
+      "to": "n3b",
+      "level": 20
+    }
+  },
+  "n3b": {
+    "id": "n3b",
+    "name": "냥이대장",
+    "type": "노말",
+    "base": {
+      "hp": 121,
+      "atk": 106,
+      "def": 100,
+      "spd": 95
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        20,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "고양이 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "fish",
+    "kind": "고양이 루미",
+    "evolves": {
+      "to": "n3c",
+      "level": 38
+    }
+  },
+  "n3c": {
+    "id": "n3c",
+    "name": "호랑냥",
+    "type": "노말",
+    "base": {
+      "hp": 150,
+      "atk": 130,
+      "def": 124,
+      "spd": 117
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        20,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ],
+      [
+        38,
+        "rollout"
+      ]
+    ],
+    "description": "고양이 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "fish",
+    "kind": "고양이 루미"
+  },
+  "n4a": {
+    "id": "n4a",
+    "name": "꿀꿀",
+    "type": "노말",
+    "base": {
+      "hp": 84,
+      "atk": 73,
+      "def": 69,
+      "spd": 65
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "돼지 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "farm",
+    "kind": "돼지 루미",
+    "evolves": {
+      "to": "n4b",
+      "level": 16
+    }
+  },
+  "n4b": {
+    "id": "n4b",
+    "name": "꿀돼지",
+    "type": "노말",
+    "base": {
+      "hp": 118,
+      "atk": 102,
+      "def": 97,
+      "spd": 92
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        16,
+        "rollout"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "돼지 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "farm",
+    "kind": "돼지 루미",
+    "evolves": {
+      "to": "n4c",
+      "level": 41
+    }
+  },
+  "n4c": {
+    "id": "n4c",
+    "name": "멧돼지왕",
+    "type": "노말",
+    "base": {
+      "hp": 152,
+      "atk": 132,
+      "def": 125,
+      "spd": 119
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        16,
+        "rollout"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ],
+      [
+        41,
+        "rollout"
+      ]
+    ],
+    "description": "돼지 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "farm",
+    "kind": "돼지 루미"
+  },
+  "n5a": {
+    "id": "n5a",
+    "name": "멍뭉",
+    "type": "노말",
+    "base": {
+      "hp": 86,
+      "atk": 75,
+      "def": 71,
+      "spd": 67
+    },
+    "catchRate": 0.45,
+    "expYield": 62,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "강아지 루미의 어린 모습. 아직 서툴지만 호기심이 가득하다.",
+    "helps": "exp",
+    "kind": "강아지 루미",
+    "evolves": {
+      "to": "n5b",
+      "level": 18
+    }
+  },
+  "n5b": {
+    "id": "n5b",
+    "name": "멍멍장군",
+    "type": "노말",
+    "base": {
+      "hp": 120,
+      "atk": 104,
+      "def": 99,
+      "spd": 94
+    },
+    "catchRate": 0.22,
+    "expYield": 145,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        18,
+        "rollout"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ]
+    ],
+    "description": "강아지 루미가 한 번 진화한 모습. 몸이 단단해지고 자신감이 붙었다.",
+    "helps": "exp",
+    "kind": "강아지 루미",
+    "evolves": {
+      "to": "n5c",
+      "level": 32
+    }
+  },
+  "n5c": {
+    "id": "n5c",
+    "name": "늑대왕",
+    "type": "노말",
+    "base": {
+      "hp": 154,
+      "atk": 134,
+      "def": 127,
+      "spd": 120
+    },
+    "catchRate": 0.08,
+    "expYield": 230,
+    "learnset": [
+      [
+        1,
+        "tackle"
+      ],
+      [
+        1,
+        "growl"
+      ],
+      [
+        5,
+        "quick_attack"
+      ],
+      [
+        11,
+        "puff_up"
+      ],
+      [
+        18,
+        "rollout"
+      ],
+      [
+        19,
+        "rollout"
+      ],
+      [
+        28,
+        "rollout"
+      ],
+      [
+        32,
+        "rollout"
+      ]
+    ],
+    "description": "강아지 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
+    "helps": "exp",
+    "kind": "강아지 루미"
   }
 }

@@ -8,7 +8,10 @@
     "sellPrice": 0,
     "maxStack": 1,
     "energyCost": 2,
-    "description": "잡초를 뽑고 돌 · 나무를 치운 땅을 갈아 밭을 만들어요."
+    "description": "잡초를 뽑고 돌 · 나무를 치운 땅을 갈아 밭을 만들어요. (내구도 60)",
+    "durability": 60,
+    "tier": 0,
+    "power": 1
   },
   "watering_can": {
     "id": "watering_can",
@@ -19,7 +22,10 @@
     "sellPrice": 0,
     "maxStack": 1,
     "energyCost": 1,
-    "description": "갈아 둔 밭에 물을 줘요. 물을 준 날 밤에만 작물이 자랍니다."
+    "description": "갈아 둔 밭에 물을 줘요. 물을 준 날 밤에만 작물이 자랍니다. (내구도 80)",
+    "durability": 80,
+    "tier": 0,
+    "power": 1
   },
   "axe": {
     "id": "axe",
@@ -30,7 +36,10 @@
     "sellPrice": 0,
     "maxStack": 1,
     "energyCost": 3,
-    "description": "농장 안쪽에 선 나무(5번)와 그루터기(2번)를 베어 나무 조각을 얻어요. 숲 테두리 나무와 쓰러진 통나무는 못 벱니다."
+    "description": "농장 안쪽에 선 나무(5번)와 그루터기(2번)를 베어 나무 조각을 얻어요. 숲 테두리 나무와 쓰러진 통나무는 못 벱니다. (내구도 60)",
+    "durability": 60,
+    "tier": 0,
+    "power": 1
   },
   "seeds_parsnip": {
     "id": "seeds_parsnip",
@@ -202,9 +211,12 @@
     "icon": "pickaxe",
     "sellPrice": 0,
     "maxStack": 1,
-    "description": "바위와 광석을 캡니다. 채석장 바위는 매일 다시 생겨요.",
+    "description": "바위와 광석을 캡니다. 채석장 바위는 매일 다시 생겨요. (내구도 60)",
     "tool": "pickaxe",
-    "energyCost": 3
+    "energyCost": 3,
+    "durability": 60,
+    "tier": 0,
+    "power": 1
   },
   "hammer": {
     "id": "hammer",
@@ -215,7 +227,7 @@
     "sellPrice": 0,
     "maxStack": 1,
     "energyCost": 2,
-    "description": "농장에 설치한 구조물(내 것이든 친구 것이든)을 부숴서 다시 가방에 넣어요."
+    "description": "농장에 설치한 구조물(내 것이든 친구 것이든)을 부숴서 다시 가방에 넣어요. (부서지지 않아요)"
   },
   "rod": {
     "id": "rod",
@@ -224,9 +236,12 @@
     "icon": "rod",
     "sellPrice": 0,
     "maxStack": 1,
-    "description": "물을 바라보고 사용하세요. 찌가 \"!\" 하고 흔들리면 바로 다시 누르기!",
+    "description": "물을 바라보고 사용하세요. 찌가 \"!\" 하고 흔들리면 바로 다시 누르기! (내구도 40)",
     "tool": "rod",
-    "energyCost": 2
+    "energyCost": 2,
+    "durability": 40,
+    "tier": 0,
+    "power": 1
   },
   "lumi_ball": {
     "id": "lumi_ball",
@@ -600,5 +615,215 @@
     "sellPrice": 0,
     "maxStack": 1,
     "description": "루미 마스터의 시련을 넘은 사람에게 주어지는 오카리나. 별마루산 꼭대기 별의 제단에서 불면 무언가가 깨어난다고 한다."
+  },
+  "hoe_copper": {
+    "id": "hoe_copper",
+    "name": "구리 괭이",
+    "type": "tool",
+    "tool": "hoe",
+    "icon": "hoe_copper",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 2,
+    "description": "구리로 만든 괭이. 튼튼해서 오래 써요. (내구도 120)",
+    "durability": 120,
+    "tier": 1,
+    "power": 1.5
+  },
+  "hoe_iron": {
+    "id": "hoe_iron",
+    "name": "강철 괭이",
+    "type": "tool",
+    "tool": "hoe",
+    "icon": "hoe_iron",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 1,
+    "description": "강철로 만든 괭이. 튼튼해서 오래 써요. (내구도 210)",
+    "durability": 210,
+    "tier": 2,
+    "power": 2.5
+  },
+  "hoe_star": {
+    "id": "hoe_star",
+    "name": "별빛 괭이",
+    "type": "tool",
+    "tool": "hoe",
+    "icon": "hoe_star",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 1,
+    "description": "별빛로 만든 괭이. 튼튼해서 오래 써요. (내구도 360)",
+    "durability": 360,
+    "tier": 3,
+    "power": 5
+  },
+  "watering_can_copper": {
+    "id": "watering_can_copper",
+    "name": "구리 물뿌리개",
+    "type": "tool",
+    "tool": "watering_can",
+    "icon": "watering_can_copper",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 1,
+    "description": "구리로 만든 물뿌리개. 물통이 커서 오래 써요. (내구도 160)",
+    "durability": 160,
+    "tier": 1,
+    "power": 1.5
+  },
+  "watering_can_iron": {
+    "id": "watering_can_iron",
+    "name": "강철 물뿌리개",
+    "type": "tool",
+    "tool": "watering_can",
+    "icon": "watering_can_iron",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 1,
+    "description": "강철로 만든 물뿌리개. 물통이 커서 오래 써요. (내구도 280)",
+    "durability": 280,
+    "tier": 2,
+    "power": 2.5
+  },
+  "watering_can_star": {
+    "id": "watering_can_star",
+    "name": "별빛 물뿌리개",
+    "type": "tool",
+    "tool": "watering_can",
+    "icon": "watering_can_star",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 1,
+    "description": "별빛로 만든 물뿌리개. 물통이 커서 오래 써요. (내구도 480)",
+    "durability": 480,
+    "tier": 3,
+    "power": 5
+  },
+  "axe_copper": {
+    "id": "axe_copper",
+    "name": "구리 도끼",
+    "type": "tool",
+    "tool": "axe",
+    "icon": "axe_copper",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 3,
+    "description": "구리로 만든 도끼. 나무를 5번 만에 베어요. (내구도 120)",
+    "durability": 120,
+    "tier": 1,
+    "power": 1.5
+  },
+  "axe_iron": {
+    "id": "axe_iron",
+    "name": "강철 도끼",
+    "type": "tool",
+    "tool": "axe",
+    "icon": "axe_iron",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 2,
+    "description": "강철로 만든 도끼. 나무를 3번 만에 베어요. (내구도 210)",
+    "durability": 210,
+    "tier": 2,
+    "power": 2.5
+  },
+  "axe_star": {
+    "id": "axe_star",
+    "name": "별빛 도끼",
+    "type": "tool",
+    "tool": "axe",
+    "icon": "axe_star",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "energyCost": 2,
+    "description": "별빛로 만든 도끼. 나무를 1번 만에 베어요. (내구도 360)",
+    "durability": 360,
+    "tier": 3,
+    "power": 5
+  },
+  "pickaxe_copper": {
+    "id": "pickaxe_copper",
+    "name": "구리 곡괭이",
+    "type": "tool",
+    "icon": "pickaxe_copper",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "구리로 만든 곡괭이. 광석이 더 잘 나와요. (내구도 120)",
+    "tool": "pickaxe",
+    "energyCost": 3,
+    "durability": 120,
+    "tier": 1,
+    "power": 1.5
+  },
+  "pickaxe_iron": {
+    "id": "pickaxe_iron",
+    "name": "강철 곡괭이",
+    "type": "tool",
+    "icon": "pickaxe_iron",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "강철로 만든 곡괭이. 광석이 더 잘 나와요. (내구도 210)",
+    "tool": "pickaxe",
+    "energyCost": 2,
+    "durability": 210,
+    "tier": 2,
+    "power": 2.5
+  },
+  "pickaxe_star": {
+    "id": "pickaxe_star",
+    "name": "별빛 곡괭이",
+    "type": "tool",
+    "icon": "pickaxe_star",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "별빛로 만든 곡괭이. 광석이 더 잘 나와요. (내구도 360)",
+    "tool": "pickaxe",
+    "energyCost": 2,
+    "durability": 360,
+    "tier": 3,
+    "power": 5
+  },
+  "rod_copper": {
+    "id": "rod_copper",
+    "name": "구리 낚싯대",
+    "type": "tool",
+    "icon": "rod_copper",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "구리로 만든 낚싯대. 잘 부러지지 않아요. (내구도 80)",
+    "tool": "rod",
+    "energyCost": 2,
+    "durability": 80,
+    "tier": 1,
+    "power": 1.5
+  },
+  "rod_iron": {
+    "id": "rod_iron",
+    "name": "강철 낚싯대",
+    "type": "tool",
+    "icon": "rod_iron",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "강철로 만든 낚싯대. 잘 부러지지 않아요. (내구도 140)",
+    "tool": "rod",
+    "energyCost": 1,
+    "durability": 140,
+    "tier": 2,
+    "power": 2.5
+  },
+  "rod_star": {
+    "id": "rod_star",
+    "name": "별빛 낚싯대",
+    "type": "tool",
+    "icon": "rod_star",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "별빛로 만든 낚싯대. 잘 부러지지 않아요. (내구도 240)",
+    "tool": "rod",
+    "energyCost": 1,
+    "durability": 240,
+    "tier": 3,
+    "power": 5
   }
 }

@@ -19,7 +19,7 @@ function ac() {
     ctx = new C();
     master = ctx.createGain(); master.gain.value = 1; master.connect(ctx.destination);
     sfxBus = ctx.createGain(); sfxBus.gain.value = muted ? 0 : 0.32; sfxBus.connect(master);
-    stepBus = ctx.createGain(); stepBus.gain.value = 1.1; stepBus.connect(sfxBus);
+    stepBus = ctx.createGain(); stepBus.gain.value = 1.9; stepBus.connect(sfxBus);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 1.5, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }

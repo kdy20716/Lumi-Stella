@@ -102,7 +102,8 @@ export function buildSparkle() {
 
 export const ADV_BUILDINGS = {
   center: { w: 96, h: 104, wallH: 48, wall: 'plaster', wallColor: '#fbf2ec', roof: '#e0475b', doorX: 41, windows: [12, 70], awning: ['#e0475b', '#fff1dc'], awningY: 3, sign: 'heart', signX: 36, flowerBox: true, trim: '#fff8f4' },
-  gym: { w: 128, h: 120, wallH: 56, wall: 'stone', wallColor: '#a8c8c8', roof: '#2a7a7a', roofStyle: 'slate', doorX: 57, windows: [16, 96], sign: 'star', signX: 52, flag: true, trim: '#e8f4f4' },
+  inn: { w: 96, h: 104, wallH: 48, wall: 'plank', wallColor: '#e8c89a', roof: '#3a5a8a', doorX: 41, windows: [12, 70], awning: ['#3a5a8a', '#fff1dc'], awningY: 3, sign: 'moon', signX: 36, flowerBox: true, chimneyX: 72 },
+  gym: { w: 176, h: 160, wallH: 64, wall: 'stone', wallColor: '#a8c8c8', roof: '#2a7a7a', roofStyle: 'slate', doorX: 81, windows: [16, 96], sign: 'star', signX: 52, flag: true, trim: '#e8f4f4' },
   windmill: { w: 64, h: 112, wallH: 72, wall: 'plaster', wallColor: '#f2e6cf', roof: '#7a4a2a', doorX: 25, windows: [24], winY: 14 },
   shop_w: { w: 96, h: 104, wallH: 48, wall: 'plank', wallColor: '#8ab8d8', roof: '#3a6ab0', doorX: 41, windows: [12, 70], awning: ['#3a6ab0', '#fff1dc'], awningY: 3, sign: 'seed', signX: 36, flowerBox: true },
 };

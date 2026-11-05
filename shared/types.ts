@@ -40,6 +40,9 @@ export interface ItemDef {
   tool?: ToolKind;
   cropId?: string;       // 씨앗 → 작물
   energyCost?: number;   // 도구 사용 시 소모 에너지
+  durability?: number;   // 도구 내구도 (0 이 되면 부서짐 → 작업대에서 다시 제작)
+  power?: number;        // 도구 세기 (도끼: 나무 베는 횟수 줄어듦)
+  tier?: number;         // 도구 등급 0 기본 · 1 구리 · 2 강철 · 3 별빛
   energy?: number;       // 음식: 회복 에너지
   catchBonus?: number;   // 루미볼 포획 보정
   heal?: number;         // 배틀 회복량
@@ -77,7 +80,7 @@ export interface CropInstance { id: string; stage: number; daysInStage: number; 
 export interface FarmTile { x: number; y: number; soil: SoilState; crop: CropInstance | null }
 
 export interface ForageSpot { key: string; map: MapId; x: number; y: number; item: string }
-export interface InventorySlot { slotIndex: number; itemId: string | null; quantity: number }
+export interface InventorySlot { slotIndex: number; itemId: string | null; quantity: number; /** 도구 남은 내구도 (없으면 새것) */ dur?: number }
 
 export interface PlayerState {
   id: string;
@@ -120,6 +123,8 @@ export interface SpeciesDef {
   legend?: 'legend' | 'myth';
   /** 체력과 볼에 상관없이 고정 포획률 (태초볼 제외) */
   fixedCatch?: number;
+  /** 진화: 이 레벨이 되면 to 로 */
+  evolves?: { to: string; level: number };
 }
 export interface MoveDef { id: string; name: string; type: LumiType; power: number; accuracy: number; category: 'atk' | 'heal' | 'debuffAtk' | 'debuffDef' | 'buffDef'; priority: number; description: string }
 export interface TrainerDef { id: string; name: string; title: string; sprite: string; map: MapId; sight: number; team: [string, number][]; reward: number; badge?: string; requires?: string[]; intro: string[]; defeat: string[]; after: string[] }
@@ -188,6 +193,7 @@ export type ActionIntent =
   | { kind: 'chooseStarter'; species: string }
   | { kind: 'setPartner'; index: number }
   | { kind: 'heal' }
+  | { kind: 'inn' }                                   // 마을 숙소 (500G)
   | { kind: 'encounter' }
   | { kind: 'trainer'; trainerId: string }
   | { kind: 'battleMove'; index: number }

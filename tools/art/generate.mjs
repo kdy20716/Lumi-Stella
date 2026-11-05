@@ -8,7 +8,9 @@ import { Img } from './lib/img.mjs';
 import { buildTileset, buildWater, ROW, DECOR, WOOD, MISC, TILESET_COLS } from './tiles.mjs';
 import * as TW from './town.mjs';
 import * as ADV from './adventure.mjs';
-import { buildCreatureSheet, SPECIES_ART, CF } from './creatures.mjs';
+import { buildCreatureSheet, SPECIES_ART as BASE_ART, CF } from './creatures.mjs';
+import { dexArt } from './dex.mjs';
+const SPECIES_ART = { ...BASE_ART, ...dexArt() };
 import { buildCharacterSheet } from './char.mjs';
 import { LOOKS } from './looks.mjs';
 import * as OB from './objects.mjs';
@@ -101,10 +103,10 @@ image('panel', 'ui/panel.png', buildPanel());
 // 마을 건물 (발광 오버레이 + 점유 셀 정보)
 manifest.buildings = {};
 for (const [key, opt] of Object.entries({ ...TW.BUILDINGS, ...ADV.ADV_BUILDINGS })) {
-  const b = TW.buildBuilding(opt);
+  const b = key === 'gym' ? TW.buildGym() : TW.buildBuilding(opt);
   image(key, `buildings/${key}.png`, b.img);
   image(`${key}_glow`, `buildings/${key}_glow.png`, b.glow);
-  manifest.buildings[key] = { cellW: b.cellW, cellH: b.cellH, doorCell: b.doorCell, chimneyX: opt.chimneyX ?? null, w: opt.w, h: opt.h };
+  manifest.buildings[key] = { cellW: b.cellW, cellH: b.cellH, doorCell: b.doorCell, chimneyX: opt.chimneyX ?? null, w: b.img.w, h: b.img.h };
 }
 image('bench', 'objects/bench.png', TW.buildBench());
 image('planter', 'objects/planter.png', TW.buildPlanter());
@@ -148,5 +150,7 @@ image('slot_active', 'ui/slot_active.png', buildSlotActive());
 
 mkdirSync(ROOT, { recursive: true });
 writeFileSync(out('manifest.json'), JSON.stringify(manifest, null, 2));
+// 대화창 벡터 일러스트용 외형 색 (client/src/ui/Illust.ts)
+writeFileSync(out('looks.json'), JSON.stringify(LOOKS));
 console.log(`✔ 에셋 생성 완료 → ${ROOT}`);
 console.log(`  이미지 ${Object.keys(manifest.images).length}, 스프라이트시트 ${Object.keys(manifest.spritesheets).length}, 캐릭터 ${Object.keys(manifest.characters).length}`);

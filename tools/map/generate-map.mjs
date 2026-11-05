@@ -38,7 +38,7 @@ const meta = {
   ...data.maps,
 };
 meta.town = { ...meta.town, name: '별빛 마을' };
-meta.route1 = { ...meta.route1, name: '1번 도로 · 산들길' };
+meta.route1 = { ...meta.route1, name: '1번 도로 · 산들길 (1/2)' };
 for (const id of INTERIOR_IDS) meta[id] = { ...(meta[id] ?? { kind: 'room', biome: 'room', x: 0, y: 0, tier: 1 }), name: meta[id]?.name ?? ROOMS[id].name, interior: true };
 const outdoor = ['farm', 'town', 'route1', 'windvale', ...builders.map((b) => b.name)];
 const ids = [...outdoor, ...INTERIOR_IDS];

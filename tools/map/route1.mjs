@@ -70,10 +70,10 @@ export function buildRoute1() {
   }
 
   // 스폰 / 워프
-  m.spawn('player', 2, 16); m.spawn('from_town', 2, 16); m.spawn('from_windvale', W - 3, 16);
+  m.spawn('player', 2, 16); m.spawn('from_town', 2, 16); m.spawn('from_route1b', W - 3, 16);
   m.spawn('wp_gate', 0, 16); m.spawn('wp_gate_e', W - 1, 16);
   m.warp(0, 15, 1, 4, 'town', 'from_route1');
-  m.warp(W - 1, 15, 1, 4, 'windvale', 'from_route1');
+  m.warp(W - 1, 15, 1, 4, 'route1b', 'from_route1');
   m.props.push({ name: 'battleBg', type: 'string', value: 'grass' });
   return m;
 }

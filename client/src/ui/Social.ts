@@ -81,8 +81,12 @@ export const emoteWheel = {
       b.onmouseenter = () => this.highlight(Number(b.dataset.i));
       b.onclick = () => { const id = EMOTES[Number(b.dataset.i)].id; this.close(); onPick(id); };
     });
+    // 바깥 클릭 · 창 포커스 잃음 → 닫기 (휠이 화면에 남아 고정되는 문제 방지)
+    n.querySelector<HTMLDivElement>('div')!.onclick = (ev) => { if (ev.target === ev.currentTarget) this.close(); };
+    this.onBlur = () => this.close(); window.addEventListener('blur', this.onBlur);
     root().appendChild(n); this.node = n;
   },
+  onBlur: null as null | (() => void),
   /** 마우스 위치 → 방향으로 칸 선택 */
   move(mx: number, my: number) {
     if (!this.node) return;
@@ -104,7 +108,7 @@ export const emoteWheel = {
   },
   /** Tab 을 떼면 선택된 감정 반환 */
   release(): number | null { const i = this.sel; this.close(); return i >= 0 ? EMOTES[i].id : null; },
-  close() { this.node?.remove(); this.node = null; },
+  close() { this.node?.remove(); this.node = null; this.sel = -1; if (this.onBlur) { window.removeEventListener('blur', this.onBlur); this.onBlur = null; } },
 };
 
 // ── 우편함: 편지 + 친구 초대 ──────────────────────────

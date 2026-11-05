@@ -7,3 +7,9 @@ dist/
 server/saves/
 server/serviceAccountKey.json
 *-firebase-adminsdk-*.json
+
+# 환경 변수 및 시크릿 키 (GitHub 커밋 방지)
+.env
+.env.*
+.env.local
+!.env.example

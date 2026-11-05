@@ -111,6 +111,9 @@ export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_caul
   'badge_water', 'badge_leaf', 'badge_earth', 'badge_flame', 'badge_light', 'badge_normal', 'badge_star',
   'seeds_lumi_herb', 'seeds_fire_pepper', 'seeds_iron_bean', 'lumi_herb', 'fire_pepper', 'iron_bean', 'craft',
   'hammer', 'wood', 'fiber', 'fence_wood', 'crate_wood', 'barrel_wood', 'scarecrow', 'lamp_post', 'planter_box', 'origin_ball', 'ocarina'];
+// 도구 등급 아이콘 (구리 · 강철 · 별빛): 기본 도구 그림의 쇠 부분을 등급 색으로 바꿈
+export const TOOL_TIERS = { copper: ['#8a4a20', '#c8743a', '#f0a868'], iron: ['#4a5a70', '#9aaec4', '#e4eef8'], star: ['#8a6a10', '#e8b830', '#fff2a0'] };
+for (const base of ['hoe', 'watering_can', 'axe', 'pickaxe', 'rod']) for (const tier of Object.keys(TOOL_TIERS)) ICONS.push(`${base}_${tier}`);
 function badge(t, d, l, sym) { for (let y = 1; y < 15; y++) { const hw = Math.round(6 - Math.abs(y - 7.5) * 0.35); for (let x = 8 - hw; x < 8 + hw; x++) t.set(x, y, (x + y) % 5 === 0 ? l : y < 8 ? l : d); } t.outline('#2a1b14', 0.6); sym(t); }
 export function buildIcons() {
   const img = new Img(16 * ICONS.length, 16);
@@ -176,9 +179,24 @@ export function buildIcons() {
     heart: (t) => { const h = '#e0475b'; t.rect(3, 4, 4, 4, h); t.rect(9, 4, 4, 4, h); t.rect(4, 7, 8, 3, h); t.rect(5, 10, 6, 2, h); t.rect(7, 12, 2, 1, h); t.rect(4, 5, 2, 1, '#ff9fb0'); },
   };
   const seedCol = { parsnip: '#e6d29a', cauliflower: '#9fd06a', tomato: '#e0574b', pumpkin: '#e8892e', lumi_herb: '#5ec8b8', fire_pepper: '#e0402a', iron_bean: '#7a8aa8' };
+  const hexRgb = (h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
   ICONS.forEach((id, i) => {
     const t = new Img(16, 16);
-    if (draw[id]) draw[id](t);
+    const tm = /^(hoe|watering_can|axe|pickaxe|rod)_(copper|iron|star)$/.exec(id);
+    if (tm) {
+      draw[tm[1]]?.(t);
+      const pal = TOOL_TIERS[tm[2]].map(hexRgb);
+      for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+        const k = (y * 16 + x) * 4; if (!t.d[k + 3]) continue;
+        const [r, g, b] = [t.d[k], t.d[k + 1], t.d[k + 2]];
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), lum = (r + g + b) / 3;
+        const metal = tm[1] === 'watering_can' ? b > r + 20 : tm[1] === 'rod' ? r > 150 && g > 120 && r > b + 40 : mx - mn < 36 && lum > 70;
+        if (!metal) continue;
+        const c = pal[lum > 190 ? 2 : lum > 120 ? 1 : 0];
+        t.d[k] = c[0]; t.d[k + 1] = c[1]; t.d[k + 2] = c[2];
+      }
+      if (tm[2] === 'star') { t.set(2, 2, '#fff8c0'); t.set(1, 2, '#ffd65a'); t.set(3, 2, '#ffd65a'); t.set(2, 1, '#ffd65a'); t.set(2, 3, '#ffd65a'); }
+    } else if (draw[id]) draw[id](t);
     else if (id.startsWith('seeds_')) {
       const c = seedCol[id.slice(6)];
       t.rect(3, 3, 10, 12, '#efe3c4'); t.rect(3, 3, 10, 1, '#fff8e6'); t.rect(12, 3, 1, 12, '#c9b48a'); t.hline(3, 2, 10, '#c9b48a');

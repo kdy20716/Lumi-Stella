@@ -55,6 +55,32 @@ export class World {
   readonly grassCells = new Set<string>();
   /** 건물 실내 맵 (방 배경 한 장 + 가구) */
   readonly interior: boolean;
+  /** 실내 창문 유리 (픽셀 사각형) + 시간대 하늘 그림 */
+  windowRects: [number, number, number, number][] = [];
+  private windowSky?: Phaser.GameObjects.Graphics;
+  private skyKey = '';
+  /** 실내 창밖: 아침(노을빛 여명) · 낮(파란 하늘) · 저녁(주황 노을) · 밤(별) */
+  updateWindows(minutes: number, weather: string) {
+    const g = this.windowSky; if (!g) return;
+    const h = (minutes / 60) % 24;
+    const phase = h >= 5 && h < 9 ? 'morning' : h >= 9 && h < 16 ? 'day' : h >= 16 && h < 19.5 ? 'evening' : 'night';
+    const key = `${phase}:${weather}`; if (key === this.skyKey) return; this.skyKey = key;
+    const SKY: Record<string, [number, number]> = { morning: [0xf6c6a0, 0xcfe8f4], day: [0x6fb8ec, 0xd6f0ff], evening: [0x7a4a8a, 0xff9a52], night: [0x0e1430, 0x2a3a72] };
+    let [top, bot] = SKY[phase];
+    if (weather === 'rain' && phase !== 'night') { top = 0x7a8696; bot = 0xaab4c0; }
+    g.clear();
+    const mixc = (a: number, b: number, t: number) => { const r = ((a >> 16) & 255) + ((((b >> 16) & 255) - ((a >> 16) & 255)) * t), gg = ((a >> 8) & 255) + ((((b >> 8) & 255) - ((a >> 8) & 255)) * t), bb = (a & 255) + (((b & 255) - (a & 255)) * t); return (Math.round(r) << 16) | (Math.round(gg) << 8) | Math.round(bb); };
+    for (const [x, y, w, hh] of this.windowRects) {
+      for (let j = 0; j < hh; j++) { g.fillStyle(mixc(top, bot, j / hh), 1); g.fillRect(x, y + j, w, 1); }
+      if (phase === 'night') { g.fillStyle(0xfff6c8, 1); g.fillCircle(x + w - 6, y + 5, 2.5); g.fillStyle(0xffffff, 0.9); for (const [sx, sy] of [[4, 4], [9, 12], [15, 3], [6, 17], [18, 15]]) g.fillRect(x + sx, y + sy, 1, 1); }
+      else if (phase === 'evening') { g.fillStyle(0xffe08a, 1); g.fillCircle(x + 7, y + hh - 4, 3.5); }
+      else if (phase === 'morning') { g.fillStyle(0xfff2c0, 1); g.fillCircle(x + w - 7, y + hh - 5, 3); }
+      else if (weather !== 'rain') { g.fillStyle(0xffffff, 1); g.fillRect(x + 3, y + 4, 6, 2); g.fillRect(x + 14, y + 9, 5, 2); }
+      if (weather === 'rain') { g.fillStyle(0xdde8f4, 0.8); for (let k = 0; k < 6; k++) g.fillRect(x + 2 + k * 4, y + 3 + ((k * 7) % 14), 1, 3); }
+      // 창살 (그림의 나무 창틀 십자를 다시 위에)
+      g.fillStyle(0xa8683a, 1); g.fillRect(x + w / 2 - 1, y, 2, hh); g.fillRect(x, y + hh / 2 - 1, w, 2);
+    }
+  }
   /** 동굴 층 (배경 한 장 + 어둠) */
   readonly cave: boolean;
   readonly biome: string;
@@ -75,6 +101,8 @@ export class World {
     this.title = String(prop(raw, 'title', ''));
     const bg = String(prop(raw, 'bg', ''));
     if (bg && scene.textures.exists(bg)) scene.add.image(0, 0, bg).setOrigin(0).setDepth(DEPTH.ground);
+    try { this.windowRects = JSON.parse(String(prop(raw, 'windows', '[]'))) as [number, number, number, number][]; } catch { this.windowRects = []; }
+    if (this.windowRects.length) this.windowSky = scene.add.graphics().setDepth(DEPTH.ground + 1);
     // 물: 맵 전체 아래에 깔리는 애니메이션 타일스프라이트 (지면 타일의 투명 영역으로 비침)
     const wKey = scene.textures.exists(`water_${this.biome}0`) ? `water_${this.biome}` : 'water';
     if (!this.interior && !this.cave) for (let f = 0; f < 4; f++) this.water.push(scene.add.tileSprite(0, 0, this.widthPx + TILE, this.heightPx + TILE, `${wKey}${f}`).setOrigin(0).setDepth(DEPTH.water).setVisible(f === 0));

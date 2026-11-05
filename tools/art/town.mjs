@@ -134,6 +134,7 @@ function drawSignIcon(t, cx, cy, kind) {
   if (kind === 'cup') { t.rect(cx - 4, cy - 2, 6, 5, '#fff8ec'); t.rect(cx - 3, cy - 2, 4, 1, '#7a4a2a'); t.vline(cx + 2, cy - 1, 2, '#fff8ec'); t.set(cx + 3, cy, '#fff8ec'); t.set(cx - 2, cy - 4, '#d9cbb3'); t.set(cx - 1, cy - 5, '#d9cbb3'); }
   if (kind === 'anvil') { t.rect(cx - 5, cy - 3, 10, 3, '#5a6273'); t.rect(cx - 2, cy, 4, 2, '#3c4250'); t.rect(cx - 4, cy + 2, 8, 2, '#3c4250'); t.set(cx - 5, cy - 3, '#a9b3c4'); }
   if (kind === 'star') { const c = '#ffd65a'; t.vline(cx, cy - 4, 9, c); t.hline(cx - 4, cy, 9, c); t.rect(cx - 2, cy - 2, 5, 5, c); }
+  if (kind === 'moon') { const c = '#ffe58a'; t.circle(cx - 1, cy, 4, c); t.circle(cx + 1, cy - 1, 3.2, '#3a5a8a'); t.set(cx + 3, cy - 4, '#fff8ec'); t.set(cx + 4, cy - 2, '#fff8ec'); }
   if (kind === 'heart') { const h = '#e0475b'; t.rect(cx - 4, cy - 3, 3, 3, h); t.rect(cx + 1, cy - 3, 3, 3, h); t.rect(cx - 3, cy - 1, 7, 2, h); t.rect(cx - 2, cy + 1, 5, 1, h); t.set(cx, cy + 2, h); }
 }
 
@@ -146,6 +147,72 @@ export const BUILDINGS = {
   house_b: { w: 80, h: 96, wallH: 44, wall: 'plaster', wallColor: '#f2c8c0', roof: '#2f7a72', doorX: 33, windows: [12, 56], flowerBox: true, doorColor: '#8a4a3a' },
   house_c: { w: 80, h: 96, wallH: 44, wall: 'plank', wallColor: '#c9a27a', roof: '#6a4a8a', doorX: 33, windows: [10, 58], chimneyX: 14, doorColor: '#4a6a3a', dormer: true },
 };
+
+/** 체육관: 마을 가장 안쪽에 따로 선 웅장한 경기장 — 유리 돔 · 기둥 회랑 · 박공 문장 · 양옆 탑과 깃발 */
+export function buildGym(accent = '#2a9aa0') {
+  const W = 176, H = 160, wallH = 64;
+  const t = new Img(W, H), glow = new Img(W, H);
+  const base = H - 7, top = base - wallH;
+  const st = { l2: '#f4f6fa', l1: '#e2e6ee', base: '#c8ceda', d1: '#a4acbc', d2: '#7c8496' };
+  const ac = { l1: lighten(accent, 0.35), base: accent, d1: darken(accent, 0.3), d2: darken(accent, 0.5) };
+  const gold = { l: '#fff2a0', b: '#e8b830', d: '#a87818' };
+  const cx = W / 2;
+  // 유리 돔 (뒤)
+  for (let y = 8; y < top + 4; y++) for (let x = 24; x < W - 24; x++) {
+    const dx = (x + 0.5 - cx) / 56, dy = (y + 0.5 - (top + 4)) / 50;
+    if (dx * dx + dy * dy > 1) continue;
+    const ang = Math.atan2(dy, dx), rib = Math.abs(((ang * 180 / Math.PI) + 720) % 18 - 9) < 1.2;
+    const sh = dx < -0.2 ? ac.l1 : dx > 0.45 ? ac.d1 : ac.base;
+    t.set(x, y, rib ? gold.d : sh);
+    if (!rib && dx < -0.1 && dx > -0.5 && dy < -0.3) t.set(x, y, mix(sh, '#ffffff', 0.45));
+    if (!rib && (x + y) % 9 === 0 && dy > -0.8) glow.set(x, y, '#9ff0ff');
+  }
+  t.hline(30, top + 3, W - 60, gold.d);
+  // 첨탑 + 별
+  t.rect(cx - 2, 0, 4, 10, gold.b); t.vline(cx - 2, 0, 10, gold.l); t.circle(cx, 3, 3, gold.l); t.set(cx, 3, '#ffffff');
+  // 양옆 탑
+  for (const tx of [3, W - 31]) {
+    for (let y = 28; y < base; y++) for (let x = tx; x < tx + 28; x++) { const row = Math.floor(y / 6), bx = (x + (row % 2) * 4) % 8; t.set(x, y, y % 6 === 5 || bx === 7 ? st.d1 : x < tx + 3 ? st.l1 : x > tx + 24 ? st.d1 : st.base); }
+    for (let k = 0; k < 4; k++) t.rect(tx + k * 7, 22, 5, 6, st.l1);
+    t.rect(tx, 28, 28, 2, st.l2);
+    for (const wy of [40, 62]) { t.rect(tx + 10, wy, 8, 12, '#2a3448'); t.rect(tx + 11, wy + 1, 6, 10, gold.b); t.circle(tx + 14, wy, 4, '#2a3448'); t.circle(tx + 14, wy + 1, 3, gold.b); glow.rect(tx + 11, wy - 2, 6, 13, '#ffcf6e'); }
+    // 깃발 현수막
+    t.vline(tx + 14, 6, 16, '#5a5a6a');
+    for (let y = 8; y < 20; y++) { const wv = Math.round(Math.sin(y / 3) * 1); t.hline(tx + 15 + wv, y, 9 - Math.max(0, y - 16), y === 8 ? ac.l1 : ac.base); }
+    t.set(tx + 19, 13, gold.l); t.set(tx + 18, 13, gold.b); t.set(tx + 20, 13, gold.b); t.set(tx + 19, 12, gold.b); t.set(tx + 19, 14, gold.b);
+    t.rect(tx + 6, 86, 16, 30, ac.base); t.rect(tx + 6, 86, 16, 2, gold.b); for (let k = 0; k < 4; k++) t.set(tx + 6 + k * 5, 116, ac.d1);
+    t.circle(tx + 14, 99, 4, gold.b); t.set(tx + 14, 99, gold.l);
+  }
+  // 본관 벽
+  for (let y = top; y < base; y++) for (let x = 31; x < W - 31; x++) { const row = Math.floor((y - top) / 6), bx = (x + (row % 2) * 6) % 12; t.set(x, y, (y - top) % 6 === 5 || bx === 11 ? st.d1 : st.base); }
+  // 박공 (삼각 지붕) + 문장
+  const pedTop = top - 30;
+  for (let y = pedTop; y < top; y++) { const half = ((y - pedTop) / 30) * 66; for (let x = Math.round(cx - half); x < Math.round(cx + half); x++) t.set(x, y, y === top - 1 ? st.d2 : (x - cx) < -half + 3 ? st.l2 : st.l1); }
+  for (let y = pedTop; y < top; y++) { const half = ((y - pedTop) / 30) * 66; t.set(Math.round(cx - half), y, gold.d); t.set(Math.round(cx + half) - 1, y, gold.d); }
+  t.circle(cx, top - 11, 9, gold.d); t.circle(cx, top - 11, 8, gold.b); t.circle(cx, top - 11, 6, ac.base);
+  for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + (k * 2 * Math.PI) / 5; t.line(cx, top - 11, Math.round(cx + Math.cos(a) * 5), Math.round(top - 11 + Math.sin(a) * 5), gold.l); }
+  t.set(cx, top - 11, '#ffffff');
+  // 처마 장식 띠
+  t.rect(26, top - 1, W - 52, 6, gold.b); t.hline(26, top - 1, W - 52, gold.l); t.hline(26, top + 4, W - 52, gold.d);
+  for (let x = 30; x < W - 30; x += 6) t.rect(x, top + 1, 2, 2, ac.base);
+  // 기둥 회랑
+  for (const x of [38, 56, 74, 96, 114, 132]) {
+    t.rect(x, top + 6, 8, wallH - 12, st.l1); t.vline(x, top + 6, wallH - 12, st.l2); t.vline(x + 6, top + 6, wallH - 12, st.d1); t.vline(x + 7, top + 6, wallH - 12, st.d2);
+    for (let k = 0; k < 3; k++) t.vline(x + 2 + k * 2, top + 9, wallH - 18, st.base);
+    t.rect(x - 2, top + 5, 12, 3, st.l2); t.rect(x - 2, base - 7, 12, 3, st.l1);
+  }
+  // 아치 정문 (빛나는 문)
+  const dw = 22, dx0 = Math.round(cx - dw / 2), dTop = base - 34;
+  t.rect(dx0 - 3, dTop, dw + 6, 34, gold.d); t.circle(cx, dTop, 14, gold.d);
+  t.rect(dx0, dTop, dw, 34, '#2a2038'); t.circle(cx, dTop, 11, '#2a2038');
+  t.rect(dx0 + 2, dTop + 2, dw - 4, 30, '#ffcf6e'); t.circle(cx, dTop + 2, 8, '#ffe8a8'); t.vline(Math.round(cx), dTop - 6, 38, '#c88a28');
+  glow.rect(dx0 - 2, dTop - 10, dw + 4, 44, '#ffd88a');
+  // 계단 (앞)
+  for (let k = 0; k < 3; k++) { const y = base + k * 2, inset = 22 - k * 8; t.rect(inset + 20, y, W - (inset + 20) * 2, 2, k % 2 ? st.base : st.l1); t.hline(inset + 20, y, W - (inset + 20) * 2, st.l2); }
+  t.outline(O, 0.55);
+  const doorCell = Math.floor(cx / 16);
+  return { img: t, glow, cellW: Math.round(W / 16), cellH: Math.ceil((wallH + 7) / 16), doorCell };
+}
 
 // ── 소품 ───────────────────────────────────────────────
 export function buildBench() {

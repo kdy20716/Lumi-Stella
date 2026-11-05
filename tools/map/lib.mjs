@@ -55,6 +55,39 @@ export class MapBuilder {
       if (kind[x] === 'face' && this.inb(x, f2 + 1) && this.terrain[f2 + 1][x] !== Wt && !this.cliff[s3]) this.cliff[s3] = gid(ROW.CLIFF, CLIFF.SHADE);
     }
   }
+  /** 사방이 막힌 언덕: (x0..x1, y0..y1) 이 윗면. 왼 · 오른쪽 끝 칸은 옆 절벽, 맨 윗줄은 뒤쪽 처마(모두 막힘),
+   *  아래 두 줄이 앞 절벽 + 그늘. stairsX 를 주면 그 열의 앞 절벽이 계단. 놓을 수 있으면 true */
+  plateau(x0, y0, x1, y1, stairsX = []) {
+    const { W } = this;
+    const f1 = y1 + 1, f2 = y1 + 2;
+    if (!this.inb(x0 - 1, y0 - 1) || !this.inb(x1 + 1, f2 + 1)) return false;
+    for (let y = y0 - 1; y <= f2 + 1; y++) for (let x = x0 - 1; x <= x1 + 1; x++) {
+      if (this.terrain[y][x] === Wt || this.blocked[y][x] || this.reserved[y][x] || this.bridge[y * W + x] || this.cliff[y * W + x]) return false;
+    }
+    const put = (x, y, col, block = true) => { const i = y * W + x; this.cliff[i] = gid(ROW.CLIFF, col); this.reserved[y][x] = true; this.decor[i] = 0; if (block) this.blocked[y][x] = true; };
+    for (let y = y0; y <= y1; y++) { put(x0, y, CLIFF.SIDE_L); put(x1, y, CLIFF.SIDE_R); }
+    for (let x = x0 + 1; x < x1; x++) put(x, y0, CLIFF.TOP);
+    for (let x = x0; x <= x1; x++) {
+      if (stairsX.includes(x)) { for (const y of [f1, f2]) { put(x, y, CLIFF.STAIRS, false); this.terrain[y][x] = S; } continue; }
+      const l = x === x0 || stairsX.includes(x - 1), r = x === x1 || stairsX.includes(x + 1), alt = (x * 7 + f1) % 5 === 0;
+      put(x, f1, l ? CLIFF.FACE_L : r ? CLIFF.FACE_R : alt ? CLIFF.FACE2 : CLIFF.FACE);
+      put(x, f2, l ? CLIFF.BASE_L : r ? CLIFF.BASE_R : alt ? CLIFF.BASE2 : CLIFF.BASE);
+      if (this.terrain[f2 + 1][x] !== Wt && !this.cliff[(f2 + 1) * W + x]) { this.cliff[(f2 + 1) * W + x] = gid(ROW.CLIFF, CLIFF.SHADE); }
+    }
+    // 윗면 안쪽은 다른 소품이 덮지 않게 예약 (나중에 직접 꾸밈)
+    for (let y = y0 + 1; y <= y1; y++) for (let x = x0 + 1; x < x1; x++) this.reserved[y][x] = true;
+    return true;
+  }
+  /** 빈 땅에 언덕 하나 찾아 놓기 (w × h 윗면, 계단 1개) → [x0, y0, x1, y1] 또는 null */
+  hill(w, h, area = [2, 2, this.W - 3, this.H - 3], { stairs = true } = {}) {
+    const [ax0, ay0, ax1, ay1] = area;
+    for (let k = 0; k < 120; k++) {
+      const x0 = ax0 + 1 + Math.floor(this.R() * Math.max(1, ax1 - ax0 - w - 1)), y0 = ay0 + 1 + Math.floor(this.R() * Math.max(1, ay1 - ay0 - h - 4));
+      const x1 = x0 + w - 1, y1 = y0 + h - 1;
+      if (this.plateau(x0, y0, x1, y1, stairs ? [x0 + Math.floor(w / 2)] : [])) return [x0, y0, x1, y1];
+    }
+    return null;
+  }
   /** 턱: (x0..x1, y) 를 한 방향(아래로만) 뛰어내리는 턱으로. 양 끝 옆칸이 걸어 다닐 수 있어야 함 → 놓은 칸 수 */
   ledge(x0, x1, y) {
     const { W } = this;
@@ -160,7 +193,38 @@ export class MapBuilder {
     }
   }
 
+  /** 가로등 · 벤치가 길(흙 · 돌 · 계단) 위에 있으면 길 바로 옆 풀밭으로 옮김 → 지나갈 때 방해되지 않게 */
+  tidyProps() {
+    const isPath = (x, y) => this.inb(x, y) && (this.terrain[y][x] === S || this.terrain[y][x] === D);
+    const cellOf = (o, k) => o.properties.find((p) => p.name === k)?.value;
+    for (const o of this.objects) {
+      if (o.type !== 'lamp' && o.type !== 'bench') continue;
+      const w = cellOf(o, 'cellW') ?? 1, cx = cellOf(o, 'cellX'), cy = cellOf(o, 'cellY');
+      const cells = (x) => Array.from({ length: w }, (_, i) => [x + i, cy]);
+      const bad = (x, y) => Array.from({ length: w }, (_, i) => [x + i, y]).some(([a, b]) => !this.inb(a, b) || isPath(a, b) || this.terrain[b][a] === Wt || this.cliff[b * this.W + a]);
+      if (!bad(cx, cy)) continue;
+      for (const [a, b] of cells(cx)) if (this.inb(a, b)) this.blocked[b][a] = false;
+      let best = null, bd = 1e9;
+      for (let y = cy - 6; y <= cy + 6; y++) for (let x = cx - 6; x <= cx + 6; x++) {
+        if (bad(x, y)) continue;
+        const span = Array.from({ length: w }, (_, i) => [x + i, y]);
+        if (span.some(([a, b]) => this.blocked[b][a] || this.terrain[b][a] !== G || (b > 0 && this.cliff[(b - 1) * this.W + a]))) continue;
+        // 길 바로 옆(위아래 · 좌우 한 칸)에 붙어 있어야 함
+        if (!span.some(([a, b]) => isPath(a - 1, b) || isPath(a + 1, b) || isPath(a, b - 1) || isPath(a, b + 1))) continue;
+        const d = Math.abs(x - cx) + Math.abs(y - cy);
+        if (d < bd) { bd = d; best = [x, y]; }
+      }
+      if (!best) { this.objects.splice(this.objects.indexOf(o), 1, { ...o, visible: false, type: '_removed' }); continue; }
+      const [nx, ny] = best;
+      for (let i = 0; i < w; i++) this.blocked[ny][nx + i] = true;
+      o.x = (nx + w / 2) * T; o.y = (ny + 1) * T;
+      for (const p of o.properties) { if (p.name === 'cellX') p.value = nx; if (p.name === 'cellY') p.value = ny; }
+    }
+    this.objects = this.objects.filter((o) => o.type !== '_removed');
+  }
+
   build() {
+    this.tidyProps();
     const { W, H, terrain, blocked, bridge } = this;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (terrain[y][x] === Wt && !bridge[y * W + x]) blocked[y][x] = true;
     const collision = blocked.flat().map((b) => (b ? gid(ROW.MISC, MISC.COLLIDE) : 0));

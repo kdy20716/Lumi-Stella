@@ -306,6 +306,16 @@ export class BattleEngine {
         }
       }
       if (c === p.party[st.myIdx]) log.push({ t: 'exp', exp: c.exp, expNext: expToNext(c.level), level: c.level, leveled });
+      // 진화: 정해진 레벨에 닿으면 다음 모습으로 (도감에도 등록)
+      const evo = SPECIES[c.species].evolves;
+      if (leveled && evo && c.level >= evo.level && SPECIES[evo.to]) {
+        const from = SPECIES[c.species].name, before = stats(c).maxHp;
+        c.species = evo.to;
+        c.hp = Math.min(stats(c).maxHp, c.hp + (stats(c).maxHp - before));
+        if (!p.seen.includes(evo.to)) p.seen.push(evo.to);
+        if (!p.caught.includes(evo.to)) p.caught.push(evo.to);
+        log.push({ t: 'text', text: `…어라? ${from}의 모습이…!` }, { t: 'text', text: `축하합니다! ${from}은(는) ${SPECIES[evo.to].name}(으)로 진화했다!` });
+      }
     }
   }
 

@@ -5,7 +5,7 @@
 
 export const WORLD_W = 360, WORLD_H = 240;
 
-/** 마을 17 (별빛 마을·바람골은 손으로 만든 기존 맵) */
+/** 마을 18 (별빛 마을·바람골은 손으로 만든 기존 맵) · 왕관 시티는 북동쪽 리그 섬 (등대곶에서 배) */
 export const TOWNS = [
   { id: 'town', name: '별빛 마을', x: 46, y: 200, tier: 1, biome: 'meadow', existing: true, desc: '호숫가의 작은 마을. 모든 여행이 시작되는 곳.' },
   { id: 'windvale', name: '바람골 마을', x: 88, y: 194, tier: 2, biome: 'meadow', existing: true, gym: '바람', desc: '풍차가 도는 바람의 마을.' },
@@ -23,10 +23,12 @@ export const TOWNS = [
   { id: 'canyon', name: '바위골', x: 96, y: 56, tier: 6, biome: 'rocky', desc: '깎아지른 협곡 사이의 마을.' },
   { id: 'moon', name: '달맞이 마을', x: 40, y: 62, tier: 7, biome: 'meadow', coastal: true, desc: '달이 가장 크게 뜨는 서쪽 바닷가.' },
   { id: 'frost', name: '서리 마을', x: 150, y: 30, tier: 7, biome: 'snow', gym: '노말', desc: '일 년 내내 눈이 쌓인 북쪽 마을.' },
-  { id: 'crown', name: '왕관 시티', x: 304, y: 46, tier: 9, biome: 'city', city: true, coastal: true, league: true, desc: '루미 리그가 열리는 꿈의 도시.' },
+  { id: 'cape', name: '등대곶', x: 282, y: 66, tier: 8, biome: 'beach', coastal: true, desc: '대륙 북동쪽 끝, 리그 섬으로 가는 배가 뜨는 등대 마을.' },
+  { id: 'crown', name: '왕관 시티', x: 330, y: 30, tier: 9, biome: 'city', city: true, coastal: true, league: true, island: true, desc: '북동쪽 바다 위 리그 섬. 루미 리그가 열리는 꿈의 도시.' },
 ];
 
-/** 도로 28 (22 · 30번은 뱃길로 바뀜 — 섬은 항구의 정기선으로만): [번호, A, B, 이름, biome] */
+/** 도로 28 (22 · 30번은 뱃길로 바뀜 — 섬은 항구의 정기선으로만): [번호, A, B, 이름, biome]
+ *  마을 사이 도로는 2~3구간으로 나뉜 맵 (route3 → route3b → route3c): 4세대처럼 마을 사이가 꽤 멀어요 */
 export const ROUTES = [
   [1, 'town', 'windvale', '산들길', 'meadow'],
   [2, 'windvale', 'harbor', '갯바람길', 'beach'],
@@ -46,11 +48,11 @@ export const ROUTES = [
   [16, 'canyon', 'frost', '눈발 고개', 'snow'],
   [17, 'canyon', 'moon', '해넘이길', 'meadow'],
   [18, 'frost', 'route19', '눈꽃 평원', 'snow'],
-  [19, 'route18', 'crown', '얼음 강변', 'snow'],
+  [19, 'route18', 'cape', '얼음 강변', 'snow'],
   [20, 'lumina', 'victory_1f', '도전자의 길', 'rocky'],
-  [21, 'victory_3f', 'crown', '왕관 계단', 'meadow'],
+  [21, 'victory_3f', 'cape', '등대 언덕길', 'meadow'],
   [23, 'sand', 'route24', '마른 바람길', 'desert'],
-  [24, 'route23', 'crown', '동쪽 해안길', 'beach'],
+  [24, 'route23', 'cape', '동쪽 해안길', 'beach'],
   [25, 'moon', 'route26', '서해 절벽길', 'beach'],
   [26, 'route25', 'maple', '이끼 숲길', 'forest'],
   [27, 'summit', 'frost', '하늘 잔도', 'snow'],
@@ -95,11 +97,11 @@ export const PLACES = [
   { id: 'newmoon', name: '그믐달섬', kind: 'area', tpl: 'island', biome: 'forest', tier: 8, x: 16, y: 86, attach: ['moon', 'dock'], desc: '빛 한 줄기 없는 어둠의 섬.' },
   { id: 'paradise', name: '꽃구름 정원', kind: 'area', tpl: 'garden', biome: 'meadow', tier: 7, x: 196, y: 232, attach: ['bloom', 'dock'], desc: '바다 건너 꽃이 끝없이 피어 있는 비밀 정원.' },
   // 시설
-  { id: 'battle', name: '도전의 섬', kind: 'area', tpl: 'battle', biome: 'beach', tier: 9, x: 344, y: 24, attach: ['crown', 'dock'], desc: '강자들이 모여드는 섬. 도전의 탑이 서 있다.' },
-  { id: 'tower', name: '도전의 탑', kind: 'room', room: 'tower', tier: 9, x: 346, y: 18, attach: ['battle', 'door'], desc: '끝없이 이어지는 승부의 탑.' },
+  { id: 'battle', name: '도전의 섬', kind: 'area', tpl: 'battle', biome: 'beach', tier: 9, x: 352, y: 62, attach: ['crown', 'dock'], desc: '강자들이 모여드는 섬. 도전의 탑이 서 있다.' },
+  { id: 'tower', name: '도전의 탑', kind: 'room', room: 'tower', tier: 9, x: 354, y: 56, attach: ['battle', 'door'], desc: '끝없이 이어지는 승부의 탑.' },
   { id: 'palpark', name: '추억 공원', kind: 'area', tpl: 'park', biome: 'meadow', tier: 6, x: 320, y: 190, attach: ['route8', 'side'], desc: '먼 곳의 루미들과 다시 만나는 공원.' },
   { id: 'amity', name: '자랑 뒷동산', kind: 'area', tpl: 'park', biome: 'meadow', tier: 6, x: 266, y: 128, attach: ['lumina', 'side'], desc: '파트너 루미와 산책하며 자랑하는 언덕 공원.' },
-  { id: 'league', name: '루미 리그', kind: 'room', room: 'league', tier: 9, x: 306, y: 38, attach: ['crown', 'door'], needBadges: 8, desc: '사천왕과 챔피언이 기다리는 전당.' },
+  { id: 'league', name: '루미 리그', kind: 'room', room: 'league', tier: 9, x: 334, y: 24, attach: ['crown', 'door'], needBadges: 8, desc: '사천왕과 챔피언이 기다리는 전당.' },
 ];
 
 /** 관장 8명 (+ 사천왕 4 · 챔피언) */

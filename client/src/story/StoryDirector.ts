@@ -1,4 +1,4 @@
-// 프롤로그 컷신 감독: 15살 생일 아침 → 친구와 마을까지 경주 → 엄마(휴대폰) → 가로등 아래 친구 → 마을회관 이장님 → 루미 선택 → 첫 대결
+// 프롤로그 컷신 감독: 15살 생일 아침 → 친구와 마을까지 경주 → 엄마(생일 선물 휴대폰) → 가로등 아래 친구 → 마을회관 이장님 → 루미 선택 → 첫 대결
 // 단계(story)는 권한자(서버/로컬 시뮬레이션)가 저장하고, 여기서는 그 단계에 맞는 연출만 한다.
 import Phaser from 'phaser';
 import { ENCOUNTERS, SPECIES } from '@shared/data';
@@ -134,15 +134,18 @@ export class StoryDirector {
     m.faceTo(this.h.player.x, this.h.player.y);
     this.h.player.play('idle', 'right');
     await this.say(MOM, [
-      `${name}, 휴대폰 놓고 가면 어떻게 해!`,
-      '급한 건 알겠지만, 놓치는 건 없는지 꼭 한 번 더 확인하렴.',
+      `${name}, 잠깐! 그렇게 뛰어가 버리면 어떡하니~ 오늘의 주인공한테 줄 게 있었는데!`,
       '…우리 아이가 벌써 열다섯 살이라니. 오늘부터는 어엿한 별빛 마을의 일원이구나.',
+      '자, 열다섯 살 생일 축하해! 엄마가 준비한 선물이야. 짜잔~ 너만의 휴대폰!',
+      '먼 길을 떠나도 지도도 보고, 루미도 챙기고, 엄마한테 연락도 할 수 있도록 말이야. 헤헤, 엄마가 몰래 아껴 둔 용돈으로 산 거란다.',
       '멋진 여행이 너를 기다리고 있을 거라고, 엄마는 굳게 믿고 있단다!',
     ]);
     sfx.play('item');
-    ui.toast.push(`${name}은(는) 휴대폰을 받았다! (M 키로 열기)`, 'heart');
+    ui.banner.show('생일 선물!', '엄마에게 휴대폰을 받았다 · R: 휴대폰 홈 화면');
+    ui.toast.push(`${name}은(는) 생일 선물로 휴대폰을 받았다! (R 키로 열기)`, 'heart');
     await this.step(STORY.PHONE);
     await this.say(MOM, ['참, 그 애는 호수 왼쪽 가로등 밑에서 너를 기다리고 있더라. 어서 가 보렴!']);
+    this.rivalAtLamp();   // 씬을 다시 불러오지 않아도 친구가 바로 가로등 아래에 보이도록
     this.busy = false; this.h.unlock();
     await m.walkTo(px + 3, py - 4);
     m.face('down');
@@ -200,11 +203,11 @@ export class StoryDirector {
         '그리고 잊지 말거라. 별빛 마을 트레이너는 남의 손에 기대지 않는단다. 밭에서 약초를 길러 회복약을 달이고, 바위에서 광석을 캐 루미볼을 직접 만들지.',
         '집에 작업대를 마련해 두었단다. 처음엔 루미볼과 회복약 정도겠지만, 배지를 모을수록 민수와 한별 박사가 더 좋은 제작법을 가르쳐 줄 게다.',
         '그리고 이 세상에는 우리 별빛 마을 말고도 많은 마을이 있단다. 바람이 머무는 바람골, 그 너머 바다 마을과 산 마을… 아직 너희가 가 보지 못한 곳들이지.',
-        '자, 휴대폰을 잠깐 줘 보겠니? …옳지, 지도 기능을 넣어 두었단다.',
+        '오, 어머니께 생일 선물로 휴대폰을 받았구나! 잠깐 줘 보겠니? …옳지, 지도 기능을 넣어 두었단다.',
       ]);
       sfx.play('phone');
       await this.step(STORY.HALL);
-      ui.toast.push('휴대폰에 지도 앱이 추가됐다! (M 키)', 'heart');
+      ui.toast.push('휴대폰에 지도 앱이 추가됐다! (M 키로 바로 열기)', 'heart');
       await this.say(MAYOR, ['M 키를 누르면 지도를 볼 수 있지. 지금은 우리 마을 근처만 보이겠지만, 네가 걸어간 만큼 넓어질 게다.', '그럼 이제, 너와 함께할 루미를 골라 보거라!']);
     } else if (!this.me.party.length) {
       await this.say(MAYOR, ['돌아왔구나. 자, 함께할 루미를 골라 보거라!']);
@@ -245,7 +248,7 @@ export class StoryDirector {
       '마음껏 걷고, 키우고, 만나고 오너라. 너의 모험을 시작하거라!',
     ]);
     sfx.play('win');
-    ui.banner.show('모험의 시작!', '1번 도로가 열렸어요 · M: 휴대폰 (지도 · 나의 루미)');
+    ui.banner.show('모험의 시작!', '1번 도로가 열렸어요 · R: 휴대폰 · M: 지도');
     this.busy = false; this.h.unlock();
     await mayor.walkTo(mayor.cell()[0] - 3, mayor.cell()[1] - 1);
     mayor.face('down');

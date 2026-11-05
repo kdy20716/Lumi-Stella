@@ -3,7 +3,7 @@
 //   마을 표시(핀)와 안개는 UI 에서 그림 (가 본 곳에 따라 달라지므로)
 import { Img, mix, darken, lighten, rgba, hash2 } from './lib/img.mjs';
 import { sfbm } from './worldmap.mjs';
-import { buildGraph } from '../map/region-graph.mjs';
+import { buildGraph, CHAINS } from '../map/region-graph.mjs';
 import { WORLD_W, WORLD_H, ROUTES } from '../map/region-spec.mjs';
 
 const S = 2;
@@ -26,7 +26,8 @@ const SEA = ['#86ccec', '#5aa8dc', '#3f8bc6', '#2f70aa', '#275e94'];   // 얕음
 const FOAM = '#f0fbff';
 const ROAD_OUT = '#8e6a40', ROAD = '#f7e8c0', LANE = '#e6f6ff';
 const OUT = '#20303a';
-const ISLANDS = new Set(['iron', 'fullmoon', 'newmoon', 'paradise', 'battle']);
+const ISLANDS = new Set(['iron', 'fullmoon', 'newmoon', 'paradise', 'battle', 'crown']);
+const ISLE_R = { crown: 24, battle: 9 };   // 북동쪽 리그 섬은 크게
 
 // 4×4 베이어 디더 (0..1)
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
@@ -38,7 +39,9 @@ export function buildRegionMap() {
   const all = [...nodes, farm];
   // 도로 · 연결 선분 (지형 모양을 정함 — 기존 맵 좌표와 맞도록 예전 지도와 같은 규칙)
   const segs = [];
-  for (const [n, a, b] of ROUTES) { const r = g[`route${n}`]; segs.push([g[a], r], [r, g[b]]); }
+  // 도로 하나 = 구간 맵 여러 개를 잇는 꺾은선
+  const routeLine = (n) => { const ids = CHAINS[n]; return [g[g[ids[0]].ends[0]], ...ids.map((id) => g[id]), g[g[ids[ids.length - 1]].ends[1]]].filter(Boolean); };
+  for (const [n] of ROUTES) { const L = routeLine(n); for (let i = 0; i < L.length - 1; i++) segs.push([L[i], L[i + 1]]); }
   for (const n of nodes) for (const l of n.links) if (g[l.to] && g[l.to].kind !== 'room' && (l.type === 'edge' || l.type === 'mouth' || l.type === 'stairsUp')) segs.push([n, g[l.to]]);
   segs.push([farm, g.town]);
   // 섬은 따로: 본토 계산에서 빼고 섬마다 둥글게 (경계가 끊기지 않도록 min 으로 합침)
@@ -59,7 +62,7 @@ export function buildRegionMap() {
     let sd = 1e9; for (const [a, b] of landSegs) sd = Math.min(sd, segDist(wx, wy, a, b));
     const nz = (sfbm(wx, wy, 40, 11, 4) - 0.5) * 26;
     let L = Math.min(bd - 21, sd - 17) + nz;   // 땅을 넉넉하게: 하나의 큰 대륙처럼
-    for (const n of isles) { const d = Math.hypot(wx - n.x, wy - n.y); const li = d - 10 + nz * 0.4; if (li < L) L = li; if (d < ba) { ba = d; bestAll = n; } }
+    for (const n of isles) { const d = Math.hypot(wx - n.x, wy - n.y); const li = d - (ISLE_R[n.id] ?? 10) + nz * 0.4; if (li < L) L = li; if (d < ba) { ba = d; bestAll = n; } }
     if (ba < bd) best = bestAll;
     for (const [a, b] of segs) sd = Math.min(sd, segDist(wx, wy, a, b));
     land[i] = L; road[i] = sd; nearest[i] = best;
@@ -256,9 +259,9 @@ export function buildRegionMap() {
     return out;
   };
   const roads = [], trails = [], lanes = [];
-  for (const [n, a, b] of ROUTES) { const r = g[`route${n}`]; if (g[a] && g[b] && r) roads.push(curve([g[a], r, g[b]], n)); }
+  for (const [n] of ROUTES) roads.push(curve(routeLine(n), n));
   roads.push(curve([farm, g.town], 99));
-  const routeIds = new Set(ROUTES.map(([n]) => `route${n}`));
+  const routeIds = new Set(Object.values(CHAINS).flat());
   const seen = new Set();
   for (const n of nodes) for (const l of n.links) {
     const m = g[l.to]; if (!m || m.kind === 'room') continue;

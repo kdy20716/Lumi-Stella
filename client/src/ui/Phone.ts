@@ -1,4 +1,4 @@
-// 휴대폰 (M): 화면 오른쪽에 뜨는 루미폰. 지도 · 나의 루미 · 가방 · 도감 · 제작 노트 · 배지 · 친구 · 설정 · 도움말을 모두 여기서.
+// 휴대폰 (R · 지도는 M): 화면 오른쪽에 뜨는 루미폰. 지도 · 나의 루미 · 가방 · 도감 · 제작 노트 · 배지 · 친구 · 설정 · 도움말을 모두 여기서.
 //   - 폰이 열려 있어도 걸어 다닐 수 있음 (지도만 가로 화면으로 넓어짐)
 //   - Esc: 앱 → 홈 → 닫기 / M: 열기·닫기 / P: 나의 루미 / H: 도움말
 import { ITEMS, RECIPES, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
@@ -6,8 +6,10 @@ import { MAP_META, type CreatureInst, type MapMeta, type PlayerState, type World
 import { sfx } from '../audio/Sfx';
 import { music } from '../audio/Music';
 import { iconStyle, formatTime } from './UI';
+import type { AdminCmd } from '@shared/protocol';
+import type { AdminReply } from '../net/Authority';
 
-export type PhoneApp = 'home' | 'map' | 'party' | 'bag' | 'dex' | 'recipes' | 'badges' | 'friends' | 'settings' | 'help';
+export type PhoneApp = 'home' | 'map' | 'party' | 'bag' | 'dex' | 'recipes' | 'badges' | 'friends' | 'settings' | 'help' | 'bug' | 'admin';
 
 export interface PhoneCtx {
   me(): PlayerState;
@@ -27,6 +29,10 @@ export interface PhoneCtx {
   held(): number;
   /** 가방 칸을 눌렀을 때 할 수 있는 일 */
   bagActions(slot: number): { label: string; run: () => void; primary?: boolean }[];
+  /** 버그 신고 (멀티 전용) · 관리자 (서버가 확인한 관리자만 화면에 나옴 — 실제 권한 검사는 서버) */
+  report(text: string): boolean;
+  isAdmin(): boolean;
+  admin(cmd: AdminCmd): Promise<AdminReply>;
 }
 
 const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: () => string }[] = [
@@ -39,8 +45,10 @@ const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: ()
   { id: 'friends', name: '친구', bg: 'linear-gradient(160deg,#ffb0c8,#d0547a)', glyph: () => `<span class="px-icon" style="${iconStyle('heart', 40)}"></span>` },
   { id: 'settings', name: '설정', bg: 'linear-gradient(160deg,#c8d0dc,#6a7486)', glyph: () => '<span class="ph-emoji">⚙️</span>' },
   { id: 'help', name: '도움말', bg: 'linear-gradient(160deg,#fff0a8,#d8b03a)', glyph: () => '<span class="ph-emoji">❔</span>' },
+  { id: 'bug', name: '버그 신고', bg: 'linear-gradient(160deg,#ffb27a,#d8573a)', glyph: () => '<span class="ph-emoji">🐞</span>' },
 ];
-const TITLE: Record<PhoneApp, string> = { home: '', map: '루미나 지방 지도', party: '나의 루미', bag: '가방', dex: '루미 도감', recipes: '제작 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말' };
+const ADMIN_APP = { id: 'admin' as const, name: '관리자', bg: 'linear-gradient(160deg,#4a4a5a,#14141c)', glyph: () => '<span class="ph-emoji">🛡️</span>' };
+const TITLE: Record<PhoneApp, string> = { home: '', map: '루미나 지방 지도', party: '나의 루미', bag: '가방', dex: '루미 도감', recipes: '제작 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말', bug: '버그 신고', admin: '관리자 (admin)' };
 
 /** 도장 순서 (ROADMAP 2-2) */
 const BADGES: [string, string, string, string][] = [
@@ -99,16 +107,17 @@ export const phone = {
       this.unfold = false;
       n.classList.remove('ph-unfold'); void n.offsetWidth; n.classList.add('ph-unfold');
       sfx.play('unfold');
-      clearTimeout(this.unfoldTimer); this.unfoldTimer = window.setTimeout(() => { n.classList.remove('ph-unfold'); n.querySelector('.ph-flap')?.remove(); }, 1500);
+      clearTimeout(this.unfoldTimer); this.unfoldTimer = window.setTimeout(() => { n.classList.remove('ph-unfold'); n.querySelector('.ph-fold')?.remove(); }, 1400);
     }
+    const unfolding = n.classList.contains('ph-unfold');
     n.innerHTML = `<div class="ph-body">
       <div class="ph-speaker"></div>
       <div class="ph-screen ${this.app === 'home' ? 'ph-wall' : ''}">
         <div class="ph-status"><span data-ph="clock">${formatTime(t.minutes)}</span><span>${SEASON_KO[t.season]} ${t.day}일 ${t.weather === 'rain' ? '☂' : '☀'}</span><span class="ph-gold"><span class="px-icon" style="${iconStyle('gold', 16)}"></span>${me.gold.toLocaleString()}G</span></div>
-        ${this.app === 'home' ? '' : `<div class="ph-head"><button data-ph="back" class="ph-back" title="뒤로 (Esc)">‹</button><span>${TITLE[this.app]}</span><button data-ph="x" class="ph-back" title="닫기 (M)">×</button></div>`}
+        ${this.app === 'home' ? '' : `<div class="ph-head"><button data-ph="back" class="ph-back" title="뒤로 (Esc)">‹</button><span>${TITLE[this.app]}</span><button data-ph="x" class="ph-back" title="닫기 (R)">×</button></div>`}
         <div class="ph-content">${this.body(me)}</div>
         <button data-ph="home" class="ph-homebar" title="홈"></button>
-      </div></div>`;
+      </div></div>${unfolding ? '<div class="ph-fold"><i class="front"></i><i class="back"></i></div>' : ''}`;
     n.querySelector<HTMLButtonElement>('[data-ph=back]')?.addEventListener('click', () => this.back());
     n.querySelector<HTMLButtonElement>('[data-ph=x]')?.addEventListener('click', () => this.close());
     n.querySelector<HTMLButtonElement>('[data-ph=home]')!.onclick = () => (this.app === 'home' ? this.close() : this.show('home'));
@@ -130,8 +139,57 @@ export const phone = {
       case 'friends': return this.friendApp();
       case 'settings': return this.settingsApp();
       case 'help': return HELP_HTML;
+      case 'bug': return this.bugApp();
+      case 'admin': return this.adminApp();
     }
   },
+
+  // ── 버그 신고 ──
+  bugApp() {
+    if (!this.ctx!.online()) return '<div class="ph-empty">버그 신고는 멀티플레이(구글 로그인)에서 보낼 수 있어요.<br>혼자 하기 중이라면 개발자에게 직접 알려 주세요!</div>';
+    return `<div class="ph-card ph-col"><b>🐞 무엇이 이상했나요?</b><div class="ph-small">어디서 · 무엇을 하다가 · 어떻게 됐는지 적어 주면 고치기 쉬워요. (지금 위치는 자동으로 함께 보내져요)</div>
+      <textarea data-bug class="ph-input" rows="6" maxlength="500" placeholder="예) 바람골 도장 앞 계단에서 위로 올라가면 캐릭터가 멈춰요"></textarea>
+      <div class="ph-acts"><button data-bugsend class="ph-btn">신고 보내기</button></div>${this.bugSent ? '<div class="ph-small" style="color:#2f8a3a">✔ 신고를 보냈어요. 고마워요!</div>' : ''}</div>`;
+  },
+  bugSent: false,
+  newReports: 0,
+  // ── 관리자 ── (목록 · 버튼은 화면일 뿐, 모든 명령은 서버가 관리자 계정인지 확인한 뒤 처리)
+  adminTab: 'users' as 'users' | 'reports',
+  adminData: null as null | AdminReply,
+  adminMsg: '',
+  adminLoading: false,
+  adminApp() {
+    if (!this.ctx!.isAdmin()) return '<div class="ph-empty">권한이 없어요.</div>';
+    const d = this.adminData;
+    const tabs = `<div class="ph-tabs"><button data-atab="users" class="${this.adminTab === 'users' ? 'on' : ''}">접속 유저</button><button data-atab="reports" class="${this.adminTab === 'reports' ? 'on' : ''}">버그 신고${this.newReports ? ` (${this.newReports})` : ''}</button><button data-arefresh>↻</button></div>`;
+    const msg = this.adminMsg ? `<div class="ph-small" style="margin:4px 0">${esc(this.adminMsg)}</div>` : '';
+    if (!d) return `${tabs}${msg}<div class="ph-empty">불러오는 중…</div>`;
+    if (this.adminTab === 'reports') {
+      const list = (d.reports ?? []).map((r) => `<div class="ph-card ph-col ${r.resolved ? 'ph-dim' : ''}"><b>${esc(r.name)}</b> <span class="ph-small">${new Date(r.at).toLocaleString('ko-KR')}</span><div class="ph-small">${esc(r.where)}</div><div style="white-space:pre-wrap">${esc(r.text)}</div>${r.resolved ? '<span class="ph-small">✔ 처리됨</span>' : `<div class="ph-acts"><button data-resolve="${esc(r.id)}" class="ph-btn sm">처리 완료</button></div>`}</div>`).join('');
+      return `${tabs}${msg}${list || '<div class="ph-empty">신고가 없어요</div>'}`;
+    }
+    const items = Object.values(ITEMS).map((it) => `<option value="${it.id}">${esc(it.name)}</option>`).join('');
+    const users = (d.users ?? []).map((u) => `<div class="ph-card ph-col"><b>${esc(u.name)}</b> <span class="ph-small">${esc(u.mapName)} · ${u.gold.toLocaleString()}G · 배지 ${u.badges} · ${esc(u.world)}</span>
+      <div class="ph-small">${esc(u.party || '루미 없음')}</div><div class="ph-small" style="opacity:.6">${esc(u.uid)}</div>
+      <div class="ph-acts"><button data-aop="goto" data-uid="${esc(u.uid)}" class="ph-btn sm">가기</button><button data-aop="bring" data-uid="${esc(u.uid)}" class="ph-btn sm">데려오기</button><button data-aop="kick" data-uid="${esc(u.uid)}" class="ph-btn sm ghost">강퇴</button><button data-aop="ban" data-uid="${esc(u.uid)}" class="ph-btn sm ghost">밴</button></div>
+      <div class="ph-acts"><select data-gi="${esc(u.uid)}" class="ph-input sm">${items}</select><input data-gq="${esc(u.uid)}" class="ph-input sm" type="number" min="1" max="999" value="1" style="width:60px"><button data-aop="give" data-uid="${esc(u.uid)}" class="ph-btn sm">지급</button></div>
+      <div class="ph-acts"><input data-gg="${esc(u.uid)}" class="ph-input sm" type="number" value="1000" style="width:90px"><button data-aop="gold" data-uid="${esc(u.uid)}" class="ph-btn sm">골드 ±</button></div></div>`).join('');
+    const bans = (d.bans ?? []).map((b) => `<div class="ph-card ph-col ph-dim"><b>${esc(b.name)}</b> <span class="ph-small">${esc(b.reason)}</span><div class="ph-acts"><button data-aop="unban" data-uid="${esc(b.uid)}" class="ph-btn sm">밴 해제</button></div></div>`).join('');
+    return `${tabs}${msg}${users || '<div class="ph-empty">접속한 유저가 없어요</div>'}${bans ? `<div class="ph-sec">정지된 계정</div>${bans}` : ''}`;
+  },
+  async adminLoad() {
+    const r = await this.ctx!.admin(this.adminTab === 'reports' ? { op: 'reports' } : { op: 'users' });
+    this.adminData = r.ok ? r : this.adminData; if (!r.ok) this.adminMsg = r.message ?? '실패';
+    if (this.adminTab === 'reports') this.newReports = 0;
+    if (this.app === 'admin') this.render();
+  },
+  async adminRun(cmd: AdminCmd) {
+    const r = await this.ctx!.admin(cmd);
+    this.adminMsg = r.message ?? (r.ok ? '완료' : '실패');
+    await this.adminLoad();
+  },
+  /** 새 버그 신고가 오면 관리자 휴대폰 아이콘에 숫자 */
+  onReport() { this.newReports++; if (this.app === 'admin' && this.adminTab === 'reports') void this.adminLoad(); else if (this.app === 'home') this.refresh(); },
 
   home(me: PlayerState) {
     const lead = me.party[0];
@@ -140,8 +198,8 @@ export const phone = {
         ${sp ? `<span class="lumi-icon lumi-bounce" style="background-image:url(assets/lumi/${lead!.species}.png);width:56px;height:56px;background-size:336px 56px"></span>` : '<span class="ph-emoji" style="font-size:34px">✨</span>'}
         <div><div class="ph-name">${esc(me.name)}</div><div class="ph-sub">${sp ? `파트너 ${sp.name} · Lv.${lead!.level}` : '아직 파트너가 없어요'} · 배지 ${me.badges.length}/8</div></div>
       </div>
-      <div class="ph-grid">${APPS.map((a) => `<button data-app="${a.id}" class="ph-app"><span class="ph-tile" style="background:${a.bg}">${a.glyph()}</span><span class="ph-label">${a.name}</span></button>`).join('')}</div>
-      <div class="ph-foot">M 닫기 · Esc 뒤로</div>`;
+      <div class="ph-grid">${[...APPS, ...(this.ctx!.isAdmin() ? [ADMIN_APP] : [])].map((a) => `<button data-app="${a.id}" class="ph-app"><span class="ph-tile" style="background:${a.bg}">${a.glyph()}</span><span class="ph-label">${a.name}</span>${a.id === 'admin' && this.newReports ? `<i class="ph-badge">${this.newReports}</i>` : ''}</button>`).join('')}</div>
+      <div class="ph-foot">R 닫기 · M 지도 · Esc 뒤로</div>`;
   },
 
   // ── 지도 ──
@@ -168,7 +226,7 @@ export const phone = {
     };
     return `<div class="ph-map">
         <img src="assets/ui/worldmap.png" alt="">
-        <div class="ph-flap"><i class="front"></i><i class="back"></i></div><div class="ph-crease"></div>
+
         <canvas width="360" height="240"></canvas>
         ${known.map(([id, m]) => pin(id, m)).join('')}
         <div class="ph-tip" hidden></div>
@@ -229,7 +287,13 @@ export const phone = {
   bagApp(me: PlayerState) {
     const c = this.ctx!, held = c.held();
     // 칸 키: 's:<가방 칸>' (소지품) · 'b:<아이템>' (모험 가방)
-    const cell = (key: string, id: string, q: number, on = false) => `<button class="ph-cell ${this.bagPick === key ? 'on' : ''} ${on ? 'held' : ''}" data-item="${key}" title="${esc(ITEMS[id]?.name ?? id)}"><span class="px-icon" style="${iconStyle(ITEMS[id]?.icon ?? id, 32)}"></span>${q > 1 ? `<b>${q}</b>` : ''}${on ? '<i>✋</i>' : ''}</button>`;
+    // 도구는 아래에 내구도 막대 (초록 → 노랑 → 빨강)
+    const durBar = (key: string, id: string) => {
+      const max = ITEMS[id]?.durability; if (!max || !key.startsWith('s:')) return '';
+      const cur = me.inventory[Number(key.slice(2))]?.dur ?? max, r = Math.max(0, Math.min(1, cur / max));
+      return `<em class="ph-dur"><u style="width:${Math.round(r * 100)}%;background:${r > 0.5 ? '#5ec85a' : r > 0.2 ? '#e8c03a' : '#e0473b'}"></u></em>`;
+    };
+    const cell = (key: string, id: string, q: number, on = false) => `<button class="ph-cell ${this.bagPick === key ? 'on' : ''} ${on ? 'held' : ''}" data-item="${key}" title="${esc(ITEMS[id]?.name ?? id)}"><span class="px-icon" style="${iconStyle(ITEMS[id]?.icon ?? id, 32)}"></span>${q > 1 ? `<b>${q}</b>` : ''}${on ? '<i>✋</i>' : ''}${durBar(key, id)}</button>`;
     const groups: [string, (t: string) => boolean][] = [['도구', (t) => t === 'tool'], ['씨앗', (t) => t === 'seed'], ['작물 · 재료 · 음식', (t) => t === 'crop' || t === 'material' || t === 'food'], ['설치물', (t) => t === 'placeable'], ['중요한 물건', (t) => t === 'key']];
     const slots = me.inventory.map((s, i) => ({ s, i })).filter(({ s }) => s.itemId && s.quantity > 0 && ITEMS[s.itemId]);
     const used = slots.length;
@@ -243,7 +307,8 @@ export const phone = {
       const it = id ? ITEMS[id] : null;
       if (it) {
         const acts = kind === 's' ? c.bagActions(Number(v)) : [];
-        detail = `<b>${it.name}</b> <span class="ph-small">보유 ${countItem(me, it.id)}개${it.sellPrice ? ` · 출하 ${it.sellPrice}G` : ''}</span><br>${esc(it.description)}
+        const dur = kind === 's' && it.durability ? ` · 내구도 ${me.inventory[Number(v)]?.dur ?? it.durability}/${it.durability}` : '';
+        detail = `<b>${it.name}</b> <span class="ph-small">보유 ${countItem(me, it.id)}개${it.sellPrice ? ` · 출하 ${it.sellPrice}G` : ''}${dur}</span><br>${esc(it.description)}
           ${acts.length ? `<div class="ph-acts">${acts.map((a, k) => `<button data-act="${k}" class="ph-btn sm ${a.primary ? '' : 'ghost'}">${esc(a.label)}</button>`).join('')}</div>` : kind === 'b' ? '<div class="ph-small" style="margin-top:4px">배틀 중 가방에서 써요</div>' : ''}`;
       } else this.bagPick = '';
     }
@@ -326,6 +391,30 @@ export const phone = {
   },
 
   wire(n: HTMLElement, me: PlayerState) {
+    // 버그 신고
+    n.querySelector<HTMLButtonElement>('[data-bugsend]')?.addEventListener('click', () => {
+      const ta = n.querySelector<HTMLTextAreaElement>('[data-bug]'); const text = ta?.value.trim() ?? '';
+      if (!text) { sfx.play('error'); return; }
+      if (this.ctx!.report(text)) { sfx.play('confirm'); this.bugSent = true; this.render(); setTimeout(() => { this.bugSent = false; }, 30000); }
+    });
+    n.querySelector<HTMLTextAreaElement>('[data-bug]')?.addEventListener('keydown', (e) => e.stopPropagation());
+    // 관리자
+    if (this.app === 'admin') {
+      if (!this.adminData && !this.adminLoading) { this.adminLoading = true; void this.adminLoad().finally(() => { this.adminLoading = false; }); }
+      n.querySelectorAll<HTMLButtonElement>('[data-atab]').forEach((b) => { b.onclick = () => { this.adminTab = b.dataset.atab as 'users' | 'reports'; this.adminData = null; this.render(); }; });
+      n.querySelector<HTMLButtonElement>('[data-arefresh]')?.addEventListener('click', () => { this.adminMsg = ''; void this.adminLoad(); });
+      n.querySelectorAll<HTMLButtonElement>('[data-resolve]').forEach((b) => { b.onclick = () => void this.adminRun({ op: 'resolve', id: b.dataset.resolve! }); });
+      n.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.ph-input').forEach((el) => el.addEventListener('keydown', (e) => e.stopPropagation()));
+      n.querySelectorAll<HTMLButtonElement>('[data-aop]').forEach((b) => {
+        b.onclick = () => {
+          const op = b.dataset.aop!, uid = b.dataset.uid!;
+          if ((op === 'kick' || op === 'ban') && !window.confirm(`${op === 'ban' ? '이용 정지' : '강퇴'}할까요?`)) return;
+          if (op === 'give') { const it = n.querySelector<HTMLSelectElement>(`[data-gi="${CSS.escape(uid)}"]`)?.value ?? ''; const q = Number(n.querySelector<HTMLInputElement>(`[data-gq="${CSS.escape(uid)}"]`)?.value ?? 1); void this.adminRun({ op: 'give', uid, itemId: it, qty: q }); return; }
+          if (op === 'gold') { const a = Number(n.querySelector<HTMLInputElement>(`[data-gg="${CSS.escape(uid)}"]`)?.value ?? 0); void this.adminRun({ op: 'gold', uid, amount: a }); return; }
+          void this.adminRun({ op: op as 'goto' | 'bring' | 'kick' | 'ban' | 'unban', uid });
+        };
+      });
+    }
     const c = this.ctx!;
     n.querySelectorAll<HTMLButtonElement>('[data-partner]').forEach((b) => { b.onclick = () => { sfx.play('confirm'); c.setPartner(Number(b.dataset.partner)); }; });
     n.querySelectorAll<HTMLButtonElement>('[data-item]').forEach((b) => { b.onclick = () => { sfx.play('tap'); this.bagPick = this.bagPick === b.dataset.item ? '' : b.dataset.item!; this.render(); }; });
@@ -361,7 +450,7 @@ export const phone = {
 };
 
 const HELP_HTML = `<table class="ph-help"><tbody>
-  ${[['WASD / 방향키', '이동 (Shift 달리기)'], ['Space / 좌클릭', '손에 든 도구 사용 · 씨앗 · 낚시'], ['E / 우클릭', '대화 · 수확 · 출하 · 잡초 뽑기 · 조사'], ['M', '휴대폰 열기 · 닫기 (가방에서 도구 바꾸기)'], ['P', '휴대폰 › 나의 루미'], ['H', '휴대폰 › 도움말'], ['Esc', '휴대폰 뒤로 · 닫기'], ['Enter', '채팅'], ['Tab (누른 채)', '감정표현 휠'], ['L', '접속자 목록 접기']]
+  ${[['WASD / 방향키', '이동 (Shift 달리기)'], ['Space / 좌클릭', '손에 든 도구 사용 · 씨앗 · 낚시'], ['E / 우클릭', '대화 · 수확 · 출하 · 잡초 뽑기 · 조사'], ['R', '휴대폰 홈 화면 (가방에서 도구 바꾸기)'], ['M', '지도 바로 열기'], ['P', '휴대폰 › 나의 루미'], ['H', '휴대폰 › 도움말'], ['Esc', '휴대폰 뒤로 · 닫기'], ['Enter', '채팅'], ['Tab', '감정표현 휠 (톡 누르고 클릭 · 누른 채 고르고 떼기)'], ['L', '접속자 목록 접기']]
     .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}
   </tbody></table>
   <div class="ph-note"><b>내 농장 일구기</b>: 마을 소라네 루미 마트에서 괭이 · 물뿌리개 · 도끼 · 곡괭이 · 망치를 사요. 잡초는 E 로 뽑고, 안쪽 나무는 도끼로(5번), 돌은 곡괭이로 치운 뒤 괭이로 땅을 갈아요. 가방에서 씨앗을 누르면 주변 밭에 심고, 매일 물을 주면 자라요. 작업대에서 만든 울타리 · 상자는 가방에서 설치하고 망치로 부숴요.<br><b>모험 보급</b>: 루미풀 · 불꽃고추 · 단단콩과 돌 · 구리 · 철로 회복약 · 도핑약 · 루미볼을 만들어요.</div>`;

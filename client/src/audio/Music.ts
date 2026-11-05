@@ -156,7 +156,10 @@ class Engine {
 
   private pump() {
     const s = this.cur; if (!s) return;
-    const until = this.c.currentTime + 0.18;
+    // 미리 예약 0.6초: 맵 로딩 · 씬 전환처럼 메인 스레드가 잠깐 멈춰도 음이 끊기지 않게
+    const until = this.c.currentTime + 0.6;
+    // 탭이 오래 멈췄다 돌아오면(1초 넘게 밀림) 박자를 현재로 당겨서 한꺼번에 몰아 치지 않게
+    if (s.idx < s.evs.length && s.t0 + s.evs[s.idx].t * s.step < this.c.currentTime - 1) { const behind = this.c.currentTime - s.t0; const loops = Math.floor(behind / (s.len * s.step)); if (loops > 0 && !s.track.once) { s.t0 += loops * s.len * s.step; s.loopN += loops; } const pos = (this.c.currentTime - s.t0) / s.step; while (s.idx < s.evs.length && s.evs[s.idx].t < pos) s.idx++; }
     for (;;) {
       if (s.idx >= s.evs.length) {
         if (s.track.once) { const end = s.t0 + s.len * s.step; if (until >= end) { const cb = this.onEnd; this.cur = null; clearInterval(this.timer); window.setTimeout(() => cb?.(), Math.max(0, (end - this.c.currentTime) * 1000)); } return; }
@@ -168,7 +171,7 @@ class Engine {
       s.idx++;
     }
     // 끝난 보이스 정리
-    if (this.voices.length > 400) this.voices = this.voices.slice(-200);
+    if (this.voices.length > 600) this.voices = this.voices.slice(-300);
   }
   onEnd: (() => void) | null = null;
 
@@ -341,11 +344,20 @@ export function trackFor(p: PlaceInfo): string {
   if (id === 'in_center') return 'center';
   if (id.startsWith('gym') || id === 'in_gym' || id === 'league' || id === 'tower') return 'gym';
   if (id === 'origin' || id === 'chateau' || id === 'altar' || id === 'distortion') return 'legend';
+  if (id === 'home' || id.startsWith('in_house')) return 'inn';
   if (p.interior || p.kind === 'room') return 'lab';
+  if (id.startsWith('victory')) return 'challenge';
   if (p.kind === 'cave') return 'cave';
+  if (id === 'cape' || id === 'crown') return 'island';
   if (p.kind === 'town') return p.biome === 'city' ? 'city' : p.biome === 'snow' ? 'snow' : p.biome === 'beach' ? 'harbor' : 'town';
   if (p.kind === 'area') return id.endsWith('_lake') || p.biome === 'forest' || p.biome === 'swamp' || p.biome === 'snow' ? 'mystic' : p.biome === 'beach' ? 'harbor' : 'route2';
-  if (p.kind === 'route') return p.tier >= 4 || ['rocky', 'snow', 'desert', 'volcano'].includes(p.biome) ? 'route2' : 'route';
+  if (p.kind === 'route') {
+    if (p.biome === 'forest' || p.biome === 'swamp') return 'route_forest';
+    if (p.biome === 'beach') return 'route_beach';
+    if (p.biome === 'snow') return 'route_snow';
+    if (p.biome === 'desert' || p.biome === 'volcano') return 'route_desert';
+    return p.tier >= 4 || p.biome === 'rocky' ? 'route2' : 'route';
+  }
   return 'route';
 }
 /** 배틀 상대 → 곡 */

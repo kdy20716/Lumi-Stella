@@ -14,7 +14,7 @@ async function certs() {
 }
 const b64json = (s: string) => JSON.parse(Buffer.from(s, 'base64url').toString('utf8')) as Record<string, unknown>;
 
-export interface VerifiedUser { uid: string; name: string; email?: string }
+export interface VerifiedUser { uid: string; name: string; email?: string; emailVerified: boolean }
 
 export async function verifyIdToken(token: string, projectId: string): Promise<VerifiedUser> {
   const parts = String(token).split('.');
@@ -30,5 +30,5 @@ export async function verifyIdToken(token: string, projectId: string): Promise<V
   if (payload.aud !== projectId || payload.iss !== `https://securetoken.google.com/${projectId}`) throw new Error('다른 프로젝트의 토큰');
   if (typeof payload.exp !== 'number' || payload.exp < now - 30) throw new Error('토큰 만료 — 다시 로그인하세요');
   if (typeof payload.sub !== 'string' || !payload.sub) throw new Error('사용자 정보 없음');
-  return { uid: payload.sub, name: String(payload.name ?? payload.email ?? '트레이너').split('@')[0].slice(0, 10), email: payload.email as string | undefined };
+  return { uid: payload.sub, name: String(payload.name ?? payload.email ?? '트레이너').split('@')[0].slice(0, 10), email: payload.email as string | undefined, emailVerified: payload.email_verified === true };
 }

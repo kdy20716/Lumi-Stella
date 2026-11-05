@@ -8,7 +8,7 @@ export const TILESET_COLS = 16;
 export const ROW = { GRASS: 0, DIRT: 1, GRASS_DIRT: 2, GRASS_WATER: 3, TILLED: 4, TILLED_WET: 5, DECOR: 6, WOOD: 7, MISC: 8, STONE: 9, GRASS_STONE: 10, CLIFF: 11 };
 export const TILESET_ROWS = 12;
 /** 2.5D 높낮이: 절벽 앞면(왼끝 · 가운데 · 오른끝 · 변형) · 계단 · 턱(한 방향 뛰어내리기) */
-export const CLIFF = { FACE_L: 0, FACE: 1, FACE_R: 2, STAIRS: 3, LEDGE_L: 4, LEDGE: 5, LEDGE_R: 6, FACE2: 7, BASE_L: 8, BASE: 9, BASE_R: 10, BASE2: 11, SHADE: 12 };
+export const CLIFF = { FACE_L: 0, FACE: 1, FACE_R: 2, STAIRS: 3, LEDGE_L: 4, LEDGE: 5, LEDGE_R: 6, FACE2: 7, BASE_L: 8, BASE: 9, BASE_R: 10, BASE2: 11, SHADE: 12, SIDE_L: 13, SIDE_R: 14, TOP: 15 };
 export const DECOR = { FLOWER0: 0, FLOWER_COUNT: 6, PEBBLE0: 6, CLOVER0: 8, MUSHROOM: 10, LEAVES: 11, DAISY: 12, STONES: 13, GRASS_DARK: 14, PATCH: 15 };
 export const WOOD = { DOCK_H: 0, DOCK_POST: 1, PORCH: 2, STEP0: 3, STEP1: 4, BRIDGE_TOP: 5, BRIDGE_MID: 6, BRIDGE_BOT: 7 };
 export const MISC = { COLLIDE: 0, TILE_CURSOR: 1 };
@@ -298,6 +298,17 @@ export function buildTileset() {
     };
     face(CLIFF.FACE_L, { l: true }); face(CLIFF.FACE); face(CLIFF.FACE_R, { r: true }); face(CLIFF.FACE2, { seed: 5 });
     face(CLIFF.BASE_L, { l: true, base: true }); face(CLIFF.BASE, { base: true }); face(CLIFF.BASE_R, { r: true, base: true }); face(CLIFF.BASE2, { seed: 9, base: true });
+    // 언덕 옆면 (왼쪽 · 오른쪽 가장자리 칸에 세로 바위띠) · 뒤쪽 가장자리 (위 칸에 얇은 처마)
+    const side = (col, left) => {
+      const [ox, oy] = at(col, ROW.CLIFF);
+      for (let py = 0; py < T; py++) for (let k = 0; k < 6; k++) {
+        const px = left ? k : T - 1 - k;
+        const c = k === 0 ? R.d2 : k === 5 ? withAlpha('#0e1408', 0.25) : k === 4 ? G.l2 : ((py + (left ? 0 : 2)) % 4 === 0 ? R.l1 : k === 1 ? (left ? R.l2 : R.d1) : hash2(px, py, 61) < 0.2 ? R.d1 : R.base);
+        img.put(ox + px, oy + py, c);
+      }
+    };
+    side(CLIFF.SIDE_L, true); side(CLIFF.SIDE_R, false);
+    { const [ox, oy] = at(CLIFF.TOP, ROW.CLIFF); for (let px = 0; px < T; px++) { img.put(ox + px, oy, R.d2); img.put(ox + px, oy + 1, R.base); img.put(ox + px, oy + 2, R.l1); img.put(ox + px, oy + 3, G.l2); img.put(ox + px, oy + 4, withAlpha('#0e1408', 0.18)); } }
     // 절벽 아래 땅에 드리우는 그늘 (반투명)
     { const [ox, oy] = at(CLIFF.SHADE, ROW.CLIFF); for (let py = 0; py < 6; py++) for (let px = 0; px < T; px++) img.put(ox + px, oy + py, withAlpha('#0e1408', 0.34 - py * 0.055)); }
     // 계단: 돌 4단 + 양옆 난간

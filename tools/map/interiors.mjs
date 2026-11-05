@@ -21,6 +21,9 @@ export function buildInterior(id) {
   m.spawn('player', s.door, s.H - 2);
   for (const [cx, cy] of s.lights ?? []) m.spawn('light', cx, cy);
   m.warp(s.door, s.H - 1, 1, 1, s.exitTo?.[0] ?? '@exit', s.exitTo?.[1] ?? '');
+  // 창문 유리 위치 (픽셀): 게임에서 시간대(아침 · 낮 · 저녁 · 밤)에 맞춘 하늘을 덧그림
+  const wins = (s.decor ?? []).filter(([k]) => k === 'window').map(([, dx]) => [dx * 16 + 4, 9, 24, 22]);
+  m.props.push({ name: 'windows', type: 'string', value: JSON.stringify(wins) });
   m.props.push({ name: 'interior', type: 'string', value: 'true' }, { name: 'bg', type: 'string', value: `room_${id}` }, { name: 'title', type: 'string', value: s.name });
   return m;
 }

@@ -1,5 +1,6 @@
 // DOM 오버레이 UI: 로딩 / 타이틀 / HUD(시계·골드·에너지) / 손에 든 도구 / 대화창 / 토스트 / 힌트 / 하루 전환 / 채팅
 import { ITEMS, NPCS, RECIPES, SPECIES, TYPE_COLORS } from '@shared/data';
+import { illustSvg } from './Illust';
 import { josa } from '@shared/josa';
 import { creator, emoteWheel, invitePrompt, mailbox } from './Social';
 import { sfx } from '../audio/Sfx';
@@ -123,7 +124,7 @@ const hotbar = {
   mount() {
     if (this.node) return;
     this.node = el('div', 'held-badge');
-    this.node.title = '휴대폰(M) › 가방에서 바꾸기';
+    this.node.title = '휴대폰(R) › 가방에서 바꾸기';
     this.node.onclick = () => this.onClick();
     root().appendChild(this.node);
   },
@@ -136,6 +137,22 @@ const hotbar = {
   },
 };
 
+// ── 예/아니오 선택창 ───────────────────────────────────
+export const confirmBox = {
+  node: null as HTMLDivElement | null,
+  get open() { return !!this.node; },
+  show(text: string, onYes: () => void, o: { yes?: string; no?: string; onNo?: () => void } = {}) {
+    this.close();
+    const n = el('div', 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-[min(460px,92vw)] pointer-events-auto toast-in');
+    n.innerHTML = `<div class="px-panel text-center"><div class="text-xl leading-relaxed whitespace-pre-wrap mb-3">${text}</div>
+      <div class="flex gap-3 justify-center"><button data-c="no" class="px-btn text-base">${o.no ?? '아니요'}</button><button data-c="yes" class="px-btn green text-base">${o.yes ?? '네'}</button></div></div>`;
+    n.querySelector<HTMLButtonElement>('[data-c=yes]')!.onclick = () => { this.close(); onYes(); };
+    n.querySelector<HTMLButtonElement>('[data-c=no]')!.onclick = () => { this.close(); o.onNo?.(); };
+    root().appendChild(n); this.node = n;
+  },
+  close() { this.node?.remove(); this.node = null; },
+};
+
 // ── 대화창 ─────────────────────────────────────────────
 const dialogue = {
   node: null as HTMLDivElement | null, pages: [] as string[], page: 0, typing: 0, full: '', shown: 0, onClose: null as (() => void) | null,
@@ -146,16 +163,17 @@ const dialogue = {
     this.pages = o.pages.map(josa); this.page = 0; this.onClose = onClose ?? null;
     const n = el('div', 'fixed left-1/2 -translate-x-1/2 bottom-3 w-[min(980px,97vw)] z-30 pointer-events-auto dlg-in');
     const hearts = o.hearts !== undefined ? `<div class="flex gap-0.5 justify-center mt-1">${Array.from({ length: 5 }, (_, i) => `<span class="px-icon" style="${iconStyle('heart', 14)};${i < o.hearts! ? '' : 'filter:grayscale(1) opacity(.45)'}"></span>`).join('')}</div>` : '';
-    const portrait = o.sprite ? `<div class="shrink-0 flex flex-col items-center gap-1">
-        <div class="dlg-portrait" style="--pc:${o.color ?? '#a8683a'}"><img src="assets/portraits/${o.sprite}.png" alt="" onerror="this.style.display='none'"></div>
-        <div class="dlg-name" style="background:${o.color ?? '#a8683a'}">${o.name}</div>${hearts}</div>` : '';
-    n.innerHTML = `<div class="px-panel flex gap-4 items-stretch min-h-[178px]">
+    // 오른쪽 위: 성격에 맞는 포즈의 벡터 일러스트 (대화창 뒤에서 상반신이 올라옴) + 이름표
+    const ill = o.sprite ? illustSvg(o.sprite) : '';
+    const portrait = o.sprite ? `<div class="dlg-ill" style="--pc:${o.color ?? '#a8683a'}">${ill || `<img src="assets/portraits/${o.sprite}.png" alt="" onerror="this.style.display='none'">`}</div>` : '';
+    const tag = o.sprite ? `<div class="dlg-tag"><div class="dlg-name" style="background:${o.color ?? '#a8683a'}">${o.name}</div>${hearts}</div>` : '';
+    n.innerHTML = `${portrait}<div class="px-panel relative flex gap-4 items-stretch min-h-[178px] ${o.sprite ? 'pr-[230px]' : ''}">
       <div class="flex-1 flex flex-col min-w-0">
         ${!o.sprite && o.name ? `<div class="self-start -mt-1 mb-1 px-3 py-0.5 text-white text-base px-outline" style="background:${o.color ?? '#a8683a'}">${o.name}</div>` : ''}
         ${o.title ? `<div class="text-sm text-[#8a5a32]">${o.title}</div>` : ''}
         <div data-d="text" class="text-[22px] leading-relaxed whitespace-pre-wrap flex-1"></div>
         <div class="self-end text-[#a8683a] bob text-lg">▼</div>
-      </div>${portrait}</div>`;
+      </div>${tag}</div>`;
     n.onclick = () => this.advance();
     root().appendChild(n);
     this.node = n;
@@ -260,7 +278,7 @@ const help = {
     const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-panel text-lg leading-relaxed pointer-events-auto min-w-[420px]');
     n.innerHTML = `<div class="text-2xl mb-2 text-[#8a5a32]">조작법</div>
       <table class="w-full"><tbody>
-      ${[['WASD / 방향키', '이동 (Shift 달리기)'], ['Space / 좌클릭', '손에 든 도구 사용 · 씨앗 · 낚시'], ['E / 우클릭', '대화 · 수확 · 출하 · 잡초 뽑기 · 조사'], ['M', '휴대폰 열기 · 닫기 (가방에서 도구 바꾸기)'], ['P', '휴대폰 › 나의 루미'], ['H', '도움말'], ['Esc', '휴대폰 뒤로 · 닫기 / 일시정지'], ['Enter', '채팅'], ['Tab (누른 채)', '감정표현 휠'], ['L', '접속자 목록 접기']]
+      ${[['WASD / 방향키', '이동 (Shift 달리기)'], ['Space / 좌클릭', '손에 든 도구 사용 · 씨앗 · 낚시'], ['E / 우클릭', '대화 · 수확 · 출하 · 잡초 뽑기 · 조사'], ['R', '휴대폰 홈 화면 (가방에서 도구 바꾸기)'], ['M', '지도 바로 열기'], ['P', '휴대폰 › 나의 루미'], ['H', '도움말'], ['Esc', '휴대폰 뒤로 · 닫기 / 일시정지'], ['Enter', '채팅'], ['Tab', '감정표현 휠 (톡 누르고 클릭 · 누른 채 고르고 떼기)'], ['L', '접속자 목록 접기']]
         .map(([k, v]) => `<tr><td class="pr-6 text-[#a8683a]">${k}</td><td>${v}</td></tr>`).join('')}
       </tbody></table>
       <div class="mt-3 text-sm text-[#8a5a32]">모험: 마을회관 한별 박사님께 파트너 루미를 받고, 풀숲에서 야생 루미를 만나 루미볼로 잡아요. 트레이너와 눈이 마주치면 배틀! 도장 8곳을 돌아 배지를 모으면 루미나 리그로.<br>자급자족: 밭에 <b>루미풀·불꽃고추·단단콩</b>을 키우고, 채석장에서 <b>돌·구리·철</b>을 캐서 집 <b>작업대</b>에서 회복약 · 도핑약 · 루미볼을 직접 만들어요. 배지를 모을수록 민수(볼 공방)와 한별 박사(연구소)가 새 제작법을 가르쳐 줘요.<br>집: 옷장에서 외형 변경, 침대에서 잠, 식탁에 음식을 차려 친구와 같이 먹기. 농장 우편함에서 친구 초대!</div>`;
@@ -496,6 +514,7 @@ const ferry = (dest: string) => new Promise<void>((resolve) => {
 
 let mounted = false;
 export const ui = {
+  confirm: confirmBox,
   creator, emoteWheel, mailbox, invitePrompt, menu, mythFx, ferry,
   loading, title, hud, hotbar, dialogue, toast, hint, transition, chat, help, shop, craft, roster, banner, starter, party, fishing,
   mountGame() { if (mounted) return; mounted = true; hud.mount(); hotbar.mount(); toast.mount(); hint.mount(); chat.mount(); },

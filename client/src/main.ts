@@ -1,4 +1,6 @@
 import './style.css';
+import { loadLooks } from './ui/Illust';
+void loadLooks();
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { FarmScene } from './scenes/FarmScene';
