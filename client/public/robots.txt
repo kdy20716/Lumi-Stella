@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# 사이트맵: 배포 주소 확정 후 아래 줄의 도메인을 실제 주소로 바꾸세요
+# Sitemap: https://YOUR-VERCEL-DOMAIN/sitemap.xml

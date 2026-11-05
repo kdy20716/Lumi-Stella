@@ -3,12 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>루미 몬스터즈: 별빛의 씨앗</title>
+    <title>루미 몬스터즈: 별빛의 씨앗 | 브라우저 몬스터 수집 농장 RPG</title>
+    <meta name="description" content="루미 몬스터즈: 별빛의 씨앗은 몬스터를 수집하고 배틀하며, 농사·채집·낚시·제작을 즐기는 무료 2D 픽셀 멀티플레이 웹 게임입니다. 브라우저에서 바로 플레이하세요." />
+    <meta name="keywords" content="루미 몬스터즈, 별빛의 씨앗, 몬스터 수집, 농장 게임, 픽셀 RPG, 멀티플레이 웹 게임, 브라우저 게임, 무료 게임" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#14201a" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="루미 몬스터즈" />
+    <meta property="og:title" content="루미 몬스터즈: 별빛의 씨앗" />
+    <meta property="og:description" content="몬스터를 수집하고 배틀하며 농장을 가꾸는 2D 픽셀 멀티플레이 웹 게임. 브라우저에서 바로 플레이하세요." />
+    <meta property="og:locale" content="ko_KR" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="루미 몬스터즈: 별빛의 씨앗" />
+    <meta name="twitter:description" content="몬스터를 수집하고 배틀하며 농장을 가꾸는 2D 픽셀 멀티플레이 웹 게임." />
     <link rel="icon" href="assets/ui/icons.png" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "루미 몬스터즈: 별빛의 씨앗",
+      "alternateName": "Lumi Monsters: Starlight Seed",
+      "description": "몬스터 수집·배틀 RPG에 농사·채집·낚시·제작을 더한 2D 픽셀 멀티플레이 웹 게임.",
+      "genre": ["RPG", "Simulation", "Monster Collecting"],
+      "gamePlatform": "Web Browser",
+      "applicationCategory": "Game",
+      "inLanguage": "ko",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
+    }
+    </script>
     <!-- 한글 픽셀 폰트 (Galmuri, OFL) — 오프라인이면 시스템 폰트로 대체됨 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" />
   </head>
   <body class="bg-[#14201a] overflow-hidden select-none">
+    <noscript>
+      <main style="font-family: sans-serif; color: #e8f0e0; padding: 24px; line-height: 1.6;">
+        <h1>루미 몬스터즈: 별빛의 씨앗</h1>
+        <p>몬스터를 수집하고 배틀하며 농장을 가꾸는 2D 픽셀 멀티플레이 웹 게임입니다. 농사, 채집, 낚시, 제작, 여러 마을 탐험과 친구들과의 실시간 멀티플레이를 즐길 수 있습니다.</p>
+        <p>이 게임은 자바스크립트를 켜야 플레이할 수 있습니다.</p>
+      </main>
+    </noscript>
     <div id="game" class="fixed inset-0"></div>
     <!-- DOM 오버레이 UI (HUD/핫바/대화창). pointer-events 는 컴포넌트별로 켬 -->
     <div id="ui" class="fixed inset-0 pointer-events-none"></div>
