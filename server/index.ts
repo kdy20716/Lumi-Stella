@@ -132,7 +132,7 @@ async function onMessage(client: Client, m: C2S) {
 // ── HTTP 서버 (상태 확인용) + Socket.io ─────────────
 const http = createServer((req, res) => {
   const origin = req.headers.origin;
-  if (origin && (CLIENT_ORIGINS.length === 0 || CLIENT_ORIGINS.includes(origin))) {
+  if (origin && (CLIENT_ORIGINS.length === 0 || CLIENT_ORIGINS.includes(origin) || origin.endsWith('.vercel.app'))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
   } else if (!CLIENT_ORIGINS.length) {
@@ -148,7 +148,18 @@ const http = createServer((req, res) => {
   res.writeHead(404); res.end();
 });
 const io = new IOServer(http, {
-  cors: { origin: CLIENT_ORIGINS.length ? CLIENT_ORIGINS : true, methods: ['GET', 'POST'], credentials: true },
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin || CLIENT_ORIGINS.length === 0 || CLIENT_ORIGINS.includes(origin) || origin.endsWith('.vercel.app')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+
   transports: ['websocket', 'polling'],
   maxHttpBufferSize: 64 * 1024,
   pingInterval: 20_000, pingTimeout: 25_000,

@@ -31,7 +31,7 @@ const loading = {
   show() {
     if (this.node) return;
     this.node = el('div', 'fixed inset-0 flex flex-col items-center justify-center gap-6 bg-[#14201a] text-[#f3dfb4] z-50 transition-opacity duration-500');
-    this.node.innerHTML = `<div class="text-4xl px-outline text-[#ffe58a] tracking-widest">루미 몬스터즈</div>
+    this.node.innerHTML = `<div class="text-4xl px-outline text-[#ffe58a] tracking-widest">루미 스텔라</div>
       <div class="w-72 h-5 border-4 border-[#5e3620] bg-[#3b2414]"><div class="h-full bg-[#7cc45a] w-0 transition-all"></div></div>
       <div class="text-sm opacity-70">픽셀을 심는 중...</div>`;
     this.bar = this.node.querySelector('div > div > div');
@@ -50,9 +50,9 @@ const title = {
     const defUrl = serverUrl();
     n.innerHTML = `
       <div class="title-float flex flex-col items-center mb-8">
-        <div class="text-[64px] leading-none text-[#ffe58a] px-outline tracking-[0.12em]" style="text-shadow:-4px 0 #3b2414,4px 0 #3b2414,0 -4px #3b2414,0 4px #3b2414,4px 4px #3b2414,6px 8px 0 rgba(0,0,0,.35)">루미 몬스터즈</div>
+        <div class="text-[64px] leading-none text-[#ffe58a] px-outline tracking-[0.12em]" style="text-shadow:-4px 0 #3b2414,4px 0 #3b2414,0 -4px #3b2414,0 4px #3b2414,4px 4px #3b2414,6px 8px 0 rgba(0,0,0,.35)">루미 스텔라</div>
         <div class="mt-2 text-3xl text-[#bff0e0] px-outline tracking-[0.3em]">별빛의 씨앗</div>
-        <div class="mt-2 text-sm text-[#fff8ec] px-outline tracking-[0.35em] opacity-90">LUMI MONSTERS · SEEDS OF STARLIGHT</div>
+        <div class="mt-2 text-sm text-[#fff8ec] px-outline tracking-[0.35em] opacity-90">LUMI STELLA · SEEDS OF STARLIGHT</div>
       </div>
       <div class="px-panel flex flex-col items-center gap-3 w-[min(380px,92vw)]">
         <div data-c="user" class="text-sm text-[#8a5a32] min-h-5">로그인 상태 확인 중...</div>
