@@ -1,10 +1,11 @@
 // 접속자 관리: 연결 목록 · 보내기(한 명/방/전체) · 접속자 목록 · 시뮬레이션 이벤트를 관련 있는 사람에게만 전달
-import { WebSocket } from 'ws';
 import type { NetPlayer, RosterEntry, S2C } from '../shared/protocol';
 import type { FarmSimulation, SimEvent } from '../shared/sim/FarmSimulation';
 import { roomKey } from '../shared/types';
 
-export interface Client { ws: WebSocket; id: string; lastMove: number; anim: string; admin: boolean; lastReport: number }
+/** 연결 하나 (Socket.io 소켓을 감싼 것 — 전송 방식이 바뀌어도 게임 코드는 그대로) */
+export interface Conn { readonly open: boolean; send(m: S2C): void; close(): void }
+export interface Client { conn: Conn; id: string; lastMove: number; anim: string; admin: boolean; lastReport: number }
 
 export class Hub {
   readonly clients = new Map<string, Client>();
@@ -13,11 +14,11 @@ export class Hub {
     sim.on((e) => this.route(e));
   }
 
-  send(ws: WebSocket, m: S2C) { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); }
-  sendTo(id: string, m: S2C) { const c = this.clients.get(id); if (c) this.send(c.ws, m); }
-  broadcast(m: S2C, except?: string) { const s = JSON.stringify(m); for (const c of this.clients.values()) if (c.id !== except && c.ws.readyState === WebSocket.OPEN) c.ws.send(s); }
+  send(conn: Conn, m: S2C) { if (conn.open) conn.send(m); }
+  sendTo(id: string, m: S2C) { const c = this.clients.get(id); if (c) this.send(c.conn, m); }
+  broadcast(m: S2C, except?: string) { for (const c of this.clients.values()) if (c.id !== except) this.send(c.conn, m); }
   toRoom(room: string, m: S2C, except?: string) { for (const p of this.sim.playersIn(room)) if (p.id !== except) this.sendTo(p.id, m); }
-  toAdmins(m: S2C) { for (const c of this.clients.values()) if (c.admin) this.send(c.ws, m); }
+  toAdmins(m: S2C) { for (const c of this.clients.values()) if (c.admin) this.send(c.conn, m); }
 
   /** 칭호는 서버만 정함 (관리자 계정 → 'admin') */
   title(id: string) { return this.clients.get(id)?.admin ? 'admin' : undefined; }
@@ -51,7 +52,7 @@ export class Hub {
     for (const c of this.clients.values()) {
       const me = this.sim.players.get(c.id); if (!me) continue;
       const room = this.sim.room(me);
-      this.send(c.ws, { t: 'players', list: this.sim.playersIn(room).filter((o) => o.id !== c.id && this.clients.has(o.id)).map((o) => this.netPlayer(o.id)), ts: now });
+      this.send(c.conn, { t: 'players', list: this.sim.playersIn(room).filter((o) => o.id !== c.id && this.clients.has(o.id)).map((o) => this.netPlayer(o.id)), ts: now });
     }
     this.rosterT += 1000 / hz;
     if (this.rosterDirty || this.rosterT > 2000) { this.rosterDirty = false; this.rosterT = 0; this.broadcast({ t: 'roster', list: this.roster() }); }

@@ -17,14 +17,67 @@ const PERSONA: Record<string, [Pose, Face]> = {
   leader_harbor: ['hips', 'grin'], leader_maple: ['clasp', 'gentle'], leader_forge: ['cross', 'serious'], leader_ember: ['point', 'grin'], leader_lumina: ['hips', 'smug'],
   leader_frost: ['cross', 'calm'], leader_summit: ['think', 'serious'], elite1: ['cross', 'smug'], elite2: ['hips', 'smug'], elite3: ['think', 'serious'], elite4: ['point', 'serious'], champion: ['point', 'smug'],
 };
-const personaOf = (id: string): [Pose, Face] => PERSONA[id] ?? (/^[mf]\d$/.test(id) ? ['wave', 'smile'] : (['wave', 'smile'] as [Pose, Face]));
+export const personaOf = (id: string): [Pose, Face] => PERSONA[id] ?? (/^[mf]\d$/.test(id) ? ['wave', 'smile'] : (['wave', 'smile'] as [Pose, Face]));
 
 let LOOKS: Record<string, Look> | null = null;
 let loading: Promise<void> | null = null;
+/** 그림 AI 로 만든 일러스트 목록 (tools/art/gen-illust.mjs 가 씀). 없으면 아래 SVG 를 임시로 씀 */
+export let AI_ILLUST: { ids: string[]; files: Record<string, string>; model?: string; updatedAt?: string } = { ids: [], files: {} };
 export function loadLooks() {
-  loading ??= fetch('assets/looks.json').then((r) => r.json()).then((j) => { LOOKS = j as Record<string, Look>; }).catch(() => { LOOKS = {}; });
+  loading ??= Promise.all([
+    fetch('assets/looks.json').then((r) => r.json()).then((j) => { LOOKS = j as Record<string, Look>; }).catch(() => { LOOKS = {}; }),
+    fetch('assets/illust/index.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.ids) AI_ILLUST = { files: {}, ...j }; }).catch(() => {}),
+  ]).then(() => undefined);
   return loading;
 }
+export const hasAiIllust = (id: string) => AI_ILLUST.ids.includes(id);
+
+// ── AI 그림: 흰 배경을 지워서 투명하게 (테두리에서부터 이어진 흰색만 → 옷의 흰 부분은 그대로) ──
+const cutCache = new Map<string, string>();
+const cutting = new Map<string, Promise<string>>();
+function cutBackground(src: string): Promise<string> {
+  const hit = cutCache.get(src); if (hit) return Promise.resolve(hit);
+  let p = cutting.get(src);
+  if (!p) {
+    p = new Promise<string>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 720 / img.naturalHeight);
+        const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        const g = cv.getContext('2d', { willReadFrequently: true })!; g.drawImage(img, 0, 0, w, h);
+        const im = g.getImageData(0, 0, w, h), d = im.data;
+        const bgLike = (i: number) => { const r = d[i], gg = d[i + 1], b = d[i + 2]; return Math.min(r, gg, b) > 226 && Math.max(r, gg, b) - Math.min(r, gg, b) < 26; };
+        const seen = new Uint8Array(w * h), q: number[] = [];
+        const push = (x: number, y: number) => { const k = y * w + x; if (seen[k] || !bgLike(k * 4)) return; seen[k] = 1; q.push(k); };
+        for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+        for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+        while (q.length) { const k = q.pop()!, x = k % w, y = (k / w) | 0; d[k * 4 + 3] = 0; if (x > 0) push(x - 1, y); if (x < w - 1) push(x + 1, y); if (y > 0) push(x, y - 1); if (y < h - 1) push(x, y + 1); }
+        // 가장자리 부드럽게: 지운 칸 옆의 밝은 픽셀은 반투명
+        for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+          const k = y * w + x; if (seen[k]) continue;
+          if (seen[k - 1] || seen[k + 1] || seen[k - w] || seen[k + w]) { const i = k * 4, l = (d[i] + d[i + 1] + d[i + 2]) / 3; if (l > 200) d[i + 3] = Math.round(255 * Math.max(0.25, (255 - l) / 55)); }
+        }
+        g.putImageData(im, 0, 0);
+        const url = cv.toDataURL('image/png'); cutCache.set(src, url); resolve(url);
+      };
+      img.onerror = () => resolve(src);
+      img.src = src;
+    });
+    cutting.set(src, p);
+  }
+  return p;
+}
+/** 대화창 · 테스트 페이지용: AI 그림이 있으면 그것(배경 지운 뒤 교체), 없으면 벡터 SVG */
+export function illustHtml(id: string, pose?: Pose, face?: Face): string {
+  if (!hasAiIllust(id)) return illustSvg(id, pose, face);
+  const src = `assets/illust/${AI_ILLUST.files[id] ?? `${id}.png`}`;
+  const ready = cutCache.get(src);
+  if (!ready) void cutBackground(src).then((url) => document.querySelectorAll<HTMLImageElement>(`img[data-ill="${CSS.escape(id)}"]`).forEach((el) => { el.src = url; el.classList.remove('ill-wait'); }));
+  return `<img class="ill-ai ${ready ? '' : 'ill-wait'}" data-ill="${id}" src="${ready ?? src}" alt="">`;
+}
+/** 미리 배경 지워 두기 (대화가 처음 뜰 때 깜빡이지 않게) */
+export function warmIllust() { for (const id of AI_ILLUST.ids) void cutBackground(`assets/illust/${AI_ILLUST.files[id] ?? `${id}.png`}`); }
 
 const OL = '#3a2418';
 const esc = (s: string) => s.replace(/[^#\w(),.% -]/g, '');

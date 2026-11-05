@@ -325,3 +325,23 @@ button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite;
 .tc-on .dlg-in [data-d=text] { font-size: 17px; }
 .tc-on .held-badge { bottom: auto !important; top: 8px; left: 8px !important; transform: scale(.85); transform-origin: top left; }
 .tc-left { flex-direction: column-reverse; }
+.dlg-ill img.ill-ai { position: absolute; inset: 0; left: 0; bottom: 0; width: 100%; height: 100%; transform: none; object-fit: contain; object-position: center bottom; image-rendering: auto; }
+.ill-wait { opacity: 0; }
+/* 일러스트 테스트 페이지 (?illust) */
+body[data-illbg="day"] { background: linear-gradient(#9fd6f0, #cfeec0 60%, #7cc45a) fixed !important; }
+body[data-illbg="night"] { background: linear-gradient(#0e1430, #2a3a72 70%, #24402a) fixed !important; }
+body[data-illbg="room"] { background: linear-gradient(#f2d8c8, #e8c8a0 60%, #a8784a) fixed !important; }
+.illt { position: relative; padding: 16px 16px 260px; font-family: var(--font-pixel-sm, sans-serif); color: #3b2414; }
+.illt-head { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; background: #fff8ecee; border: 3px solid #6e4024; border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; }
+.illt-head span { opacity: .75; font-size: 14px; }
+.illt-help { font-size: 13px; line-height: 1.6; flex: 1; min-width: 260px; }
+.illt-help code { background: #3b2414; color: #ffe58a; padding: 0 5px; border-radius: 4px; }
+.illt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.illt-card { position: relative; background: #fffaf0e8; border: 3px solid #d8b67c; border-radius: 12px; padding: 8px; text-align: left; cursor: pointer; }
+.illt-card:hover { border-color: #e0a43a; transform: translateY(-2px); }
+.illt-pic { height: 200px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.illt-pic svg, .illt-pic img { height: 100%; width: auto; max-width: 100%; object-fit: contain; }
+.illt-tag { position: absolute; top: 8px; right: 8px; font-size: 11px; padding: 1px 6px; border-radius: 8px; background: #a8a090; color: #fff; }
+.illt-tag.ai { background: #2f8a5a; }
+.illt-sub { font-size: 12px; opacity: .75; }
+.illt-card small { opacity: .5; }

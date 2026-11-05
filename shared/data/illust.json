@@ -1,0 +1,366 @@
+{
+ "m1": {
+  "name": "주인공",
+  "role": "15살 트레이너",
+  "persona": "cheerful, curious 15-year-old hero",
+  "pose": "wave",
+  "face": "smile"
+ },
+ "m2": {
+  "name": "주인공",
+  "role": "15살 트레이너",
+  "persona": "bright, determined 15-year-old hero",
+  "pose": "wave",
+  "face": "grin"
+ },
+ "m3": {
+  "name": "주인공",
+  "role": "15살 트레이너",
+  "persona": "calm, kind 15-year-old hero",
+  "pose": "wave",
+  "face": "smile"
+ },
+ "m4": {
+  "name": "주인공",
+  "role": "15살 트레이너",
+  "persona": "sporty, energetic 15-year-old hero",
+  "pose": "cheer",
+  "face": "grin"
+ },
+ "f1": {
+  "name": "주인공",
+  "role": "15살 트레이너",
+  "persona": "cheerful, curious 15-year-old heroine",
+  "pose": "wave",
+  "face": "smile"
+ },
+ "f2": {
+  "name": "주인공",
+  "role": "15살 트레이너",
+  "persona": "bright, determined 15-year-old heroine",
+  "pose": "wave",
+  "face": "grin"
+ },
+ "f3": {
+  "name": "주인공",
+  "role": "15살 트레이너",
+  "persona": "gentle, thoughtful 15-year-old heroine",
+  "pose": "clasp",
+  "face": "smile"
+ },
+ "f4": {
+  "name": "주인공",
+  "role": "15살 트레이너",
+  "persona": "sporty, energetic 15-year-old heroine",
+  "pose": "cheer",
+  "face": "grin"
+ },
+ "player": {
+  "name": "주인공",
+  "role": "15살 트레이너",
+  "persona": "cheerful young farmer-trainer",
+  "pose": "wave",
+  "face": "smile"
+ },
+ "rival_m": {
+  "name": "라이벌",
+  "role": "소꿉친구",
+  "persona": "hot-blooded, competitive, impatient best friend and rival boy, always running ahead",
+  "pose": "point",
+  "face": "grin"
+ },
+ "rival_f": {
+  "name": "라이벌",
+  "role": "소꿉친구",
+  "persona": "hot-blooded, competitive, impatient best friend and rival girl, always running ahead",
+  "pose": "point",
+  "face": "grin"
+ },
+ "mom": {
+  "name": "엄마",
+  "role": "주인공의 엄마",
+  "persona": "warm, gentle, slightly teasing mother in her late 30s",
+  "pose": "clasp",
+  "face": "gentle"
+ },
+ "mayor": {
+  "name": "오 이장",
+  "role": "별빛 마을 이장",
+  "persona": "wise, kind elderly village chief with white beard",
+  "pose": "behind",
+  "face": "gentle"
+ },
+ "professor": {
+  "name": "한별 박사",
+  "role": "루미 연구가",
+  "persona": "absent-minded but brilliant monster researcher in a lab coat",
+  "pose": "think",
+  "face": "calm"
+ },
+ "nurse": {
+  "name": "다온",
+  "role": "루미 센터 간호사",
+  "persona": "sweet, caring monster-center nurse",
+  "pose": "clasp",
+  "face": "smile"
+ },
+ "hana": {
+  "name": "하나",
+  "role": "약초 농사꾼",
+  "persona": "sunny, energetic herb farmer girl",
+  "pose": "cheer",
+  "face": "grin"
+ },
+ "minsu": {
+  "name": "민수",
+  "role": "볼 공방 장인",
+  "persona": "gruff, stubborn but kind-hearted blacksmith",
+  "pose": "cross",
+  "face": "serious"
+ },
+ "sora": {
+  "name": "소라",
+  "role": "루미 마트 주인",
+  "persona": "sharp, confident shop owner with glasses",
+  "pose": "hips",
+  "face": "smug"
+ },
+ "park": {
+  "name": "박 영감",
+  "role": "은퇴한 트레이너 · 낚시꾼",
+  "persona": "laid-back retired trainer and old fisherman",
+  "pose": "behind",
+  "face": "calm"
+ },
+ "juni": {
+  "name": "준이",
+  "role": "꼬마 트레이너 지망생",
+  "persona": "excitable little kid who wants to be a trainer",
+  "pose": "cheer",
+  "face": "grin"
+ },
+ "luna": {
+  "name": "루나",
+  "role": "카페 사장",
+  "persona": "soft-spoken, elegant cafe owner",
+  "pose": "clasp",
+  "face": "gentle"
+ },
+ "teo": {
+  "name": "태오",
+  "role": "떠돌이 음유시인",
+  "persona": "carefree wandering bard",
+  "pose": "hips",
+  "face": "grin"
+ },
+ "mio": {
+  "name": "미오",
+  "role": "루미 화가",
+  "persona": "dreamy, artistic painter",
+  "pose": "wave",
+  "face": "smile"
+ },
+ "doyun": {
+  "name": "도윤",
+  "role": "우체부",
+  "persona": "diligent, polite mail carrier",
+  "pose": "think",
+  "face": "calm"
+ },
+ "villager": {
+  "name": "구름",
+  "role": "바람골 상점 주인",
+  "persona": "friendly villager",
+  "pose": "wave",
+  "face": "smile"
+ },
+ "bugkid": {
+  "name": "민규",
+  "role": "곤충소년",
+  "persona": "bug-catching boy, loud and proud",
+  "pose": "cheer",
+  "face": "grin"
+ },
+ "lass": {
+  "name": "하린",
+  "role": "소녀",
+  "persona": "cute, bubbly girl",
+  "pose": "wave",
+  "face": "smile"
+ },
+ "fisher": {
+  "name": "용수",
+  "role": "낚시꾼",
+  "persona": "patient fisherman",
+  "pose": "behind",
+  "face": "calm"
+ },
+ "hiker": {
+  "name": "대철",
+  "role": "등산가",
+  "persona": "burly cheerful mountain hiker",
+  "pose": "hips",
+  "face": "grin"
+ },
+ "leader": {
+  "name": "세나",
+  "role": "바람골 관장",
+  "persona": "breezy, free-spirited wind-type gym leader",
+  "pose": "hips",
+  "face": "smug"
+ },
+ "woodcutter": {
+  "name": "나무꾼",
+  "role": "나무꾼",
+  "persona": "strong, good-natured woodcutter",
+  "pose": "cross",
+  "face": "grin"
+ },
+ "miner": {
+  "name": "광부",
+  "role": "광부",
+  "persona": "tough, serious miner",
+  "pose": "cross",
+  "face": "serious"
+ },
+ "swimmer": {
+  "name": "수영선수",
+  "role": "수영선수",
+  "persona": "sunny swimmer",
+  "pose": "cheer",
+  "face": "grin"
+ },
+ "skier": {
+  "name": "스키어",
+  "role": "스키어",
+  "persona": "cool, daring skier",
+  "pose": "point",
+  "face": "grin"
+ },
+ "explorer": {
+  "name": "탐험가",
+  "role": "탐험가",
+  "persona": "adventurous explorer",
+  "pose": "think",
+  "face": "smile"
+ },
+ "researcher": {
+  "name": "연구원",
+  "role": "연구원",
+  "persona": "studious researcher",
+  "pose": "think",
+  "face": "calm"
+ },
+ "gentleman": {
+  "name": "신사",
+  "role": "신사",
+  "persona": "refined elderly gentleman",
+  "pose": "behind",
+  "face": "calm"
+ },
+ "lady": {
+  "name": "숙녀",
+  "role": "숙녀",
+  "persona": "graceful lady",
+  "pose": "clasp",
+  "face": "gentle"
+ },
+ "ace_m": {
+  "name": "에이스 트레이너",
+  "role": "에이스 트레이너",
+  "persona": "elite cocky trainer",
+  "pose": "point",
+  "face": "smug"
+ },
+ "ace_f": {
+  "name": "에이스 트레이너",
+  "role": "에이스 트레이너",
+  "persona": "elite confident trainer",
+  "pose": "hips",
+  "face": "smug"
+ },
+ "leader_harbor": {
+  "name": "파도",
+  "role": "물결항 관장",
+  "persona": "cheerful sailor water-type gym leader",
+  "pose": "hips",
+  "face": "grin"
+ },
+ "leader_maple": {
+  "name": "단비",
+  "role": "단풍골 관장",
+  "persona": "gentle grass-type gym leader",
+  "pose": "clasp",
+  "face": "gentle"
+ },
+ "leader_forge": {
+  "name": "무쇠",
+  "role": "쇳불 도시 관장",
+  "persona": "stern ground-type gym leader and miner",
+  "pose": "cross",
+  "face": "serious"
+ },
+ "leader_ember": {
+  "name": "화련",
+  "role": "잿빛 마을 관장",
+  "persona": "fiery passionate fire-type gym leader",
+  "pose": "point",
+  "face": "grin"
+ },
+ "leader_lumina": {
+  "name": "샛별",
+  "role": "빛누리 시티 관장",
+  "persona": "glamorous star light-type gym leader",
+  "pose": "hips",
+  "face": "smug"
+ },
+ "leader_frost": {
+  "name": "설아",
+  "role": "서리 마을 관장",
+  "persona": "cool, quiet ice-village gym leader",
+  "pose": "cross",
+  "face": "calm"
+ },
+ "leader_summit": {
+  "name": "천문",
+  "role": "별마루 관장",
+  "persona": "mysterious astronomer gym leader",
+  "pose": "think",
+  "face": "serious"
+ },
+ "elite1": {
+  "name": "사천왕",
+  "role": "사천왕",
+  "persona": "proud elite four member",
+  "pose": "cross",
+  "face": "smug"
+ },
+ "elite2": {
+  "name": "사천왕",
+  "role": "사천왕",
+  "persona": "elegant elite four member",
+  "pose": "hips",
+  "face": "smug"
+ },
+ "elite3": {
+  "name": "사천왕",
+  "role": "사천왕",
+  "persona": "stoic elite four member",
+  "pose": "think",
+  "face": "serious"
+ },
+ "elite4": {
+  "name": "사천왕",
+  "role": "사천왕",
+  "persona": "intense elite four member",
+  "pose": "point",
+  "face": "serious"
+ },
+ "champion": {
+  "name": "하람",
+  "role": "루미 마스터",
+  "persona": "charismatic champion, calm and overwhelming",
+  "pose": "point",
+  "face": "smug"
+ }
+}

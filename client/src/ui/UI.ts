@@ -1,6 +1,7 @@
 // DOM 오버레이 UI: 로딩 / 타이틀 / HUD(시계·골드·에너지) / 손에 든 도구 / 대화창 / 토스트 / 힌트 / 하루 전환 / 채팅
 import { ITEMS, NPCS, RECIPES, SPECIES, TYPE_COLORS } from '@shared/data';
-import { illustSvg } from './Illust';
+import { illustHtml } from './Illust';
+import { serverUrl } from '../net/serverUrl';
 import { josa } from '@shared/josa';
 import { creator, emoteWheel, invitePrompt, mailbox } from './Social';
 import { sfx } from '../audio/Sfx';
@@ -45,9 +46,8 @@ export interface TitleHandle { close: () => void; error: (m: string) => void; bu
 const title = {
   show(o: { onGoogle: (mode: 'public' | 'friends') => void; onLogout: () => void }): TitleHandle & { url: () => string } {
     const n = el('div', 'fixed inset-0 z-40 flex flex-col items-center justify-center pointer-events-auto vignette');
-    // 서버 주소는 화면에 보이지 않음: 접속한 페이지의 호스트(같은 PC)의 2567 포트, 또는 ?server=ws://... 로 지정
-    const qs = new URLSearchParams(location.search).get('server');
-    const defUrl = qs || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname || 'localhost'}:2567`;
+    // 서버 주소는 화면에 보이지 않음: VITE_SERVER_URL → ?server= → 같은 PC 2567 (net/serverUrl.ts)
+    const defUrl = serverUrl();
     n.innerHTML = `
       <div class="title-float flex flex-col items-center mb-8">
         <div class="text-[64px] leading-none text-[#ffe58a] px-outline tracking-[0.12em]" style="text-shadow:-4px 0 #3b2414,4px 0 #3b2414,0 -4px #3b2414,0 4px #3b2414,4px 4px #3b2414,6px 8px 0 rgba(0,0,0,.35)">루미 몬스터즈</div>
@@ -164,7 +164,7 @@ const dialogue = {
     const n = el('div', 'fixed left-1/2 -translate-x-1/2 bottom-3 w-[min(980px,97vw)] z-30 pointer-events-auto dlg-in');
     const hearts = o.hearts !== undefined ? `<div class="flex gap-0.5 justify-center mt-1">${Array.from({ length: 5 }, (_, i) => `<span class="px-icon" style="${iconStyle('heart', 14)};${i < o.hearts! ? '' : 'filter:grayscale(1) opacity(.45)'}"></span>`).join('')}</div>` : '';
     // 오른쪽 위: 성격에 맞는 포즈의 벡터 일러스트 (대화창 뒤에서 상반신이 올라옴) + 이름표
-    const ill = o.sprite ? illustSvg(o.sprite) : '';
+    const ill = o.sprite ? illustHtml(o.sprite) : '';
     const portrait = o.sprite ? `<div class="dlg-ill" style="--pc:${o.color ?? '#a8683a'}">${ill || `<img src="assets/portraits/${o.sprite}.png" alt="" onerror="this.style.display='none'">`}</div>` : '';
     const tag = o.sprite ? `<div class="dlg-tag"><div class="dlg-name" style="background:${o.color ?? '#a8683a'}">${o.name}</div>${hearts}</div>` : '';
     n.innerHTML = `${portrait}<div class="px-panel relative flex gap-4 items-stretch min-h-[178px] ${o.sprite ? 'pr-[230px]' : ''}">

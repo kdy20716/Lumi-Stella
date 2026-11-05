@@ -12,21 +12,26 @@
     "gen:art": "node tools/art/generate.mjs",
     "gen:map": "node tools/map/generate-map.mjs",
     "gen": "npm run gen:art && npm run gen:map",
-    "server": "tsx server/index.ts"
+    "server": "tsx server/index.ts",
+    "start": "tsx server/index.ts",
+    "gen:illust": "node tools/art/gen-illust.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0",
     "firebase": "^12.0.0",
-    "firebase-admin": "^13.0.0"
+    "firebase-admin": "^13.0.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "tsx": "^4.19.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.8",
     "@types/node": "^22.15.0",
-    "@types/ws": "^8.18.1",
     "tailwindcss": "^4.1.8",
-    "tsx": "^4.19.4",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5",
-    "ws": "^8.18.2"
+    "vite": "^6.3.5"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

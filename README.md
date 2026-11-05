@@ -60,12 +60,37 @@ npm run dev          # http://localhost:5173 → "혼자 시작하기"
 멀티플레이:
 
 ```bash
-npm run server       # ws://localhost:2567 (권한 서버 + 저장)
+npm run server       # http://localhost:2567 (Socket.io 권한 서버 + 저장)
 npm run dev          # http://localhost:5173 → "구글 계정으로 시작"
 ```
 
-친구는 같은 와이파이에서 `http://내PC주소:5173` 으로 접속하면 같은 PC의 서버(2567 포트)에 자동으로 연결됩니다. (다른 서버를 쓰려면 주소 뒤에 `?server=ws://주소:2567`)
+친구는 같은 와이파이에서 `http://내PC주소:5173` 으로 접속하면 같은 PC의 서버(2567 포트)에 자동으로 연결됩니다. (다른 서버를 쓰려면 `.env` 의 `VITE_SERVER_URL` 또는 주소 뒤에 `?server=http://주소:2567`)
 테스트용으로 구글 로그인 없이 여러 창을 띄우려면: 서버를 `DEV_AUTH=1` 환경변수로 켜고 `http://localhost:5173/?dev=이름` 으로 접속.
+
+## ☁️ 배포: Vercel(프론트) + Azure(백엔드, Socket.io)
+
+실시간 통신은 **Socket.io** 예요. 패킷 이름 = 메시지 종류(`join` · `move` · `action` · `players` …), 내용은 `shared/protocol.ts` 그대로.
+웹소켓이 막힌 환경에서는 자동으로 HTTP 롱폴링으로 바뀌어요.
+
+**프론트 (Vercel)**
+- Build Command `npm run build` · Output Directory `dist`
+- Settings › Environment Variables: `VITE_SERVER_URL` = `https://<앱이름>.azurewebsites.net` → **다시 배포** (Vite 는 빌드할 때 값을 넣음)
+- 코드: `client/src/net/serverUrl.ts` (우선순위 `?server=` → `VITE_SERVER_URL` → 같은 PC 2567) · `client/src/net/Authority.ts` (`io()` 연결 · `onAny` 수신)
+
+**백엔드 (Azure App Service, Node 20+)**
+- 시작 명령 `npm start` (= `tsx server/index.ts`). 포트는 Azure 가 주는 `PORT` 를 그대로 써요
+- 구성 › 애플리케이션 설정: `CLIENT_ORIGIN` = Vercel 주소(쉼표로 여러 개, 예 `https://lumi.vercel.app,http://localhost:5173`) · Firestore 를 쓰면 `FIREBASE_SERVICE_ACCOUNT`
+- 구성 › 일반 설정: **웹 소켓 켜기** (꺼져 있어도 롱폴링으로 되지만 느려요) · 인스턴스가 2개 이상이면 **ARR 선호도(세션 고정) 켜기**
+- 확인: 브라우저로 `https://<앱이름>.azurewebsites.net/health` → `lumi-monsters server ok`
+- 예시 값: `.env.example` (복사해서 `.env` — 깃허브에는 안 올라가요)
+
+## 🎨 대화 일러스트 (Gemini 그림 AI)
+
+- `.env` 에 `GEMINI_API_KEY=키` ([Google AI Studio](https://aistudio.google.com/apikey)) → `npm run gen:illust` → `client/public/assets/illust/` 에 인물별 PNG
+  - 일부만 `npm run gen:illust -- --only mom,rival_f` · 다시 그리기 `--force` · 보낼 프롬프트만 보기 `--dry` · 모델 바꾸기 `--model gemini-3-pro-image`
+  - 게임 속 도트 초상을 참고 그림으로 함께 보내고, `shared/data/illust.json` 의 성격 · 포즈 · 표정을 설명해서 같은 화풍으로 그려요. 흰 배경은 게임이 자동으로 지워요
+- **테스트 페이지**: `npm run dev` 후 `http://localhost:5173/?illust` — 52명 카드(AI / 임시 SVG 표시), 누르면 실제 대화창 미리보기, 배경(낮 · 밤 · 실내) 바꾸기
+- 아직 그림이 없는 인물은 임시 벡터 그림(SVG)으로 보여요
 
 ## 조작법
 

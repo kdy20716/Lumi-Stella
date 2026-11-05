@@ -9,10 +9,14 @@
 //   storage.ts  저장소 (Firestore / 로컬 파일) + 밴 · 버그 신고
 //   hub.ts      접속자 · 보내기 · 접속자 목록 · 시뮬레이션 이벤트 전달
 //   admin.ts    관리자 명령 (관리자 계정만)
-//   index.ts    (이 파일) 연결 → 메시지 처리 → 게임 루프 · 자동 저장
+//   index.ts    (이 파일) HTTP + Socket.io 연결 → 메시지 처리 → 게임 루프 · 자동 저장
+//
+// 통신: Socket.io. 패킷 이름 = 메시지의 t (예: 클라 emit('move', {t:'move',...}) · 서버 emit('players', {t:'players',...}))
+//   웹소켓이 막힌 환경(일부 프록시 · Azure 설정)에서는 자동으로 HTTP 롱폴링으로 대체
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { WebSocketServer, WebSocket } from 'ws';
+import { createServer } from 'node:http';
+import { Server as IOServer, type Socket } from 'socket.io';
 import { SNAPSHOT_HZ, type C2S, type BugReport } from '../shared/protocol';
 import { FarmSimulation } from '../shared/sim/FarmSimulation';
 import { MapInfo, type TiledMap } from '../shared/sim/MapInfo';
@@ -20,8 +24,8 @@ import { MAP_IDS, MAP_NAMES, type MapId } from '../shared/types';
 import { firebaseConfig } from '../shared/firebaseConfig';
 import { verifyIdToken } from './auth';
 import { createStorage } from './storage';
-import { DEV_AUTH, MAX_SPEED, PORT, REPORT_COOLDOWN_MS, REPORT_MAX_LEN, isAdminEmail } from './config';
-import { Hub, type Client } from './hub';
+import { CLIENT_ORIGINS, DEV_AUTH, MAX_SPEED, PORT, REPORT_COOLDOWN_MS, REPORT_MAX_LEN, isAdminEmail } from './config';
+import { Hub, type Client, type Conn } from './hub';
 import { handleAdmin } from './admin';
 
 // ── 준비: 맵 · 시뮬레이션 · 저장소 ────────────────────
@@ -44,10 +48,10 @@ async function saveAll(why: string) {
   if (hub.clients.size) console.log(`💾 ${hub.clients.size}명 저장 (${why})`);
 }
 /** 강퇴: 알림을 보내고 연결을 끊음 (닫힐 때 저장됨) */
-function kick(uid: string, message: string) { const c = hub.clients.get(uid); if (!c) return; hub.send(c.ws, { t: 'error', message }); setTimeout(() => c.ws.close(), 100); }
+function kick(uid: string, message: string) { const c = hub.clients.get(uid); if (!c) return; hub.send(c.conn, { t: 'error', message }); setTimeout(() => c.conn.close(), 100); }
 
 // ── 접속 ─────────────────────────────────────────────
-async function join(ws: WebSocket, m: Extract<C2S, { t: 'join' }>): Promise<Client | null> {
+async function join(ws: Conn, m: Extract<C2S, { t: 'join' }>): Promise<Client | null> {
   let uid: string, gName: string, admin = false;
   try {
     if (m.token) {
@@ -60,12 +64,12 @@ async function join(ws: WebSocket, m: Extract<C2S, { t: 'join' }>): Promise<Clie
   if (banned) { hub.send(ws, { t: 'error', message: `이 계정은 이용이 정지되었어요.${banned.reason ? ` (${banned.reason})` : ''}` }); ws.close(); return null; }
   // 같은 계정이 다른 창에서 접속 중이면 이전 연결을 저장 후 종료
   const old = hub.clients.get(uid);
-  if (old) { hub.send(old.ws, { t: 'error', message: '다른 곳에서 같은 계정으로 접속했어요.' }); old.ws.close(); await new Promise((r) => setTimeout(r, 150)); }
+  if (old) { hub.send(old.conn, { t: 'error', message: '다른 곳에서 같은 계정으로 접속했어요.' }); old.conn.close(); await new Promise((r) => setTimeout(r, 150)); }
   const save = await storage.load(uid).catch(() => null);
-  if (ws.readyState !== WebSocket.OPEN) return null;
+  if (!ws.open) return null;
   const worldId = m.mode === 'friends' ? uid : '';
   const p = sim.addPlayer(uid, save?.name || gName, save?.look ?? '', save, worldId);
-  const client: Client = { ws, id: uid, lastMove: Date.now(), anim: 'idle', admin, lastReport: 0 };
+  const client: Client = { conn: ws, id: uid, lastMove: Date.now(), anim: 'idle', admin, lastReport: 0 };
   hub.clients.set(uid, client);
   hub.send(ws, { t: 'welcome', id: uid, you: p, snapshot: sim.snapshot(uid), roster: hub.roster(), storage: storage.kind, admin });
   hub.rosterDirty = true;
@@ -78,7 +82,7 @@ async function join(ws: WebSocket, m: Extract<C2S, { t: 'join' }>): Promise<Clie
 async function onMessage(client: Client, m: C2S) {
   const p = sim.players.get(client.id);
   if (!p) return;
-  const ws = client.ws;
+  const ws = client.conn;
   switch (m.t) {
     case 'move': {
       const now = Date.now(), dt = Math.max(16, now - client.lastMove) / 1000;
@@ -125,24 +129,44 @@ async function onMessage(client: Client, m: C2S) {
   }
 }
 
-const wss = new WebSocketServer({ port: PORT, maxPayload: 64 * 1024 });
-wss.on('connection', (ws) => {
+// ── HTTP 서버 (상태 확인용) + Socket.io ─────────────
+const http = createServer((req, res) => {
+  // Azure App Service 상태 확인 · 브라우저로 열어 봤을 때
+  if (req.url === '/' || req.url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(`lumi-monsters server ok · ${hub.clients.size} online`); return; }
+  res.writeHead(404); res.end();
+});
+const io = new IOServer(http, {
+  cors: { origin: CLIENT_ORIGINS.length ? CLIENT_ORIGINS : true, methods: ['GET', 'POST'], credentials: true },
+  transports: ['websocket', 'polling'],
+  maxHttpBufferSize: 64 * 1024,
+  pingInterval: 20_000, pingTimeout: 25_000,
+});
+const C2S_TYPES = new Set(['join', 'move', 'action', 'anim', 'chat', 'report', 'admin']);
+
+io.on('connection', (socket: Socket) => {
+  const conn: Conn = {
+    get open() { return socket.connected; },
+    send: (m) => { socket.emit(m.t, m); },
+    close: () => { socket.disconnect(true); },
+  };
   let client: Client | null = null;
   let joining = false;
-  ws.on('message', async (raw) => {
-    let m: C2S;
-    try { m = JSON.parse(String(raw)) as C2S; } catch { return; }
-    if (!m || typeof m !== 'object') return;
-    if (!client) {
-      if (m.t !== 'join' || joining) return;
-      joining = true;
-      client = await join(ws, m);
-      return;
-    }
-    await onMessage(client, m);
+  // 모든 패킷: 이벤트 이름과 내용의 t 가 같아야 함 (모르는 이벤트 · 잘못된 형식은 무시)
+  socket.onAny(async (ev: string, m: C2S) => {
+    if (!C2S_TYPES.has(ev) || !m || typeof m !== 'object' || m.t !== ev) return;
+    try {
+      if (!client) {
+        if (m.t !== 'join' || joining) return;
+        joining = true;
+        client = await join(conn, m);
+        if (!client) joining = false;
+        return;
+      }
+      await onMessage(client, m);
+    } catch (e) { console.warn('메시지 처리 오류', ev, (e as Error).message); }
   });
-  ws.on('close', () => {
-    if (!client || hub.clients.get(client.id)?.ws !== ws) return;
+  socket.on('disconnect', () => {
+    if (!client || hub.clients.get(client.id)?.conn !== conn) return;
     const id = client.id;
     const name = sim.players.get(id)?.name ?? id;
     hub.clients.delete(id);
@@ -154,6 +178,7 @@ wss.on('connection', (ws) => {
     console.log(`- ${name} 퇴장 (저장됨) — 현재 ${hub.clients.size}명`);
   });
 });
+http.listen(PORT);
 
 // ── 게임 루프: 시간 진행 + 같은 방 사람들 위치 + 접속자 목록 ──
 let last = Date.now();
@@ -164,6 +189,7 @@ const shutdown = async () => { console.log('\n서버 종료 — 저장 중...');
 process.on('SIGINT', () => void shutdown());
 process.on('SIGTERM', () => void shutdown());
 
-console.log(`✨ 루미 몬스터즈: 별빛의 씨앗 서버 실행 중 — ws://localhost:${PORT}`);
+console.log(`✨ 루미 몬스터즈: 별빛의 씨앗 서버 실행 중 — http://localhost:${PORT} (Socket.io)`);
+console.log(`   허용 출처(CORS): ${CLIENT_ORIGINS.length ? CLIENT_ORIGINS.join(', ') : '모두 (CLIENT_ORIGIN 미설정)'}`);
 console.log(`   저장소: ${storage.kind}${DEV_AUTH ? '  (DEV_AUTH: 토큰 없이 접속 허용 · 관리자 불가)' : ''}`);
 console.log(`   맵: ${MAP_IDS.length}개 (${MAP_NAMES.town} 외)`);

@@ -1,3 +1,5 @@
+import { io, type Socket } from 'socket.io-client';
+import { mixedContentProblem } from './serverUrl';
 import type { AdminCmd, BugReport, S2C as _S2C } from '@shared/protocol';
 import type { NetPlayer, RosterEntry, S2C, C2S } from '@shared/protocol';
 import { FarmSimulation, MS_PER_10_MIN, type SimEvent } from '@shared/sim/FarmSimulation';
@@ -143,40 +145,47 @@ export class LocalAuthority extends Authority {
 
 export class NetworkAuthority extends Authority {
   readonly online = true;
-  private ws!: WebSocket;
+  private socket!: Socket;
   private reqId = 0;
   private pending = new Map<number, (r: ActionResult) => void>();
   private seq = 0;
   private lastSent = 0;
   private closedByUser = false;
 
-  /** cred: { token } = 구글 로그인 ID 토큰, { dev } = 서버를 DEV_AUTH=1 로 띄웠을 때 테스트용 */
+  /**
+   * Socket.io 로 게임 서버에 접속 → join → welcome 을 받으면 완료
+   * url: serverUrl() (VITE_SERVER_URL · ?server= · 같은 PC 2567)
+   * cred: { token } = 구글 로그인 ID 토큰, { dev } = 서버를 DEV_AUTH=1 로 띄웠을 때 테스트용
+   * 패킷: emit(이름 = 메시지 t, 메시지) / 서버도 같은 규칙 → onAny 로 받아서 handle
+   */
   static connect(url: string, cred: { token?: string; dev?: string; mode?: 'public' | 'friends' }): Promise<NetworkAuthority> {
     const a = new NetworkAuthority();
     return new Promise((resolve, reject) => {
-      let ws: WebSocket;
-      try { ws = new WebSocket(url); } catch { reject(new Error('서버 주소가 올바르지 않아요')); return; }
-      a.ws = ws;
+      if (mixedContentProblem(url)) { reject(new Error('https 페이지에서는 https 서버 주소가 필요해요 (VITE_SERVER_URL 확인)')); return; }
+      // 웹소켓을 먼저 쓰고, 막혀 있으면 HTTP 롱폴링으로 자동 대체. 끊기면 게임이 타이틀로 돌아가므로 자동 재접속은 끔
+      const socket = io(url, { transports: ['websocket', 'polling'], reconnection: false, timeout: 10000, withCredentials: true });
+      a.socket = socket;
       let joined = false;
-      const timeout = setTimeout(() => { ws.close(); reject(new Error('서버 응답 없음')); }, 8000);
-      ws.onopen = () => a.send({ t: 'join', ...cred });
-      ws.onerror = () => { clearTimeout(timeout); if (!joined) reject(new Error('서버에 접속할 수 없어요')); };
-      ws.onclose = () => { if (joined && !a.closedByUser) a.emit({ type: 'disconnected' }); };
-      ws.onmessage = (ev) => {
-        const msg = JSON.parse(String(ev.data)) as S2C;
+      const fail = (msg: string) => { clearTimeout(timeout); if (!joined) { socket.disconnect(); reject(new Error(msg)); } };
+      const timeout = setTimeout(() => fail('서버 응답 없음 (서버가 켜져 있는지, 주소가 맞는지 확인)'), 15000);
+      socket.on('connect', () => a.send({ t: 'join', ...cred }));
+      socket.on('connect_error', (e: Error) => { console.warn('[socket] 접속 실패', url, e.message); fail(`서버에 접속할 수 없어요 (${url})`); });
+      socket.on('disconnect', (reason: string) => { if (joined && !a.closedByUser) a.emit({ type: 'disconnected', message: reason === 'io server disconnect' ? undefined : '서버와 연결이 끊겼어요' }); });
+      socket.onAny((ev: string, msg: S2C) => {
+        if (!msg || typeof msg !== 'object' || msg.t !== ev) return;
         if (msg.t === 'welcome') {
           clearTimeout(timeout); joined = true;
           a.me = msg.you; a.storageKind = msg.storage; a.isAdmin = msg.admin === true;
           a.applySnapshot(msg.snapshot);
           for (const p of msg.roster) if (p.id !== msg.id) a.roster.set(p.id, p);
           resolve(a);
-        } else if (msg.t === 'error' && !joined) { clearTimeout(timeout); reject(new Error(msg.message)); }
+        } else if (msg.t === 'error' && !joined) fail(msg.message);
         else a.handle(msg);
-      };
+      });
     });
   }
 
-  private send(m: C2S) { if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(m)); }
+  private send(m: C2S) { if (this.socket?.connected) this.socket.emit(m.t, m); }
 
   private handle(m: S2C) {
     switch (m.t) {
@@ -218,5 +227,5 @@ export class NetworkAuthority extends Authority {
   }
   report(text: string, where: string) { this.send({ t: 'report', text, where }); return true; }
   chat(text: string) { this.send({ t: 'chat', text }); }
-  override close() { this.closedByUser = true; this.ws.close(); }
+  override close() { this.closedByUser = true; this.socket?.disconnect(); }
 }
