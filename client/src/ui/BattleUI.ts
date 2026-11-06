@@ -9,6 +9,8 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = '') 
 const typeChip = (t: string) => `<span class="px-1.5 text-[11px] text-white rounded-sm" style="background:${TYPE_COLORS[t as keyof typeof TYPE_COLORS] ?? '#888'}">${t}</span>`;
 const hpColor = (r: number) => (r > 0.5 ? '#5fc04a' : r > 0.2 ? '#f0c84a' : '#e0473b');
 
+/** 명령 창: 칸이 화면 밖으로 넘치지 않게 (열 너비 0 ~ 1fr) */
+const MENU_CLS = 'px-panel w-[min(440px,48cqw)] shrink-0 grid grid-cols-[repeat(2,minmax(0,1fr))] gap-1.5 content-center';
 export interface BattleMenuHandlers { move: (i: number) => void; item: (id: string) => void; swap: (i: number) => void; run: () => void }
 
 export class BattleUI {
@@ -22,11 +24,11 @@ export class BattleUI {
 
   constructor() {
     this.root = el('div', 'fixed inset-0 z-20 pointer-events-none');
-    this.foeBox = el('div', 'absolute left-[4vw] top-[6vh] w-[min(360px,44vw)] px-panel !p-0 transition-opacity');
-    this.meBox = el('div', 'absolute right-[4vw] bottom-[calc(150px+4vh)] w-[min(380px,46vw)] px-panel !p-0 transition-opacity');
-    const bottom = el('div', 'absolute left-0 right-0 bottom-0 h-[150px] flex gap-2 p-2 pointer-events-auto');
-    this.msg = el('div', 'px-panel flex-1 text-xl leading-relaxed whitespace-pre-wrap cursor-pointer');
-    this.menu = el('div', 'px-panel w-[min(440px,48vw)] grid grid-cols-2 gap-2 content-center');
+    this.foeBox = el('div', 'absolute left-[4cqw] top-[6cqh] w-[min(360px,44cqw)] px-panel !p-0 transition-opacity');
+    this.meBox = el('div', 'absolute right-[4cqw] bottom-[calc(150px+4cqh)] w-[min(380px,46cqw)] px-panel !p-0 transition-opacity');
+    const bottom = el('div', 'absolute left-0 right-0 bottom-0 min-h-[150px] flex gap-2 p-2 pointer-events-auto');
+    this.msg = el('div', 'px-panel flex-1 min-w-0 text-xl leading-relaxed whitespace-pre-wrap cursor-pointer');
+    this.menu = el('div', MENU_CLS);
     bottom.append(this.msg, this.menu);
     this.root.append(this.foeBox, this.meBox, bottom);
     document.getElementById('ui')!.appendChild(this.root);
@@ -81,7 +83,7 @@ export class BattleUI {
     this.msg.textContent = josa(`${v.me.name}은(는) 무엇을 할까?`);
     this.menu.style.visibility = 'visible';
     const main = () => {
-      this.menu.className = 'px-panel w-[min(440px,48vw)] grid grid-cols-2 gap-2 content-center';
+      this.menu.className = MENU_CLS;
       this.menu.innerHTML = '';
       const btn = (label: string, cls: string, fn: () => void) => { const b = el('button', `px-btn ${cls} text-lg !py-2`, label); b.onclick = () => { sfx.play('blip'); fn(); }; this.menu.appendChild(b); };
       btn('싸우기', 'green', fight); btn('가방', '', bag); btn('루미', '', party); btn('도망', '', () => h.run());
@@ -89,10 +91,17 @@ export class BattleUI {
     const back = () => { const b = el('button', 'px-btn text-sm !py-1 col-span-2', '◀ 뒤로'); b.onclick = main; this.menu.appendChild(b); };
     const fight = () => {
       this.menu.innerHTML = '';
+      // PP 가 모두 떨어지면 아무 기술이나 눌러 '발버둥'
+      const allOut = v.me.moves.every((m) => m.maxPp > 0 && m.pp <= 0);
       v.me.moves.forEach((m, i) => {
-        const b = el('button', 'text-left px-2 py-1.5 bg-[#fff8ec] border-2 border-[#a8683a] hover:-translate-y-0.5 transition-transform', `<div class="text-base">${m.name}</div><div class="flex gap-1 items-center text-[11px]">${typeChip(m.type)}<span class="text-[#8a5a32]">${m.power ? `위력 ${m.power}` : '변화'}</span></div>`);
-        b.onclick = () => h.move(i); this.menu.appendChild(b);
+        const out = m.maxPp > 0 && m.pp <= 0, low = !out && m.maxPp > 0 && m.pp <= Math.ceil(m.maxPp / 4);
+        const ppTxt = m.maxPp > 0 ? `<span class="ml-auto tabular-nums ${out ? 'text-[#c8453c]' : low ? 'text-[#d8862a]' : 'text-[#8a5a32]'}">PP ${m.pp}/${m.maxPp}</span>` : '';
+        const b = el('button', `min-w-0 text-left px-2 py-1 bg-[#fff8ec] border-2 border-[#a8683a] hover:-translate-y-0.5 transition-transform ${out && !allOut ? 'opacity-45 cursor-not-allowed' : ''}`,
+          `<div class="text-base truncate">${m.name}</div><div class="flex gap-1 items-center text-[11px] whitespace-nowrap">${typeChip(m.type)}<span class="text-[#8a5a32]">${m.power ? `위력 ${m.power}` : '변화'}</span>${ppTxt}</div>`);
+        b.onclick = () => { if (out && !allOut) { sfx.play('error'); this.msg.textContent = '기술의 남은 PP가 없어요! 다른 기술을 골라요.'; return; } h.move(i); };
+        this.menu.appendChild(b);
       });
+      if (allOut) this.msg.textContent = josa(`${v.me.name}은(는) 쓸 수 있는 기술이 없다! 기술을 누르면 발버둥을 친다.`);
       back();
     };
     const bag = () => {

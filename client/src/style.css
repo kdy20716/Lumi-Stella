@@ -12,6 +12,8 @@
 }
 
 html, body { height: 100%; }
+/* DOM UI 레이어: 안쪽 크기 단위(cqw/cqh)는 이 상자 기준 → 모바일에서 축소해도 PC 비율 그대로 (ui/Scale.ts) */
+#ui { container-type: size; }
 body { font-family: var(--font-pixel); color: var(--color-ink); -webkit-font-smoothing: none; }
 canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
 
@@ -110,11 +112,11 @@ button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite;
 @keyframes ph-out { to { transform: translate(110%, -50%) rotate(6deg); } }
 .ph-wrap { position: fixed; right: 18px; top: 50%; transform: translate(0, -50%); z-index: 45; animation: ph-in .22s cubic-bezier(.2,.9,.3,1.15); font-family: var(--font-pixel-sm); }
 .ph-wrap.ph-out { animation: ph-out .18s ease-in forwards; }
-.ph-body { width: 336px; height: min(640px, calc(100vh - 36px)); padding: 30px 12px 14px; border-radius: 34px; position: relative;
+.ph-body { width: 336px; height: min(640px, calc(100cqh - 36px)); padding: 30px 12px 14px; border-radius: 34px; position: relative;
   background: linear-gradient(145deg, #3a4256, #232838 60%, #1a1e2a); border: 3px solid #0e1018;
   box-shadow: inset 0 2px 0 rgba(255,255,255,.16), inset 0 -3px 0 rgba(0,0,0,.4), 0 8px 0 rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.35);
   transition: width .2s ease, height .2s ease; }
-.ph-wide .ph-body { width: min(780px, calc(100vw - 36px)); height: auto; }
+.ph-wide .ph-body { width: min(780px, calc(100cqw - 36px)); height: auto; }
 .ph-speaker { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 64px; height: 7px; border-radius: 6px; background: #0e1018; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
 .ph-speaker::after { content: ''; position: absolute; right: -20px; top: 0; width: 7px; height: 7px; border-radius: 50%; background: #2b3550; box-shadow: 0 0 0 2px #0e1018; }
 .ph-screen { height: 100%; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; background: #f6efe0; color: #3b2414; border: 3px solid #0e1018; position: relative; }
@@ -241,20 +243,19 @@ button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite;
 .ph-content > * { flex-shrink: 0; }
 .ph-detail { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -6px 10px rgba(246,239,224,.9); }
 /* 지도 앱: 폴더블폰 — 접힌 폰(왼쪽 절반)의 오른쪽 날개가 경첩을 따라 돌며 펼쳐지고, 다 펼쳐진 뒤 화면이 켜지며 지도가 보임 */
-.ph-wide .ph-body::after { content: ''; position: absolute; left: calc(50% - 1px); top: 6px; bottom: 6px; width: 2px; background: linear-gradient(90deg, rgba(0,0,0,.45), rgba(255,255,255,.18)); pointer-events: none; z-index: 3; }
 .ph-unfold.ph-wrap { perspective: 1800px; }
 .ph-unfold .ph-body { animation: ph-reveal .9s linear both; }
-@keyframes ph-reveal { 0%, 97% { clip-path: inset(-30px 50% -30px -30px round 34px); } 100% { clip-path: inset(-30px -30px -30px -30px); } }
+@keyframes ph-reveal { 0%, 97% { clip-path: inset(-30px -30px -30px 50% round 34px); } 100% { clip-path: inset(-30px -30px -30px -30px); } }
 .ph-unfold .ph-screen::before { content: ''; position: absolute; inset: 0; z-index: 30; background: radial-gradient(circle at 50% 45%, #1a2238, #07090f 70%); animation: ph-poweron 1.25s ease-out both; pointer-events: none; }
 @keyframes ph-poweron { 0%, 74% { opacity: 1; } 82% { opacity: .85; background: #f6f2ff; } 100% { opacity: 0; } }
-.ph-fold { position: absolute; top: 0; bottom: 0; left: 50%; width: 50%; z-index: 60; transform-origin: left center; transform-style: preserve-3d; animation: ph-fold .9s cubic-bezier(.4,.05,.25,1) both; pointer-events: none; }
+.ph-fold { position: absolute; top: 0; bottom: 0; left: 0; width: 50%; z-index: 60; transform-origin: right center; transform-style: preserve-3d; animation: ph-fold .9s cubic-bezier(.4,.05,.25,1) both; pointer-events: none; }
 .ph-fold i { position: absolute; inset: 0; backface-visibility: hidden; border: 3px solid #0e1018; }
-.ph-fold .front { border-left: none; border-radius: 0 34px 34px 0; background: linear-gradient(145deg, #3a4256, #232838 60%, #1a1e2a); box-shadow: inset 18px 0 22px -14px rgba(0,0,0,.6); }
-.ph-fold .front::before { content: ''; position: absolute; left: 0; right: 12px; top: 30px; bottom: 14px; border-radius: 0 20px 20px 0; border: 3px solid #0e1018; border-left: none; background: linear-gradient(160deg, #1c2438, #07090f 60%); }
-.ph-fold .back { transform: rotateY(180deg); border-right: none; border-radius: 34px 0 0 34px; background: linear-gradient(200deg, #4a5674, #2a3046 55%, #1c2030); }
-.ph-fold .back::before { content: ''; position: absolute; left: 22px; top: 22px; width: 54px; height: 96px; border-radius: 16px; background: #141824; box-shadow: inset 0 0 0 2px #2e3650; }
+.ph-fold .front { border-right: none; border-radius: 34px 0 0 34px; background: linear-gradient(215deg, #3a4256, #232838 60%, #1a1e2a); box-shadow: inset -18px 0 22px -14px rgba(0,0,0,.6); }
+.ph-fold .front::before { content: ''; position: absolute; right: 0; left: 12px; top: 30px; bottom: 14px; border-radius: 20px 0 0 20px; border: 3px solid #0e1018; border-right: none; background: linear-gradient(200deg, #1c2438, #07090f 60%); }
+.ph-fold .back { transform: rotateY(180deg); border-left: none; border-radius: 0 34px 34px 0; background: linear-gradient(160deg, #4a5674, #2a3046 55%, #1c2030); }
+.ph-fold .back::before { content: ''; position: absolute; right: 22px; top: 22px; width: 54px; height: 96px; border-radius: 16px; background: #141824; box-shadow: inset 0 0 0 2px #2e3650; }
 .ph-fold .back::after { content: '✦'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #8fa0c8; font-size: 34px; opacity: .55; }
-@keyframes ph-fold { 0% { transform: rotateY(-180deg); } 12% { transform: rotateY(-172deg); } 92% { transform: rotateY(-4deg); } 100% { transform: rotateY(0deg); opacity: 1; } }
+@keyframes ph-fold { 0% { transform: rotateY(180deg); } 12% { transform: rotateY(172deg); } 92% { transform: rotateY(4deg); } 100% { transform: rotateY(0deg); opacity: 1; } }
 /* 오카리나 → 태초의 길: 하늘 · 안개 · 별 · 하얀 빛 (게임 화면은 3D 처럼 기울어짐) */
 .myth-fx > div { position: absolute; inset: 0; opacity: 0; transition: opacity 1.6s ease; }
 .myth-sky { background: radial-gradient(120% 90% at 50% 0%, rgba(255,240,250,.0) 30%, rgba(200,190,255,.45) 70%, rgba(120,110,200,.6) 100%); }
@@ -317,14 +318,27 @@ button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite;
 @media (orientation: portrait) { .tc-rotate { display: block; } }
 @media (max-height: 420px) { .tc-stick { width: 128px; height: 128px; } .tc-stick::before { inset: 24px; } .tc-knob { width: 54px; height: 54px; margin: -27px 0 0 -27px; } .tc-btn { width: 64px; height: 64px; } }
 /* 터치 화면: 대화창은 양손 버튼 사이로 · 손에 든 도구 표시는 위로 */
-.tc-on .dlg-in { width: min(980px, calc(100vw - 400px)) !important; bottom: 6px !important; }
-.tc-on .dlg-in .px-panel { min-height: 110px; padding-right: 16px !important; padding-top: 22px !important; }
-.tc-on .dlg-tag { right: auto; left: 10px; bottom: auto; top: -16px; width: auto; flex-direction: row; }
-.tc-on .dlg-name { min-width: 90px; font-size: 15px; }
-.tc-on .dlg-ill { right: 4px; }
-.tc-on .dlg-in [data-d=text] { font-size: 17px; }
-.tc-on .held-badge { bottom: auto !important; top: 8px; left: 8px !important; transform: scale(.85); transform-origin: top left; }
+/*  UI 는 PC 크기로 그린 뒤 축소(--uis)되므로, 손가락 버튼(실제 화면 약 190px)을 피할 만큼만 비켜 둠 */
+.tc-on .dlg-in { width: min(980px, calc(100cqw - 400px / var(--uis, 1))) !important; bottom: 6px !important; }
+/*  손에 든 것: 왼쪽 아래는 조이스틱 자리 → 화면 위 가운데 */
+.tc-on .held-badge { bottom: auto !important; top: 10px; left: 50% !important; transform: translateX(-50%); }
+/*  알림: 조이스틱 위로 */
+.tc-on [data-ui=toast] { left: calc(220px / var(--uis, 1)) !important; bottom: calc(40px / var(--uis, 1)) !important; }
+/*  휴대폰: 모바일에서는 화면 가운데 */
+.tc-on .ph-wrap { right: auto; left: 50%; transform: translate(-50%, -50%); animation: ph-in-c .22s cubic-bezier(.2,.9,.3,1.15); }
+.tc-on .ph-wrap.ph-out { animation: ph-out-c .18s ease-in forwards; }
+@keyframes ph-in-c { from { transform: translate(-50%, -38%) scale(.9); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+@keyframes ph-out-c { to { transform: translate(-50%, -38%) scale(.9); opacity: 0; } }
+/*  배틀 · 타이틀 중에는 컨트롤러가 숨으므로 대화창도 원래 폭 */
+.tc-on.tc-hidden .dlg-in { width: min(980px, 97cqw) !important; }
 .tc-left { flex-direction: column-reverse; }
+/* 모바일 전체화면 버튼: 휴대폰 크기 화면에서만, 전체화면이 아닐 때만 */
+.tc-fs { display: none; position: fixed; z-index: 70; left: max(8px, env(safe-area-inset-left)); top: 8px; align-items: center; gap: 4px; height: 32px; padding: 0 10px; border-radius: 16px; border: 3px solid #3b2414; background: rgba(255, 248, 236, .9); color: #3b2414; font-family: var(--font-pixel-sm); font-size: 13px; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.tc-fs span { font-size: 16px; line-height: 1; }
+.tc-on .tc-fs { display: inline-flex; }
+.is-fs .tc-fs { display: none !important; }
+/*  전체화면 버튼 자리만큼 채팅을 아래로 */
+.tc-on:not(.is-fs) [data-ui=chat] { top: calc(48px / var(--uis, 1)) !important; }
 .dlg-ill img.ill-ai { position: absolute; inset: 0; left: 0; bottom: 0; width: 100%; height: 100%; transform: none; object-fit: contain; object-position: center bottom; image-rendering: auto; }
 .ill-wait { opacity: 0; }
 /* 일러스트 테스트 페이지 (?illust) */

@@ -161,6 +161,15 @@ export class FarmSimulation {
     }
     this.players.set(id, p);
     this.ensureFarm(id, save?.farm);
+    // 마지막 위치에서 이어서: 내 농장 · 집이거나 공용 장소일 때만 (친구 농장 등은 그 친구가 없을 수 있어 내 농장으로)
+    const at = save?.pos;
+    if (at && p.story !== STORY.HOME && this.maps[at.map]) {
+      const own = at.map === 'farm' || at.map === 'home' ? at.inst === id : !(at.inst && this.players.has(at.inst));
+      const next = { ...p, map: at.map, inst: own && (at.map === 'farm' || at.map === 'home') ? id : at.inst };
+      if (own && Number.isFinite(at.x) && Number.isFinite(at.y) && this.canStand(next, at.x, at.y)) {
+        Object.assign(p, { map: next.map, inst: next.inst, x: at.x, y: at.y, dir: at.dir ?? p.dir, ret: at.ret });
+      }
+    }
     // 아직 프롤로그 첫 장면이면 내 방에서 눈을 뜸
     if (p.story === STORY.HOME) { const w = this.maps.home.spawns.get('wake') ?? this.maps.home.spawns.get('entry')!; Object.assign(p, { map: 'home', inst: id, x: w.x, y: w.y + 5 }); }
     return p;
@@ -173,7 +182,8 @@ export class FarmSimulation {
     return JSON.parse(JSON.stringify({
       v: 1, name: p.name, look: p.look, gold: p.gold, energy: p.energy, maxEnergy: p.maxEnergy, inventory: p.inventory,
       party: p.party, box: p.box, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, bin: p.bin,
-      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [], placed: f ? [...f.placed.values()] : [], ver: FARM_VER }, story: p.story, visited: p.visited, recipes: p.recipes, savedAt: Date.now(),
+      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [], placed: f ? [...f.placed.values()] : [], ver: FARM_VER }, story: p.story, visited: p.visited, recipes: p.recipes,
+      pos: { map: p.map, inst: p.inst, x: p.x, y: p.y, dir: p.dir, ret: p.ret }, savedAt: Date.now(),
     } satisfies SaveData)) as SaveData;
   }
 

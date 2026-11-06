@@ -101,7 +101,7 @@ export class Atmosphere {
     if (this.weather === 'rain') { color = lerpColor(color, 0x8a96b0, 0.45); this.light = Math.max(this.light, 0.35); }
     // 실내: 바깥보다 훨씬 은은하게 (밤엔 따뜻한 조명)
     if (this.cave) { color = this.caveTint; this.light = 1; this.torch?.setAlpha(0.32 + Math.sin(this.scene.time.now / 140) * 0.02); }
-    else if (this.indoor) { color = lerpColor(0xffffff, 0xe0cce0, this.light * 0.7); this.light = 0.35 + this.light * 0.6; }
+    else if (this.indoor) { color = lerpColor(0xffffff, 0xe0cce0, this.light * 0.7); this.light = 0.15 + this.light * 0.55; }
 
     const v = this.scene.cameras.main.worldView;
     this.overlay.setPosition(v.x - 4, v.y - 4).setDisplaySize(v.width + 8, v.height + 8).setTint(color);

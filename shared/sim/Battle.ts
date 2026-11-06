@@ -25,17 +25,32 @@ export function movesAt(species: string, level: number) {
 let uidSeq = 0;
 export function makeCreature(species: string, level: number): CreatureInst {
   const c: CreatureInst = { uid: `${species}-${Date.now().toString(36)}-${(uidSeq++).toString(36)}`, species, level, exp: 0, hp: 0, moves: movesAt(species, level) };
-  c.hp = stats(c).maxHp;
+  c.hp = stats(c).maxHp; restorePp(c);
   return c;
 }
-export function healAll(party: CreatureInst[]) { for (const c of party) c.hp = stats(c).maxHp; }
+// ── PP (기술 사용 횟수) ───────────────────────────────
+/** 기술의 최대 PP (moves.json 의 pp, 없으면 위력으로 정함) */
+export function maxPp(moveId: string) {
+  const m = MOVES[moveId]; if (!m) return 0;
+  if (m.pp != null) return m.pp;
+  return m.power === 0 ? 20 : m.power >= 80 ? 10 : m.power >= 60 ? 15 : 30;
+}
+export function ppLeft(c: CreatureInst, i: number) { return c.pp?.[i] ?? maxPp(c.moves[i]); }
+/** 기술 목록이 바뀐 뒤 PP 배열 맞추기 (남아 있던 기술은 PP 유지, 새 기술은 가득) */
+export function syncPp(c: CreatureInst, before?: { moves: string[]; pp?: number[] }) {
+  const old = new Map<string, number>();
+  if (before) before.moves.forEach((m, i) => old.set(m, before.pp?.[i] ?? maxPp(m)));
+  c.pp = c.moves.map((m) => old.get(m) ?? maxPp(m));
+}
+export function restorePp(c: CreatureInst) { c.pp = c.moves.map(maxPp); }
+export function healAll(party: CreatureInst[]) { for (const c of party) { c.hp = stats(c).maxHp; restorePp(c); } }
 export const alive = (party: CreatureInst[]) => party.filter((c) => c.hp > 0);
 
 export function view(c: CreatureInst): CreatureView {
   const s = SPECIES[c.species];
   return {
     uid: c.uid, species: c.species, name: s.name, type: s.type, level: c.level, hp: c.hp, maxHp: stats(c).maxHp, exp: c.exp, expNext: expToNext(c.level),
-    moves: c.moves.map((id) => ({ id, name: MOVES[id].name, type: MOVES[id].type, power: MOVES[id].power, category: MOVES[id].category })),
+    moves: c.moves.map((id, i) => ({ id, name: MOVES[id].name, type: MOVES[id].type, power: MOVES[id].power, category: MOVES[id].category, pp: ppLeft(c, i), maxPp: maxPp(id) })),
   };
 }
 export function effectiveness(atk: LumiType, def: LumiType) { return ENCOUNTERS.typeChart[atk]?.[def] ?? 1; }
@@ -75,7 +90,7 @@ export class BattleEngine {
     const trainerId = tr.id;
     const foes = tr.team.map(([s, l]) => makeCreature(s, l));
     // 라이벌 첫 대결: 기본 공격 + 울음소리 + 으쓱으쓱(버프)
-    if (script === 'rival') for (const f of foes) f.moves = [f.moves[0], 'growl', 'puff_up'];
+    if (script === 'rival') for (const f of foes) { f.moves = [f.moves[0], 'growl', 'puff_up']; restorePp(f); }
     const myIdx = Math.max(0, p.party.findIndex((c) => c.hp > 0));
     const st: BattleState = { kind: 'trainer', trainerId, tr, script, turn: 0, bg: bg ?? (tr.map === 'route1' || tr.map === 'farm' ? 'grass' : 'town'), foes, foeIdx: 0, myIdx, stage: { me: { atk: 0, def: 0 }, foe: { atk: 0, def: 0 } }, over: false, participants: new Set([p.party[myIdx].uid]) };
     for (const f of foes) if (!p.seen.includes(f.species)) p.seen.push(f.species);
@@ -101,9 +116,15 @@ export class BattleEngine {
   // ── 한 턴 ──────────────────────────────────────────
   move(p: PlayerState, st: BattleState, index: number) {
     const me = p.party[st.myIdx], foe = st.foes[st.foeIdx];
-    const myMove = me.moves[index] ?? me.moves[0];
-    const foeMove = this.foeChoice(st, foe);
     const log: BattleLog[] = [];
+    // PP: 남은 횟수가 없으면 못 씀 (다른 기술이 남았으면 턴을 쓰지 않고 다시 고름). 전부 0 이면 발버둥
+    const i = me.moves[index] ? index : 0;
+    let myMove = me.moves[i];
+    const anyLeft = me.moves.some((_, k) => ppLeft(me, k) > 0);
+    if (!anyLeft) myMove = 'struggle';
+    else if (ppLeft(me, i) <= 0) { log.push({ t: 'text', text: '기술의 남은 PP가 없다!' }); return { view: this.view(p, st), log }; }
+    else { if (!me.pp || me.pp.length !== me.moves.length) syncPp(me); me.pp![i] = ppLeft(me, i) - 1; }
+    const foeMove = this.foeChoice(st, foe);
     const mPri = MOVES[myMove].priority, fPri = MOVES[foeMove].priority;
     const meFirst = mPri !== fPri ? mPri > fPri : stats(me).spd * stageMul(0) >= stats(foe).spd || (stats(me).spd === stats(foe).spd && this.rand() < 0.5);
     const order: ['me' | 'foe', string][] = meFirst ? [['me', myMove], ['foe', foeMove]] : [['foe', foeMove], ['me', myMove]];
@@ -243,6 +264,11 @@ export class BattleEngine {
     if (st.script === 'rival' && side === 'foe') dmg = Math.max(0, Math.min(Math.ceil(dmg * 0.7), def.hp - 1));
     def.hp = Math.max(0, def.hp - dmg);
     log.push({ t: 'hp', side: other, hp: def.hp, maxHp: sd.maxHp, eff, crit });
+    if (moveId === 'struggle') {
+      atk.hp = Math.max(0, atk.hp - Math.max(1, Math.floor(sa.maxHp / 4)));
+      log.push({ t: 'hp', side, hp: atk.hp, maxHp: sa.maxHp });
+      log.push({ t: 'text', text: `${an}은(는) 반동으로 데미지를 입었다!` });
+    }
     if (crit) log.push({ t: 'text', text: '급소에 맞았다!' });
     if (eff > 1) log.push({ t: 'text', text: '효과가 굉장했다!' });
     else if (eff < 1) log.push({ t: 'text', text: '효과가 별로인 듯하다...' });
@@ -300,8 +326,10 @@ export class BattleEngine {
         log.push({ t: 'text', text: `${SPECIES[c.species].name}의 레벨이 ${c.level}(으)로 올랐다!` });
         const learn = SPECIES[c.species].learnset.filter(([lv]) => lv === c.level).map(([, m]) => m);
         for (const mv of learn) if (!c.moves.includes(mv)) {
+          const before = { moves: [...c.moves], pp: c.pp ? [...c.pp] : undefined };
           if (c.moves.length >= 4) c.moves.shift();
           c.moves.push(mv);
+          syncPp(c, before);
           log.push({ t: 'text', text: `${SPECIES[c.species].name}은(는) 새로 ${MOVES[mv].name}을(를) 배웠다!` });
         }
       }

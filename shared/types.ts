@@ -113,7 +113,7 @@ export interface PlayerState {
 }
 
 export type LumiType = '노말' | '풀' | '물' | '불' | '땅' | '바람' | '빛';
-export interface CreatureInst { uid: string; species: string; level: number; exp: number; hp: number; moves: string[] }
+export interface CreatureInst { uid: string; species: string; level: number; exp: number; hp: number; moves: string[]; /** 기술별 남은 PP (moves 와 같은 순서). 없으면 가득 */ pp?: number[] }
 export interface SpeciesDef {
   id: string; name: string; type: LumiType; kind: string; description: string;
   base: { hp: number; atk: number; def: number; spd: number };
@@ -126,10 +126,10 @@ export interface SpeciesDef {
   /** 진화: 이 레벨이 되면 to 로 */
   evolves?: { to: string; level: number };
 }
-export interface MoveDef { id: string; name: string; type: LumiType; power: number; accuracy: number; category: 'atk' | 'heal' | 'debuffAtk' | 'debuffDef' | 'buffDef'; priority: number; description: string }
+export interface MoveDef { id: string; name: string; type: LumiType; power: number; accuracy: number; /** 사용 횟수 (0 = 무제한) */ pp?: number; category: 'atk' | 'heal' | 'debuffAtk' | 'debuffDef' | 'buffDef'; priority: number; description: string }
 export interface TrainerDef { id: string; name: string; title: string; sprite: string; map: MapId; sight: number; team: [string, number][]; reward: number; badge?: string; requires?: string[]; intro: string[]; defeat: string[]; after: string[] }
 
-export interface CreatureView { uid: string; species: string; name: string; type: LumiType; level: number; hp: number; maxHp: number; exp: number; expNext: number; moves: { id: string; name: string; type: LumiType; power: number; category: string }[] }
+export interface CreatureView { uid: string; species: string; name: string; type: LumiType; level: number; hp: number; maxHp: number; exp: number; expNext: number; moves: { id: string; name: string; type: LumiType; power: number; category: string; pp: number; maxPp: number }[] }
 export interface BattleView {
   kind: 'wild' | 'trainer'; bg: string; trainer?: { name: string; title: string; sprite: string; left: number };
   me: CreatureView; foe: CreatureView;
@@ -170,6 +170,8 @@ export interface SaveData {
   story?: number;
   visited?: string[];
   recipes?: string[];
+  /** 마지막 위치 (다시 접속하면 그 자리에서 이어서). 실내면 나갈 곳(ret)도 */
+  pos?: { map: MapId; inst: string; x: number; y: number; dir?: Dir; ret?: { map: MapId; inst: string; x: number; y: number } };
   savedAt: number;
 }
 

@@ -5,6 +5,7 @@
     "type": "노말",
     "power": 40,
     "accuracy": 100,
+    "pp": 35,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -15,6 +16,7 @@
     "type": "노말",
     "power": 40,
     "accuracy": 100,
+    "pp": 35,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -25,6 +27,7 @@
     "type": "노말",
     "power": 0,
     "accuracy": 100,
+    "pp": 20,
     "category": "debuffAtk",
     "priority": 0,
     "description": "상대의 공격을 낮춘다"
@@ -35,6 +38,7 @@
     "type": "노말",
     "power": 40,
     "accuracy": 100,
+    "pp": 35,
     "category": "atk",
     "priority": 1,
     "description": "반드시 먼저 공격한다"
@@ -45,6 +49,7 @@
     "type": "노말",
     "power": 60,
     "accuracy": 90,
+    "pp": 15,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -55,6 +60,7 @@
     "type": "풀",
     "power": 45,
     "accuracy": 100,
+    "pp": 35,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -65,6 +71,7 @@
     "type": "풀",
     "power": 60,
     "accuracy": 100,
+    "pp": 15,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -75,6 +82,7 @@
     "type": "풀",
     "power": 0,
     "accuracy": 100,
+    "pp": 10,
     "category": "heal",
     "priority": 0,
     "description": "체력을 절반 회복한다"
@@ -85,6 +93,7 @@
     "type": "풀",
     "power": 75,
     "accuracy": 90,
+    "pp": 15,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -95,6 +104,7 @@
     "type": "풀",
     "power": 0,
     "accuracy": 95,
+    "pp": 20,
     "category": "debuffDef",
     "priority": 0,
     "description": "상대의 방어를 낮춘다"
@@ -105,6 +115,7 @@
     "type": "물",
     "power": 40,
     "accuracy": 100,
+    "pp": 35,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -115,6 +126,7 @@
     "type": "물",
     "power": 55,
     "accuracy": 100,
+    "pp": 25,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -125,6 +137,7 @@
     "type": "물",
     "power": 0,
     "accuracy": 100,
+    "pp": 20,
     "category": "buffDef",
     "priority": 0,
     "description": "자신의 방어를 올린다"
@@ -135,6 +148,7 @@
     "type": "물",
     "power": 75,
     "accuracy": 90,
+    "pp": 15,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -145,6 +159,7 @@
     "type": "불",
     "power": 45,
     "accuracy": 100,
+    "pp": 35,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -155,6 +170,7 @@
     "type": "불",
     "power": 60,
     "accuracy": 100,
+    "pp": 15,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -165,6 +181,7 @@
     "type": "불",
     "power": 80,
     "accuracy": 85,
+    "pp": 10,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -175,6 +192,7 @@
     "type": "땅",
     "power": 50,
     "accuracy": 90,
+    "pp": 25,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -185,6 +203,7 @@
     "type": "땅",
     "power": 0,
     "accuracy": 100,
+    "pp": 20,
     "category": "debuffDef",
     "priority": 0,
     "description": "상대의 방어를 낮춘다"
@@ -195,6 +214,7 @@
     "type": "땅",
     "power": 75,
     "accuracy": 100,
+    "pp": 15,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -205,6 +225,7 @@
     "type": "바람",
     "power": 40,
     "accuracy": 100,
+    "pp": 35,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -215,6 +236,7 @@
     "type": "바람",
     "power": 50,
     "accuracy": 100,
+    "pp": 25,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -225,6 +247,7 @@
     "type": "바람",
     "power": 75,
     "accuracy": 90,
+    "pp": 15,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -235,6 +258,7 @@
     "type": "빛",
     "power": 45,
     "accuracy": 100,
+    "pp": 35,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -245,6 +269,7 @@
     "type": "빛",
     "power": 65,
     "accuracy": 100,
+    "pp": 15,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -255,6 +280,7 @@
     "type": "빛",
     "power": 0,
     "accuracy": 100,
+    "pp": 10,
     "category": "heal",
     "priority": 0,
     "description": "체력을 절반 회복한다"
@@ -265,6 +291,7 @@
     "type": "빛",
     "power": 90,
     "accuracy": 90,
+    "pp": 10,
     "category": "atk",
     "priority": 0,
     "description": ""
@@ -275,6 +302,7 @@
     "type": "노말",
     "power": 0,
     "accuracy": 100,
+    "pp": 20,
     "category": "buffDef",
     "priority": 0,
     "description": "자신만만하게 몸을 부풀려 방어를 올린다."
@@ -285,6 +313,7 @@
     "type": "빛",
     "power": 110,
     "accuracy": 90,
+    "pp": 5,
     "category": "atk",
     "priority": 0,
     "description": "수많은 별빛을 비처럼 쏟아붓는다."
@@ -295,8 +324,20 @@
     "type": "노말",
     "power": 120,
     "accuracy": 100,
+    "pp": 5,
     "category": "atk",
     "priority": 0,
     "description": "세상이 처음 빚어질 때의 빛을 내뿜는다."
+  },
+  "struggle": {
+    "id": "struggle",
+    "name": "발버둥",
+    "type": "노말",
+    "power": 50,
+    "accuracy": 100,
+    "pp": 0,
+    "category": "atk",
+    "priority": 0,
+    "description": "PP가 모두 떨어졌을 때 쓰는 기술. 자신도 반동을 받는다"
   }
 }

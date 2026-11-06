@@ -23,6 +23,10 @@ export async function showIllustTest() {
   document.body.style.overflow = 'auto';
   const root = document.getElementById('ui')!;
   root.classList.remove('pointer-events-none');
+  root.style.overflowY = 'auto';
+  root.style.overflowX = 'hidden';
+  root.style.pointerEvents = 'auto';
+  root.style.height = '100vh';
   const ids = Object.keys(SPEC);
   const ai = ids.filter(hasAiIllust).length;
   const page = document.createElement('div');

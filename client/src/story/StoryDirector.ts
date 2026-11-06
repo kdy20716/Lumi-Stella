@@ -21,6 +21,10 @@ export interface StoryHost {
 const label = (t: string) => `<b class="text-[#ffe58a]">E</b> ${t}`;
 const MOM = { name: '엄마', sprite: 'mom', color: '#c0705a' };
 const MAYOR = { name: '오 이장', title: '별빛 마을 이장', sprite: 'mayor', color: '#8a2f3f' };
+/** 한 번만 보여 주는 연출 (집에 들어갔다 나와도 다시 나오지 않게). 새로고침해도 기억 */
+const seen = (key: string) => { try { return localStorage.getItem(`sf:seen:${key}`) === '1'; } catch { return false; } };
+const markSeen = (key: string) => { try { localStorage.setItem(`sf:seen:${key}`, '1'); } catch { /* 저장 불가 */ } };
+const seenNow = new Set<string>();
 
 export class StoryDirector {
   private actors: Actor[] = [];
@@ -115,6 +119,9 @@ export class StoryDirector {
   /** 농장: 저 앞에서 달려가는 친구 */
   private async rivalRunsAhead() {
     const r = this.rival, g = this.wp('wp_gate'); if (!g) return;
+    const key = `runAhead:${this.me.id}`;
+    if (seenNow.has(key) || seen(key)) return;
+    seenNow.add(key); markSeen(key);
     const [px, py] = this.h.player.cell();
     const a = this.spawn('rival', r.look, r.name, px + 6, py + 3, 'right');
     a.say('먼저 간다~!', this.h.zoom);

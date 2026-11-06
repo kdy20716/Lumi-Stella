@@ -55,7 +55,7 @@ const title = {
         <div class="mt-2 text-3xl text-[#bff0e0] px-outline tracking-[0.3em]">별빛의 씨앗</div>
         <div class="mt-2 text-sm text-[#fff8ec] px-outline tracking-[0.35em] opacity-90">LUMI STELLA · SEEDS OF STARLIGHT</div>
       </div>
-      <div class="px-panel flex flex-col items-center gap-3 w-[min(380px,92vw)]">
+      <div class="px-panel flex flex-col items-center gap-3 w-[min(380px,92cqw)]">
         <div data-c="user" class="text-sm text-[#8a5a32] min-h-5">로그인 상태 확인 중...</div>
         <button data-a="google" class="px-btn green text-xl w-full flex items-center justify-center gap-2"><span class="inline-flex w-7 h-7 rounded-full bg-white text-[#4285f4] font-bold items-center justify-center text-lg">G</span><span data-c="gtext">구글 계정으로 시작</span></button>
         <div class="-mt-2 text-[11px] text-[#8a5a32]">접속한 모든 사람과 같은 서버에서 함께해요</div>
@@ -127,8 +127,8 @@ const hotbar = {
     if (!this.node) return;
     const s = all[selected]; const it = s?.itemId ? ITEMS[s.itemId] : null;
     this.node.innerHTML = it
-      ? `<span class="px-icon" style="${iconStyle(it.icon, 32)}"></span><div><div class="nm">${it.name}${it.type !== 'tool' ? ` <span class="q">×${s.quantity}</span>` : ''}</div><div class="sub">Space 사용 · M › 가방에서 바꾸기</div></div>`
-      : '<span class="px-icon" style="opacity:.4;' + iconStyle('craft', 32) + '"></span><div><div class="nm">빈손</div><div class="sub">M › 가방에서 도구 들기</div></div>';
+      ? `<span class="px-icon" style="${iconStyle(it.icon, 32)}"></span><div><div class="nm">${it.name}${it.type !== 'tool' ? ` <span class="q">×${s.quantity}</span>` : ''}</div><div class="sub">Space 사용 · R › 가방에서 바꾸기</div></div>`
+      : '<span class="px-icon" style="opacity:.4;' + iconStyle('craft', 32) + '"></span><div><div class="nm">빈손</div><div class="sub">R › 가방에서 골라 손에 들기</div></div>';
   },
 };
 
@@ -138,7 +138,7 @@ export const confirmBox = {
   get open() { return !!this.node; },
   show(text: string, onYes: () => void, o: { yes?: string; no?: string; onNo?: () => void } = {}) {
     this.close();
-    const n = el('div', 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-[min(460px,92vw)] pointer-events-auto toast-in');
+    const n = el('div', 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-[min(460px,92cqw)] pointer-events-auto toast-in');
     n.innerHTML = `<div class="px-panel text-center"><div class="text-xl leading-relaxed whitespace-pre-wrap mb-3">${text}</div>
       <div class="flex gap-3 justify-center"><button data-c="no" class="px-btn text-base">${o.no ?? '아니요'}</button><button data-c="yes" class="px-btn green text-base">${o.yes ?? '네'}</button></div></div>`;
     n.querySelector<HTMLButtonElement>('[data-c=yes]')!.onclick = () => { this.close(); onYes(); };
@@ -156,7 +156,7 @@ const dialogue = {
   show(o: { name: string; title?: string; sprite?: string; color?: string; pages: string[]; hearts?: number }, onClose?: () => void) {
     this.close(false);
     this.pages = o.pages.map(josa); this.page = 0; this.onClose = onClose ?? null;
-    const n = el('div', 'fixed left-1/2 -translate-x-1/2 bottom-3 w-[min(980px,97vw)] z-30 pointer-events-auto dlg-in');
+    const n = el('div', 'fixed left-1/2 -translate-x-1/2 bottom-3 w-[min(980px,97cqw)] z-30 pointer-events-auto dlg-in');
     const hearts = o.hearts !== undefined ? `<div class="flex gap-0.5 justify-center mt-1">${Array.from({ length: 5 }, (_, i) => `<span class="px-icon" style="${iconStyle('heart', 14)};${i < o.hearts! ? '' : 'filter:grayscale(1) opacity(.45)'}"></span>`).join('')}</div>` : '';
     // 오른쪽 위: 성격에 맞는 포즈의 벡터 일러스트 (대화창 뒤에서 상반신이 올라옴) + 이름표
     const ill = o.sprite ? illustHtml(o.sprite) : '';
@@ -208,7 +208,7 @@ const dialogue = {
 // ── 토스트 / 힌트 / 하루 전환 / 채팅 / 도움말 ─────────────
 const toast = {
   node: null as HTMLDivElement | null,
-  mount() { this.node = el('div', 'absolute left-4 bottom-24 flex flex-col gap-2 items-start'); root().appendChild(this.node); },
+  mount() { this.node = el('div', 'absolute left-4 bottom-24 flex flex-col gap-2 items-start'); this.node.dataset.ui = 'toast'; root().appendChild(this.node); },
   push(text: string, icon?: string) {
     if (!this.node) return;
     const t = el('div', 'toast-in flex items-center gap-2 px-3 py-2 bg-[#fff8ec] border-4 border-[#a8683a] shadow-[0_4px_0_rgba(0,0,0,.3)] text-base');
@@ -247,6 +247,7 @@ const chat = {
   get typing() { return document.activeElement === this.input; },
   mount() {
     const n = el('div', 'absolute left-4 top-4 w-[340px] flex flex-col gap-1');
+    n.dataset.ui = 'chat';
     n.innerHTML = `<div data-c="log" class="flex flex-col gap-0.5 text-sm text-white px-outline max-h-[200px] overflow-hidden"></div>
       <input data-c="in" maxlength="80" placeholder="메시지 입력 후 Enter (Esc 취소)" class="pointer-events-auto hidden w-full px-2 py-1 bg-[#fff8ec]/90 border-2 border-[#a8683a] outline-none text-sm font-[inherit]" />`;
     root().appendChild(n);
@@ -289,14 +290,14 @@ const shop = {
   get open() { return !!this.node || craft.open; },
   show(def: ShopDef, gold: number, onBuy: (itemId: string, qty: number) => void, keeper?: { sprite: string; name: string }) {
     this.close();
-    const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(640px,94vw)] pointer-events-auto toast-in');
+    const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(640px,94cqw)] pointer-events-auto toast-in');
     n.innerHTML = `<div class="px-panel">
       <div class="flex items-center gap-4 mb-3">
         ${keeper ? `<div class="portrait shrink-0" style="width:84px;height:84px;background-image:url(assets/characters/${keeper.sprite}.png);background-size:${384 * 3}px auto;background-position:-${9 * 3}px -${8 * 3}px"></div>` : ''}
         <div class="flex-1"><div class="text-2xl text-[#8a5a32]">${def.name}</div><div class="text-base">${def.greeting}</div></div>
         <div class="flex items-center gap-1 bg-[#e6cb93] px-2 py-1 border-2 border-[#a8683a]"><span class="px-icon" style="${iconStyle('gold', 24)}"></span><span data-s="gold" class="text-xl">${gold.toLocaleString()}G</span></div>
       </div>
-      <div class="flex flex-col gap-2 max-h-[46vh] overflow-y-auto pr-1">
+      <div class="flex flex-col gap-2 max-h-[46cqh] overflow-y-auto pr-1">
         ${def.items.map((it) => { const d = ITEMS[it.itemId]; return `<div class="flex items-center gap-3 bg-[#fff8ec]/70 border-2 border-[#d8b67c] px-2 py-1">
           <span class="px-icon shrink-0" style="${iconStyle(d.icon, 40)}"></span>
           <div class="flex-1 min-w-0"><div class="text-lg">${d.name}</div><div class="text-xs text-[#8a5a32] truncate">${d.description}</div></div>
@@ -343,13 +344,13 @@ const craft = {
         <button data-c="${r.id}" data-t="5" class="px-btn text-sm !px-3 !py-1" ${Object.entries(r.in).every(([id, n]) => have(id) >= n * 5) ? '' : 'disabled style="opacity:.5"'}>×5</button>` : ''}
       </div>`;
     }).join('');
-    const n = this.node ?? el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(680px,94vw)] pointer-events-auto toast-in');
+    const n = this.node ?? el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(680px,94cqw)] pointer-events-auto toast-in');
     n.innerHTML = `<div class="px-panel">
       <div class="flex items-center gap-4 mb-3">
         ${a.keeper ? `<div class="portrait shrink-0" style="width:84px;height:84px;background-image:url(assets/characters/${a.keeper.sprite}.png);background-size:${384 * 3}px auto;background-position:-${9 * 3}px -${8 * 3}px"></div>` : `<span class="px-icon shrink-0" style="${iconStyle('craft', 64)}"></span>`}
         <div class="flex-1"><div class="text-2xl text-[#8a5a32]">${a.title}</div><div class="text-base">${a.sub}</div></div>
       </div>
-      <div class="flex flex-col gap-2 max-h-[52vh] overflow-y-auto pr-1">${rows}</div>
+      <div class="flex flex-col gap-2 max-h-[52cqh] overflow-y-auto pr-1">${rows}</div>
       <div class="mt-3 flex justify-between items-center text-sm text-[#8a5a32]"><span>재료는 농사 · 채집 · 채광으로 모아요</span><button data-close class="px-btn text-base !py-1">닫기 (Esc)</button></div>
     </div>`;
     n.querySelectorAll<HTMLButtonElement>('[data-c]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); if (b.disabled) return; a.onCraft(b.dataset.c!, Number(b.dataset.t)); }; });
@@ -394,7 +395,7 @@ const HELP_TEXT: Record<string, string> = { farm: '농사 도우미: 아침마�
 const starter = {
   show(ids: string[], onPick: (id: string) => void, sub = '한별 박사: "셋 다 좋은 아이들이라네. 마음이 가는 아이를 데려가게!"') {
     const n = el('div', 'fixed inset-0 z-30 flex items-center justify-center bg-[#0b0d18]/60 pointer-events-auto toast-in');
-    n.innerHTML = `<div class="px-panel w-[min(900px,96vw)]">
+    n.innerHTML = `<div class="px-panel w-[min(900px,96cqw)]">
       <div class="text-center text-2xl text-[#8a5a32] mb-1">함께할 파트너 루미를 골라 주세요</div>
       <div class="text-center text-sm mb-4">${sub}</div>
       <div class="grid grid-cols-3 gap-4">${ids.map((id) => { const sp = SPECIES[id]; return `
@@ -420,7 +421,7 @@ const party = {
   show(p: PlayerState, onPartner: (i: number) => void) {
     this.close();
     const statsOf = (c: CreatureInst) => { const b = SPECIES[c.species].base, L = c.level; return { maxHp: Math.floor((b.hp * 2 * L) / 100) + L + 10 }; };
-    const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(760px,96vw)] pointer-events-auto toast-in');
+    const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(760px,96cqw)] pointer-events-auto toast-in');
     n.innerHTML = `<div class="px-panel">
       <div class="flex items-center justify-between mb-2"><span class="text-2xl text-[#8a5a32]">나의 루미</span>
         <span class="text-sm">도감: 본 루미 ${p.seen.length} · 잡은 루미 ${p.caught.length} / ${Object.keys(SPECIES).length}</span></div>
@@ -461,7 +462,7 @@ const menu = {
     sfx.play('menu');
     const n = el('div', 'fixed inset-0 z-40 flex items-center justify-center bg-[#0b0d18]/55 pointer-events-auto toast-in');
     const render = (confirm = false) => {
-      n.innerHTML = `<div class="px-panel w-[min(380px,92vw)] flex flex-col gap-3 items-stretch">
+      n.innerHTML = `<div class="px-panel w-[min(380px,92cqw)] flex flex-col gap-3 items-stretch">
         <div class="text-center text-2xl text-[#8a5a32]">일시정지</div>
         <div class="text-center text-xs text-[#8a5a32]">저장: ${o.storage}</div>
         ${confirm ? `<div class="text-center text-base">정말 처음부터 다시 시작할까요?<br><span class="text-sm text-[#c8453c]">캐릭터 · 가방 · 루미 · 농장이 모두 지워져요.</span></div>

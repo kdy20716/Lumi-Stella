@@ -15,6 +15,10 @@ export type AuthorityEvent =
   | { type: 'chat'; from: string; name: string; text: string }
   | { type: 'correct'; x: number; y: number }
   | { type: 'disconnected'; message?: string }
+  /** 연결이 잠깐 끊겨 자동으로 다시 접속하는 중 */
+  | { type: 'reconnecting' }
+  /** 다시 접속됨: me 가 서버 기준(끊기기 직전 위치)으로 갱신됨 */
+  | { type: 'reconnected' }
   | { type: 'adminReport'; report: BugReport }
   | { type: 'reported' };
 
@@ -143,6 +147,8 @@ export class LocalAuthority extends Authority {
   override update(dt: number) { this.sim.tick(dt); }
 }
 
+type Cred = { token?: string; dev?: string; mode?: 'public' | 'friends' };
+
 export class NetworkAuthority extends Authority {
   readonly online = true;
   private socket!: Socket;
@@ -158,32 +164,59 @@ export class NetworkAuthority extends Authority {
    * cred: { token } = 구글 로그인 ID 토큰, { dev } = 서버를 DEV_AUTH=1 로 띄웠을 때 테스트용
    * 패킷: emit(이름 = 메시지 t, 메시지) / 서버도 같은 규칙 → onAny 로 받아서 handle
    */
-  static connect(url: string, cred: { token?: string; dev?: string; mode?: 'public' | 'friends' }): Promise<NetworkAuthority> {
+  /** 끊긴 뒤 이 시간 안에 다시 붙지 못하면 포기하고 타이틀로 */
+  static readonly GIVE_UP_MS = 3 * 60_000;
+
+  static connect(url: string, cred: Cred, refresh?: () => Promise<Cred>): Promise<NetworkAuthority> {
     const a = new NetworkAuthority();
     return new Promise((resolve, reject) => {
       if (mixedContentProblem(url)) { reject(new Error('https 페이지에서는 https 서버 주소가 필요해요 (VITE_SERVER_URL 확인)')); return; }
-      // 웹소켓을 먼저 쓰고, 막혀 있으면 HTTP 롱폴링으로 자동 대체. 끊기면 게임이 타이틀로 돌아가므로 자동 재접속은 끔
-      const socket = io(url, { transports: ['websocket', 'polling'], reconnection: false, timeout: 10000, withCredentials: true });
+      // 웹소켓을 먼저 쓰고, 막혀 있으면 HTTP 롱폴링으로 자동 대체.
+      // 다른 창에 잠깐 다녀오거나 휴대폰 화면이 꺼져 끊겨도 자동으로 다시 접속 (같은 계정 · 끊기기 직전 위치)
+      const socket = io(url, { transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 800, reconnectionDelayMax: 5000, timeout: 10000, withCredentials: true });
       a.socket = socket;
-      let joined = false;
+      let joined = false, kicked = false, giveUp = 0;
       const fail = (msg: string) => { clearTimeout(timeout); if (!joined) { socket.disconnect(); reject(new Error(msg)); } };
       const timeout = setTimeout(() => fail('서버 응답 없음 (서버가 켜져 있는지, 주소가 맞는지 확인)'), 15000);
-      socket.on('connect', () => a.send({ t: 'join', ...cred }));
-      socket.on('connect_error', (e: Error) => { console.warn('[socket] 접속 실패', url, e.message); fail(`서버에 접속할 수 없어요 (${url})`); });
-      socket.on('disconnect', (reason: string) => { if (joined && !a.closedByUser) a.emit({ type: 'disconnected', message: reason === 'io server disconnect' ? undefined : '서버와 연결이 끊겼어요' }); });
+      socket.on('connect', () => {
+        if (!joined) { a.send({ t: 'join', ...cred }); return; }
+        // 재접속: 구글 토큰은 1시간이면 만료되므로 새로 받아서 다시 join
+        void (refresh ? refresh().catch(() => cred) : Promise.resolve(cred)).then((c) => { cred = { ...c, mode: cred.mode }; a.send({ t: 'join', ...cred }); });
+      });
+      socket.on('connect_error', (e: Error) => { if (joined) return; console.warn('[socket] 접속 실패', url, e.message); fail(`서버에 접속할 수 없어요 (${url})`); });
+      socket.on('disconnect', (reason: string) => {
+        if (!joined || a.closedByUser) return;
+        // 서버가 끊은 경우(다른 곳에서 접속 · 정지 등)는 다시 붙지 않음
+        if (kicked || reason === 'io server disconnect') { a.emit({ type: 'disconnected', message: kicked ? a.kickMessage : undefined }); return; }
+        a.emit({ type: 'reconnecting' });
+        clearTimeout(giveUp);
+        giveUp = window.setTimeout(() => { if (!socket.connected) { a.closedByUser = true; socket.disconnect(); a.emit({ type: 'disconnected', message: '서버와 연결이 끊겼어요' }); } }, NetworkAuthority.GIVE_UP_MS);
+      });
+      // 화면으로 돌아오면 기다리지 말고 바로 다시 접속 시도
+      const wake = () => { if (joined && !a.closedByUser && !kicked && !socket.connected && !document.hidden) socket.connect(); };
+      document.addEventListener('visibilitychange', wake);
+      window.addEventListener('focus', wake);
+      window.addEventListener('online', wake);
       socket.onAny((ev: string, msg: S2C) => {
         if (!msg || typeof msg !== 'object' || msg.t !== ev) return;
         if (msg.t === 'welcome') {
-          clearTimeout(timeout); joined = true;
+          clearTimeout(timeout); clearTimeout(giveUp);
+          const again = joined; joined = true;
           a.me = msg.you; a.storageKind = msg.storage; a.isAdmin = msg.admin === true;
           a.applySnapshot(msg.snapshot);
+          a.roster.clear();
           for (const p of msg.roster) if (p.id !== msg.id) a.roster.set(p.id, p);
-          resolve(a);
+          // 끊겨 있던 동안의 요청은 응답이 오지 않으므로 실패로 정리
+          for (const [, res] of a.pending) res({ ok: false, reason: 'timeout' });
+          a.pending.clear();
+          if (again) a.emit({ type: 'reconnected' }); else resolve(a);
         } else if (msg.t === 'error' && !joined) fail(msg.message);
+        else if (msg.t === 'error') { kicked = true; a.kickMessage = msg.message; a.handle(msg); }
         else a.handle(msg);
       });
     });
   }
+  private kickMessage?: string;
 
   private send(m: C2S) { if (this.socket?.connected) this.socket.emit(m.t, m); }
 

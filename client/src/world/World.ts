@@ -5,6 +5,9 @@ import { DEPTH, TILE, type Manifest } from '../config';
 import { Grid } from './Grid';
 import type { Surface } from '../audio/Sfx';
 
+/** 실내에서 빛을 내는 물건 */
+const LIGHT_OBJECTS = new Set(['lamp_floor', 'forge', 'fireplace', 'lamp']);
+
 export interface WorldObject {
   id: number;
   type: string;
@@ -119,7 +122,12 @@ export class World {
     // 2.5D 절벽 · 계단 · 턱 (바닥 장식 위, 캐릭터 아래)
     if (raw.layers.some((l) => l.name === 'Cliff')) this.map.createLayer('Cliff', ts, 0, 0)?.setDepth(DEPTH.decor + 5);
     // 실내 조명 (벽난로·스탠드)
-    for (const l of this.info.spawnList.filter((o) => o.name === 'light')) this.lights.push({ x: l.x, y: l.y, scale: 1.6, tint: 0xffc070, base: 0.8 });
+    //  실제로 빛을 내는 물건(벽난로 · 스탠드 · 화로) 근처에만 — 빈 벽에 가로등 같은 빛이 생기지 않게
+    const glowing = this.info.objects.filter((o) => LIGHT_OBJECTS.has(String(o.type)));
+    for (const l of this.info.spawnList.filter((o) => o.name === 'light')) {
+      const ok = this.mapId === 'home' ? true : glowing.some((o) => Math.hypot(o.x - l.x, o.y - l.y) < 48);
+      if (ok) this.lights.push({ x: l.x, y: l.y, scale: 1.3, tint: 0xffc070, base: 0.55 });
+    }
 
     this.buildObjects();
   }

@@ -32,7 +32,7 @@ export function loadLooks() {
 }
 export const hasAiIllust = (id: string) => AI_ILLUST.ids.includes(id);
 
-// ── AI 그림: 흰 배경을 지워서 투명하게 (테두리에서부터 이어진 흰색만 → 옷의 흰 부분은 그대로) ──
+// ── AI 그림: 흰 배경을 지워서 투명하게 (옷의 흰 부분 보존 + 갇힌 배경 구멍 제거) ──
 const cutCache = new Map<string, string>();
 const cutting = new Map<string, Promise<string>>();
 function cutBackground(src: string): Promise<string> {
@@ -47,16 +47,80 @@ function cutBackground(src: string): Promise<string> {
         const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
         const g = cv.getContext('2d', { willReadFrequently: true })!; g.drawImage(img, 0, 0, w, h);
         const im = g.getImageData(0, 0, w, h), d = im.data;
-        const bgLike = (i: number) => { const r = d[i], gg = d[i + 1], b = d[i + 2]; return Math.min(r, gg, b) > 226 && Math.max(r, gg, b) - Math.min(r, gg, b) < 26; };
+
+        // 이미 투명한 PNG라면 추가 처리 없이 바로 사용
+        let hasTrans = false;
+        for (let i = 3; i < d.length; i += 16) { if (d[i] === 0) { hasTrans = true; break; } }
+        if (hasTrans) { cutCache.set(src, src); resolve(src); return; }
+
+        const isBg = (i: number) => {
+          const r = d[i], gg = d[i + 1], b = d[i + 2];
+          return Math.min(r, gg, b) > 228 && (Math.max(r, gg, b) - Math.min(r, gg, b)) < 24;
+        };
+
         const seen = new Uint8Array(w * h), q: number[] = [];
-        const push = (x: number, y: number) => { const k = y * w + x; if (seen[k] || !bgLike(k * 4)) return; seen[k] = 1; q.push(k); };
-        for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+        const push = (x: number, y: number) => { const k = y * w + x; if (seen[k] || !isBg(k * 4)) return; seen[k] = 1; q.push(k); };
+
+        // 1. 위쪽, 왼쪽, 오른쪽 테두리 및 양쪽 아래 모서리만 시드로 지정 (중앙 아래 옷 부분 절대 제외!)
+        for (let x = 0; x < w; x++) push(x, 0);
         for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
-        while (q.length) { const k = q.pop()!, x = k % w, y = (k / w) | 0; d[k * 4 + 3] = 0; if (x > 0) push(x - 1, y); if (x < w - 1) push(x + 1, y); if (y > 0) push(x, y - 1); if (y < h - 1) push(x, y + 1); }
-        // 가장자리 부드럽게: 지운 칸 옆의 밝은 픽셀은 반투명
+        const cornerW = Math.round(w * 0.1);
+        for (let x = 0; x < cornerW; x++) push(x, h - 1);
+        for (let x = w - cornerW; x < w; x++) push(x, h - 1);
+
+        while (q.length) {
+          const k = q.pop()!, x = k % w, y = (k / w) | 0;
+          if (x > 0) push(x - 1, y);
+          if (x < w - 1) push(x + 1, y);
+          if (y > 0) push(x, y - 1);
+          if (y < h - 1) push(x, y + 1);
+        }
+
+        // 2. 닫힌 배경 영역 탐색 (팔 안쪽 등 순수 흰색 평탄 영역만 선별 제거)
+        const unreached = new Uint8Array(w * h);
+        for (let k = 0; k < w * h; k++) { if (!seen[k] && isBg(k * 4)) unreached[k] = 1; }
+        const visited = new Uint8Array(w * h);
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const k = y * w + x;
+            if (unreached[k] && !visited[k]) {
+              let count = 0, sumR = 0, sumG = 0, sumB = 0;
+              let touchesBottom = false;
+              const compQ = [k], compPixels: number[] = [];
+              visited[k] = 1;
+              while (compQ.length) {
+                const ck = compQ.pop()!, cx = ck % w, cy = (ck / w) | 0;
+                compPixels.push(ck); count++;
+                if (cy >= h - 15) touchesBottom = true;
+                const ci = ck * 4;
+                sumR += d[ci]; sumG += d[ci + 1]; sumB += d[ci + 2];
+                const nbrs = [[cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]];
+                for (const [nx, ny] of nbrs) {
+                  if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                    const nk = ny * w + nx;
+                    if (unreached[nk] && !visited[nk]) { visited[nk] = 1; compQ.push(nk); }
+                  }
+                }
+              }
+              const avgR = sumR / count, avgG = sumG / count, avgB = sumB / count;
+              if (count > 600 && avgR > 253 && avgG > 253 && avgB > 253 && !touchesBottom) {
+                for (const pk of compPixels) seen[pk] = 1;
+              }
+            }
+          }
+        }
+
+        // 3. 배경 픽셀 투명화
+        for (let k = 0; k < w * h; k++) { if (seen[k]) d[k * 4 + 3] = 0; }
+
+        // 4. 가장자리 부드럽게 (안티앨리어싱 헤일로 완화)
         for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
           const k = y * w + x; if (seen[k]) continue;
-          if (seen[k - 1] || seen[k + 1] || seen[k - w] || seen[k + w]) { const i = k * 4, l = (d[i] + d[i + 1] + d[i + 2]) / 3; if (l > 200) d[i + 3] = Math.round(255 * Math.max(0.25, (255 - l) / 55)); }
+          if (seen[k - 1] || seen[k + 1] || seen[k - w] || seen[k + w]) {
+            const i = k * 4, l = (d[i] + d[i + 1] + d[i + 2]) / 3;
+            const diff = Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]);
+            if (l > 210 && diff < 20) d[i + 3] = Math.round(255 * Math.max(0.15, (255 - l) / 45));
+          }
         }
         g.putImageData(im, 0, 0);
         const url = cv.toDataURL('image/png'); cutCache.set(src, url); resolve(url);

@@ -88,7 +88,11 @@ export class FarmScene extends Phaser.Scene {
   private manifest!: Manifest;
   private cursor!: Phaser.GameObjects.Image;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
-  private selected = 0;
+  /** 손에 든 가방 칸 (-1 = 빈손). 맵을 옮겨도(씬 재시작) 유지되도록 static 에 보관 */
+  private static heldSlot = -1;
+  private static heldId: string | null = null;
+  private get selected() { return FarmScene.heldSlot; }
+  private set selected(v: number) { FarmScene.heldSlot = v; FarmScene.heldId = v >= 0 ? this.auth?.me.inventory[v]?.itemId ?? null : null; }
   private playing = false;
   private warping = false;
   private sleepConfirmUntil = 0;
@@ -228,6 +232,7 @@ export class FarmScene extends Phaser.Scene {
 
   // ── 타이틀 ──────────────────────────────────────────
   private titleScreen() {
+    touch.setVisible(false);   // 타이틀에서는 조이스틱 · 버튼 숨김
     const cam = this.cameras.main;
     const points = [[370, 250], [560, 420], [200, 470], [700, 300], [380, 200]];
     let i = 0;
@@ -259,7 +264,9 @@ export class FarmScene extends Phaser.Scene {
             cred = { token: await f.idToken(user) };
           }
           t.busy('서버에 접속 중...');
-          const auth = await NetworkAuthority.connect(t.url(), { ...cred, mode });
+          // 재접속 때 쓸 새 토큰 (구글 토큰은 1시간이면 만료)
+          const refresh = dev ? undefined : async () => { const f = await loadFb(); const u = await f.currentUser(); if (!u) throw new Error('로그인 만료'); return { token: await f.idToken(u) }; };
+          const auth = await NetworkAuthority.connect(t.url(), { ...cred, mode }, refresh);
           t.close();
           this.withCharacter(auth, () => this.scene.restart({ authority: auth, map: auth.me.map, pos: { x: auth.me.x, y: auth.me.y } } satisfies SceneData));
         } catch (e) {
@@ -302,6 +309,7 @@ export class FarmScene extends Phaser.Scene {
 
   private begin(fromWarp: boolean) {
     this.playing = true;
+    touch.setVisible(true);
     const cam = this.cameras.main;
     const firstTime = !fromWarp;
     ui.mountGame();
@@ -314,7 +322,8 @@ export class FarmScene extends Phaser.Scene {
     this.playMapMusic();
     ui.hud.time(this.auth.time); ui.hud.gold(this.auth.gold); ui.hud.energy(this.auth.me.energy, this.auth.me.maxEnergy);
     ui.hotbar.onClick = () => { if (this.hasPhone()) phone.toggle('bag'); };
-    this.ensureHeld(true);
+    if (firstTime) this.selected = -1;   // 접속하면 빈손으로 시작 (가방에서 골라 듦)
+    this.ensureHeld();
     this.setupPhone();
     ui.hotbar.render(this.auth.me.inventory, this.selected);
     ui.chat.onSend = (t) => this.auth.chat(t);
@@ -413,7 +422,14 @@ export class FarmScene extends Phaser.Scene {
   // ── 입력 ────────────────────────────────────────────
   /** 키 하나 처리 (키보드 · 모바일 터치 버튼 공용) */
   private onKey(e: KeyboardEvent) {
-      if (!this.playing || ui.chat.typing) return;
+      if (ui.chat.typing) return;
+      // 대화창: 컷신 중(조작 잠김)에도 Space · E · Enter · 클릭으로 넘김
+      if (ui.dialogue.open && !this.battling && [' ', 'e', 'E', 'x', 'X', 'c', 'C', 'Enter'].includes(e.key)) {
+        e.preventDefault();
+        if (!e.repeat) ui.dialogue.advance();
+        return;
+      }
+      if (!this.playing) return;
       if (this.battling) return;
       if (e.key === 'Tab') {
         e.preventDefault();
@@ -459,6 +475,7 @@ export class FarmScene extends Phaser.Scene {
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => { this.lastPointerMove = this.time.now; if (ui.emoteWheel.open) ui.emoteWheel.move(p.x, p.y); });
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (ui.emoteWheel.open) { ui.emoteWheel.close(); return; }
+      if (ui.dialogue.open && !this.battling) { ui.dialogue.advance(); return; }
       if (!this.playing || ui.shop.open || this.battling || ui.emoteWheel.open || ui.mailbox.open || ui.creator.open) return;
       if (this.fishing) { this.reel(); return; }
       if (ui.dialogue.open) { ui.dialogue.advance(); return; }
@@ -467,11 +484,14 @@ export class FarmScene extends Phaser.Scene {
   }
 
   private select(i: number) { this.selected = i; ui.hotbar.render(this.auth.me.inventory, i); phone.refresh(); }
-  /** 손에 든 칸이 비었으면 도구 하나를 대신 듦 */
-  private ensureHeld(preferTool = false) {
-    const inv = this.auth.me.inventory;
-    const cur = inv[this.selected]?.itemId;
-    if (!cur || (preferTool && ITEMS[cur]?.type !== 'tool')) { const t = inv.findIndex((s) => s.itemId && ITEMS[s.itemId]?.type === 'tool'); if (t >= 0) this.selected = t; }
+  /** 손에 든 물건이 다 떨어졌거나 칸이 바뀌었으면 맞춰 줌 (다 쓰면 빈손). 자동으로 다른 걸 쥐어 주지 않음 */
+  private ensureHeld() {
+    const inv = this.auth.me.inventory, id = FarmScene.heldId;
+    if (FarmScene.heldSlot >= 0 && inv[FarmScene.heldSlot]?.itemId !== id) {
+      const moved = id ? inv.findIndex((s) => s.itemId === id) : -1;
+      FarmScene.heldSlot = moved;
+      if (moved < 0) FarmScene.heldId = null;
+    }
     ui.hotbar.render(inv, this.selected);
   }
 
@@ -590,7 +610,9 @@ export class FarmScene extends Phaser.Scene {
     if (!item) return [];
     const out: { label: string; run: () => void; primary?: boolean }[] = [];
     const held = slot === this.selected;
-    const hold = { label: held ? '손에 들고 있어요' : '손에 들기', run: () => { this.select(slot); sfx.play('tap'); ui.toast.push(`${item.name}을(를) 손에 들었어요. Space / 좌클릭으로 사용!`, item.icon); }, primary: item.type === 'tool' && !held };
+    const hold = held
+      ? { label: '선택 해제하기', run: () => { this.select(-1); sfx.play('tap'); ui.toast.push(`${item.name}을(를) 손에서 내려놓았어요.`); } }
+      : { label: '손에 들기', run: () => { this.select(slot); sfx.play('tap'); ui.toast.push(`${item.name}을(를) 손에 들었어요. Space / 좌클릭으로 사용!`, item.icon); }, primary: item.type === 'tool' };
     const nearBin = this.mapId === 'farm' && this.world.objects.some((o) => o.interact === 'ship' && o.sprite.active && Math.hypot(o.sprite.x - this.player.x, o.sprite.y - this.player.y) < 40);
     const nearTable = this.mapId === 'home' && this.world.objects.some((o) => o.interact === 'dtable' && Math.hypot(o.sprite.x - this.player.x, o.sprite.y - this.player.y) < 44);
     if (item.type === 'seed') out.push({ label: '주변 밭에 심기', run: () => this.plantAround(slot), primary: true });
@@ -880,6 +902,20 @@ export class FarmScene extends Phaser.Scene {
       case 'correct': this.player.setPosition(e.x, e.y); this.player.stopStep(); break;
       case 'adminReport': sfx.play('mailbox'); ui.toast.push(`🐞 새 버그 신고: ${e.report.name} — ${e.report.text.slice(0, 30)}`, 'heart'); phone.onReport(); break;
       case 'reported': ui.toast.push('버그 신고를 보냈어요. 고마워요!', 'heart'); break;
+      case 'reconnecting':
+        // 잠깐 끊김: 조작만 멈추고 자동 재접속을 기다림 (진행 상황은 서버에 그대로)
+        this.playing = false; this.player.stopStep();
+        ui.banner.show('연결이 잠깐 끊겼어요', '다시 연결하는 중… 잠시만 기다려 주세요');
+        break;
+      case 'reconnected': {
+        ui.toast.push('서버에 다시 연결됐어요! 이어서 플레이해요.', 'heart');
+        // 서버가 기억하는 위치(끊기기 직전)에서 이어서: 그 방을 다시 그림
+        const me2 = this.auth.me;
+        if (this.battling) { this.scene.stop('Battle'); this.battling = false; }
+        phone.close(); ui.dialogue.close(false);
+        this.scene.restart({ authority: this.auth, map: me2.map, pos: { x: me2.x, y: me2.y }, fromRoom: true } satisfies SceneData);
+        break;
+      }
       case 'disconnected':
         this.playing = false;
         ui.dialogue.show({ name: '시스템', pages: [`${e.message ?? '서버 연결이 끊어졌어요.'}\n진행상황은 서버에 저장되어 있어요. 확인을 누르면 다시 시작합니다.`] }, () => location.reload());
@@ -1208,6 +1244,7 @@ export class FarmScene extends Phaser.Scene {
 
   private startBattle(update: BattleUpdate, after?: () => void) {
     this.battling = true; this.playing = false;
+    touch.setVisible(false);
     this.cancelFishing();
     ui.dialogue.close(false); ui.shop.close(); ui.party.close(); phone.close();
     this.auth.sendAnim('interact', this.player.dir);
@@ -1222,6 +1259,7 @@ export class FarmScene extends Phaser.Scene {
         auth: this.auth, update,
         onEnd: (ended) => {
           this.battling = false;
+          touch.setVisible(true);
           this.playMapMusic();
           if (this.badgeJingle) { this.badgeJingle = false; music.jingle('jingle_badge'); }
           this.scene.resume();

@@ -20,7 +20,7 @@ import { Server as IOServer, type Socket } from 'socket.io';
 import { SNAPSHOT_HZ, type C2S, type BugReport } from '../shared/protocol';
 import { FarmSimulation } from '../shared/sim/FarmSimulation';
 import { MapInfo, type TiledMap } from '../shared/sim/MapInfo';
-import { MAP_IDS, MAP_NAMES, type MapId } from '../shared/types';
+import { MAP_IDS, MAP_NAMES, type MapId, type SaveData } from '../shared/types';
 import { firebaseConfig } from '../shared/firebaseConfig';
 import { verifyIdToken } from './auth';
 import { createStorage } from './storage';
@@ -38,6 +38,11 @@ if (world?.time) sim.setWorld(world.time);
 const hub = new Hub(sim, () => void saveAll('새 날'));
 
 // ── 저장 ─────────────────────────────────────────────
+/** 방금 접속이 끊긴 플레이어의 최신 상태 (재접속 때 바로 이어서) */
+const RECENT_MS = 10 * 60_000;
+const recent = new Map<string, { data: SaveData; at: number }>();
+setInterval(() => { const now = Date.now(); for (const [k, v] of recent) if (now - v.at > RECENT_MS) recent.delete(k); }, 60_000);
+
 async function savePlayer(id: string) {
   const data = sim.exportSave(id);
   if (data && data.look) await storage.save(id, data).catch((e) => console.warn('저장 실패', id, (e as Error).message));
@@ -65,7 +70,10 @@ async function join(ws: Conn, m: Extract<C2S, { t: 'join' }>): Promise<Client | 
   // 같은 계정이 다른 창에서 접속 중이면 이전 연결을 저장 후 종료
   const old = hub.clients.get(uid);
   if (old) { hub.send(old.conn, { t: 'error', message: '다른 곳에서 같은 계정으로 접속했어요.' }); old.conn.close(); await new Promise((r) => setTimeout(r, 150)); }
-  const save = await storage.load(uid).catch(() => null);
+  // 방금 끊긴 계정이면 메모리에 남긴 최신 상태(끊기기 직전 위치)로 이어서 — 저장소 쓰기가 끝나기 전에 다시 붙어도 안전
+  const fresh = recent.get(uid);
+  recent.delete(uid);
+  const save = fresh && Date.now() - fresh.at < RECENT_MS ? fresh.data : await storage.load(uid).catch(() => null);
   if (!ws.open) return null;
   const worldId = m.mode === 'friends' ? uid : '';
   const p = sim.addPlayer(uid, save?.name || gName, save?.look ?? '', save, worldId);
@@ -162,7 +170,8 @@ const io = new IOServer(http, {
 
   transports: ['websocket', 'polling'],
   maxHttpBufferSize: 64 * 1024,
-  pingInterval: 20_000, pingTimeout: 25_000,
+  // 다른 탭 · 앱에 잠깐 다녀와도(브라우저가 타이머를 늦춤) 끊지 않도록 넉넉히
+  pingInterval: 25_000, pingTimeout: 60_000,
 });
 const C2S_TYPES = new Set(['join', 'move', 'action', 'anim', 'chat', 'report', 'admin']);
 
@@ -194,7 +203,7 @@ io.on('connection', (socket: Socket) => {
     const name = sim.players.get(id)?.name ?? id;
     hub.clients.delete(id);
     const save = sim.removePlayer(id);
-    if (save?.look) void storage.save(id, save).catch((e) => console.warn('저장 실패', (e as Error).message));
+    if (save?.look) { recent.set(id, { data: save, at: Date.now() }); void storage.save(id, save).catch((e) => console.warn('저장 실패', (e as Error).message)); }
     hub.broadcast({ t: 'left', id });
     hub.rosterDirty = true;
     hub.broadcast({ t: 'chat', from: 'server', name: '시스템', text: `${name}님이 떠났어요.` });

@@ -25,6 +25,7 @@ function ac() {
     master.connect(limiter).connect(ctx.destination);
     sfxBus = ctx.createGain(); sfxBus.gain.value = muted ? 0 : 0.32; sfxBus.connect(master);
     stepBus = ctx.createGain(); stepBus.gain.value = 1.9; stepBus.connect(sfxBus);
+    if (document.hidden || !document.hasFocus()) master.gain.value = 0;
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 1.5, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
@@ -34,6 +35,18 @@ function ac() {
 for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => ac(), { once: false, passive: true });
 // 탭이 다시 보일 때 오디오가 멈춰 있으면 깨움
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ctx && ctx.state !== 'running') void ctx.resume().catch(() => { /* 무시 */ }); });
+
+// 다른 탭 · 다른 창(앱)으로 가 있는 동안은 소리를 끔 (돌아오면 부드럽게 다시 켬)
+function backgroundMute() {
+  if (!ctx || !master) return;
+  const away = document.hidden || !document.hasFocus();
+  master.gain.cancelScheduledValues(ctx.currentTime);
+  master.gain.setTargetAtTime(away ? 0 : 1, ctx.currentTime, away ? 0.03 : 0.12);
+}
+document.addEventListener('visibilitychange', backgroundMute);
+window.addEventListener('blur', backgroundMute);
+window.addEventListener('focus', backgroundMute);
+window.addEventListener('pagehide', backgroundMute);
 
 function tone({ f, f2, t, d, w = 'square', v = 0.5 }: Tone) {
   const c = ac(); if (!c || !sfxBus || muted) return;
