@@ -355,6 +355,7 @@ body[data-illbg="room"] { background: linear-gradient(#f2d8c8, #e8c8a0 60%, #a87
 .illt-card:hover { border-color: #e0a43a; transform: translateY(-2px); }
 .illt-pic { height: 200px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
 .illt-pic svg, .illt-pic img { height: 100%; width: auto; max-width: 100%; object-fit: contain; }
+.illt-code { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: rgba(30, 41, 59, 0.85); color: #fff; letter-spacing: 0.5px; box-shadow: 0 1px 3px rgba(0,0,0,0.25); font-family: ui-monospace, monospace; z-index: 2; }
 .illt-tag { position: absolute; top: 8px; right: 8px; font-size: 11px; padding: 1px 6px; border-radius: 8px; background: #a8a090; color: #fff; }
 .illt-tag.ai { background: #2f8a5a; }
 .illt-sub { font-size: 12px; opacity: .75; }

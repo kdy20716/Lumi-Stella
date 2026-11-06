@@ -1,366 +1,1465 @@
 {
- "m1": {
-  "name": "주인공",
-  "role": "15살 트레이너",
-  "persona": "cheerful, curious 15-year-old hero",
-  "pose": "wave",
-  "face": "smile"
- },
- "m2": {
-  "name": "주인공",
-  "role": "15살 트레이너",
-  "persona": "bright, determined 15-year-old hero",
-  "pose": "wave",
-  "face": "grin"
- },
- "m3": {
-  "name": "주인공",
-  "role": "15살 트레이너",
-  "persona": "calm, kind 15-year-old hero",
-  "pose": "wave",
-  "face": "smile"
- },
- "m4": {
-  "name": "주인공",
-  "role": "15살 트레이너",
-  "persona": "sporty, energetic 15-year-old hero",
-  "pose": "cheer",
-  "face": "grin"
- },
- "f1": {
-  "name": "주인공",
-  "role": "15살 트레이너",
-  "persona": "cheerful, curious 15-year-old heroine",
-  "pose": "wave",
-  "face": "smile"
- },
- "f2": {
-  "name": "주인공",
-  "role": "15살 트레이너",
-  "persona": "bright, determined 15-year-old heroine",
-  "pose": "wave",
-  "face": "grin"
- },
- "f3": {
-  "name": "주인공",
-  "role": "15살 트레이너",
-  "persona": "gentle, thoughtful 15-year-old heroine",
-  "pose": "clasp",
-  "face": "smile"
- },
- "f4": {
-  "name": "주인공",
-  "role": "15살 트레이너",
-  "persona": "sporty, energetic 15-year-old heroine",
-  "pose": "cheer",
-  "face": "grin"
- },
- "player": {
-  "name": "주인공",
-  "role": "15살 트레이너",
-  "persona": "cheerful young farmer-trainer",
-  "pose": "wave",
-  "face": "smile"
- },
- "rival_m": {
-  "name": "라이벌",
-  "role": "소꿉친구",
-  "persona": "hot-blooded, competitive, impatient best friend and rival boy, always running ahead",
-  "pose": "point",
-  "face": "grin"
- },
- "rival_f": {
-  "name": "라이벌",
-  "role": "소꿉친구",
-  "persona": "hot-blooded, competitive, impatient best friend and rival girl, always running ahead",
-  "pose": "point",
-  "face": "grin"
- },
- "mom": {
-  "name": "엄마",
-  "role": "주인공의 엄마",
-  "persona": "warm, gentle, slightly teasing mother in her late 30s",
-  "pose": "clasp",
-  "face": "gentle"
- },
- "mayor": {
-  "name": "오 이장",
-  "role": "별빛 마을 이장",
-  "persona": "wise, kind elderly village chief with white beard",
-  "pose": "behind",
-  "face": "gentle"
- },
- "professor": {
-  "name": "한별 박사",
-  "role": "루미 연구가",
-  "persona": "absent-minded but brilliant monster researcher in a lab coat",
-  "pose": "think",
-  "face": "calm"
- },
- "nurse": {
-  "name": "다온",
-  "role": "루미 센터 간호사",
-  "persona": "sweet, caring monster-center nurse",
-  "pose": "clasp",
-  "face": "smile"
- },
- "hana": {
-  "name": "하나",
-  "role": "약초 농사꾼",
-  "persona": "sunny, energetic herb farmer girl",
-  "pose": "cheer",
-  "face": "grin"
- },
- "minsu": {
-  "name": "민수",
-  "role": "볼 공방 장인",
-  "persona": "gruff, stubborn but kind-hearted blacksmith",
-  "pose": "cross",
-  "face": "serious"
- },
- "sora": {
-  "name": "소라",
-  "role": "루미 마트 주인",
-  "persona": "sharp, confident shop owner with glasses",
-  "pose": "hips",
-  "face": "smug"
- },
- "park": {
-  "name": "박 영감",
-  "role": "은퇴한 트레이너 · 낚시꾼",
-  "persona": "laid-back retired trainer and old fisherman",
-  "pose": "behind",
-  "face": "calm"
- },
- "juni": {
-  "name": "준이",
-  "role": "꼬마 트레이너 지망생",
-  "persona": "excitable little kid who wants to be a trainer",
-  "pose": "cheer",
-  "face": "grin"
- },
- "luna": {
-  "name": "루나",
-  "role": "카페 사장",
-  "persona": "soft-spoken, elegant cafe owner",
-  "pose": "clasp",
-  "face": "gentle"
- },
- "teo": {
-  "name": "태오",
-  "role": "떠돌이 음유시인",
-  "persona": "carefree wandering bard",
-  "pose": "hips",
-  "face": "grin"
- },
- "mio": {
-  "name": "미오",
-  "role": "루미 화가",
-  "persona": "dreamy, artistic painter",
-  "pose": "wave",
-  "face": "smile"
- },
- "doyun": {
-  "name": "도윤",
-  "role": "우체부",
-  "persona": "diligent, polite mail carrier",
-  "pose": "think",
-  "face": "calm"
- },
- "villager": {
-  "name": "구름",
-  "role": "바람골 상점 주인",
-  "persona": "friendly villager",
-  "pose": "wave",
-  "face": "smile"
- },
- "bugkid": {
-  "name": "민규",
-  "role": "곤충소년",
-  "persona": "bug-catching boy, loud and proud",
-  "pose": "cheer",
-  "face": "grin"
- },
- "lass": {
-  "name": "하린",
-  "role": "소녀",
-  "persona": "cute, bubbly girl",
-  "pose": "wave",
-  "face": "smile"
- },
- "fisher": {
-  "name": "용수",
-  "role": "낚시꾼",
-  "persona": "patient fisherman",
-  "pose": "behind",
-  "face": "calm"
- },
- "hiker": {
-  "name": "대철",
-  "role": "등산가",
-  "persona": "burly cheerful mountain hiker",
-  "pose": "hips",
-  "face": "grin"
- },
- "leader": {
-  "name": "세나",
-  "role": "바람골 관장",
-  "persona": "breezy, free-spirited wind-type gym leader",
-  "pose": "hips",
-  "face": "smug"
- },
- "woodcutter": {
-  "name": "나무꾼",
-  "role": "나무꾼",
-  "persona": "strong, good-natured woodcutter",
-  "pose": "cross",
-  "face": "grin"
- },
- "miner": {
-  "name": "광부",
-  "role": "광부",
-  "persona": "tough, serious miner",
-  "pose": "cross",
-  "face": "serious"
- },
- "swimmer": {
-  "name": "수영선수",
-  "role": "수영선수",
-  "persona": "sunny swimmer",
-  "pose": "cheer",
-  "face": "grin"
- },
- "skier": {
-  "name": "스키어",
-  "role": "스키어",
-  "persona": "cool, daring skier",
-  "pose": "point",
-  "face": "grin"
- },
- "explorer": {
-  "name": "탐험가",
-  "role": "탐험가",
-  "persona": "adventurous explorer",
-  "pose": "think",
-  "face": "smile"
- },
- "researcher": {
-  "name": "연구원",
-  "role": "연구원",
-  "persona": "studious researcher",
-  "pose": "think",
-  "face": "calm"
- },
- "gentleman": {
-  "name": "신사",
-  "role": "신사",
-  "persona": "refined elderly gentleman",
-  "pose": "behind",
-  "face": "calm"
- },
- "lady": {
-  "name": "숙녀",
-  "role": "숙녀",
-  "persona": "graceful lady",
-  "pose": "clasp",
-  "face": "gentle"
- },
- "ace_m": {
-  "name": "에이스 트레이너",
-  "role": "에이스 트레이너",
-  "persona": "elite cocky trainer",
-  "pose": "point",
-  "face": "smug"
- },
- "ace_f": {
-  "name": "에이스 트레이너",
-  "role": "에이스 트레이너",
-  "persona": "elite confident trainer",
-  "pose": "hips",
-  "face": "smug"
- },
- "leader_harbor": {
-  "name": "파도",
-  "role": "물결항 관장",
-  "persona": "cheerful sailor water-type gym leader",
-  "pose": "hips",
-  "face": "grin"
- },
- "leader_maple": {
-  "name": "단비",
-  "role": "단풍골 관장",
-  "persona": "gentle grass-type gym leader",
-  "pose": "clasp",
-  "face": "gentle"
- },
- "leader_forge": {
-  "name": "무쇠",
-  "role": "쇳불 도시 관장",
-  "persona": "stern ground-type gym leader and miner",
-  "pose": "cross",
-  "face": "serious"
- },
- "leader_ember": {
-  "name": "화련",
-  "role": "잿빛 마을 관장",
-  "persona": "fiery passionate fire-type gym leader",
-  "pose": "point",
-  "face": "grin"
- },
- "leader_lumina": {
-  "name": "샛별",
-  "role": "빛누리 시티 관장",
-  "persona": "glamorous star light-type gym leader",
-  "pose": "hips",
-  "face": "smug"
- },
- "leader_frost": {
-  "name": "설아",
-  "role": "서리 마을 관장",
-  "persona": "cool, quiet ice-village gym leader",
-  "pose": "cross",
-  "face": "calm"
- },
- "leader_summit": {
-  "name": "천문",
-  "role": "별마루 관장",
-  "persona": "mysterious astronomer gym leader",
-  "pose": "think",
-  "face": "serious"
- },
- "elite1": {
-  "name": "사천왕",
-  "role": "사천왕",
-  "persona": "proud elite four member",
-  "pose": "cross",
-  "face": "smug"
- },
- "elite2": {
-  "name": "사천왕",
-  "role": "사천왕",
-  "persona": "elegant elite four member",
-  "pose": "hips",
-  "face": "smug"
- },
- "elite3": {
-  "name": "사천왕",
-  "role": "사천왕",
-  "persona": "stoic elite four member",
-  "pose": "think",
-  "face": "serious"
- },
- "elite4": {
-  "name": "사천왕",
-  "role": "사천왕",
-  "persona": "intense elite four member",
-  "pose": "point",
-  "face": "serious"
- },
- "champion": {
-  "name": "하람",
-  "role": "루미 마스터",
-  "persona": "charismatic champion, calm and overwhelming",
-  "pose": "point",
-  "face": "smug"
- }
+  "m1": {
+    "name": "주인공",
+    "role": "15살 트레이너",
+    "persona": "cheerful, curious 15-year-old hero",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "m2": {
+    "name": "주인공",
+    "role": "15살 트레이너",
+    "persona": "bright, determined 15-year-old hero",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "m3": {
+    "name": "주인공",
+    "role": "15살 트레이너",
+    "persona": "calm, kind 15-year-old hero",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "m4": {
+    "name": "주인공",
+    "role": "15살 트레이너",
+    "persona": "sporty, energetic 15-year-old hero",
+    "pose": "cheer",
+    "face": "grin"
+  },
+  "f1": {
+    "name": "주인공",
+    "role": "15살 트레이너",
+    "persona": "cheerful, curious 15-year-old heroine",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "f2": {
+    "name": "주인공",
+    "role": "15살 트레이너",
+    "persona": "bright, determined 15-year-old heroine",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "f3": {
+    "name": "주인공",
+    "role": "15살 트레이너",
+    "persona": "gentle, thoughtful 15-year-old heroine",
+    "pose": "clasp",
+    "face": "smile"
+  },
+  "f4": {
+    "name": "주인공",
+    "role": "15살 트레이너",
+    "persona": "sporty, energetic 15-year-old heroine",
+    "pose": "cheer",
+    "face": "grin"
+  },
+  "player": {
+    "name": "주인공",
+    "role": "15살 트레이너",
+    "persona": "cheerful young farmer-trainer",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "rival_m": {
+    "name": "로이 (라이벌)",
+    "role": "소꿉친구",
+    "persona": "hot-blooded, competitive, impatient best friend and rival boy, always running ahead",
+    "pose": "point",
+    "face": "grin"
+  },
+  "rival_f": {
+    "name": "리아 (라이벌)",
+    "role": "소꿉친구",
+    "persona": "hot-blooded, competitive, impatient best friend and rival girl, always running ahead",
+    "pose": "point",
+    "face": "grin"
+  },
+  "mom": {
+    "name": "엄마",
+    "role": "주인공의 엄마",
+    "persona": "warm, gentle, slightly teasing mother in her late 30s",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "mayor": {
+    "name": "오 이장",
+    "role": "별빛 마을 이장",
+    "persona": "wise, kind elderly village chief with white beard",
+    "pose": "behind",
+    "face": "gentle"
+  },
+  "professor": {
+    "name": "한별 박사",
+    "role": "루미 연구가",
+    "persona": "absent-minded but brilliant monster researcher in a lab coat",
+    "pose": "think",
+    "face": "calm"
+  },
+  "nurse": {
+    "name": "다온",
+    "role": "루미 센터 간호사",
+    "persona": "sweet, caring monster-center nurse",
+    "pose": "clasp",
+    "face": "smile"
+  },
+  "hana": {
+    "name": "하나",
+    "role": "약초 농사꾼",
+    "persona": "sunny, energetic herb farmer girl",
+    "pose": "cheer",
+    "face": "grin"
+  },
+  "minsu": {
+    "name": "민수",
+    "role": "볼 공방 장인",
+    "persona": "gruff, stubborn but kind-hearted blacksmith",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "sora": {
+    "name": "소라",
+    "role": "루미 마트 주인",
+    "persona": "sharp, confident shop owner with glasses",
+    "pose": "hips",
+    "face": "smug"
+  },
+  "park": {
+    "name": "박 영감",
+    "role": "은퇴한 트레이너 · 낚시꾼",
+    "persona": "laid-back retired trainer and old fisherman",
+    "pose": "behind",
+    "face": "calm"
+  },
+  "juni": {
+    "name": "준이",
+    "role": "꼬마 트레이너 지망생",
+    "persona": "excitable little kid who wants to be a trainer",
+    "pose": "cheer",
+    "face": "grin"
+  },
+  "luna": {
+    "name": "루나",
+    "role": "카페 사장",
+    "persona": "soft-spoken, elegant cafe owner",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "teo": {
+    "name": "태오",
+    "role": "떠돌이 음유시인",
+    "persona": "carefree wandering bard",
+    "pose": "hips",
+    "face": "grin"
+  },
+  "mio": {
+    "name": "미오",
+    "role": "루미 화가",
+    "persona": "dreamy, artistic painter",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "doyun": {
+    "name": "도윤",
+    "role": "우체부",
+    "persona": "diligent, polite mail carrier",
+    "pose": "think",
+    "face": "calm"
+  },
+  "villager": {
+    "name": "구름",
+    "role": "바람골 상점 주인",
+    "persona": "friendly villager",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "bugkid": {
+    "name": "민규",
+    "role": "곤충소년",
+    "persona": "bug-catching boy, loud and proud",
+    "pose": "cheer",
+    "face": "grin"
+  },
+  "lass": {
+    "name": "하린",
+    "role": "소녀",
+    "persona": "cute, bubbly girl",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "fisher": {
+    "name": "용수",
+    "role": "낚시꾼",
+    "persona": "patient fisherman",
+    "pose": "behind",
+    "face": "calm"
+  },
+  "hiker": {
+    "name": "대철",
+    "role": "등산가",
+    "persona": "burly cheerful mountain hiker",
+    "pose": "hips",
+    "face": "grin"
+  },
+  "leader": {
+    "name": "세나",
+    "role": "바람골 관장",
+    "persona": "breezy, free-spirited wind-type gym leader",
+    "pose": "hips",
+    "face": "smug"
+  },
+  "woodcutter": {
+    "name": "벌목꾼 록",
+    "role": "나무꾼",
+    "persona": "strong, good-natured woodcutter",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "miner": {
+    "name": "광부 고돌",
+    "role": "광부",
+    "persona": "tough, serious miner",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "swimmer": {
+    "name": "수영선수 해미",
+    "role": "수영선수",
+    "persona": "sunny swimmer",
+    "pose": "cheer",
+    "face": "grin"
+  },
+  "skier": {
+    "name": "스키어 슬기",
+    "role": "스키어",
+    "persona": "cool, daring skier",
+    "pose": "point",
+    "face": "grin"
+  },
+  "explorer": {
+    "name": "탐험가 단",
+    "role": "탐험가",
+    "persona": "adventurous explorer",
+    "pose": "think",
+    "face": "smile"
+  },
+  "researcher": {
+    "name": "연구원 지호",
+    "role": "연구원",
+    "persona": "studious researcher",
+    "pose": "think",
+    "face": "calm"
+  },
+  "gentleman": {
+    "name": "신사 아서",
+    "role": "신사",
+    "persona": "refined elderly gentleman",
+    "pose": "behind",
+    "face": "calm"
+  },
+  "lady": {
+    "name": "숙녀 베아트리스",
+    "role": "숙녀",
+    "persona": "graceful lady",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "ace_m": {
+    "name": "에이스 렌",
+    "role": "에이스 트레이너",
+    "persona": "elite cocky trainer",
+    "pose": "point",
+    "face": "smug"
+  },
+  "ace_f": {
+    "name": "에이스 레이나",
+    "role": "에이스 트레이너",
+    "persona": "elite confident trainer",
+    "pose": "hips",
+    "face": "smug"
+  },
+  "leader_harbor": {
+    "name": "파도",
+    "role": "물결항 관장",
+    "persona": "cheerful sailor water-type gym leader",
+    "pose": "hips",
+    "face": "grin"
+  },
+  "leader_maple": {
+    "name": "단비",
+    "role": "단풍골 관장",
+    "persona": "gentle grass-type gym leader",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "leader_forge": {
+    "name": "무쇠",
+    "role": "쇳불 도시 관장",
+    "persona": "stern ground-type gym leader and miner",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "leader_ember": {
+    "name": "화련",
+    "role": "잿빛 마을 관장",
+    "persona": "fiery passionate fire-type gym leader",
+    "pose": "point",
+    "face": "grin"
+  },
+  "leader_lumina": {
+    "name": "샛별",
+    "role": "빛누리 시티 관장",
+    "persona": "glamorous star light-type gym leader",
+    "pose": "hips",
+    "face": "smug"
+  },
+  "leader_frost": {
+    "name": "설아",
+    "role": "서리 마을 관장",
+    "persona": "cool, quiet ice-village gym leader",
+    "pose": "cross",
+    "face": "calm"
+  },
+  "leader_summit": {
+    "name": "천문",
+    "role": "별마루 관장",
+    "persona": "mysterious astronomer gym leader",
+    "pose": "think",
+    "face": "serious"
+  },
+  "elite1": {
+    "name": "사천왕 현우",
+    "role": "사천왕",
+    "persona": "proud elite four member",
+    "pose": "cross",
+    "face": "smug"
+  },
+  "elite2": {
+    "name": "사천왕 미란",
+    "role": "사천왕",
+    "persona": "elegant elite four member",
+    "pose": "hips",
+    "face": "smug"
+  },
+  "elite3": {
+    "name": "사천왕 강혁",
+    "role": "사천왕",
+    "persona": "stoic elite four member",
+    "pose": "think",
+    "face": "serious"
+  },
+  "elite4": {
+    "name": "사천왕 세라",
+    "role": "사천왕",
+    "persona": "intense elite four member",
+    "pose": "point",
+    "face": "serious"
+  },
+  "champion": {
+    "name": "하람",
+    "role": "루미 마스터",
+    "persona": "charismatic champion, calm and overwhelming",
+    "pose": "point",
+    "face": "smug"
+  },
+  "villain_boss": {
+    "name": "녹스 (Nox)",
+    "role": "성간단 총수 · 밤의 지배자",
+    "persona": "ruthless charismatic syndicate boss aiming to harness stellar energy to rule the world",
+    "pose": "cross",
+    "face": "smug"
+  },
+  "villain_c1": {
+    "name": "솔라리스",
+    "role": "성간단 제1간부 · 홍련 부대장",
+    "persona": "fiery, aggressive and hot-tempered executive specializing in fire & explosive tactics",
+    "pose": "point",
+    "face": "grin"
+  },
+  "villain_c2": {
+    "name": "루나틱",
+    "role": "성간단 제2간부 · 흑야 첩보장",
+    "persona": "cold, calculating spy master with sharp intellect and poison/dark strategies",
+    "pose": "behind",
+    "face": "smug"
+  },
+  "villain_c3": {
+    "name": "스텔리온",
+    "role": "성간단 제3간부 · 중장갑 돌격대장",
+    "persona": "massive towering warlord who respects brute force and unbreakable steel defense",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "villain_c4": {
+    "name": "네뷸라",
+    "role": "성간단 제4간부 · 환상 참모장",
+    "persona": "mysterious, elegant psychic illusionist who toys with opponents through trickery",
+    "pose": "hips",
+    "face": "calm"
+  },
+  "villain_sci1": {
+    "name": "닥터 볼트",
+    "role": "성간단 병기 개발 수석",
+    "persona": "mad cybernetic scientist designing star-harnessing mechanical weapons",
+    "pose": "think",
+    "face": "serious"
+  },
+  "villain_sci2": {
+    "name": "닥터 카론",
+    "role": "성간단 생체 유전자 연구원",
+    "persona": "creepy geneticist obsessed with artificial monster evolution",
+    "pose": "think",
+    "face": "serious"
+  },
+  "villain_sci3": {
+    "name": "닥터 헬리오",
+    "role": "성간단 태양 플라즈마 연구원",
+    "persona": "arrogant physicist trying to control solar core reactions",
+    "pose": "think",
+    "face": "serious"
+  },
+  "villain_sci4": {
+    "name": "닥터 셀레네",
+    "role": "성간단 중력 제어 연구원",
+    "persona": "eccentric astronomer studying anti-gravity starlight fields",
+    "pose": "think",
+    "face": "serious"
+  },
+  "villain_sci5": {
+    "name": "닥터 키메라",
+    "role": "성간단 돌연변이 실험장",
+    "persona": "unhinged bio-engineer observing forbidden mutant specimens",
+    "pose": "think",
+    "face": "serious"
+  },
+  "villain_sci6": {
+    "name": "닥터 기어스",
+    "role": "성간단 오토마톤 설계자",
+    "persona": "obsessive clockwork engineer building rogue battle droids",
+    "pose": "think",
+    "face": "serious"
+  },
+  "villain_sci7": {
+    "name": "닥터 미라주",
+    "role": "성간단 홀로그램 보안 총괄",
+    "persona": "paranoid network architect managing base camouflage illusions",
+    "pose": "think",
+    "face": "serious"
+  },
+  "villain_sci8": {
+    "name": "닥터 코스모",
+    "role": "성간단 차원 균열 분석관",
+    "persona": "visionary scholar seeking entrance to the alternate distortion realm",
+    "pose": "think",
+    "face": "serious"
+  },
+  "grunt_m": {
+    "name": "조무래기 카이",
+    "role": "성간단 일반 단원",
+    "persona": "rowdy enthusiastic grunt following orders blindly",
+    "pose": "point",
+    "face": "grin"
+  },
+  "grunt_f": {
+    "name": "조무래기 미아",
+    "role": "성간단 일반 단원",
+    "persona": "sharp sassy grunt eager to prove herself in battle",
+    "pose": "hips",
+    "face": "smug"
+  },
+  "grunt_elite_m": {
+    "name": "특공대원 크로우",
+    "role": "성간단 블랙옵스 특공",
+    "persona": "disciplined ruthless black-ops combatant",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "grunt_elite_f": {
+    "name": "특공대원 바이퍼",
+    "role": "성간단 블랙옵스 특공",
+    "persona": "agile precision-striking stealth operative",
+    "pose": "point",
+    "face": "serious"
+  },
+  "nurse_town": {
+    "name": "다온 간호사",
+    "role": "별빛 마을 루미센터 수석 간호사",
+    "persona": "kind cozy village nurse with soft brown hair in a low bun, warm hazel eyes, wearing a pastel pink and cream nurse uniform with heart cross badge",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "shop_town": {
+    "name": "상점주인 베른",
+    "role": "별빛 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 시골 전원 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_town": {
+    "name": "공방장인 브룩",
+    "role": "별빛 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 시골 전원 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_town": {
+    "name": "카페마스터 딘",
+    "role": "별빛 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 시골 전원",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_town": {
+    "name": "안내원 로라",
+    "role": "별빛 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 별빛 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_windvale": {
+    "name": "보미 간호사",
+    "role": "바람골 루미센터 수석 간호사",
+    "persona": "gentle grassland nurse with braided flaxen blonde hair over shoulder, emerald eyes, mint green meadow nurse uniform with clover windmill badge",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "shop_windvale": {
+    "name": "상점주인 밀라",
+    "role": "바람골 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 풍차 초원 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_windvale": {
+    "name": "공방장인 밀러",
+    "role": "바람골 도구·볼 제작 명장",
+    "persona": "master craftsman working with 풍차 초원 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_windvale": {
+    "name": "카페마스터 클로에",
+    "role": "바람골 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 풍차 초원",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_windvale": {
+    "name": "안내원 게일",
+    "role": "바람골 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 바람골",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_harbor": {
+    "name": "나래 간호사",
+    "role": "물결항 루미센터 수석 간호사",
+    "persona": "cheerful coastal marine nurse with turquoise wavy twin braids, bright blue eyes, white and navy sailor medical uniform with red anchor cross",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "shop_harbor": {
+    "name": "상점주인 잭",
+    "role": "물결항 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 항구 어촌 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_harbor": {
+    "name": "공방장인 고든",
+    "role": "물결항 도구·볼 제작 명장",
+    "persona": "master craftsman working with 항구 어촌 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_harbor": {
+    "name": "카페마스터 모건",
+    "role": "물결항 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 항구 어촌",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_harbor": {
+    "name": "안내원 마리나",
+    "role": "물결항 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 물결항",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_maple": {
+    "name": "예린 간호사",
+    "role": "단풍골 루미센터 수석 간호사",
+    "persona": "mature warm autumn nurse with rich auburn low ponytail, amber eyes, antique beige and burgundy nurse cardigan with acorn brooch",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "shop_maple": {
+    "name": "상점주인 로완",
+    "role": "단풍골 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 가을 단풍 숲 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_maple": {
+    "name": "공방장인 세다",
+    "role": "단풍골 도구·볼 제작 명장",
+    "persona": "master craftsman working with 가을 단풍 숲 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_maple": {
+    "name": "카페마스터 메이플",
+    "role": "단풍골 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 가을 단풍 숲",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_maple": {
+    "name": "안내원 에이미",
+    "role": "단풍골 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 단풍골",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_bloom": {
+    "name": "하은 간호사",
+    "role": "꽃구름 마을 루미센터 수석 간호사",
+    "persona": "cheerful flower garden nurse with pastel pink bob hair, lavender floral medical apron uniform with daisy ribbon and gentle warm smile",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "shop_bloom": {
+    "name": "상점주인 플로라",
+    "role": "꽃구름 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 꽃밭 정원 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_bloom": {
+    "name": "공방장인 바질",
+    "role": "꽃구름 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 꽃밭 정원 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_bloom": {
+    "name": "카페마스터 로즈",
+    "role": "꽃구름 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 꽃밭 정원",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_bloom": {
+    "name": "안내원 릴리",
+    "role": "꽃구름 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 꽃구름 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_forge": {
+    "name": "채원 간호사",
+    "role": "쇳불 도시 루미센터 수석 간호사",
+    "persona": "spirited industrial nurse with short auburn bob hair, small band-aid on cheek, khaki and orange reinforced medical jumpsuit with stethoscope",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "shop_forge": {
+    "name": "상점주인 오토",
+    "role": "쇳불 도시 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 산업 광산 도시 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_forge": {
+    "name": "공방장인 볼칸",
+    "role": "쇳불 도시 도구·볼 제작 명장",
+    "persona": "master craftsman working with 산업 광산 도시 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_forge": {
+    "name": "카페마스터 러스티",
+    "role": "쇳불 도시 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 산업 광산 도시",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_forge": {
+    "name": "안내원 기어리",
+    "role": "쇳불 도시 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 쇳불 도시",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_mist": {
+    "name": "연우 간호사",
+    "role": "안개 마을 루미센터 수석 간호사",
+    "persona": "mysterious intellectual marshland nurse with silver-grey half-up hair, deep violet eyes, teal herbalist medical shawl and potion pouch",
+    "pose": "think",
+    "face": "calm"
+  },
+  "shop_mist": {
+    "name": "상점주인 모스",
+    "role": "안개 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 습지 갈대밭 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_mist": {
+    "name": "공방장인 라탄",
+    "role": "안개 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 습지 갈대밭 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_mist": {
+    "name": "카페마스터 듀",
+    "role": "안개 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 습지 갈대밭",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_mist": {
+    "name": "안내원 미스트",
+    "role": "안개 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 안개 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_ember": {
+    "name": "아라 간호사",
+    "role": "잿빛 마을 루미센터 수석 간호사",
+    "persona": "energetic hot spring nurse with fiery coral-red short hair, red neckerchief, heat-resistant white medical smock with hot spring steam badge",
+    "pose": "cheer",
+    "face": "grin"
+  },
+  "shop_ember": {
+    "name": "상점주인 플린트",
+    "role": "잿빛 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 화산 온천 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_ember": {
+    "name": "공방장인 이그니스",
+    "role": "잿빛 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 화산 온천 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_ember": {
+    "name": "카페마스터 루비",
+    "role": "잿빛 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 화산 온천",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_ember": {
+    "name": "안내원 신더",
+    "role": "잿빛 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 잿빛 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_pinecone": {
+    "name": "소율 간호사",
+    "role": "솔방울 마을 루미센터 수석 간호사",
+    "persona": "serene mountain woodland nurse with dark pine-green long straight hair, forest ranger olive medical vest over cream tunic",
+    "pose": "behind",
+    "face": "calm"
+  },
+  "shop_pinecone": {
+    "name": "상점주인 우디",
+    "role": "솔방울 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 상록수 산림 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_pinecone": {
+    "name": "공방장인 팀버",
+    "role": "솔방울 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 상록수 산림 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_pinecone": {
+    "name": "카페마스터 솔방울",
+    "role": "솔방울 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 상록수 산림",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_pinecone": {
+    "name": "안내원 포레스트",
+    "role": "솔방울 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 솔방울 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_lumina": {
+    "name": "세레나 간호사",
+    "role": "빛누리 시티 루미센터 수석 간호사",
+    "persona": "sleek metropolitan medical specialist with neat straight blonde hair with cyan headband, modern white and cyan high-tech blazer uniform, digital tablet",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "shop_lumina": {
+    "name": "상점주인 빅터",
+    "role": "빛누리 시티 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 첨단 메트로폴리스 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_lumina": {
+    "name": "공방장인 에디슨",
+    "role": "빛누리 시티 도구·볼 제작 명장",
+    "persona": "master craftsman working with 첨단 메트로폴리스 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_lumina": {
+    "name": "카페마스터 루카",
+    "role": "빛누리 시티 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 첨단 메트로폴리스",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_lumina": {
+    "name": "안내원 네오",
+    "role": "빛누리 시티 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 빛누리 시티",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_summit": {
+    "name": "수아 간호사",
+    "role": "별마루 마을 루미센터 수석 간호사",
+    "persona": "graceful high-altitude sky nurse with floating sky-blue high ponytail, light blue and snowy-white capelet nurse uniform with cloud motif",
+    "pose": "wave",
+    "face": "gentle"
+  },
+  "shop_summit": {
+    "name": "상점주인 제피르",
+    "role": "별마루 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 천문대 고산지대 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_summit": {
+    "name": "공방장인 아틀라스",
+    "role": "별마루 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 천문대 고산지대 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_summit": {
+    "name": "카페마스터 알토",
+    "role": "별마루 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 천문대 고산지대",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_summit": {
+    "name": "안내원 스카이",
+    "role": "별마루 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 별마루 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_shell": {
+    "name": "은서 간호사",
+    "role": "조개 마을 루미센터 수석 간호사",
+    "persona": "healthy tanned beach rescue nurse with sun-bleached wavy hair, yellow hibiscus flower tucked behind ear, coral-pink coastal paramedic shirt",
+    "pose": "cheer",
+    "face": "grin"
+  },
+  "shop_shell": {
+    "name": "상점주인 펄",
+    "role": "조개 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 산호 해변 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_shell": {
+    "name": "공방장인 쉘든",
+    "role": "조개 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 산호 해변 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_shell": {
+    "name": "카페마스터 서퍼",
+    "role": "조개 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 산호 해변",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_shell": {
+    "name": "안내원 웨이브",
+    "role": "조개 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 조개 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_sand": {
+    "name": "지안 간호사",
+    "role": "모래바람 마을 루미센터 수석 간호사",
+    "persona": "exotic desert oasis nurse with dark raven hair, golden hoop earrings, sheer white dust veil draped over shoulders, desert caravan medic robe",
+    "pose": "clasp",
+    "face": "calm"
+  },
+  "shop_sand": {
+    "name": "상점주인 알리",
+    "role": "모래바람 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 사막 오아시스 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_sand": {
+    "name": "공방장인 사이드",
+    "role": "모래바람 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 사막 오아시스 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_sand": {
+    "name": "카페마스터 카라반",
+    "role": "모래바람 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 사막 오아시스",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_sand": {
+    "name": "안내원 타릭",
+    "role": "모래바람 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 모래바람 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_canyon": {
+    "name": "서하 간호사",
+    "role": "바위골 루미센터 수석 간호사",
+    "persona": "tough canyon rescue paramedic woman with sharp black undercut bob, amber eyes, terra-cotta tactical harness vest with rappelling carabiners",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "shop_canyon": {
+    "name": "상점주인 클리프",
+    "role": "바위골 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 협곡 황무지 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_canyon": {
+    "name": "공방장인 메이슨",
+    "role": "바위골 도구·볼 제작 명장",
+    "persona": "master craftsman working with 협곡 황무지 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_canyon": {
+    "name": "카페마스터 브릭",
+    "role": "바위골 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 협곡 황무지",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_canyon": {
+    "name": "안내원 캐니언",
+    "role": "바위골 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 바위골",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_moon": {
+    "name": "시아 간호사",
+    "role": "달맞이 마을 루미센터 수석 간호사",
+    "persona": "ethereal moonlit lake nurse with long wavy midnight-blue hair, silver crescent moon pendant, elegant navy and pearl-white nightingale nurse robe",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "shop_moon": {
+    "name": "상점주인 셀린",
+    "role": "달맞이 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 신비 호숫가 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_moon": {
+    "name": "공방장인 루카스",
+    "role": "달맞이 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 신비 호숫가 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_moon": {
+    "name": "카페마스터 나이트",
+    "role": "달맞이 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 신비 호숫가",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_moon": {
+    "name": "안내원 스타",
+    "role": "달맞이 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 달맞이 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_frost": {
+    "name": "설아 간호사",
+    "role": "서리 마을 루미센터 수석 간호사",
+    "persona": "pure snow-country nurse with platinum-white braided hair, warm fur-trimmed winter medical parka with snowflake embroidery and cozy mittens",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "shop_frost": {
+    "name": "상점주인 올라프",
+    "role": "서리 마을 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 설산 겨울 마을 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_frost": {
+    "name": "공방장인 아이작",
+    "role": "서리 마을 도구·볼 제작 명장",
+    "persona": "master craftsman working with 설산 겨울 마을 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_frost": {
+    "name": "카페마스터 블랑",
+    "role": "서리 마을 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 설산 겨울 마을",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_frost": {
+    "name": "안내원 유키",
+    "role": "서리 마을 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 서리 마을",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_cape": {
+    "name": "아린 간호사",
+    "role": "등대곶 루미센터 수석 간호사",
+    "persona": "diligent lighthouse nurse with honey-blonde braided crown hair, brass lantern motif brooch, deep navy double-breasted naval medical overcoat",
+    "pose": "point",
+    "face": "smile"
+  },
+  "shop_cape": {
+    "name": "상점주인 비콘",
+    "role": "등대곶 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 해안 절벽 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_cape": {
+    "name": "공방장인 스미스",
+    "role": "등대곶 도구·볼 제작 명장",
+    "persona": "master craftsman working with 해안 절벽 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_cape": {
+    "name": "카페마스터 루체",
+    "role": "등대곶 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 해안 절벽",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_cape": {
+    "name": "안내원 노바",
+    "role": "등대곶 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 등대곶",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "nurse_crown": {
+    "name": "가람 간호사",
+    "role": "왕관 시티 루미센터 수석 간호사",
+    "persona": "regal championship tournament head nurse with elegant dark hair updo, prestigious royal purple and gold ceremonial medical uniform with championship crest",
+    "pose": "behind",
+    "face": "smug"
+  },
+  "shop_crown": {
+    "name": "상점주인 킹스턴",
+    "role": "왕관 시티 마트 지점장",
+    "persona": "friendly savvy merchant specializing in 수도 대도시 specialty goods",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "craft_crown": {
+    "name": "공방장인 발렌틴",
+    "role": "왕관 시티 도구·볼 제작 명장",
+    "persona": "master craftsman working with 수도 대도시 materials",
+    "pose": "cross",
+    "face": "grin"
+  },
+  "cafe_crown": {
+    "name": "카페마스터 로열",
+    "role": "왕관 시티 휴식처 오너 바리스타",
+    "persona": "relaxed welcoming host offering drinks and town rumors in 수도 대도시",
+    "pose": "hips",
+    "face": "smile"
+  },
+  "guide_crown": {
+    "name": "안내원 아리아",
+    "role": "왕관 시티 관광·교통 안내원",
+    "persona": "energetic informative guide welcoming travelers to 왕관 시티",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "prof_astro": {
+    "name": "스텔라 박사",
+    "role": "별마루 천문대 수석학자",
+    "persona": "elderly wise astronomer researching starlight crystals",
+    "pose": "behind",
+    "face": "calm"
+  },
+  "prof_ocean": {
+    "name": "마린 박사",
+    "role": "물결항 해양 생태 소장",
+    "persona": "passionate marine biologist loving aquatic creatures",
+    "pose": "hips",
+    "face": "grin"
+  },
+  "prof_geol": {
+    "name": "지질 박사",
+    "role": "잿빛 화산 지질 연구원",
+    "persona": "rugged field geologist examining magma rocks",
+    "pose": "think",
+    "face": "serious"
+  },
+  "prof_botany": {
+    "name": "식물 박사",
+    "role": "꽃구름 식물원 원장",
+    "persona": "gentle botanist cultivating rare berries and crops",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "prof_archae": {
+    "name": "고고학 박사",
+    "role": "서리 고대유적 발굴단장",
+    "persona": "scholarly archaeologist deciphering ancient glyphs",
+    "pose": "think",
+    "face": "serious"
+  },
+  "prof_tech": {
+    "name": "사이버 박사",
+    "role": "빛누리 디지털 루미 연구소장",
+    "persona": "trendy young scientist pioneering AI creature interfaces",
+    "pose": "point",
+    "face": "smug"
+  },
+  "city_officer": {
+    "name": "경관 제니",
+    "role": "치안 순찰 대원",
+    "persona": "vigilant honorable police officer guarding the street",
+    "pose": "behind",
+    "face": "serious"
+  },
+  "city_salary_m": {
+    "name": "민혁 대리",
+    "role": "빛누리 빌딩 직장인",
+    "persona": "tired but kind commuter in business suit carrying briefcase",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "city_salary_f": {
+    "name": "수진 팀장",
+    "role": "빛누리 IT 기획자",
+    "persona": "smart professional career woman holding tablet",
+    "pose": "think",
+    "face": "smile"
+  },
+  "city_ceo": {
+    "name": "에반 대표",
+    "role": "도시 대기업 회장",
+    "persona": "dignified elegant corporate CEO with refined manner",
+    "pose": "behind",
+    "face": "calm"
+  },
+  "city_security": {
+    "name": "렉스 보안대장",
+    "role": "사옥 로비 경비원",
+    "persona": "stern sturdy security guard watching elevators",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "city_concierge": {
+    "name": "호텔 컨시어지",
+    "role": "특급 호텔 지배인",
+    "persona": "immaculately polite luxury hotel receptionist",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "city_chef": {
+    "name": "수석 셰프",
+    "role": "고급 레스토랑 주방장",
+    "persona": "passionate master chef creating five-star monster delicacies",
+    "pose": "hips",
+    "face": "grin"
+  },
+  "city_stylist": {
+    "name": "부티크 스타일리스트",
+    "role": "백화점 의상 디자이너",
+    "persona": "flamboyant trendsetting fashion stylist advising on outfits",
+    "pose": "point",
+    "face": "smug"
+  },
+  "city_clerk": {
+    "name": "백화점 안내원",
+    "role": "백화점 1층 인포메이션",
+    "persona": "cheerful courteous receptionist directing shoppers",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "city_gamer": {
+    "name": "게임센터 마스터",
+    "role": "오락실 챔피언",
+    "persona": "hyperactive teen gamer surrounded by arcade cabinets",
+    "pose": "cheer",
+    "face": "grin"
+  },
+  "city_busker": {
+    "name": "거리 버스커",
+    "role": "도심 인디 뮤지션",
+    "persona": "bohemian acoustic guitarist singing in public plazas",
+    "pose": "wave",
+    "face": "grin"
+  },
+  "city_courier": {
+    "name": "퀵 배달원",
+    "role": "도시 특송 바이커",
+    "persona": "fast energetic courier delivering packages across high-rises",
+    "pose": "point",
+    "face": "grin"
+  },
+  "tr_birdkeeper": {
+    "name": "조련사 하늘",
+    "role": "비행 타입 트레이너",
+    "persona": "keen-eyed trainer loving avian aerial maneuvers",
+    "pose": "point",
+    "face": "grin"
+  },
+  "tr_sailor": {
+    "name": "선원 잭슨",
+    "role": "해상 물 타입 트레이너",
+    "persona": "brawny cheerful deckhand battling along coastlines",
+    "pose": "hips",
+    "face": "grin"
+  },
+  "tr_camper_m": {
+    "name": "캠퍼 준",
+    "role": "자연 탐험 트레이너",
+    "persona": "enthusiastic outdoor camper with backpack and tent gear",
+    "pose": "cheer",
+    "face": "smile"
+  },
+  "tr_camper_f": {
+    "name": "피크닉걸 유나",
+    "role": "피크닉 트레이너",
+    "persona": "cheerful girl enjoying sandwiches with cute creatures",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "tr_collector": {
+    "name": "포켓몬 수집가",
+    "role": "희귀종 수집 트레이너",
+    "persona": "avid collector proud of rare elemental variants",
+    "pose": "think",
+    "face": "smug"
+  },
+  "tr_blackbelt": {
+    "name": "격투가 현수",
+    "role": "격투 수련 트레이너",
+    "persona": "intense martial artist training alongside fighting monsters",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "tr_psychic": {
+    "name": "초능력자 레이븐",
+    "role": "에스퍼 심령 트레이너",
+    "persona": "mystic youth with floating energy aura and telepathic link",
+    "pose": "behind",
+    "face": "calm"
+  },
+  "tr_dragon_tamer": {
+    "name": "조련사 드레이크",
+    "role": "용족 마스터 트레이너",
+    "persona": "proud noble trainer cloaked in dragon scales",
+    "pose": "cross",
+    "face": "smug"
+  },
+  "tr_ranger_m": {
+    "name": "레인저 (남)",
+    "role": "환경 보호 레인저",
+    "persona": "vigilant forest guardian preserving wild monster sanctuaries",
+    "pose": "point",
+    "face": "serious"
+  },
+  "tr_ranger_f": {
+    "name": "레인저 (여)",
+    "role": "환경 보호 레인저",
+    "persona": "swift observant ranger patrolling dangerous mountain ridges",
+    "pose": "hips",
+    "face": "serious"
+  },
+  "tr_biker": {
+    "name": "라이더 진",
+    "role": "로드 배틀 트레이너",
+    "persona": "rebellious biker riding roaring motorbikes on highways",
+    "pose": "point",
+    "face": "grin"
+  },
+  "tr_veteran_m": {
+    "name": "베테랑 트레이너 (남)",
+    "role": "숙련 배틀러",
+    "persona": "seasoned tournament fighter with battle-tested tactical wisdom",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "tr_veteran_f": {
+    "name": "베테랑 트레이너 (여)",
+    "role": "숙련 배틀러",
+    "persona": "poised master strategist anticipating every move",
+    "pose": "behind",
+    "face": "smug"
+  },
+  "tr_ruin_maniac": {
+    "name": "유적 매니아",
+    "role": "지하 탐사 트레이너",
+    "persona": "eccentric digger searching deep subterranean chambers",
+    "pose": "think",
+    "face": "grin"
+  },
+  "tr_artist": {
+    "name": "풍경 화가",
+    "role": "예술가 트레이너",
+    "persona": "bohemian painter capturing the beauty of monster moves",
+    "pose": "wave",
+    "face": "gentle"
+  },
+  "tr_ninja": {
+    "name": "닌자보이",
+    "role": "위장 암습 트레이너",
+    "persona": "sneaky stealth apprentice ambushing from trees and rocks",
+    "pose": "point",
+    "face": "grin"
+  },
+  "extra_grandma": {
+    "name": "복순 할머니",
+    "role": "온화한 마을 원로",
+    "persona": "warm elderly lady sharing old folklore and hot tea",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "extra_toddler": {
+    "name": "꼬마 콩이",
+    "role": "마을 막내 꼬마",
+    "persona": "adorable innocent toddler playing with small baby monsters",
+    "pose": "cheer",
+    "face": "smile"
+  },
+  "extra_farmer_m": {
+    "name": "농부 영식",
+    "role": "열매 농장주",
+    "persona": "sunburned hearty farmer cultivating delicious berries",
+    "pose": "hips",
+    "face": "grin"
+  },
+  "extra_farmer_f": {
+    "name": "농부 정숙",
+    "role": "목장 관리인",
+    "persona": "kind hardworking woman caring for milk and wool creatures",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "extra_miner_chief": {
+    "name": "광산 십장",
+    "role": "지하 갱도 감독관",
+    "persona": "gruff seasoned miner organizing subterranean excavation",
+    "pose": "cross",
+    "face": "serious"
+  },
+  "extra_diver": {
+    "name": "해녀 / 스쿠버",
+    "role": "해저 산호 잠수사",
+    "persona": "fit cheerful diver exploring sunken treasures and reef caves",
+    "pose": "hips",
+    "face": "grin"
+  },
+  "extra_astronomer": {
+    "name": "천문 연구원",
+    "role": "별자리 관측원",
+    "persona": "stargazer tracking shooting stars and planetary orbits",
+    "pose": "think",
+    "face": "calm"
+  },
+  "extra_librarian": {
+    "name": "도서관 사서",
+    "role": "대도서관 고서 관리자",
+    "persona": "quiet studious intellectual organizing historical scrolls",
+    "pose": "behind",
+    "face": "calm"
+  },
+  "extra_innkeeper": {
+    "name": "여관 주인",
+    "role": "온천 여관 매니저",
+    "persona": "welcoming hospitable host pampering weary travelers",
+    "pose": "clasp",
+    "face": "gentle"
+  },
+  "extra_mechanic": {
+    "name": "정비공",
+    "role": "차량·기차 기술자",
+    "persona": "oil-stained genius mechanic tuning up engines and railway cars",
+    "pose": "hips",
+    "face": "grin"
+  },
+  "extra_student_m": {
+    "name": "트레이너 스쿨 학생 (남)",
+    "role": "배틀 아카데미 우등생",
+    "persona": "eager notebook-carrying student studying type matchups",
+    "pose": "think",
+    "face": "smile"
+  },
+  "extra_student_f": {
+    "name": "트레이너 스쿨 학생 (여)",
+    "role": "배틀 아카데미 반장",
+    "persona": "bright ambitious student testing tactical formations",
+    "pose": "point",
+    "face": "smile"
+  },
+  "extra_musician": {
+    "name": "거리 악사",
+    "role": "마을 축제 연주자",
+    "persona": "cheerful wandering flutist playing melodies that calm wild beasts",
+    "pose": "wave",
+    "face": "smile"
+  },
+  "extra_monk": {
+    "name": "산사 수도승",
+    "role": "고산 사원 지킴이",
+    "persona": "peaceful ascetic meditating in snowy mountain peaks",
+    "pose": "behind",
+    "face": "calm"
+  },
+  "extra_reporter": {
+    "name": "방송국 리포터",
+    "role": "특종 현장 기자",
+    "persona": "inquisitive energetic journalist interviewing gym challengers",
+    "pose": "point",
+    "face": "grin"
+  },
+  "extra_cameraman": {
+    "name": "촬영 감독",
+    "role": "방송 중계 스태프",
+    "persona": "sweating hard-working cameraman carrying broadcast rig",
+    "pose": "cheer",
+    "face": "serious"
+  }
 }

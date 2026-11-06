@@ -17,6 +17,35 @@ const SAMPLE: Record<string, string[]> = {
   professor: ['오오, 흥미롭군! 루미가 진화하는 순간을 봤나?'],
 };
 
+interface CatInfo {
+  prefix: string;
+  name: string;
+  color: string;
+}
+
+function getCategory(id: string): CatInfo {
+  if (id === 'player' || /^([mf][1-4])$/.test(id)) return { prefix: 'PL', name: '플레이어', color: '#2563eb' };
+  if (id.startsWith('rival_')) return { prefix: 'RV', name: '라이벌', color: '#ea580c' };
+  if (['mom', 'professor', 'mayor', 'sora', 'hana', 'minsu', 'nurse', 'park', 'juni', 'luna', 'teo', 'mio', 'doyun', 'villager'].includes(id)) {
+    return { prefix: 'TW', name: '마을주민', color: '#16a34a' };
+  }
+  if (id.startsWith('leader')) return { prefix: 'GM', name: '체육관관장', color: '#ca8a04' };
+  if (id.startsWith('elite') || id === 'champion') return { prefix: 'EL', name: '사천왕/마스터', color: '#9333ea' };
+  if (id.startsWith('villain_') || id.startsWith('grunt_')) return { prefix: 'VL', name: '성간단(악당)', color: '#dc2626' };
+  if (id.startsWith('nurse_')) return { prefix: 'NS', name: '센터간호사', color: '#db2777' };
+  if (id.startsWith('shop_')) return { prefix: 'SH', name: '마을상점', color: '#0d9488' };
+  if (id.startsWith('craft_')) return { prefix: 'CR', name: '공방장인', color: '#7c3aed' };
+  if (id.startsWith('cafe_')) return { prefix: 'CF', name: '카페/쉼터', color: '#d97706' };
+  if (id.startsWith('guide_')) return { prefix: 'GD', name: '안내/교통', color: '#0891b2' };
+  if (id.startsWith('prof_')) return { prefix: 'PR', name: '박사/학자', color: '#4f46e5' };
+  if (id.startsWith('city_')) return { prefix: 'CT', name: '도시/빌딩', color: '#475569' };
+  if (id.startsWith('tr_') || ['bugkid', 'lass', 'fisher', 'hiker', 'woodcutter', 'miner', 'swimmer', 'skier', 'explorer', 'researcher', 'gentleman', 'lady', 'ace_m', 'ace_f'].includes(id)) {
+    return { prefix: 'TR', name: '배틀트레이너', color: '#b45309' };
+  }
+  if (id.startsWith('extra_')) return { prefix: 'EX', name: '실내/주민', color: '#65a30d' };
+  return { prefix: 'OT', name: '기타NPC', color: '#52525b' };
+}
+
 export async function showIllustTest() {
   await loadLooks();
   document.body.classList.remove('overflow-hidden');
@@ -29,6 +58,21 @@ export async function showIllustTest() {
   root.style.height = '100vh';
   const ids = Object.keys(SPEC);
   const ai = ids.filter(hasAiIllust).length;
+
+  // 번호 부여 카운터
+  const catCounters: Record<string, number> = {};
+  const codeMap: Record<string, { code: string; label: string; color: string }> = {};
+  for (const id of ids) {
+    const cat = getCategory(id);
+    catCounters[cat.prefix] = (catCounters[cat.prefix] || 0) + 1;
+    const num = String(catCounters[cat.prefix]).padStart(2, '0');
+    codeMap[id] = {
+      code: `${cat.prefix}-${num}`,
+      label: cat.name,
+      color: cat.color,
+    };
+  }
+
   const page = document.createElement('div');
   page.className = 'illt pointer-events-auto';
   page.innerHTML = `
@@ -40,9 +84,13 @@ export async function showIllustTest() {
     </div>
     <div class="illt-grid">${ids.map((id) => {
       const [pose, face] = personaOf(id), s = SPEC[id];
-      return `<button class="illt-card" data-id="${id}"><div class="illt-pic">${illustHtml(id)}</div>
+      const meta = codeMap[id];
+      return `<button class="illt-card" data-id="${id}">
+        <div class="illt-pic">${illustHtml(id)}</div>
+        <div class="illt-code" style="background:${meta.color};">${meta.code}</div>
         <div class="illt-tag ${hasAiIllust(id) ? 'ai' : ''}">${hasAiIllust(id) ? 'AI' : '임시 SVG'}</div>
-        <b>${s.name}</b> <small>${id}</small><div class="illt-sub">${s.role} · ${POSE_KO[s.pose ?? pose]} · ${FACE_KO[s.face ?? face]}</div></button>`;
+        <b>${s.name}</b> <small>${id}</small><div class="illt-sub">[${meta.label}] ${s.role} · ${POSE_KO[s.pose ?? pose]} · ${FACE_KO[s.face ?? face]}</div>
+      </button>`;
     }).join('')}</div>`;
   root.appendChild(page);
   const setBg = (v: string) => { document.body.dataset.illbg = v; };

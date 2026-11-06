@@ -132,16 +132,27 @@ function cutBackground(src: string): Promise<string> {
   }
   return p;
 }
+export function getIllustSrc(id: string): string {
+  const f = (AI_ILLUST.files as Record<string, any>)?.[id];
+  let fileName = `${id}.png`;
+  if (typeof f === 'string') {
+    fileName = f.replace(/^\/?(assets\/illust\/)?/, '');
+  } else if (typeof f === 'object' && f !== null && f.png) {
+    fileName = String(f.png).replace(/^\/?(assets\/illust\/)?/, '');
+  }
+  return `assets/illust/${fileName}`;
+}
+
 /** 대화창 · 테스트 페이지용: AI 그림이 있으면 그것(배경 지운 뒤 교체), 없으면 벡터 SVG */
 export function illustHtml(id: string, pose?: Pose, face?: Face): string {
   if (!hasAiIllust(id)) return illustSvg(id, pose, face);
-  const src = `assets/illust/${AI_ILLUST.files[id] ?? `${id}.png`}`;
+  const src = getIllustSrc(id);
   const ready = cutCache.get(src);
   if (!ready) void cutBackground(src).then((url) => document.querySelectorAll<HTMLImageElement>(`img[data-ill="${CSS.escape(id)}"]`).forEach((el) => { el.src = url; el.classList.remove('ill-wait'); }));
   return `<img class="ill-ai ${ready ? '' : 'ill-wait'}" data-ill="${id}" src="${ready ?? src}" alt="">`;
 }
 /** 미리 배경 지워 두기 (대화가 처음 뜰 때 깜빡이지 않게) */
-export function warmIllust() { for (const id of AI_ILLUST.ids) void cutBackground(`assets/illust/${AI_ILLUST.files[id] ?? `${id}.png`}`); }
+export function warmIllust() { for (const id of AI_ILLUST.ids) void cutBackground(getIllustSrc(id)); }
 
 const OL = '#3a2418';
 const esc = (s: string) => s.replace(/[^#\w(),.% -]/g, '');
