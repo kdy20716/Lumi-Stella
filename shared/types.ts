@@ -110,6 +110,11 @@ export interface PlayerState {
   defeated: string[];             // 이긴 트레이너 id
   seen: string[]; caught: string[];
   visited: string[];              // 가 본 바깥 맵 (휴대폰 지도 안개 걷힘)
+  /** 'story' = 스토리 모드 (혼자 · 본편 사건 · 초대 불가), 'multi' = 멀티 (자유 모험). 진행(루미 · 배지 …)은 같은 저장을 씀 */
+  mode?: 'multi' | 'story';
+  /** 이 맵에서 비전 기술로 치운 장애물 (맵을 떠나면 다시 생김) */
+  cleared?: string[];
+  flags: string[];                // 본편 사건 진행 (shared/data/chapters.json 의 사건 id)
 }
 
 export type LumiType = '노말' | '풀' | '물' | '불' | '땅' | '바람' | '빛';
@@ -168,6 +173,7 @@ export interface SaveData {
   badges: string[]; defeated: string[]; seen: string[]; caught: string[]; bin: { itemId: string; quantity: number }[];
   farm: { tiles: FarmTile[]; removed: number[]; placed?: PlacedObject[]; ver?: number };
   story?: number;
+  flags?: string[];
   visited?: string[];
   recipes?: string[];
   /** 마지막 위치 (다시 접속하면 그 자리에서 이어서). 실내면 나갈 곳(ret)도 */
@@ -214,6 +220,9 @@ export type ActionIntent =
   | { kind: 'serve'; slot: number }                   // 식탁에 음식 차리기
   | { kind: 'eatDish' }
   | { kind: 'story'; step: number }                   // 프롤로그 다음 단계로
+  | { kind: 'event'; id: string }
+  | { kind: 'epilogue' }
+  | { kind: 'skill'; objectId: number }              // 비전 기술로 장애물 치우기 (풀베기 · 바위 부수기 · 암석 오르기)                             // 엔딩 크레딧 뒤: 내 집 문 앞으로                    // 본편 사건 (chapters.json): 대사 뒤 승부 · 보상 · 깃발
   | { kind: 'rivalBattle' }                           // 마을회관에서 친구와 첫 대결
   | { kind: 'craft'; recipe: string; times?: number }  // 작업대에서 제작
   | { kind: 'learn'; npc: string }                  // 공방 NPC에게 제작법 배우기

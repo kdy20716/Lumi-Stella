@@ -79,7 +79,7 @@ export abstract class Authority {
       case 'objectRemoved': if (!e.owner || e.owner === this.farmOwner) this.removed.add(e.key); break;
       case 'objectRestored': for (const k of e.keys) this.removed.delete(k); break;
       case 'forage': this.forage = [...e.spots]; break;
-      case 'party': if (e.id === me.id) Object.assign(me, { party: e.party.map((c) => ({ ...c, moves: [...c.moves] })), bag: { ...e.bag }, badges: [...e.badges], defeated: [...e.defeated], seen: [...e.seen], caught: [...e.caught], visited: [...e.visited], recipes: [...(e.recipes ?? [])] }); break;
+      case 'party': if (e.id === me.id) Object.assign(me, { party: e.party.map((c) => ({ ...c, moves: [...c.moves] })), bag: { ...e.bag }, badges: [...e.badges], defeated: [...e.defeated], seen: [...e.seen], caught: [...e.caught], visited: [...e.visited], recipes: [...(e.recipes ?? [])], flags: [...(e.flags ?? [])] }); break;
       case 'room': if (e.playerId === me.id) { Object.assign(me, { map: e.map, inst: e.inst, world: e.world, x: e.x, y: e.y }); this.applySnapshot(e.snapshot); } break;
       case 'look': { if (e.id === me.id) { me.look = e.look; me.name = e.name; } const r = this.roster.get(e.id); if (r) { r.look = e.look; r.name = e.name; } break; }
       case 'dish': if (e.room === this.room) this.dish = e.dish; break;
@@ -121,6 +121,7 @@ export class LocalAuthority extends Authority {
     try { const raw = localStorage.getItem(SOLO_KEY); if (raw) saved = JSON.parse(raw); } catch { saved = null; }
     if (saved?.time) this.sim.setWorld(saved.time);
     this.me = this.sim.addPlayer('local', saved?.save?.name ?? '트레이너', saved?.save?.look ?? '', saved?.save ?? null);
+    this.me.mode = 'story';   // 이 브라우저 저장 = 스토리 모드 (혼자)
     this.applySnapshot(this.sim.snapshot('local'));
     this.storageKind = '이 브라우저 (혼자하기)';
     this.sim.on((event) => {
@@ -147,7 +148,7 @@ export class LocalAuthority extends Authority {
   override update(dt: number) { this.sim.tick(dt); }
 }
 
-type Cred = { token?: string; dev?: string; mode?: 'public' | 'friends' };
+type Cred = { token?: string; dev?: string; mode?: 'public' | 'friends' | 'story' };
 
 export class NetworkAuthority extends Authority {
   readonly online = true;

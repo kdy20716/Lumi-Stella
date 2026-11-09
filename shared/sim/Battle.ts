@@ -60,7 +60,8 @@ export interface BattleState {
   kind: 'wild' | 'trainer';
   trainerId?: string;
   tr?: TrainerDef;           // 트레이너 정보 (데이터 또는 스토리용 즉석 정의)
-  script?: 'rival';          // 스토리 각본: 라이벌 첫 대결 (주고받다가 버프만 쓰고 짐)
+  script?: 'rival';
+  eventId?: string;          // 본편 사건 승부 (이기면 그 사건 완료)          // 스토리 각본: 라이벌 첫 대결 (주고받다가 버프만 쓰고 짐)
   turn: number;
   bg: string;
   foes: CreatureInst[];

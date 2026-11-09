@@ -74,6 +74,11 @@ image('bush', 'objects/bush.png', OB.buildBush({ seed: 5 }));
 image('bush_berry', 'objects/bush_berry.png', OB.buildBush({ seed: 8, berries: true }));
 image('rock', 'objects/rock.png', OB.buildRock(false));
 image('rock_big', 'objects/rock_big.png', OB.buildRock(true));
+// 비전 기술 장애물 · 깊은 동굴 구멍
+image('vine', 'objects/vine.png', OB.buildVine());
+image('crack_rock', 'objects/crack_rock.png', OB.buildCrackRock());
+image('climb_wall', 'objects/climb_wall.png', OB.buildClimbWall());
+image('cave_hole', 'objects/cave_hole.png', OB.buildCaveHole());
 image('stump', 'objects/stump.png', OB.buildStump());
 image('cactus', 'objects/cactus.png', RG.buildCactus());
 image('dead_tree', 'objects/dead_tree.png', RG.buildDeadTree());

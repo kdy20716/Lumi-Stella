@@ -1,5 +1,9 @@
 // 지역 설계(region-spec) → 맵 노드 + 연결(출구) 계산. 맵 생성기와 아트 생성기가 함께 씀 (결정적)
-import { TOWNS, ROUTES, PLACES, GYMS } from './region-spec.mjs';
+import { TOWNS, ROUTES as ROUTES_V1, ROUTES_V2, PLACES, GYMS, DEEP_CAVES } from './region-spec.mjs';
+
+/** 기존 도로 + 확장 도로 (확장 도로 노드는 맨 뒤에 추가해 기존 맵 · 이름 생성 순서를 그대로 둠) */
+const ROUTES = [...ROUTES_V1, ...ROUTES_V2];
+const V2 = new Set(ROUTES_V2.map((r) => r[0]));
 
 const ROUTE_POS = { route18: [196, 34], route19: [244, 46], route23: [308, 128], route24: [300, 98], route25: [40, 104], route26: [64, 130] };
 const pos = {};
@@ -66,16 +70,30 @@ export function buildGraph() {
   const nodes = {};
   const add = (n) => { nodes[n.id] = { links: [], ...n, x: pos[n.id][0], y: pos[n.id][1] }; return nodes[n.id]; };
   for (const t of TOWNS) add({ ...t, kind: 'town' });
-  for (const [n, a, b, name] of ROUTES) {
+  const addRoute = ([n, a, b, name, biome, opt]) => {
     const ids = CHAINS[n], k = ids.length;
     const ends = [routeEnd(a, `route${n}`), routeEnd(b, `route${n}`)];
-    ids.forEach((id, i) => add({ id, kind: 'route', num: n, seg: i, segs: k, name: `${n}번 도로 · ${name}${k > 1 ? ` (${i + 1}/${k})` : ''}`, biome: ROUTES.find((r) => r[0] === n)[4], tier: 1, existing: id === 'route1',
+    ids.forEach((id, i) => add({ id, kind: 'route', num: n, seg: i, segs: k, name: `${n}번 도로 · ${name}${k > 1 ? ` (${i + 1}/${k})` : ''}`, biome, tier: 1, existing: id === 'route1',
+      ...(V2.has(n) ? { v2: true, need: i === 0 ? opt?.need : undefined } : {}),
       ends: [i === 0 ? ends[0] : ids[i - 1], i === k - 1 ? ends[1] : ids[i + 1]] }));
-  }
+  };
+  for (const r of ROUTES_V1) addRoute(r);
   for (const p of PLACES) add({ ...p });
+  for (const r of ROUTES_V2) addRoute(r);
   const linked = (x, y) => x.links.some((l) => l.to === y.id);
   // 도로 구간 연결 (티어는 양 끝 사이를 고르게)
-  for (const [n, a, b] of ROUTES) {
+  for (const [n, a, b] of ROUTES_V1) linkRoute(n, a, b);
+  // 랜드마크 부착
+  for (const p of PLACES) if (p.attach) link(nodes[p.attach[0]], nodes[p.id], p.attach[1]);
+  // 리그 섬: 등대곶 ↔ 왕관 시티 정기선
+  link(nodes.cape, nodes.crown, 'dock');
+  // 확장 도로는 맨 나중에 연결 (기존 맵의 출구 순서가 바뀌지 않게)
+  for (const [n, a, b] of ROUTES_V2) linkRoute(n, a, b);
+  // 깊은 동굴: 부모 동굴 쪽 연결은 맵 생성 뒤에 덧붙임 (부모 동굴 모양이 바뀌지 않게)
+  for (const d of DEEP_CAVES) nodes[d.id] = { ...d, kind: 'cave', v2: true, deep: true, links: [{ to: d.parent, type: 'stairsDown' }] };
+  return nodes;
+
+  function linkRoute(n, a, b) {
     const ids = CHAINS[n], k = ids.length;
     const lt = LINE_T[n], ta = nodes[lt.from]?.tier ?? 1, tb = nodes[lt.to]?.tier ?? ta;
     ids.forEach((id, i) => { nodes[id].tier = Math.max(1, Math.round(ta + ((tb - ta) * (lt.i0 + i + 1)) / (lt.n + 1))); });
@@ -88,11 +106,6 @@ export function buildGraph() {
       link(r, e, 'side');
     }
   }
-  // 랜드마크 부착
-  for (const p of PLACES) if (p.attach) link(nodes[p.attach[0]], nodes[p.id], p.attach[1]);
-  // 리그 섬: 등대곶 ↔ 왕관 시티 정기선
-  link(nodes.cape, nodes.crown, 'dock');
-  return nodes;
 
   function link(a, b, type) {
     if (type === 'side' || type === 'edge') {

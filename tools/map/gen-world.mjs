@@ -7,6 +7,7 @@ import { ADV_BUILDINGS } from '../art/adventure.mjs';
 import { rng } from '../art/lib/img.mjs';
 import { buildGraph, GYMS } from './region-graph.mjs';
 import { caveLayout, caveExits } from './cavegen.mjs';
+import { PLACE_GATES } from './region-spec.mjs';
 
 const ALL_B = { ...BUILDINGS, ...ADV_BUILDINGS };
 const cells = (key) => { const b = ALL_B[key]; return { w: Math.round(b.w / 16), h: Math.ceil((b.wallH + 7) / 16), door: Math.floor((b.doorX + 7) / 16) }; };
@@ -69,6 +70,7 @@ const LINES = {
   defeat: [['으윽, 졌다...'], ['대단한걸!'], ['다음엔 안 질 거야!'], ['역시 강하네...']],
   after: [['더 강해져서 다시 올게.'], ['이 길 끝에 멋진 곳이 있어.'], ['루미랑 더 친해져야겠다.']],
 };
+// 예전엔 마을 주민 외형을 여기서 아무거나 골랐음 → 지금은 마을마다 res_<마을>_1/2 (tools/art/residents.mjs)
 const VILLAGER_LOOKS = ['villager', 'hana', 'mio', 'teo', 'juni', 'park', 'lass', 'woodcutter', 'lady', 'gentleman', 'researcher'];
 
 /** 생성 마을 주민 대사: 지형별 채집·제작 팁 + 루미나 지방 공통 이야기 */
@@ -102,7 +104,7 @@ export function buildRegion() {
 
   for (const n of Object.values(nodes)) {
     data.maps[n.id] = { name: n.name, kind: n.kind, biome: n.biome ?? n.theme ?? 'room', x: n.x, y: n.y, tier: n.tier ?? 1 };
-    if (n.existing) continue;
+    if (n.existing || n.v2) continue;   // 확장 도로(v2)는 맨 마지막에 (기존 이름 · 맵이 그대로 나오게)
     if (n.kind === 'town') builders.push(genTown(n));
     else if (n.kind === 'route') builders.push(genRoute(n));
     else if (n.kind === 'area') builders.push(genArea(n));
@@ -113,7 +115,61 @@ export function buildRegion() {
   for (const [town, g] of Object.entries(GYMS)) if (town !== 'windvale') data.rooms.push({ id: `gym_${town}`, room: 'gym', type: g.type, leader: `leader_${town}`, town });
   for (const r of data.rooms) data.maps[r.id] ??= { name: r.room === 'gym' ? `${nodes[r.town].name} 도장` : nodes[r.id]?.name ?? r.id, kind: 'room', biome: 'room', x: nodes[r.town ?? r.id]?.x ?? 0, y: nodes[r.town ?? r.id]?.y ?? 0, tier: nodes[r.town ?? r.id]?.tier ?? 1 };
   genLeaders();
+  for (const n of Object.values(nodes)) if (n.v2 && n.kind === 'route') { const m = genRoute(n); if (n.need) skillGate(m, n); builders.push(m); }
+  // ── 비전 기술 지역 (확장분: 기존 맵은 덧붙이기만) ──
+  const byId = Object.fromEntries(builders.map((m) => [m.name, m]));
+  for (const [id, need] of Object.entries(PLACE_GATES)) { const m = byId[id], back = nodes[id]?.links[0]?.to; if (m && back) skillGate(m, { ends: [back], need }); }
+  for (const n of Object.values(nodes)) if (n.deep) { const m = genCave(n); enrichDeep(m, n); builders.push(m); if (byId[n.parent]) deepEntrance(byId[n.parent], n); }
   return { builders, data, nodes };
+
+  /** 깊은 동굴: 광석이 훨씬 많고, 별가루 결정이 섞여 나옴 */
+  function enrichDeep(m, n) {
+    const R = rng(hashStr(n.id) ^ 4242);
+    const floor = []; for (let y = 3; y < m.H - 2; y++) for (let x = 2; x < m.W - 2; x++) if (!m.blocked[y][x] && !m.reserved[y][x]) floor.push([x, y]);
+    const kinds = ['ore_star', 'ore_iron', 'ore_copper', 'ore_star', 'ore_iron'];
+    for (let k = 0; k < 14 && floor.length; k++) { const [x, y] = floor.splice(Math.floor(R() * floor.length), 1)[0]; const t = kinds[k % kinds.length]; m.place(t, x, y, { force: true, props: { mine: t.slice(4) } }); m.reserve(x, y, x, y); }
+  }
+  /** 부모 동굴 안: 출입구에서 가장 먼 빈 바닥에 내려가는 구멍 + 둘레 두 칸을 장애물로 빙 둘러 막음 */
+  function deepEntrance(m, n) {
+    const OBST = { cut: 'vine', smash: 'crack_rock', climb: 'climb_wall' };
+    const pts = m.warps.map((w) => [w.x / 16, w.y / 16]);
+    const open = (x, y) => m.inb(x, y) && !m.blocked[y][x] && !m.reserved[y][x];
+    let best = null, bd = -1;
+    for (let y = 5; y < m.H - 5; y++) for (let x = 5; x < m.W - 5; x++) {
+      let ok = true; for (let dy = -1; dy <= 1 && ok; dy++) for (let dx = -1; dx <= 1; dx++) if (!open(x + dx, y + dy)) { ok = false; break; }
+      if (!ok) continue;
+      const d = Math.min(...pts.map(([px, py]) => Math.hypot(px - x, py - y)));
+      if (d > bd) { bd = d; best = [x, y]; }
+    }
+    if (!best) { console.warn(`  ! ${n.id}: ${m.name} 안에 구멍 자리가 없어요`); return; }
+    const [hx, hy] = best;
+    m.objects = m.objects.filter((o) => { const cx = o.properties.find((p) => p.name === 'cellX')?.value, cy = o.properties.find((p) => p.name === 'cellY')?.value; return !(Math.abs(cx - hx) <= 2 && Math.abs(cy - hy) <= 2); });
+    m.place('cave_hole', hx, hy, { force: true, block: false });
+    m.warp(hx, hy, 1, 1, n.id, `from_${m.name}`);
+    m.spawn(`from_${n.id}`, hx, hy + 1);
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== 2) continue;
+      const x = hx + dx, y = hy + dy;
+      if (!m.inb(x, y) || m.blocked[y][x]) continue;
+      m.place(OBST[n.need], x, y, { force: true, props: { skill: n.need, interact: `skill:${n.need}` } });
+    }
+    m.reserve(hx - 2, hy - 2, hx + 2, hy + 2);
+  }
+
+  /** 비전 기술 관문: 도로 A 쪽 입구에서 6칸 안쪽 길을 막는 장애물 한 줄 (풀베기 = 가시덩굴) */
+  function skillGate(m, n) {
+    const OBST = { cut: 'vine', smash: 'crack_rock', climb: 'climb_wall', strength: 'boulder', surf: 'water_gate' };
+    const w = m.warps.find((x) => x.properties.find((p) => p.name === 'to')?.value === n.ends[0]); if (!w) return;
+    const x0 = w.x / 16, y0 = w.y / 16, ww = w.width / 16, hh = w.height / 16;
+    const horiz = hh > ww;   // 동 · 서 가장자리 출구 → 길은 가로로 뻗음
+    const d = 6;
+    const cells = horiz ? Array.from({ length: hh + 2 }, (_, i) => [x0 === 0 ? d : m.W - 1 - d, y0 - 1 + i]) : Array.from({ length: ww + 2 }, (_, i) => [x0 - 1 + i, y0 === 0 ? d : m.H - 1 - d]);
+    for (const [x, y] of cells) {
+      if (!m.inb(x, y) || m.terrain[y][x] === Wt) continue;
+      m.objects = m.objects.filter((o) => !(o.properties.find((p) => p.name === 'cellX')?.value === x && o.properties.find((p) => p.name === 'cellY')?.value === y));
+      m.place(OBST[n.need] ?? 'vine', x, y, { force: true, props: { skill: n.need, interact: `skill:${n.need}` } });
+    }
+  }
 
   // ── 공통 도우미 ──────────────────────────────────────
   function spread(n, len, lo, hi) { const out = []; for (let i = 0; i < n; i++) out.push(Math.round(lo + ((hi - lo) * (i + 1)) / (n + 1))); return out; }
@@ -382,7 +438,7 @@ export function buildRegion() {
     for (let k = 1; k <= 2; k++) {
       const id = `${n.id}_npc${k}`;
       const tip = k === 1 ? n.desc : `${n.links.filter((l) => l.type === 'edge').map((l) => nodes[l.to].name.split(' · ')[0]).join(', ')}(으)로 길이 이어져 있어.`;
-      data.npcs[id] = { id, gen: true, name: nextName(), title: `${n.name} 주민`, sprite: VILLAGER_LOOKS[Math.floor(R() * VILLAGER_LOOKS.length)], speed: 34, color: '#7a8a5a',
+      data.npcs[id] = { id, gen: true, name: nextName(), title: `${n.name} 주민`, sprite: (R(), `res_${n.id}_${k}`), speed: 34, color: '#7a8a5a',
         schedule: [{ time: 600, map: n.id, to: `wp_npc${k}`, idle: 'wander', radius: 3 }],
         dialogue: { first: [`어서 와, 트레이너! 여기는 ${n.name}이야.`, tip], morning: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow], afternoon: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow, TOWN_LORE[(k + n.tier) % TOWN_LORE.length]],
           evening: ['밤엔 풀숲에 다른 루미들이 나온대.', TOWN_LORE[(k * 3 + n.tier) % TOWN_LORE.length]], rain: ['비 오는 날은 물가 루미가 많아져.'],
@@ -534,7 +590,7 @@ export function buildRegion() {
   function genLeaders() {
     const order = ['harbor', 'maple', 'forge', 'ember', 'lumina', 'frost', 'summit'];
     order.forEach((town, i) => {
-      const g = GYMS[town], lv = 14 + i * 6;
+      const g = GYMS[town], lv = [14, 20, 26, 31, 36, 41, 45][i] ?? 14 + i * 6;   // 관장 레벨: 그 근처 야생보다 5레벨쯤 위 (자동 플레이 검사로 맞춤)
       data.trainers[`leader_${town}`] = {
         id: `leader_${town}`, name: g.name, title: `${nodes[town].name} 관장`, sprite: `leader_${town}`, map: `gym_${town}`, sight: 0,
         team: g.species.map((s, k) => [s, lv + k]), reward: 300 + i * 150, badge: g.badge,

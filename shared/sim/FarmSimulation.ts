@@ -2,7 +2,7 @@
 // 클라이언트는 결과가 아니라 ActionIntent 만 보내고, 여기서 거리/에너지/도구 소지를 검증한 뒤 상태를 바꾼다.
 //  - 농장/집은 주인별 인스턴스(초대받은 친구만 함께), 마을·도로·바람골·가게 실내는 모두가 공유
 //  - 골드·가방·루미는 플레이어별, 시간·날씨는 서버 전체 공통
-import { CROPS, ENCOUNTERS, ITEMS, RECIPES, REGION_MAPS, SHOPS, SPECIES, TRAINERS, hhmmToMinutes } from '../data';
+import { SKILLS, skillFor, CHAPTERS, CROPS, ENCOUNTERS, EVENTS, ITEMS, RECIPES, REGION_MAPS, SHOPS, SPECIES, TRAINERS, gateFor, hhmmToMinutes, nextEvent } from '../data';
 import { BattleEngine, healAll, makeCreature, type BattleState } from './Battle';
 import {
   SoilState, INTERIOR_OF, ALL_PLAYER_LOOKS, isInterior, roomOf, BADGE_GATES,
@@ -39,8 +39,9 @@ export type SimEvent =
   | { type: 'newDay'; time: WorldTime }
   | { type: 'objectRemoved'; key: string; owner?: string }
   | { type: 'objectRestored'; keys: string[] }
+  | { type: 'cleared'; playerId: string; key: string }
   | { type: 'forage'; spots: ForageSpot[] }
-  | { type: 'party'; id: string; party: PlayerState['party']; bag: PlayerState['bag']; badges: string[]; defeated: string[]; seen: string[]; caught: string[]; visited: string[]; recipes: string[] }
+  | { type: 'party'; id: string; party: PlayerState['party']; bag: PlayerState['bag']; badges: string[]; defeated: string[]; seen: string[]; caught: string[]; visited: string[]; recipes: string[]; flags: string[] }
   | { type: 'help'; playerId: string; species: string; text: string }
   | { type: 'toast'; playerId?: string; room?: string; text: string; icon?: string }
   | { type: 'room'; playerId: string; map: MapId; inst: string; world: string; x: number; y: number; snapshot: FarmSnapshot }
@@ -63,6 +64,10 @@ const TREES = new Set(['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'p
 const TREE_HITS = 5, STUMP_HITS = 2;
 /** 전설 · 환상 (별마루산 꼭대기 별의 제단) */
 export const LEGEND = 'byeolmuri', MYTH = 'onnuri';
+/** 레벨에 맞게 진화한 모습 (사건 상대 팀) */
+const grownAt = (sp: string, lv: number) => { let s = sp; for (let k = 0; k < 2; k++) { const e = SPECIES[s]?.evolves; if (e && lv >= e.level + 2) s = e.to; } return s; };
+/** 캔 광석이 다시 생기기까지 (실제 시간) */
+export const ORE_RESPAWN_MS = 3 * 60_000;
 const LEGEND_LV = 70, MYTH_LV = 80, MASTER_LV = 100;
 /** 루미 도감 완성 = 환상(온누리)을 뺀 모든 루미를 잡음 */
 export const dexComplete = (p: { caught: string[] }) => Object.keys(SPECIES).filter((id) => id !== MYTH).every((id) => p.caught.includes(id));
@@ -83,6 +88,8 @@ export class FarmSimulation {
   private farms = new Map<string, FarmState>();
   /** 공개 맵에서 사라진 오브젝트 `${map}:${id}` (채석장 바위 등) */
   private removed = new Set<string>();
+  /** 캔 광석이 다시 생기는 시각 (광석 key → ms) */
+  private oreBack = new Map<string, number>();
   /** 받은 초대: to → from → {where, t} */
   private invites = new Map<string, Map<string, { where: 'farm' | 'home'; t: number }>>();
   private acc = 0;
@@ -146,7 +153,7 @@ export class FarmSimulation {
     const home = this.homeSpot();
     const p: PlayerState = {
       id, name, look, map: 'farm', inst: id, x: home.x, y: home.y, dir: 'down', anim: 'idle', energy: 270, maxEnergy: 270, inventory: inv, gold: 500, bin: [], story: STORY.HOME, world, homeWorld: world,
-      party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [], visited: ['farm'], recipes: STARTER_RECIPES(),
+      party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [], visited: ['farm'], recipes: STARTER_RECIPES(), flags: [],
     };
     if (save) {
       Object.assign(p, {
@@ -155,6 +162,7 @@ export class FarmSimulation {
         seen: save.seen ?? [], caught: save.caught ?? [], bin: save.bin ?? [], visited: save.visited ?? ['farm', 'town', ...(save.party?.length ? ['route1', 'windvale'] : [])],
         story: save.story ?? ((save.party ?? []).length ? STORY.DONE : STORY.HOME),
         recipes: [...new Set([...STARTER_RECIPES(), ...(save.recipes ?? [])])],
+        flags: save.flags ?? [],
       });
       migrateBag(p.bag);
       if (save.inventory?.length) p.inventory = Array.from({ length: INVENTORY_SIZE }, (_, i) => { const id = save.inventory[i]?.itemId ?? null; const ok = !!id && !!ITEMS[id]; return { slotIndex: i, itemId: ok ? id : null, quantity: ok ? save.inventory[i]?.quantity ?? 0 : 0 }; });
@@ -182,7 +190,7 @@ export class FarmSimulation {
     return JSON.parse(JSON.stringify({
       v: 1, name: p.name, look: p.look, gold: p.gold, energy: p.energy, maxEnergy: p.maxEnergy, inventory: p.inventory,
       party: p.party, box: p.box, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, bin: p.bin,
-      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [], placed: f ? [...f.placed.values()] : [], ver: FARM_VER }, story: p.story, visited: p.visited, recipes: p.recipes,
+      farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [], placed: f ? [...f.placed.values()] : [], ver: FARM_VER }, story: p.story, flags: p.flags, visited: p.visited, recipes: p.recipes,
       pos: { map: p.map, inst: p.inst, x: p.x, y: p.y, dir: p.dir, ret: p.ret }, savedAt: Date.now(),
     } satisfies SaveData)) as SaveData;
   }
@@ -209,6 +217,7 @@ export class FarmSimulation {
   /** 방 이동 (워프/실내/초대/새 날/배틀 패배) → 해당 플레이어에게 새 방의 상태를 보냄 */
   private relocate(p: PlayerState, map: MapId, inst: string, x: number, y: number) {
     p.map = map; p.inst = inst; p.x = x; p.y = y; p.sleeping = false;
+    p.cleared = [];   // 비전 기술로 치운 장애물은 맵을 떠나면 다시 생김
     if (map !== 'home' && !isInterior(map)) p.ret = undefined;
     if (!isInterior(map) && !p.visited.includes(map)) { p.visited.push(map); this.emitParty(p); }
     this.emit({ type: 'room', playerId: p.id, map, inst, world: p.world, x, y, snapshot: this.snapshot(p.id) });
@@ -234,12 +243,20 @@ export class FarmSimulation {
   // ── 시간 ───────────────────────────────────────────
   tick(dtMs: number) {
     this.acc += dtMs;
+    this.respawnOres();
     while (this.acc >= MS_PER_10_MIN) {
       this.acc -= MS_PER_10_MIN;
       this.time.minutes += 10;
       this.emit({ type: 'time', time: { ...this.time } });
       if (this.time.minutes >= DAY_END) { this.emit({ type: 'toast', text: '새벽이 지나 새 아침이 밝았어요. (잠을 자면 체력이 회복돼요)', icon: 'sun' }); this.newDay(false, false); }
     }
+  }
+  /** 캔 광석은 몇 분 뒤 그 자리에 다시 생김 (동굴 파밍) */
+  private respawnOres(now = Date.now()) {
+    if (!this.oreBack.size) return;
+    const back: string[] = [];
+    for (const [k, t] of this.oreBack) if (t <= now) { this.oreBack.delete(k); if (this.removed.delete(k)) back.push(k); }
+    if (back.length) this.emit({ type: 'objectRestored', keys: back });
   }
   /** 현재 10분 구간 진행률 (조명 보간용) */
   get subMinute() { return (this.acc / MS_PER_10_MIN) * 10; }
@@ -357,6 +374,9 @@ export class FarmSimulation {
       case 'serve': return this.serve(p, a.slot);
       case 'eatDish': return this.eatDish(p);
       case 'story': return this.storyStep(p, a.step);
+      case 'event': return this.storyEvent(p, a.id);
+      case 'epilogue': return this.epilogue(p);
+      case 'skill': return this.useSkill(p, a.objectId);
       case 'rivalBattle': return this.rivalBattle(p);
       case 'craft': return this.craft(p, a.recipe, a.times ?? 1);
       case 'learn': return this.learn(p, a.npc);
@@ -390,6 +410,7 @@ export class FarmSimulation {
     if (!this.maps[to]) return { ok: false, reason: 'no-map' };
     if (to === 'route1' && (!p.party.length || p.story < STORY.DONE)) return { ok: false, reason: 'need-partner' };
     if ((BADGE_GATES[to] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[to]}` };
+    const gw = p.mode === 'story' ? gateFor(p, to) : undefined; if (gw) return { ok: false, reason: `event:${gw.id}` };
     // 다른 맵에서 농장으로 가면 언제나 '내' 농장
     this.toSpawn(p, to, to === 'farm' ? p.id : '', w.spawn);
     return { ok: true };
@@ -402,6 +423,7 @@ export class FarmSimulation {
     const target = o ? String(prop(o, 'interior', '') || INTERIOR_OF[o.type] || '') : '';
     if (!o || !target || !this.maps[target]) return { ok: false, reason: 'no-door' };
     if ((BADGE_GATES[target] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[target]}` };
+    const ge = p.mode === 'story' ? gateFor(p, target) : undefined; if (ge) return { ok: false, reason: `event:${ge.id}` };
     const T = m.tile;
     const cellX = Number(prop(o, 'cellX', 0)), cellY = Number(prop(o, 'cellY', 0)), cellW = Number(prop(o, 'cellW', 1));
     const doorX = Number(prop(o, 'doorCellX', cellX + Math.floor(cellW / 2)));
@@ -420,6 +442,7 @@ export class FarmSimulation {
   private invite(p: PlayerState, to: string, where: 'farm' | 'home'): ActionResult {
     const t = this.players.get(to);
     if (!t || t.id === p.id || (where !== 'farm' && where !== 'home')) return { ok: false, reason: 'no-target' };
+    if (p.mode === 'story' || t.mode === 'story') return { ok: false, reason: 'story-mode' };   // 스토리 모드는 혼자
     let box = this.invites.get(to); if (!box) { box = new Map(); this.invites.set(to, box); }
     box.set(p.id, { where, t: Date.now() });
     this.emit({ type: 'invite', to, from: p.id, fromName: p.name, where });
@@ -430,6 +453,7 @@ export class FarmSimulation {
     const inv = this.invites.get(p.id)?.get(from);
     const host = this.players.get(from);
     if (!inv || !host || Date.now() - inv.t > INVITE_TTL) return { ok: false, reason: 'expired' };
+    if (p.mode === 'story') return { ok: false, reason: 'story-mode' };
     this.invites.get(p.id)!.delete(from);
     this.ensureFarm(host.id);
     p.world = host.world;   // 친구의 세계로 함께 이동 (친구들만 모드면 그 친구 세계의 마을에서도 함께)
@@ -485,6 +509,58 @@ export class FarmSimulation {
     this.setStory(p, step);
     return { ok: true };
   }
+  /** 본편 사건 (chapters.json): 장소 · 순서 검증 → 승부가 있으면 시작, 없으면 바로 완료 */
+  private storyEvent(p: PlayerState, id: string): ActionResult {
+    const ev = EVENTS[id];
+    if (!ev || p.flags.includes(id)) return { ok: false, reason: 'done' };
+    if (p.mode !== 'story') return { ok: false, reason: 'multi' };   // 본편 사건은 스토리 모드에서만
+    if (nextEvent(p)?.id !== id) return { ok: false, reason: 'story' };
+    if (!ev.battle) { this.finishEvent(p, id); return { ok: true }; }
+    if (!this.canBattle(p)) return { ok: false, reason: 'no-lumi' };
+    const b = ev.battle, cast = CHAPTERS.cast[b.cast] ?? { name: '???', sprite: 'villager' };
+    const rv = rivalOf(p.look), starter = RIVAL_PICK[p.caught.find((s) => ENCOUNTERS.starters.includes(s)) ?? ''] ?? 'kongkong';
+    const team = b.team.map(([sp, lv]) => [grownAt(sp === '@starter' ? starter : sp, lv), lv] as [string, number]);
+    const def: TrainerDef = {
+      id: `ev_${id}`, name: b.rival ? rv.name : cast.name, title: b.rival ? '소꿉친구' : cast.title ?? '', sprite: b.rival ? rv.look : cast.sprite,
+      map: p.map, sight: 0, team, reward: b.reward, intro: [], defeat: [], after: [],
+    };
+    const { state, update } = this.engine.startTrainer(p, def, undefined, this.maps[p.map].props.battleBg ?? (isInterior(p.map) ? 'town' : undefined));
+    state.eventId = id;
+    this.battles.set(p.id, state);
+    return { ok: true, battle: update };
+  }
+  /** 엔딩 뒤 에필로그: 내 농장 집 문 바로 앞 (한 칸 아래)으로 */
+  private epilogue(p: PlayerState): ActionResult {
+    if (p.mode !== 'story' || !p.flags.includes('ending')) return { ok: false, reason: 'story' };
+    const house = this.maps.farm.objects.find((o) => o.type === 'house');
+    const dx = Number(prop(house ?? {} as never, 'doorCellX', 23)), cy = Number(prop(house ?? {} as never, 'cellY', 11));
+    p.world = p.homeWorld;
+    this.relocate(p, 'farm', p.id, dx * 16 + 8, (cy + 2) * 16 + 13);
+    p.dir = 'up';
+    return { ok: true };
+  }
+  /** 비전 기술: 배지가 있으면 장애물을 치움 (나에게만, 이 맵에 있는 동안). 바위 부수기는 가끔 광석이 나옴 */
+  private useSkill(p: PlayerState, objectId: number): ActionResult {
+    const m = this.maps[p.map], o = m.objects.find((ob) => ob.id === objectId);
+    const id = o ? skillFor(o.type) : undefined, sk = id ? SKILLS[id] : undefined;
+    if (!o || !sk) return { ok: false, reason: 'no-obstacle' };
+    const key = `${p.map}:${objectId}`;
+    if (p.cleared?.includes(key)) return { ok: false, reason: 'cleared' };
+    if (!p.badges.includes(sk.badge)) return { ok: false, reason: `need:${id}` };
+    if (!p.party.length) return { ok: false, reason: 'no-lumi' };
+    const T = m.tile; if (Math.hypot(o.x / T - p.x / T, o.y / T - 0.5 - (p.y - 4) / T) > 2.4) return { ok: false, reason: 'far' };
+    (p.cleared ??= []).push(key);
+    this.emit({ type: 'cleared', playerId: p.id, key });
+    if (sk.drops) for (const [item, chance] of sk.drops) if (this.rand() * 100 < chance) { if (this.addItem(p, item, 1)) { this.changed(p); this.emit({ type: 'toast', playerId: p.id, text: `부서진 바위에서 ${ITEMS[item].name}을(를) 찾았다!`, icon: item }); } break; }
+    return { ok: true, anim: 'interact' };
+  }
+  private finishEvent(p: PlayerState, id: string) {
+    if (p.flags.includes(id)) return;
+    p.flags.push(id);
+    for (const [it, n] of Object.entries(EVENTS[id]?.give ?? {})) p.bag[it] = (p.bag[it] ?? 0) + n;
+    this.emitParty(p);
+  }
+
   private rivalBattle(p: PlayerState): ActionResult {
     if (p.story !== STORY.HALL || !p.party.length || p.map !== 'in_lab') return { ok: false, reason: 'story' };
     healAll(p.party);
@@ -743,13 +819,14 @@ export class FarmSimulation {
     return m;
   }
   /** 이 칸이 막혔나: 맵 충돌 중 치운 오브젝트 자리는 열림 + 농장 설치물은 막음 */
-  private blockedAt(mapId: MapId, f: FarmState | null, x: number, y: number) {
+  private blockedAt(mapId: MapId, f: FarmState | null, x: number, y: number, who?: PlayerState) {
     const info = this.maps[mapId];
     if (!info.inBounds(x, y)) return true;
     if (f) for (const o of f.placed.values()) if (o.x === x && o.y === y) return true;
     if (!info.isBlocked(x, y)) return false;
     const occ = this.occOf(mapId).get(y * info.width + x);
     if (occ == null) return true;
+    if (who?.cleared?.includes(`${mapId}:${occ}`)) return false;
     return f ? !f.removed.has(occ) : !this.removed.has(`${mapId}:${occ}`);
   }
   private weedAt(f: FarmState, x: number, y: number) {
@@ -768,7 +845,7 @@ export class FarmSimulation {
     const f = p.map === 'farm' ? this.farmOf(p) : null;
     const T = info.tile;
     for (let cy = Math.floor((py - hh) / T); cy <= Math.floor((py - 0.01) / T); cy++)
-      for (let cx = Math.floor((px - hw) / T); cx <= Math.floor((px + hw - 0.01) / T); cx++) if (this.blockedAt(p.map, f, cx, cy)) return false;
+      for (let cx = Math.floor((px - hw) / T); cx <= Math.floor((px + hw - 0.01) / T); cx++) if (this.blockedAt(p.map, f, cx, cy, p)) return false;
     return true;
   }
 
@@ -799,7 +876,7 @@ export class FarmSimulation {
 
   // ── 루미 모험 ──────────────────────────────────────
   private emitParty(p: PlayerState) {
-    this.emit({ type: 'party', id: p.id, party: p.party, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, visited: p.visited, recipes: p.recipes });
+    this.emit({ type: 'party', id: p.id, party: p.party, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, visited: p.visited, recipes: p.recipes, flags: p.flags });
   }
   private help(p: PlayerState, text: string) { const sp = p.party[0]?.species; if (sp) this.emit({ type: 'help', playerId: p.id, species: sp, text }); }
   private helps(p: PlayerState) { return SPECIES[p.party[0]?.species]?.helps; }
@@ -956,11 +1033,15 @@ export class FarmSimulation {
       if (up.ended === 'win' && st.trainerId) {
         const tr = st.tr ?? TRAINERS[st.trainerId];
         if (st.script === 'rival') this.setStory(p, STORY.DONE);
+        if (st.eventId) this.finishEvent(p, st.eventId);
         const first = !p.defeated.includes(st.trainerId);
         if (first) p.defeated.push(st.trainerId);
         p.gold += tr.reward;
         up.log.push({ t: 'text', text: `${tr.title} ${tr.name}과(와)의 승부에서 이겼다!` }, ...tr.defeat.map((text) => ({ t: 'text' as const, text: `${tr.name}: "${text}"` })), { t: 'text', text: `상금으로 ${tr.reward}G를 받았다!` });
-        if (tr.badge && !p.badges.includes(tr.badge)) { p.badges.push(tr.badge); up.log.push({ t: 'text', text: `${ITEMS[tr.badge].name}을(를) 받았다!` }); }
+        if (tr.badge && !p.badges.includes(tr.badge)) {
+          p.badges.push(tr.badge); up.log.push({ t: 'text', text: `${ITEMS[tr.badge].name}을(를) 받았다!` });
+          for (const sk of Object.values(SKILLS)) if (sk.badge === tr.badge) up.log.push({ t: 'text', text: `이제 필드에서 비전 기술 「${sk.name}」을(를) 쓸 수 있다! (${sk.look.replace(/\.$/, '')} 앞에서 E)` });
+        }
         if (st.trainerId === 'champion' && first) up.log.push({ t: 'text', text: '축하합니다! 루미 리그 챔피언이 되었다 — 이제 당신이 루미 마스터!' }, { t: 'text', text: '(별마루산 꼭대기 별의 제단에서 무언가가 기다리고 있다…)' });
         if (st.trainerId === 'champion_ex' && !p.inventory.some((s) => s.itemId === 'ocarina')) {
           this.addItem(p, 'ocarina', 1); this.addItem(p, 'origin_ball', 1); this.changed(p);
@@ -1034,7 +1115,7 @@ export class FarmSimulation {
       const qty = lo + Math.floor(this.rand() * (hi - lo + 1)) + (mineHelp && item !== 'stone' ? 1 : 0) + (pickPower >= 2 && item !== 'stone' && this.rand() < 0.3 * (pickPower - 1) ? 1 : 0);
       if (this.addItem(p, item, qty)) got.push(`${ITEMS[item].name} ×${qty}`);
     }
-    if (f) f.removed.add(objectId); else this.removed.add(key);
+    if (f) f.removed.add(objectId); else { this.removed.add(key); this.oreBack.set(key, Date.now() + ORE_RESPAWN_MS); }
     this.emit({ type: 'objectRemoved', key, owner: f?.owner });
     this.changed(p);
     if (got.length) this.emit({ type: 'toast', playerId: p.id, text: `${got.join(', ')} 획득!`, icon: (ENCOUNTERS.ore[kind]?.[0]?.[0]) ?? 'stone' });

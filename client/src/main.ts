@@ -16,6 +16,10 @@ if (params.has('illust')) {
 else if (params.has('dex')) {
   void import('./ui/PokedexTest').then((m) => m.showPokedexTest());
 }
+// ?3d → 포켓몬 4세대식 3D 시험판 (?3d=home 처럼 시작 장소 지정)
+else if (params.has('3d')) {
+  void import('./three/Proto3D').then((m) => m.start(params.get('3d') || 'town'));
+}
 // 픽셀 아트 렌더링: 안티앨리어싱 끔 + 정수 좌표 반올림 → 선명한 레트로 그래픽
 else {
   new Phaser.Game({

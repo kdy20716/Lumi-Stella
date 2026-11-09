@@ -26,7 +26,7 @@ export interface AdminUser { uid: string; name: string; look: string; map: MapId
 export interface BugReport { id: string; uid: string; name: string; text: string; where: string; at: number; resolved?: boolean }
 
 export type C2S =
-  | { t: 'join'; token?: string; dev?: string; mode?: 'public' | 'friends' }  // token: Firebase ID 토큰, mode: 모두와 함께 / 친구들만
+  | { t: 'join'; token?: string; dev?: string; mode?: 'public' | 'friends' | 'story' }  // token: Firebase ID 토큰, mode: 모두와 함께 / 친구들만
   | { t: 'move'; x: number; y: number; dir: Dir; anim: string; seq: number }
   | { t: 'action'; action: ActionIntent; reqId: number }
   | { t: 'anim'; anim: string; dir: Dir }           // 도구 휘두르기 등 같은 방 사람에게 보이는 일회성 애니메이션

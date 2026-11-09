@@ -299,6 +299,122 @@ const T: Track[] = [
     drums: ['c...s...k.k.s...', 'k...s...k.k.s...'],
     night: false,
   },
+  // ── 본편 스토리 곡 (성간단 · 라이벌 · 결전 · 엔딩) ──
+  {
+    id: 'villain', title: '성간단의 그림자', bpm: 116, bars: 8,
+    chords: 'Cm:16 Ab:16 Fm:16 G:16 Cm:16 Ab:16 Db:16 G7:16',
+    parts: [
+      { inst: 'lead2', pan: -0.1, seq: 'C5:6 Eb5:2 G5:4 F5:4 | Eb5:6 C5:2 Ab4:8 | F4:4 Ab4:4 C5:4 Eb5:4 | D5:12 B4:4 | C5:6 Eb5:2 G5:4 Ab5:4 | G5:6 Eb5:2 C5:8 | Db5:4 F5:4 Ab5:4 F5:4 | G5:8 B4:8' },
+      { inst: 'brass', oct: -1, vol: 0.55, pan: 0.2, gen: 'stab' },
+      { inst: 'strings', gen: 'pad', vol: 0.6, pan: -0.3 },
+      { inst: 'sbass', gen: 'bass-pump', vol: 1 },
+    ],
+    drums: ['k...s..kk...s...', 'k...s..kk..ks.s.'],
+    night: false,
+  },
+  {
+    id: 'crisis', title: '점거된 거리', bpm: 108, bars: 8,
+    chords: 'Dm:16 Bb:16 Gm:16 A:16 Dm:16 Bb:16 Em:16 A7:16',
+    parts: [
+      { inst: 'pulse', pan: -0.15, seq: 'D5:4 -:2 A4:2 D5:4 E5:4 | F5:6 E5:2 D5:8 | G4:4 Bb4:4 D5:4 C5:4 | C#5:12 -:4 | D5:4 -:2 A4:2 F5:4 A5:4 | Bb5:6 A5:2 F5:8 | E5:4 G5:4 B5:4 A5:4 | A5:8 C#5:8' },
+      { inst: 'strings', gen: 'pad', vol: 0.7, pan: 0.25 },
+      { inst: 'pluck', gen: 'arp8', vol: 0.45, pan: 0.4 },
+      { inst: 'bass', gen: 'bass-half', vol: 0.9 },
+    ],
+    drums: ['k.......s.......', 'k.....k.s...s...'],
+  },
+  {
+    id: 'rival', title: '소꿉친구는 언제나 한발 앞', bpm: 144, bars: 8,
+    chords: 'D:16 Bm:16 G:16 A:16 D:16 F#m:16 G:16 A7:16',
+    parts: [
+      { inst: 'lead', pan: -0.1, seq: 'A4:2 D5:2 F#5:2 A5:2 G5:4 F#5:4 | F#5:2 D5:2 B4:4 D5:4 F#5:4 | G5:2 B5:2 D6:4 B5:2 G5:2 D5:4 | E5:8 A5:8 | A5:2 D6:2 F#6:4 E6:2 D6:2 A5:4 | C#6:4 A5:4 F#5:4 C#6:4 | B5:4 D6:4 G6:4 F#6:2 E6:2 | E6:8 A5:4 C#6:4' },
+      { inst: 'brass', gen: 'offbeat', oct: -1, vol: 0.45, pan: 0.3 },
+      { inst: 'bass', gen: 'bass-8', vol: 0.95 },
+    ],
+    drums: ['k...s...k.k.s...', 'k...s...k.k.s.ss'],
+    night: false,
+  },
+  {
+    id: 'awakening', title: '별무리의 눈뜸', bpm: 80, bars: 8,
+    chords: 'Ab:16 Fm:16 Db:16 Eb:16 Ab:16 Cm:16 Db:16 Eb:16',
+    parts: [
+      { inst: 'flute', vol: 1.4, pan: -0.1, seq: 'Eb5:6 Ab5:2 C6:8 | C6:4 Bb5:4 Ab5:8 | F5:4 Ab5:4 Db6:4 C6:4 | Bb5:12 -:4 | Eb5:6 Ab5:2 Eb6:8 | Db6:4 C6:4 G5:8 | F5:4 Ab5:4 Db6:4 F6:4 | Eb6:16' },
+      { inst: 'strings', gen: 'pad', vol: 0.85, pan: 0.2 },
+      { inst: 'bell', gen: 'arp8', vol: 0.4, pan: 0.45 },
+      { inst: 'bass', gen: 'bass-half', vol: 0.7 },
+    ],
+    night: false,
+  },
+  {
+    id: 'league', title: '루미 리그 본전', bpm: 112, bars: 8,
+    chords: 'Bb:16 Gm:16 Eb:16 F:16 Bb:16 Dm:16 Eb:16 F:16',
+    parts: [
+      { inst: 'brass', pan: -0.1, seq: 'F4:4 Bb4:4 D5:6 C5:2 | Bb4:4 D5:4 G5:8 | G5:4 F5:2 Eb5:2 Bb4:8 | C5:12 -:4 | F5:4 D5:4 Bb5:6 A5:2 | A5:4 F5:4 D5:8 | Eb5:4 G5:4 Bb5:4 G5:4 | F5:16' },
+      { inst: 'strings', gen: 'pad', vol: 0.7, pan: 0.25 },
+      { inst: 'pulse', gen: 'arp8', vol: 0.35, pan: 0.45 },
+      { inst: 'bass', gen: 'bass-half', vol: 0.9 },
+    ],
+    drums: ['k.......s.......', 'k.......s...k...'],
+  },
+  {
+    id: 'battle_villain', title: '배틀! 성간단', bpm: 176, bars: 8,
+    chords: 'Cm:16 Cm:16 Ab:16 Bb:16 Cm:16 Fm:16 Ab:16 G:16',
+    parts: [
+      { inst: 'lead2', pan: -0.1, seq: 'C5:2 Eb5:2 G5:2 C6:2 Bb5:2 G5:2 Eb5:4 | F5:2 G5:2 Eb5:2 C5:2 D5:4 Eb5:4 | C6:4 Ab5:2 Eb5:2 C5:4 Eb5:4 | D5:2 F5:2 Bb5:2 D6:2 C6:4 Bb5:4 | G5:2 C6:2 Eb6:4 D6:2 C6:2 G5:4 | F5:2 Ab5:2 C6:4 Bb5:2 Ab5:2 F5:4 | Eb5:2 Ab5:2 C6:2 Eb6:2 D6:4 C6:4 | B5:4 G5:4 D5:4 B5:4' },
+      { inst: 'brass', gen: 'stab', oct: -1, vol: 0.55, pan: 0.3 },
+      { inst: 'pulse', gen: 'arp16', vol: 0.45, pan: 0.45 },
+      { inst: 'sbass', gen: 'bass-gallop', vol: 1.15 },
+    ],
+    drums: ['k.h.s.hkk.h.s.h.', 'k.hks.hkk.hks.hs', 'k.h.s.hkk.h.s.h.', 'kkhks.hkk.ssssss'],
+    night: false,
+  },
+  {
+    id: 'battle_rival', title: '배틀! 소꿉친구', bpm: 172, bars: 8,
+    chords: 'E:16 C#m:16 A:16 B:16 E:16 G#m:16 A:16 B7:16',
+    parts: [
+      { inst: 'lead', pan: -0.1, seq: 'B4:2 E5:2 G#5:2 B5:2 A5:4 G#5:4 | G#5:2 E5:2 C#5:4 E5:4 G#5:4 | A5:2 C#6:2 E6:4 C#6:2 A5:2 E5:4 | F#5:8 B5:8 | B5:2 E6:2 G#6:4 F#6:2 E6:2 B5:4 | D#6:4 B5:4 G#5:4 D#6:4 | C#6:4 E6:4 A6:4 G#6:2 F#6:2 | F#6:8 B5:4 D#6:4' },
+      { inst: 'brass', oct: -1, vol: 0.55, pan: 0.2, seq: 'B4:2 E5:2 G#5:2 B5:2 A5:4 G#5:4 | G#5:2 E5:2 C#5:4 E5:4 G#5:4 | A5:2 C#6:2 E6:4 C#6:2 A5:2 E5:4 | F#5:8 B5:8 | B5:2 E6:2 G#6:4 F#6:2 E6:2 B5:4 | D#6:4 B5:4 G#5:4 D#6:4 | C#6:4 E6:4 A6:4 G#6:2 F#6:2 | F#6:8 B5:4 D#6:4' },
+      { inst: 'pulse', gen: 'arp16', vol: 0.45, pan: 0.45 },
+      { inst: 'sbass', gen: 'bass-gallop', vol: 1.1 },
+    ],
+    drums: ['k.h.s.h.k.k.s.hs', 'k.hks.h.k.k.s.h.', 'k.h.s.h.k.k.s.hs', 'k.hks.h.k.ksssss'],
+    night: false,
+  },
+  {
+    id: 'battle_boss', title: '배틀! 총수 녹스', bpm: 190, bars: 8,
+    chords: 'F#m:16 D:16 E:16 C#:16 F#m:16 D:16 Bm:16 C#7:16',
+    parts: [
+      { inst: 'lead2', pan: -0.1, seq: 'F#5:2 A5:2 C#6:2 F#6:2 E6:4 C#6:4 | D6:4 A5:2 F#5:2 D5:4 F#5:4 | E5:2 G#5:2 B5:4 E6:2 D6:2 B5:4 | C#6:6 B5:2 G#5:8 | A5:2 C#6:2 F#6:4 G#6:2 F#6:2 E6:4 | F#6:4 D6:4 A5:4 F#5:4 | B5:2 D6:2 F#6:4 E6:2 D6:2 B5:4 | E#6:4 C#6:4 G#5:4 E#5:4' },
+      { inst: 'brass', oct: -2, vol: 0.8, pan: 0.2, seq: 'F#5:2 A5:2 C#6:2 F#6:2 E6:4 C#6:4 | D6:4 A5:2 F#5:2 D5:4 F#5:4 | E5:2 G#5:2 B5:4 E6:2 D6:2 B5:4 | C#6:6 B5:2 G#5:8 | A5:2 C#6:2 F#6:4 G#6:2 F#6:2 E6:4 | F#6:4 D6:4 A5:4 F#5:4 | B5:2 D6:2 F#6:4 E6:2 D6:2 B5:4 | E#6:4 C#6:4 G#5:4 E#5:4' },
+      { inst: 'strings', gen: 'pad', vol: 0.8, pan: -0.3 },
+      { inst: 'pulse', gen: 'arp16', vol: 0.5, pan: 0.45 },
+      { inst: 'sbass', gen: 'bass-gallop', vol: 1.25 },
+    ],
+    drums: ['c.hks.hkk.hks.hs', 'k.hks.hkk.hks.hs', 'k.hks.hkk.hks.hs', 'kkhks.hkksssssss'],
+    night: false,
+  },
+  {
+    id: 'ending', title: '별빛 아래에서 (엔딩)', bpm: 92, bars: 16,
+    chords: 'C:16 G:16 Am:16 Em:16 F:16 C:16 Dm:16 G:16 C:16 E7:16 Am:16 C7:16 F:16 G:16 C:16 C:16',
+    parts: [
+      { inst: 'flute', pan: -0.1, seq: 'E5:6 G5:2 C6:8 | B5:4 G5:4 D5:8 | C5:4 E5:4 A5:6 G5:2 | G5:12 -:4 | F5:4 A5:4 C6:6 B5:2 | C6:4 G5:4 E5:8 | D5:4 F5:4 A5:4 C6:4 | B5:12 -:4 | E5:6 G5:2 C6:8 | D6:4 B5:4 G#5:8 | A5:4 C6:4 E6:6 D6:2 | C6:4 Bb5:4 G5:8 | A5:4 C6:4 F6:6 E6:2 | D6:4 B5:4 G5:8 | C6:16 | -:16' },
+      { inst: 'strings', gen: 'pad', vol: 0.75, pan: 0.2 },
+      { inst: 'pluck', gen: 'arp8', vol: 0.4, pan: 0.45 },
+      { inst: 'bass', gen: 'bass-half', vol: 0.8 },
+    ],
+    drums: ['k.......s.......', 'k.....k.s.......'],
+    night: false,
+  },
+  {
+    id: 'homecoming', title: '다녀왔어', bpm: 76, bars: 4, once: true,
+    chords: 'F:16 Dm:16 Bb:16 C:8 F:8',
+    parts: [
+      { inst: 'flute', vol: 1.5, seq: 'C5:4 F5:4 A5:8 | A5:4 G5:4 F5:8 | D5:4 F5:4 Bb5:8 | A5:4 G5:4 F5:8' },
+      { inst: 'strings', gen: 'pad', vol: 0.7, pan: 0.2 },
+      { inst: 'bass', gen: 'bass-half', vol: 0.7 },
+    ],
+    night: false,
+  },
   // ── 짧은 곡 (한 번만) ──
   {
     id: 'jingle_heal', title: '회복 완료', bpm: 120, bars: 2, once: true,

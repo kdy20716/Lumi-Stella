@@ -117,12 +117,13 @@ export interface MailPlayer { id: string; name: string; where: string; look: str
 export const mailbox = {
   node: null as HTMLDivElement | null,
   get open() { return !!this.node; },
-  show(o: { online: boolean; isOwner: boolean; players: MailPlayer[]; invites: { from: string; name: string; where: 'farm' | 'home' }[];
+  show(o: { online: boolean; isOwner: boolean; story?: boolean; players: MailPlayer[]; invites: { from: string; name: string; where: 'farm' | 'home' }[];
     onLetter: () => void; onInvite: (id: string, where: 'farm' | 'home') => void; onAccept: (from: string) => void; onGoHome?: () => void }) {
     this.close();
     const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(640px,94cqw)] pointer-events-auto toast-in');
-    const inv = o.invites.map((i) => `<div class="flex items-center gap-2 bg-[#fff0d0] border-2 border-[#e0a43a] px-2 py-1"><span class="flex-1">💌 <b>${esc(i.name)}</b>님의 ${i.where === 'farm' ? '농장' : '집'} 초대장</span><button data-acc="${i.from}" class="px-btn green text-sm !px-3 !py-1">놀러 가기</button></div>`).join('');
-    const list = !o.online ? '<div class="text-center py-4 text-[#8a5a32]">혼자 연습하기 중에는 친구를 초대할 수 없어요.<br>타이틀에서 <b>구글 로그인</b>으로 접속하면 함께 놀 수 있어요!</div>'
+    const inv = o.story ? "" : o.invites.map((i) => `<div class="flex items-center gap-2 bg-[#fff0d0] border-2 border-[#e0a43a] px-2 py-1"><span class="flex-1">💌 <b>${esc(i.name)}</b>님의 ${i.where === 'farm' ? '농장' : '집'} 초대장</span><button data-acc="${i.from}" class="px-btn green text-sm !px-3 !py-1">놀러 가기</button></div>`).join('');
+    const list = o.story ? '<div class="text-center py-4 text-[#8a5a32]">스토리 모드에서는 친구를 초대할 수 없어요.<br>메시지(Enter 채팅)는 그대로 주고받을 수 있어요. 함께 놀려면 타이틀에서 <b>멀티 플레이</b>로 접속해 주세요!</div>'
+      : !o.online ? '<div class="text-center py-4 text-[#8a5a32]">혼자 연습하기 중에는 친구를 초대할 수 없어요.<br>타이틀에서 <b>구글 로그인</b>으로 접속하면 함께 놀 수 있어요!</div>'
       : !o.isOwner ? '<div class="text-center py-3 text-[#8a5a32]">친구의 우편함이에요. 초대는 내 농장 우편함에서 보낼 수 있어요.<br><button data-c="home" class="px-btn green text-base !py-1 mt-2">🏡 내 농장으로 돌아가기</button></div>'
       : o.players.length === 0 ? '<div class="text-center py-4 text-[#8a5a32]">지금 접속한 친구가 없어요.</div>'
       : o.players.map((p) => `<div class="flex items-center gap-2 bg-[#fff8ec]/80 border-2 border-[#d8b67c] px-2 py-1">

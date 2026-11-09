@@ -17,6 +17,8 @@ export interface StoryHost {
   scene: Phaser.Scene; player: Player; world: World; auth: Authority; manifest: Manifest; zoom: number; mapId: MapId;
   lock(): void; unlock(): void;
   startBattle(update: BattleUpdate, after?: () => void): void;
+  /** 이 맵의 원래 배경음악으로 */
+  playMapMusic?(): void;
 }
 const label = (t: string) => `<b class="text-[#ffe58a]">E</b> ${t}`;
 const MOM = { name: '엄마', sprite: 'mom', color: '#c0705a' };

@@ -13,6 +13,7 @@ import { buildInterior, INTERIOR_IDS } from './interiors.mjs';
 import { buildRegion } from './gen-world.mjs';
 import { ROOMS } from '../art/interior.mjs';
 import { pos } from './region-graph.mjs';
+import { buildLayouts } from './build-layout.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIR = join(HERE, '../../client/public/assets/maps');
@@ -31,6 +32,8 @@ for (const id of INTERIOR_IDS) buildInterior(id).write(join(DIR, `${id}.json`));
 
 const { builders, data } = buildRegion();
 for (const b of builders) b.write(join(DIR, `${b.name}.json`));
+// 텍스트 레이아웃으로 직접 설계한 맵(tools/map/layouts)이 생성 맵을 덮어씀
+await buildLayouts(DIR);
 
 // 맵 목록 · 메타 (이름 / 종류 / 휴대폰 지도 좌표)
 const meta = {

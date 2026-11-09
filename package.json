@@ -22,11 +22,13 @@
     "phaser": "^3.90.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "three": "^0.170.0",
     "tsx": "^4.19.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.8",
     "@types/node": "^22.15.0",
+    "@types/three": "^0.170.0",
     "jpeg-js": "^0.4.4",
     "pngjs": "^7.0.0",
     "tailwindcss": "^4.1.8",

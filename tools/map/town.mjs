@@ -98,5 +98,14 @@ export function buildTown() {
   m.warp(0, 19, 1, 4, 'farm', 'from_town');
   m.warp(W - 1, 19, 1, 5, 'route1', 'from_town');
   m.spawn('from_route1', W - 3, 21); m.spawn('wp_gate_e', W - 1, 21); m.spawn('wp_lab', hallDoor + 2, 14);
+
+  // 8. 31번 도로(호숫가 숲길) 출구: 남쪽 주택가 끝 → 동쪽 가장자리. 다른 배치가 바뀌지 않게 맨 마지막에 덧붙임
+  for (let x = 51; x < W; x++) for (const y of [37, 38]) {
+    m.setT(x, y, S); m.blocked[y][x] = false;
+    m.objects = m.objects.filter((o) => !(o.properties.find((p) => p.name === 'cellX')?.value === x && o.properties.find((p) => p.name === 'cellY')?.value === y));
+  }
+  m.warp(W - 1, 36, 1, 4, 'route31', 'from_town');
+  m.spawn('from_route31', W - 3, 37);
+  m.place('sign', W - 5, 36, { force: true, props: { interact: 'sign', text: '→ 31번 도로 · 호숫가 숲길\n새벽호수로 가는 숲길. 가시덩굴이 길을 막고 있다.' } });
   return m;
 }

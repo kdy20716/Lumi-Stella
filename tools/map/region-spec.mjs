@@ -60,6 +60,12 @@ export const ROUTES = [
   [29, 'pinecone', 'canyon', '솔바람 계곡', 'forest'],
 ];
 
+/** 확장 도로 (2단계 제안서 승인분). 기존 맵 · 이름이 바뀌지 않게 따로 두고, 생성도 맨 마지막에 함
+ *  [번호, A, B, 이름, biome, { need: 비전 기술 }] — need 가 있으면 A 쪽 입구를 그 기술로만 지나갈 수 있음 */
+export const ROUTES_V2 = [
+  [31, 'town', 'dawn_lake', '호숫가 숲길', 'forest', { need: 'cut' }],
+];
+
 /** 던전 · 랜드마크 · 특별 구역 · 시설
  *  attach: [붙는 맵, 'mouth'(동굴 입구) | 'side'(옆길) | 'dock'(배) | 'door'(건물) | 'stairs' | 'portal'] */
 export const PLACES = [
@@ -115,3 +121,15 @@ export const GYMS = {
   frost: { type: '노말', name: '설아', badge: 'badge_normal', badgeName: '눈송이 배지', species: ['kongkong', 'kongkong', 'ikkigom'] },
   summit: { type: '혼합', name: '천문', badge: 'badge_star', badgeName: '별자리 배지', species: ['astra', 'busit', 'mallang', 'ikkigom'] },
 };
+
+/** 비전 기술로만 들어가는 깊은 동굴 (확장분: 기존 맵이 바뀌지 않게 맨 마지막에 생성)
+ *  parent 동굴 안 빈 바닥에 내려가는 구멍을 내고, 그 둘레를 장애물로 막음 (smash = 금 간 바위, climb = 깎아지른 바위벽) */
+export const DEEP_CAVES = [
+  { id: 'sea_cave_deep', name: '바다 동굴 안쪽', parent: 'sea_cave', need: 'smash', theme: 'sea', tier: 4, x: 108, y: 226, desc: '파도가 깎아 놓은 수정 굴. 별가루 결정이 반짝인다.' },
+  { id: 'underground_deep', name: '땅속 통로 깊은 곳', parent: 'underground', need: 'smash', theme: 'mine', tier: 6, x: 114, y: 100, desc: '광부들도 들어가 보지 못한 옛 광맥.' },
+  { id: 'wayward_deep', name: '헤매는 동굴 바닥', parent: 'wayward_2f', need: 'climb', theme: 'dark', tier: 6, x: 66, y: 118, desc: '절벽 아래 숨은 어둠의 굴. 낯선 루미가 산다.' },
+  { id: 'iron_deep', name: '무쇠섬 최심부', parent: 'iron_2f', need: 'smash', theme: 'mine', tier: 8, x: 344, y: 212, desc: '쇳덩이 바위 속 깊은 곳의 보물 광맥.' },
+  { id: 'coronet_deep', name: '별마루산 수정 동굴', parent: 'coronet_2f', need: 'climb', theme: 'crystal', tier: 8, x: 186, y: 74, desc: '바위벽 너머, 별빛이 굳어 수정이 된 동굴.' },
+];
+/** 비전 기술로 여는 숨은 지역 (그 지역 맵 안, 들어온 입구에서 몇 칸 안쪽을 막음) */
+export const PLACE_GATES = { eterna_forest: 'cut', marsh: 'cut', acuity_lake: 'climb', valor_lake: 'cut' };

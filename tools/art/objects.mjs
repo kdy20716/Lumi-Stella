@@ -500,3 +500,61 @@ export function buildEmotes() {
   }
   return img;
 }
+
+// ── 비전 기술 장애물 ─────────────────────────────────────
+/** 가시덩굴 (풀베기): 짙은 덩굴이 얽힌 덤불 + 보라 가시 */
+export function buildVine() {
+  const t = new Img(16, 20), L = P.leaf;
+  for (let y = 0; y < 20; y++) for (let x = 0; x < 16; x++) {
+    const dx = (x + 0.5 - 8) / 7.5, dy = (y + 0.5 - 12) / 8.5;
+    const r = Math.sqrt(dx * dx + dy * dy) + (vnoise(x / 2.5, y / 2.5, 71, 3) - 0.5) * 0.45;
+    if (r > 1) continue;
+    const light = -dx * 0.4 - dy * 0.8;
+    t.set(x, y, light > 0.4 ? L.base : light > -0.1 ? L.d1 : L.d2);
+  }
+  // 얽힌 줄기
+  for (const [x0, y0, x1, y1] of [[2, 16, 13, 6], [3, 7, 14, 15], [6, 18, 9, 3]]) t.line(x0, y0, x1, y1, '#4a3a1f');
+  // 가시 · 열매
+  for (const [x, y] of [[4, 9], [11, 8], [7, 13], [12, 14], [3, 14], [9, 5]]) { t.set(x, y, '#c8a0e0'); t.set(x + 1, y - 1, '#7a3a8a'); }
+  t.outline(O, 0.6);
+  return t;
+}
+/** 금 간 바위 (바위 부수기): 큰 바위에 하얗게 갈라진 금 */
+export function buildCrackRock() {
+  const s = P.stone, t = new Img(16, 18);
+  for (let y = 0; y < 18; y++) for (let x = 0; x < 16; x++) {
+    const dx = (x + 0.5 - 8) / 7.5, dy = (y + 0.5 - 10.5) / 7.5;
+    const r = Math.sqrt(dx * dx + dy * dy) + (vnoise(x / 3, y / 3, 33, 3) - 0.5) * 0.2;
+    if (r > 1) continue;
+    const light = -dx * 0.5 - dy * 0.9;
+    t.set(x, y, light > 0.5 ? s.l1 : light > 0.05 ? s.base : light > -0.5 ? s.d1 : s.d2);
+  }
+  // 번개 모양 금
+  for (const [x0, y0, x1, y1] of [[8, 4, 6, 9], [6, 9, 9, 12], [9, 12, 7, 16], [6, 9, 3, 10], [9, 12, 12, 11]]) { t.line(x0, y0, x1, y1, s.d2); t.line(x0 + 1, y0, x1 + 1, y1, '#f4ecd8'); }
+  t.outline(O, 0.6);
+  return t;
+}
+/** 깎아지른 바위벽 (암석 오르기): 층층이 쌓인 바위 + 손잡이 홈 + 이끼 */
+export function buildClimbWall() {
+  const s = P.stone, t = new Img(16, 24);
+  for (let y = 0; y < 24; y++) for (let x = 0; x < 16; x++) {
+    const edge = x === 0 || x === 15 ? 0.6 : 1;
+    const band = Math.floor((y + (x % 3)) / 5) % 2;
+    let c = band ? s.base : s.d1;
+    if (hash2(x, y, 9) < 0.08) c = s.d2;
+    if (x < 3) c = mix(c, s.l1, 0.4);
+    if (edge < 1 && y % 4 === 0) continue;
+    t.set(x, y, c);
+  }
+  for (const [x, y] of [[4, 4], [10, 7], [5, 11], [11, 15], [6, 19]]) { t.rect(x, y, 3, 1, s.d2); t.rect(x, y + 1, 3, 1, s.l2); }
+  for (const [x, y] of [[2, 2], [12, 10], [3, 17]]) { t.set(x, y, '#5a8a3a'); t.set(x + 1, y, '#7aab4a'); }
+  t.outline(O, 0.6);
+  return t;
+}
+/** 동굴 바닥 구멍 + 사다리 (깊은 동굴로 내려감) */
+export function buildCaveHole() {
+  const t = new Img(16, 16);
+  t.ellipse(8, 9, 7, 5, '#1a1418'); t.ellipse(8, 9, 5, 3.5, '#0a0809');
+  for (let y = 4; y < 14; y++) { t.set(5, y, '#8a5a32'); t.set(10, y, '#8a5a32'); if (y % 3 === 0) t.hline(5, y, 6, '#b07a42'); }
+  return t;
+}

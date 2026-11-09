@@ -44,7 +44,7 @@ const loading = {
 // ── 타이틀 ──────────────────────────────────────────────
 export interface TitleHandle { close: () => void; error: (m: string) => void; busy: (m: string) => void; setUser: (name: string | null) => void }
 const title = {
-  show(o: { onGoogle: (mode: 'public' | 'friends') => void; onLogout: () => void }): TitleHandle & { url: () => string } {
+  show(o: { onGoogle: (mode: 'public' | 'story') => void; onLogout: () => void }): TitleHandle & { url: () => string } {
     const n = el('div', 'fixed inset-0 z-40 flex flex-col items-center justify-center pointer-events-auto vignette');
     // 서버 주소는 화면에 보이지 않음: VITE_SERVER_URL → ?server= → 같은 PC 2567 (net/serverUrl.ts)
     const defUrl = serverUrl();
@@ -57,10 +57,10 @@ const title = {
       </div>
       <div class="px-panel flex flex-col items-center gap-3 w-[min(380px,92cqw)]">
         <div data-c="user" class="text-sm text-[#8a5a32] min-h-5">로그인 상태 확인 중...</div>
-        <button data-a="google" class="px-btn green text-xl w-full flex items-center justify-center gap-2"><span class="inline-flex w-7 h-7 rounded-full bg-white text-[#4285f4] font-bold items-center justify-center text-lg">G</span><span data-c="gtext">구글 계정으로 시작</span></button>
-        <div class="-mt-2 text-[11px] text-[#8a5a32]">접속한 모든 사람과 같은 서버에서 함께해요</div>
-        <button data-a="solo" class="px-btn text-lg w-full">혼자하기 <span class="text-sm opacity-85">(친구들만)</span></button>
-        <div class="-mt-2 text-[11px] text-[#8a5a32] text-center">나만의 세계 — 우편함으로 초대한 친구만 보여요</div>
+        <button data-a="google" class="px-btn green text-xl w-full flex items-center justify-center gap-2"><span class="inline-flex w-7 h-7 rounded-full bg-white text-[#4285f4] font-bold items-center justify-center text-lg">G</span><span data-c="gtext">멀티 플레이</span></button>
+        <div class="-mt-2 text-[11px] text-[#8a5a32]">접속한 모든 사람과 같은 서버에서 함께해요 · 자유 모험</div>
+        <button data-a="solo" class="px-btn text-xl w-full">스토리 모드</button>
+        <div class="-mt-2 text-[11px] text-[#8a5a32] text-center">혼자서 본편 이야기를 엔딩까지 — 루미 · 배지 · 아이템은 멀티와 이어져요<br>친구와 메시지는 되지만 초대는 할 수 없어요</div>
         <div data-e class="text-[#c8453c] text-sm min-h-5 text-center"></div>
       </div>
       <div class="absolute bottom-4 text-xs text-[#fff8ec] opacity-80 px-outline">로그인하면 모험이 자동 저장돼요 · WASD 이동 · E 상호작용 · Tab 감정표현 · H 도움말</div>`;
@@ -70,7 +70,7 @@ const title = {
     const close = () => { n.style.transition = 'opacity .4s'; n.style.opacity = '0'; setTimeout(() => n.remove(), 400); };
     const err = q<HTMLDivElement>('[data-e]');
     q<HTMLButtonElement>('[data-a=google]').onclick = () => { sfx.play('confirm'); err.textContent = ''; o.onGoogle('public'); };
-    q<HTMLButtonElement>('[data-a=solo]').onclick = () => { sfx.play('confirm'); err.textContent = ''; o.onGoogle('friends'); };
+    q<HTMLButtonElement>('[data-a=solo]').onclick = () => { sfx.play('confirm'); err.textContent = ''; o.onGoogle('story'); };
     q<HTMLButtonElement>('[data-a=logout]').onclick = () => o.onLogout();
     return {
       close, url,
@@ -78,7 +78,7 @@ const title = {
       busy: (m) => { err.style.color = '#2f7a3a'; err.textContent = m; },
       setUser: (name) => {
         q('[data-c=user]').textContent = name ? `${name} 님으로 로그인됨 · 아래 버튼을 눌러 시작해요` : '로그인하면 진행상황이 자동 저장돼요';
-        q('[data-c=gtext]').textContent = '구글 계정으로 시작';
+        q('[data-c=gtext]').textContent = '멀티 플레이';
         q('[data-a=logout]').classList.toggle('hidden', !name);
       },
     };

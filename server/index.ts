@@ -75,8 +75,10 @@ async function join(ws: Conn, m: Extract<C2S, { t: 'join' }>): Promise<Client | 
   recent.delete(uid);
   const save = fresh && Date.now() - fresh.at < RECENT_MS ? fresh.data : await storage.load(uid).catch(() => null);
   if (!ws.open) return null;
-  const worldId = m.mode === 'friends' ? uid : '';
+  // 스토리 모드 · 친구들만: 나만의 세계 (스토리 모드는 초대도 막힘)
+  const worldId = m.mode === 'friends' || m.mode === 'story' ? uid : '';
   const p = sim.addPlayer(uid, save?.name || gName, save?.look ?? '', save, worldId);
+  p.mode = m.mode === 'story' ? 'story' : 'multi';
   const client: Client = { conn: ws, id: uid, lastMove: Date.now(), anim: 'idle', admin, lastReport: 0 };
   hub.clients.set(uid, client);
   hub.send(ws, { t: 'welcome', id: uid, you: p, snapshot: sim.snapshot(uid), roster: hub.roster(), storage: storage.kind, admin });

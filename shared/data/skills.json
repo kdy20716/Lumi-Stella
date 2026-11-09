@@ -1,0 +1,6 @@
+{
+  "_about": "비전 기술 (필드 기술). badge 를 가지고 있으면 파티의 루미가 대신 써 줌. obstacle 은 맵 위 장애물 오브젝트 종류. 치운 장애물은 그 맵을 떠나면 다시 생김.",
+  "cut": { "name": "풀베기", "badge": "badge_wind", "obstacle": "vine", "look": "가시덩굴이 길을 막고 있다.", "use": "{lumi}이(가) 풀베기를 썼다! 가시덩굴이 싹둑 잘려 나갔다.", "need": "풀베기가 있으면 지나갈 수 있을 것 같다. (바람 배지 필요)" },
+  "smash": { "name": "바위 부수기", "badge": "badge_leaf", "obstacle": "crack_rock", "look": "금이 간 커다란 바위다.", "use": "{lumi}이(가) 바위 부수기를 썼다! 바위가 와르르 부서졌다.", "need": "바위 부수기가 있으면 부술 수 있을 것 같다. (새싹 배지 필요)", "drops": [["stone", 70], ["copper_ore", 30], ["iron_ore", 18], ["star_shard", 6]] },
+  "climb": { "name": "암석 오르기", "badge": "badge_earth", "obstacle": "climb_wall", "look": "깎아지른 바위벽이다. 손잡이 같은 홈이 나 있다.", "use": "{lumi}이(가) 암석 오르기를 썼다! 바위벽을 단숨에 넘어갔다.", "need": "암석 오르기가 있으면 넘어갈 수 있을 것 같다. (바위 배지 필요)" }
+}

@@ -224,7 +224,7 @@ export class MapBuilder {
   }
 
   build() {
-    this.tidyProps();
+    if (!this.noTidy) this.tidyProps();   // 도시(전부 포장된 맵)는 가로등을 옮기지 않음
     const { W, H, terrain, blocked, bridge } = this;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (terrain[y][x] === Wt && !bridge[y * W + x]) blocked[y][x] = true;
     const collision = blocked.flat().map((b) => (b ? gid(ROW.MISC, MISC.COLLIDE) : 0));

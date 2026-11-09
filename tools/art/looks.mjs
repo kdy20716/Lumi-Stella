@@ -182,3 +182,11 @@ export const LOOKS = {
   elite4: { skin: SKINS.light, hair: tone('#1f3a1e', '#2f5a2c', '#4a7a46'), hairStyle: 'bun', glasses: true, shirt: tone('#2f5a3a', '#3f7a4f', '#6aa87a'), pants: tone('#2a3a2a', '#3d523d', '#5a745a'), shoes: shoesBrown, outfit: 'dress', sleeves: 'long', accent: tone('#c9a24a', '#f0d27a', '#fff0b0') },
   champion: { skin: SKINS.pale, hair: tone('#1f1a2e', '#2f2848', '#4a4070'), hairStyle: 'long', shirt: tone('#1e1830', '#2e2448', '#4a3e68'), pants: tone('#1e1830', '#2e2448', '#4a3e68'), shoes: shoesDark, outfit: 'dress', sleeves: 'long', accent: tone('#c99a2a', '#f0c84a', '#ffe58a') },
 };
+
+// 마을마다 그 마을에만 사는 주민 (tools/art/residents.mjs)
+import { RESIDENT_LOOKS } from './residents.mjs';
+Object.assign(LOOKS, RESIDENT_LOOKS);
+
+// 마을마다 다른 루미 센터 간호사 (tools/art/staff.mjs)
+import { STAFF_LOOKS, VILLAIN_LOOKS } from './staff.mjs';
+Object.assign(LOOKS, STAFF_LOOKS, VILLAIN_LOOKS);

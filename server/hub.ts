@@ -32,7 +32,7 @@ export class Hub {
     const m: S2C = { t: 'sim', event };
     switch (event.type) {
       case 'player': case 'party': case 'story': return this.sendTo(event.id, m);
-      case 'help': case 'gold': return this.sendTo(event.playerId, m);
+      case 'help': case 'gold': case 'cleared': return this.sendTo(event.playerId, m);
       case 'room': this.rosterDirty = true; return this.sendTo(event.playerId, m);
       case 'invite': return this.sendTo(event.to, m);
       case 'toast': if (event.playerId) return this.sendTo(event.playerId, m); if (event.room) return this.toRoom(event.room, m); return this.broadcast(m);

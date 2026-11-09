@@ -24,7 +24,7 @@ export interface WorldObject {
 
 const TALL = new Set(['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm', 'dead_tree', 'cave_mouth', 'ruin_pillar', 'portal', 'house', 'board', 'stall', 'stall_b']);
 // 풍차 날개 회전 축 위치는 맵 스폰 'windmill_hub'
-const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal']);
+const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal', 'cave_hole']);
 // 그림자 크기 (가로 배율, 세로 배율)
 const SHADOW: Record<string, [number, number, number]> = {
   oak: [1.25, 1.3, -1], oak_apple: [1.25, 1.3, -1], oak_autumn: [1.25, 1.3, -1], pine: [1, 1.1, -1], pine_snow: [1, 1.1, -1], palm: [0.8, 0.8, -1], dead_tree: [0.9, 0.9, -1], cactus: [0.5, 0.5, 0],
@@ -140,6 +140,7 @@ export class World {
       const cellX = Number(prop(o, 'cellX', 0)), cellY = Number(prop(o, 'cellY', 0)), cellW = Number(prop(o, 'cellW', 1)), cellH = Number(prop(o, 'cellH', 1));
       const building = m.buildings?.[type];
       let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
+      let blockoutFacility = false;
       const sheet = m.spritesheets[type], img = m.images[type];
       if (sheet) {
         const sp = s.add.sprite(o.x, o.y, type, 0).setOrigin(0.5, sheet.originY);
@@ -152,8 +153,29 @@ export class World {
           sp.setFrame(l && r ? 3 : r ? 1 : l ? 2 : 0);
         }
         sprite = sp;
-      } else if (img) sprite = s.add.image(o.x, o.y, type).setOrigin(0.5, img.originY);
-      else continue;
+      } else if (img && String(prop(o, 'blockout', '')) !== '1') sprite = s.add.image(o.x, o.y, type).setOrigin(0.5, img.originY);
+      else if (type === 'vine' && m.images.bush) sprite = s.add.image(o.x, o.y, 'bush').setOrigin(0.5, m.images.bush.originY).setTint(0x6a8a4a);   // 가시덩굴(풀베기 장애물): 그림 생기기 전까지 짙은 덤불
+      else if (type === 'vend' || type === 'tlight') {
+        // 도시 소품(그림 전): 자판기 = 빨간 상자, 신호등 = 기둥
+        const vend = type === 'vend';
+        s.add.rectangle(o.x, o.y, vend ? 12 : 3, vend ? 22 : 34, vend ? 0xd8463a : 0x4a4d55).setOrigin(0.5, 1).setDepth(o.y);
+        if (!vend) s.add.rectangle(o.x, o.y - 34, 7, 12, 0x2b2d33).setOrigin(0.5, 0).setDepth(o.y);
+        continue;
+      }
+      else if (String(prop(o, 'blockout', '')) === '1') {
+        // 그림이 아직 없는 건물(고층 빌딩 · 백화점 · 아파트): 2D 에서는 층수만큼 높은 단색 상자로 자리만 표시
+        const floors = Number(prop(o, 'floors', 3)), hpx = cellH * 16 + floors * 12;
+        const col = Phaser.Display.Color.HexStringToColor(String(prop(o, 'color', '#c8c8c8'))).color;
+        const r = s.add.rectangle(cellX * 16 + (cellW * 16) / 2, (cellY + 1) * 16, cellW * 16, hpx, col).setOrigin(0.5, 1).setStrokeStyle(1, 0x2a2a33).setDepth((cellY + 1) * 16);
+        const label = String(prop(o, 'label', ''));
+        const accent = String(prop(o, 'accent', ''));
+        if (accent) s.add.rectangle(r.x, (cellY + 1) * 16 - 14, cellW * 16, 4, Phaser.Display.Color.HexStringToColor(accent).color).setOrigin(0.5, 1).setDepth((cellY + 1) * 16 + 0.5);   // 도시형 시설 색 띠
+        if (label) s.add.text(r.x, (cellY + 1) * 16 - 10, label, { fontFamily: 'Galmuri9, sans-serif', fontSize: '8px', color: '#fff6d8', backgroundColor: accent ? `${accent}dd` : '#14182099' }).setOrigin(0.5, 1).setDepth((cellY + 1) * 16 + 1).setResolution(2);
+        // 들어갈 수 있는 도시형 시설(센터 · 마트 · 체육관)은 문 · 대화가 되도록 보이지 않는 자리표시를 두고 아래로 계속
+        if (!prop(o, 'interact', '') && !prop(o, 'interior', '')) continue;
+        sprite = s.add.image(o.x, o.y, '__DEFAULT').setVisible(false);
+        blockoutFacility = true;
+      } else continue;
       // 풀숲은 칸 아래쪽 기준 깊이 → 그 칸에 선 캐릭터의 다리를 덮음
       sprite.setDepth(o.y - (type === 'tuft' ? 6 : type === 'tallgrass' ? 0.5 : 0));
       if (type === 'tallgrass') { this.grassCells.add(`${cellX},${cellY}`); this.tallGrass.push(sprite as Phaser.GameObjects.Sprite); }
@@ -161,7 +183,7 @@ export class World {
       const sh = SHADOW[type];
       let shadow: Phaser.GameObjects.Image | undefined;
       if (sh) shadow = s.add.image(o.x, o.y + sh[2], 'shadow').setScale(sh[0], sh[1]).setDepth(DEPTH.cursor - 1).setAlpha(type === 'house' ? 0.6 : 0.9);
-      else if (building) shadow = s.add.image(o.x, o.y - 2, 'shadow').setScale(cellW * 0.55, 1.5).setDepth(DEPTH.cursor - 1).setAlpha(0.6);
+      else if (building && !blockoutFacility) shadow = s.add.image(o.x, o.y - 2, 'shadow').setScale(cellW * 0.55, 1.5).setDepth(DEPTH.cursor - 1).setAlpha(0.6);
 
       const wo: WorldObject = {
         id: o.id, type, cellX, cellY, cellW, cellH, sprite, shadow, tall: TALL.has(type) || !!building, blocks: !NON_BLOCKING.has(type),

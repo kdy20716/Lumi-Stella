@@ -1,0 +1,842 @@
+{
+  "_about": "본편 스토리 사건. 장소(map)에 들어가면, 조건(needs: 깃발 · 이긴 트레이너 · 배지)이 맞을 때 한 번만 일어남. scene → (battle) → after 순서. gate 가 있으면 이 사건 전까지 그 곳으로 들어갈 수 없음. 대사 속 {rival} 은 소꿉친구 이름, {me} 는 주인공 이름.",
+  "cast": {
+    "prof": {
+      "name": "한별 박사",
+      "title": "루미 연구가",
+      "sprite": "professor",
+      "color": "#4a6a9a"
+    },
+    "mom": {
+      "name": "엄마",
+      "sprite": "mom",
+      "color": "#c0705a"
+    },
+    "boss": {
+      "name": "녹스",
+      "title": "성간단 총수",
+      "sprite": "villain_boss",
+      "color": "#3d3852"
+    },
+    "c1": {
+      "name": "솔라리스",
+      "title": "성간단 제1간부",
+      "sprite": "villain_c1",
+      "color": "#c0442a"
+    },
+    "c2": {
+      "name": "루나틱",
+      "title": "성간단 제2간부",
+      "sprite": "villain_c2",
+      "color": "#4a3a6a"
+    },
+    "c3": {
+      "name": "스텔리온",
+      "title": "성간단 제3간부",
+      "sprite": "villain_c3",
+      "color": "#5a6270"
+    },
+    "c4": {
+      "name": "네뷸라",
+      "title": "성간단 제4간부",
+      "sprite": "villain_c4",
+      "color": "#8a5aa8"
+    },
+    "sci1": {
+      "name": "닥터 볼트",
+      "title": "성간단 병기 개발 수석",
+      "sprite": "villain_sci1",
+      "color": "#3a6a8a"
+    },
+    "grunt_m": {
+      "name": "조무래기 카이",
+      "title": "성간단 단원",
+      "sprite": "grunt_m",
+      "color": "#3d3852"
+    },
+    "grunt_f": {
+      "name": "조무래기 미아",
+      "title": "성간단 단원",
+      "sprite": "grunt_f",
+      "color": "#3d3852"
+    },
+    "elite_m": {
+      "name": "특공대원 크로우",
+      "title": "성간단 특공대",
+      "sprite": "grunt_elite_m",
+      "color": "#22202a"
+    },
+    "elite_f": {
+      "name": "특공대원 바이퍼",
+      "title": "성간단 특공대",
+      "sprite": "grunt_elite_f",
+      "color": "#22202a"
+    },
+    "sena": {
+      "name": "세나",
+      "title": "바람골 관장",
+      "sprite": "leader",
+      "color": "#3f8a5f"
+    },
+    "saetbyeol": {
+      "name": "샛별",
+      "title": "빛누리 시티 관장",
+      "sprite": "leader_lumina",
+      "color": "#c99a2a"
+    },
+    "cheonmun": {
+      "name": "천문",
+      "title": "별마루 마을 관장",
+      "sprite": "leader_summit",
+      "color": "#4a6a9a"
+    },
+    "miner": {
+      "name": "광부 반장",
+      "title": "쇳불 광산",
+      "sprite": "miner",
+      "color": "#8a5a3a"
+    },
+    "villager": {
+      "name": "마을 사람",
+      "sprite": "villager",
+      "color": "#7a8a5a"
+    },
+    "champion": {
+      "name": "하람",
+      "title": "루미 마스터",
+      "sprite": "champion",
+      "color": "#2e2448"
+    }
+  },
+  "chapters": [
+    {
+      "n": 1,
+      "title": "1장 · 바람이 부는 쪽으로"
+    },
+    {
+      "n": 2,
+      "title": "2장 · 항구의 그림자"
+    },
+    {
+      "n": 3,
+      "title": "3장 · 붉은 숲의 경고"
+    },
+    {
+      "n": 4,
+      "title": "4장 · 쇳불 아래의 어둠"
+    },
+    {
+      "n": 5,
+      "title": "5장 · 노을의 약속"
+    },
+    {
+      "n": 6,
+      "title": "6장 · 빛누리 점거 사건"
+    },
+    {
+      "n": 7,
+      "title": "7장 · 별마루산의 밤"
+    },
+    {
+      "n": 8,
+      "title": "8장 · 별을 향한 길"
+    },
+    {
+      "n": 9,
+      "title": "엔딩 · 별빛 아래에서"
+    }
+  ],
+  "events": [
+    {
+      "id": "ch1_call",
+      "chapter": 1,
+      "map": "route1",
+      "needs": [],
+      "scene": [
+        [
+          "prof",
+          "여보세요? {me}, 들리니? 한별이란다.",
+          "루미 도감은 잘 챙겼지? 길에서 만나는 루미를 많이 만나 보렴. 만날수록 도감이 채워진단다.",
+          "그리고 바람골 마을 도장에 가 보거라. 루미 리그에 도전하려면 배지 여덟 개가 필요하거든."
+        ],
+        [
+          "prof",
+          "아, 요즘 이상한 소문이 있어. 밤하늘 별빛이 조금씩 흐려진다는구나… 별일 아니면 좋겠지만."
+        ]
+      ],
+      "give": {
+        "lumi_ball": 5
+      },
+      "bgm": ""
+    },
+    {
+      "id": "ch1_windvale",
+      "chapter": 1,
+      "map": "windvale",
+      "needs": [
+        "ch1_call"
+      ],
+      "scene": [
+        [
+          "villager",
+          "도와주세요! 이상한 옷을 입은 사람이 우리 집 루미를 데려가려고 해요!"
+        ],
+        [
+          "grunt_m",
+          "시끄러워! 별가루를 잘 모으는 루미는 성간단이 쓰는 게 맞다고!",
+          "뭐야, 꼬마 트레이너? 방해하면 혼쭐을 내 주지!"
+        ]
+      ],
+      "battle": {
+        "cast": "grunt_m",
+        "team": [
+          [
+            "kongkong",
+            7
+          ],
+          [
+            "poreureu",
+            8
+          ]
+        ],
+        "reward": 240
+      },
+      "after": [
+        [
+          "grunt_m",
+          "칫… 이번엔 봐준다! 성간단을 우습게 보지 마라!"
+        ],
+        [
+          "villager",
+          "고마워요! 관장님 세나 씨도 요즘 저 사람들 때문에 걱정이 많대요."
+        ]
+      ]
+    },
+    {
+      "id": "ch2_rival",
+      "chapter": 2,
+      "map": "route2",
+      "needs": [
+        "badge_wind"
+      ],
+      "scene": [
+        [
+          "rival",
+          "{me}! 벌써 배지를 받았다며? 나도 방금 받았어!",
+          "그럼 누가 더 강해졌는지 확인해 봐야지. 승부다!"
+        ]
+      ],
+      "battle": {
+        "cast": "rival",
+        "rival": true,
+        "team": [
+          [
+            "@starter",
+            14
+          ],
+          [
+            "poreureu",
+            12
+          ],
+          [
+            "kongkong",
+            12
+          ]
+        ],
+        "reward": 600
+      },
+      "after": [
+        [
+          "rival",
+          "이번엔 졌지만… 다음엔 진짜 안 져!",
+          "참, 물결항에 성간단이라는 녀석들이 수상한 상자를 싣고 있대. 조심해!"
+        ]
+      ]
+    },
+    {
+      "id": "ch2_harbor",
+      "chapter": 2,
+      "map": "harbor",
+      "needs": [
+        "ch2_rival"
+      ],
+      "gate": {
+        "map": "gym_harbor",
+        "msg": "도장 앞을 성간단 단원이 막고 있다. 부두 쪽이 소란스럽다…"
+      },
+      "scene": [
+        [
+          "grunt_f",
+          "이 상자엔 '별빛 결정'이 가득해. 배에 다 실으면 우리 성간단의 승리라고!",
+          "어머, 구경꾼? 그냥 가는 게 신상에 좋을걸."
+        ]
+      ],
+      "battle": {
+        "cast": "grunt_f",
+        "team": [
+          [
+            "pongpong",
+            14
+          ],
+          [
+            "mallang",
+            15
+          ]
+        ],
+        "reward": 420
+      },
+      "after": [
+        [
+          "c1",
+          "하하! 꼬마한테 지다니, 한심하군.",
+          "나는 성간단 제1간부 솔라리스. 별빛은 곧 우리 것이 된다. 그때까지 얌전히 배지나 모으고 있어라!"
+        ],
+        [
+          "grunt_f",
+          "솔라리스 님, 기다려요~!"
+        ]
+      ]
+    },
+    {
+      "id": "ch3_maple",
+      "chapter": 3,
+      "map": "maple",
+      "needs": [
+        "badge_water"
+      ],
+      "scene": [
+        [
+          "prof",
+          "{me}, 단풍골에 도착했구나. 마침 잘 됐다.",
+          "옛날이야기 하나 해 주마. 아주 먼 옛날, 하늘에서 '별빛의 씨앗'이 떨어져 첫 루미가 태어났다고 하지.",
+          "그 별빛을 지키는 것이 별마루산 꼭대기의 '별무리'라는 전설의 루미란다.",
+          "그런데 성간단이 별빛 결정을 모으고 있다니… 혹시 별무리를 노리는 건 아닐지 걱정이구나."
+        ]
+      ],
+      "bgm": "mystic"
+    },
+    {
+      "id": "ch3_route4",
+      "chapter": 3,
+      "map": "route4",
+      "needs": [
+        "badge_leaf"
+      ],
+      "scene": [
+        [
+          "c2",
+          "흐음, 네가 솔라리스를 곤란하게 했다는 꼬마군.",
+          "나는 성간단 제2간부 루나틱. 정보는 모두 내 손안에 있지. 네 루미의 약점까지도."
+        ]
+      ],
+      "battle": {
+        "cast": "c2",
+        "team": [
+          [
+            "chalang",
+            21
+          ],
+          [
+            "busit",
+            22
+          ],
+          [
+            "jagal",
+            23
+          ]
+        ],
+        "reward": 1200
+      },
+      "after": [
+        [
+          "c2",
+          "…계산이 틀렸군. 좋아, 기록해 두지.",
+          "쇳불 도시 광산 깊은 곳을 조심해라. 거긴 이미 우리 차지니까."
+        ]
+      ]
+    },
+    {
+      "id": "ch4_forge",
+      "chapter": 4,
+      "map": "forge",
+      "needs": [
+        "ch3_route4"
+      ],
+      "gate": {
+        "map": "gym_forge",
+        "msg": "도장 문에 쪽지가 붙어 있다. '관장 무쇠는 광산 사고 수습 중'"
+      },
+      "scene": [
+        [
+          "miner",
+          "큰일이야! 성간단이 땅속 통로를 막고 별빛 결정을 캐 가고 있어.",
+          "관장 무쇠 씨도 광부들을 구하느라 도장을 비웠다네. 광산 마당의 굴로 들어가 주겠나?"
+        ]
+      ],
+      "bgm": "crisis"
+    },
+    {
+      "id": "ch4_underground",
+      "chapter": 4,
+      "map": "underground",
+      "needs": [
+        "ch4_forge"
+      ],
+      "scene": [
+        [
+          "sci1",
+          "이 굴착기만 있으면 땅속 별빛을 몽땅 뽑아낼 수 있지! 연구의 방해는 용납 못 해!"
+        ]
+      ],
+      "battle": {
+        "cast": "sci1",
+        "team": [
+          [
+            "jagal",
+            26
+          ],
+          [
+            "banjjak",
+            26
+          ],
+          [
+            "ikkigom",
+            27
+          ]
+        ],
+        "reward": 1500
+      },
+      "after": [
+        [
+          "c3",
+          "볼트, 철수한다. 필요한 만큼은 모았다.",
+          "꼬마, 너의 힘은 인정하지. 나는 제3간부 스텔리온. 다음엔 정면으로 상대해 주마."
+        ],
+        [
+          "miner",
+          "덕분에 살았어! 무쇠 씨도 이제 도장으로 돌아갔다네."
+        ]
+      ],
+      "give": {
+        "super_ball": 5
+      }
+    },
+    {
+      "id": "ch5_ember",
+      "chapter": 5,
+      "map": "ember",
+      "needs": [
+        "badge_earth"
+      ],
+      "scene": [
+        [
+          "rival",
+          "{me}! 온천 마을까지 따라올 줄 알았어.",
+          "나… 성간단 간부한테 졌어. 그래서 더 강해지기로 했어. 확인해 줄래?"
+        ]
+      ],
+      "battle": {
+        "cast": "rival",
+        "rival": true,
+        "team": [
+          [
+            "@starter",
+            32
+          ],
+          [
+            "poreureu",
+            30
+          ],
+          [
+            "kongkong",
+            30
+          ],
+          [
+            "jagal",
+            30
+          ]
+        ],
+        "reward": 1600
+      },
+      "after": [
+        [
+          "rival",
+          "역시 넌 대단해. 그래도 이번엔 아깝지 않았어?",
+          "같이 약속하자. 성간단이 무슨 짓을 하든 우리가 막는 거야!"
+        ]
+      ]
+    },
+    {
+      "id": "ch6_lumina",
+      "chapter": 6,
+      "map": "lumina",
+      "needs": [
+        "badge_flame"
+      ],
+      "gate": {
+        "map": "gym_lumina",
+        "msg": "도장이 잠겨 있다. '관장 샛별 — 방송국에 붙잡혀 있음'이라는 소문이 돈다…"
+      },
+      "scene": [
+        [
+          "villager",
+          "큰일 났어요! 성간단이 빛누리 방송국을 점거했어요!",
+          "관장 샛별 님이 맞서러 들어갔다가 소식이 끊겼대요. 방송국은 시내 북쪽이에요!"
+        ]
+      ],
+      "bgm": "crisis"
+    },
+    {
+      "id": "ch6_station",
+      "chapter": 6,
+      "map": "lumina",
+      "needs": [
+        "ch6_lumina"
+      ],
+      "scene": [
+        [
+          "elite_m",
+          "여기서부터는 성간단 특공대가 지킨다. 돌아가라."
+        ]
+      ],
+      "battle": {
+        "cast": "elite_m",
+        "team": [
+          [
+            "busit",
+            35
+          ],
+          [
+            "chalang",
+            36
+          ],
+          [
+            "astra",
+            36
+          ]
+        ],
+        "reward": 1700
+      },
+      "after": [
+        [
+          "elite_m",
+          "…간부님께 보고를."
+        ]
+      ]
+    },
+    {
+      "id": "ch6_nebula",
+      "chapter": 6,
+      "map": "lumina",
+      "needs": [
+        "ch6_station"
+      ],
+      "scene": [
+        [
+          "c4",
+          "후후, 여기까지 오다니. 나는 제4간부 네뷸라. 환상 속에서 헤매게 해 주지."
+        ]
+      ],
+      "battle": {
+        "cast": "c4",
+        "team": [
+          [
+            "banjjak",
+            37
+          ],
+          [
+            "mallang",
+            37
+          ],
+          [
+            "astra",
+            38
+          ]
+        ],
+        "reward": 2200
+      },
+      "after": [
+        [
+          "boss",
+          "빛누리의 시민 여러분, 방송을 잠시 빌리겠다. 나는 성간단 총수 녹스.",
+          "별빛은 모두의 것이 아니다. 별빛을 다룰 자격이 있는 자만이 루미와 세상을 이끌어야 한다.",
+          "곧 별마루산 꼭대기에서 전설의 별무리를 깨워, 하늘의 별빛을 모두 성간단의 결정으로 모으겠다. 그날부터 밤은 끝나지 않는다."
+        ],
+        [
+          "saetbyeol",
+          "{me}, 고마워! 덕분에 풀려났어.",
+          "녹스의 계획은 막아야 해. 하지만 그 전에… 도장에서 정식으로 실력을 보여 줘!"
+        ]
+      ]
+    },
+    {
+      "id": "ch7_frost",
+      "chapter": 7,
+      "map": "frost",
+      "needs": [
+        "badge_light"
+      ],
+      "scene": [
+        [
+          "rival",
+          "방송 봤어? 별마루산이래. 혼자 가려던 건 아니지?",
+          "가기 전에 마지막으로 한 번만 붙자. 지금 우리 실력이면 성간단쯤은 문제없다는 걸 확인하고 싶어!"
+        ]
+      ],
+      "battle": {
+        "cast": "rival",
+        "rival": true,
+        "team": [
+          [
+            "@starter",
+            42
+          ],
+          [
+            "poreureu",
+            40
+          ],
+          [
+            "jagal",
+            40
+          ],
+          [
+            "mallang",
+            40
+          ]
+        ],
+        "reward": 2400
+      },
+      "after": [
+        [
+          "rival",
+          "좋아, 준비 완료! 서리 마을 배지를 받고 별마루 마을에서 만나자!"
+        ]
+      ]
+    },
+    {
+      "id": "ch7_summit",
+      "chapter": 7,
+      "map": "summit",
+      "needs": [
+        "badge_normal"
+      ],
+      "gate": {
+        "map": "gym_summit",
+        "msg": "도장 문이 닫혀 있다. 관장 천문은 별마루산 쪽으로 올라갔다고 한다."
+      },
+      "scene": [
+        [
+          "cheonmun",
+          "왔구나, {me}. 성간단이 산 동굴로 올라갔다.",
+          "별의 제단에서 별무리가 깨어나면 하늘의 균형이 무너진다. 나는 길목을 지키겠다. 너는 꼭대기로 가거라!"
+        ]
+      ]
+    },
+    {
+      "id": "ch7_cave",
+      "chapter": 7,
+      "map": "coronet_1f",
+      "needs": [
+        "ch7_summit"
+      ],
+      "scene": [
+        [
+          "elite_f",
+          "총수님의 의식은 아무도 방해 못 한다."
+        ]
+      ],
+      "battle": {
+        "cast": "elite_f",
+        "team": [
+          [
+            "jagal",
+            41
+          ],
+          [
+            "busit",
+            42
+          ],
+          [
+            "chalang",
+            42
+          ]
+        ],
+        "reward": 2000
+      }
+    },
+    {
+      "id": "ch7_solaris",
+      "chapter": 7,
+      "map": "coronet_3f",
+      "needs": [
+        "ch7_cave"
+      ],
+      "scene": [
+        [
+          "c1",
+          "또 너냐! 이번엔 끝장을 내 주마. 성간단 제1간부의 불꽃을 받아라!"
+        ]
+      ],
+      "battle": {
+        "cast": "c1",
+        "team": [
+          [
+            "busit",
+            43
+          ],
+          [
+            "morak",
+            43
+          ],
+          [
+            "astra",
+            44
+          ]
+        ],
+        "reward": 2600
+      },
+      "after": [
+        [
+          "c1",
+          "크윽… 총수님, 죄송합니다…!"
+        ]
+      ]
+    },
+    {
+      "id": "ch7_altar",
+      "chapter": 7,
+      "map": "altar",
+      "needs": [
+        "ch7_solaris"
+      ],
+      "scene": [
+        [
+          "boss",
+          "결국 여기까지 왔나. 보아라, 별빛 결정이 모두 모였다.",
+          "이 결정으로 별무리를 깨우면 하늘의 별빛은 영원히 성간단의 것이다.",
+          "그 전에… 네 별빛이 얼마나 되는지 확인해 주지."
+        ]
+      ],
+      "battle": {
+        "cast": "boss",
+        "team": [
+          [
+            "astra",
+            45
+          ],
+          [
+            "busit",
+            45
+          ],
+          [
+            "jagal",
+            46
+          ],
+          [
+            "mallang",
+            47
+          ]
+        ],
+        "reward": 5000
+      },
+      "after": [
+        [
+          "boss",
+          "…말도 안 돼. 결정이, 빛을 잃고 있다…?"
+        ],
+        [
+          "prof",
+          "{me}! 제단 위를 봐라! 별무리가… 깨어났어!",
+          "결정에 갇혀 있던 별빛이 하늘로 돌아가고 있구나. 별무리가 스스로 균형을 되찾았어!"
+        ],
+        [
+          "boss",
+          "별빛은… 가둘 수 없는 것이었나. 성간단은 오늘로 끝이다.",
+          "…루미와 함께 걷는 너 같은 트레이너가 이긴 거다."
+        ],
+        [
+          "cheonmun",
+          "잘 해냈다. 이제 도장으로 오너라. 마지막 배지를 걸고 정식으로 겨루자."
+        ]
+      ],
+      "afterBgm": "awakening"
+    },
+    {
+      "id": "ch8_rival",
+      "chapter": 8,
+      "map": "route20",
+      "needs": [
+        "badge_star"
+      ],
+      "scene": [
+        [
+          "rival",
+          "역시 너도 왔구나. 배지 여덟 개!",
+          "리그에 들어가기 전에… 우리 둘 중 누가 먼저 챔피언에게 도전할지 정하자. 진심으로 간다!"
+        ]
+      ],
+      "battle": {
+        "cast": "rival",
+        "rival": true,
+        "team": [
+          [
+            "@starter",
+            52
+          ],
+          [
+            "poreureu",
+            50
+          ],
+          [
+            "jagal",
+            50
+          ],
+          [
+            "mallang",
+            50
+          ],
+          [
+            "busit",
+            51
+          ]
+        ],
+        "reward": 4000
+      },
+      "after": [
+        [
+          "rival",
+          "…졌다. 완전히.",
+          "가, {me}. 꼭 챔피언이 돼. 나는 여기서 응원할게!"
+        ]
+      ]
+    },
+    {
+      "id": "ending",
+      "chapter": 9,
+      "map": "league",
+      "needs": [
+        "champion"
+      ],
+      "ending": true,
+      "scene": [
+        [
+          "champion",
+          "축하한다, {me}. 오늘부터 너는 루미 리그의 챔피언, 루미 마스터다.",
+          "별마루산 이야기는 들었다. 별빛을 지킨 트레이너가 챔피언이 되다니, 어울리는 결말이군."
+        ],
+        [
+          "rival",
+          "{me}! 해냈구나! …다음엔 내가 도전할 거야. 각오해!"
+        ],
+        [
+          "prof",
+          "정말 자랑스럽구나. 루미 도감은 아직 비어 있는 곳이 많단다. 모험은 이제부터지!"
+        ],
+        [
+          "mom",
+          "우리 {me}, 고생 많았어. 집에 오면 좋아하는 거 잔뜩 해 줄게. 밭도 잘 지키고 있단다."
+        ]
+      ]
+    }
+  ]
+}

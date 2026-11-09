@@ -376,7 +376,8 @@ export function trackFor(p: PlaceInfo): string {
   const id = p.id;
   if (id === 'farm' || id === 'town') return 'hometown';
   if (id === 'in_center') return 'center';
-  if (id.startsWith('gym') || id === 'in_gym' || id === 'league' || id === 'tower') return 'gym';
+  if (id === 'league') return 'league';
+  if (id.startsWith('gym') || id === 'in_gym' || id === 'tower') return 'gym';
   if (id === 'origin' || id === 'chateau' || id === 'altar' || id === 'distortion') return 'legend';
   if (id === 'home' || id.startsWith('in_house')) return 'inn';
   if (p.interior || p.kind === 'room') return 'lab';
@@ -397,6 +398,9 @@ export function trackFor(p: PlaceInfo): string {
 /** 배틀 상대 → 곡 */
 export function battleTrack(kind: 'wild' | 'trainer', title = '') {
   if (kind === 'wild') return 'battle_wild';
+  if (/총수/.test(title)) return 'battle_boss';
+  if (/성간단/.test(title)) return 'battle_villain';
+  if (/소꿉친구/.test(title)) return 'battle_rival';
   if (/챔피언|사천왕/.test(title)) return 'battle_champion';
   if (/관장/.test(title)) return 'battle_leader';
   return 'battle_trainer';

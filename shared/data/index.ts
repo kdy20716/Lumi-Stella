@@ -9,6 +9,8 @@ import trainersJson from './trainers.json';
 import encountersJson from './encounters.json';
 import regionJson from './region.json';
 import recipesJson from './recipes.json';
+import chaptersJson from './chapters.json';
+import skillsJson from './skills.json';
 
 export const CROPS = cropsJson as unknown as Record<string, CropDef>;
 export const ITEMS = itemsJson as unknown as Record<string, ItemDef>;
@@ -54,3 +56,32 @@ export const NPCS = { ...(npcsJson as unknown as Record<string, NpcDef>), ...(re
 
 /** HHMM → 분 */
 export const hhmmToMinutes = (t: number) => Math.floor(t / 100) * 60 + (t % 100);
+
+/** 본편 스토리 사건 (chapters.json) */
+export interface CastDef { name: string; title?: string; sprite: string; color?: string }
+export interface StoryEvent {
+  id: string; chapter: number; map: MapId; needs: string[]; ending?: boolean;
+  /** 이 사건 전까지 막히는 곳 */
+  gate?: { map: MapId; msg: string };
+  /** [말하는 사람(cast id · 'rival'), 대사…] */
+  scene: string[][]; after?: string[][];
+  battle?: { cast: string; rival?: boolean; team: [string, number][]; reward: number };
+  give?: Record<string, number>;
+  /** 사건 음악 · 승부 뒤 음악 (client/src/audio/tracks.ts 의 곡 id) */
+  bgm?: string; afterBgm?: string;
+}
+export const CHAPTERS = chaptersJson as unknown as { cast: Record<string, CastDef>; chapters: { n: number; title: string }[]; events: StoryEvent[] };
+export const EVENTS: Record<string, StoryEvent> = Object.fromEntries(CHAPTERS.events.map((e) => [e.id, e]));
+/** 깃발 · 이긴 트레이너 · 배지 중 하나라도 있으면 그 조건은 충족 */
+export const hasDone = (p: { flags?: string[]; defeated: string[]; badges: string[] }, k: string) => !!p.flags?.includes(k) || p.defeated.includes(k) || p.badges.includes(k);
+/** 지금 이 맵에서 일어날 수 있는 다음 사건 */
+export const nextEvent = (p: { map: string; flags?: string[]; defeated: string[]; badges: string[]; story: number }, map = p.map) =>
+  p.story >= 5 ? CHAPTERS.events.find((e) => e.map === map && !p.flags?.includes(e.id) && e.needs.every((k) => hasDone(p, k))) : undefined;
+/** 아직 일어나지 않은 사건 때문에 막힌 곳 */
+export const gateFor = (p: { flags?: string[] }, to: string) => CHAPTERS.events.find((e) => e.gate?.map === to && !p.flags?.includes(e.id));
+
+/** 비전 기술 (skills.json) */
+export interface SkillDef { name: string; badge: string; obstacle: string; look: string; use: string; need: string; drops?: [string, number][] }
+export const SKILLS = Object.fromEntries(Object.entries(skillsJson).filter(([k]) => !k.startsWith('_'))) as unknown as Record<string, SkillDef>;
+/** 이 장애물을 치우는 기술 */
+export const skillFor = (type: string) => Object.entries(SKILLS).find(([, s]) => s.obstacle === type)?.[0];
