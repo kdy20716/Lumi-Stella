@@ -24,7 +24,7 @@ export interface WorldObject {
 
 const TALL = new Set(['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm', 'dead_tree', 'cave_mouth', 'ruin_pillar', 'portal', 'house', 'board', 'stall', 'stall_b']);
 // 풍차 날개 회전 축 위치는 맵 스폰 'windmill_hub'
-const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal', 'cave_hole']);
+const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal', 'cave_hole', 'glint']);
 // 그림자 크기 (가로 배율, 세로 배율)
 const SHADOW: Record<string, [number, number, number]> = {
   oak: [1.25, 1.3, -1], oak_apple: [1.25, 1.3, -1], oak_autumn: [1.25, 1.3, -1], pine: [1, 1.1, -1], pine_snow: [1, 1.1, -1], palm: [0.8, 0.8, -1], dead_tree: [0.9, 0.9, -1], cactus: [0.5, 0.5, 0],

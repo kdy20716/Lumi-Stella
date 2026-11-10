@@ -175,7 +175,7 @@ const dialogue = {
     this.type();
   },
   /** 컷신용: 대화가 끝날 때까지 기다림 */
-  say(o: { name: string; title?: string; sprite?: string; color?: string; pages: string[] }): Promise<void> {
+  say(o: { name: string; title?: string; sprite?: string; color?: string; pages: string[]; hearts?: number }): Promise<void> {
     return new Promise((res) => this.show(o, res));
   },
   type() {

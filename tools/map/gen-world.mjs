@@ -8,6 +8,7 @@ import { rng } from '../art/lib/img.mjs';
 import { buildGraph, GYMS } from './region-graph.mjs';
 import { caveLayout, caveExits } from './cavegen.mjs';
 import { PLACE_GATES } from './region-spec.mjs';
+import { ARCS } from './side-stories.mjs';
 
 const ALL_B = { ...BUILDINGS, ...ADV_BUILDINGS };
 const cells = (key) => { const b = ALL_B[key]; return { w: Math.round(b.w / 16), h: Math.ceil((b.wallH + 7) / 16), door: Math.floor((b.doorX + 7) / 16) }; };
@@ -36,6 +37,7 @@ const POOLS = {
   distortion: ['astra', 'banjjak', 'l2a', 'a5a', 'l1a'],
   // 동굴 테마
   rock: ['jagal', 'ikkigom', 'banjjak', 'e2a', 'e3a', 'a5a'], crystal: ['banjjak', 'jagal', 'l4a', 'l2a'], lava: ['busit', 'jagal', 'f2a', 'f1a'], ice: ['mallang', 'kongkong', 'ikkigom', 'l3a', 'a2a'],
+  ruin: ['astra', 'banjjak', 'l2a', 'l5a', 'e5a', 'a5a'],
   dark: ['banjjak', 'ikkigom', 'a5a', 'l1a', 'f3a'], mine: ['jagal', 'ikkigom', 'busit', 'e2a', 'e3a', 'n1a'], sea: ['pongpong', 'mallang', 'w1a', 'w4a', 'w2a'],
 };
 const RARE = { forest: 'saerok', swamp: 'saerok', beach: 'chalang', sea: 'chalang', volcano: 'morak', lava: 'morak' };
@@ -101,6 +103,7 @@ export function buildRegion() {
   const R0 = rng(777);
   let nameIdx = 0;
   const nextName = () => NAMES[(nameIdx++) % NAMES.length];
+  const hands = {}; let arcIdx = 0;
 
   for (const n of Object.values(nodes)) {
     data.maps[n.id] = { name: n.name, kind: n.kind, biome: n.biome ?? n.theme ?? 'room', x: n.x, y: n.y, tier: n.tier ?? 1 };
@@ -119,8 +122,66 @@ export function buildRegion() {
   // ── 비전 기술 지역 (확장분: 기존 맵은 덧붙이기만) ──
   const byId = Object.fromEntries(builders.map((m) => [m.name, m]));
   for (const [id, need] of Object.entries(PLACE_GATES)) { const m = byId[id], back = nodes[id]?.links[0]?.to; if (m && back) skillGate(m, { ends: [back], need }); }
-  for (const n of Object.values(nodes)) if (n.deep) { const m = genCave(n); enrichDeep(m, n); builders.push(m); if (byId[n.parent]) deepEntrance(byId[n.parent], n); }
+  for (const n of Object.values(nodes)) if (n.deep) {
+    const m = genCave(n); if (!n.safe && !n.noOre) enrichDeep(m, n); featureDeep(m, n); builders.push(m); byId[m.name] = m;
+    const pm = byId[n.parent]; if (pm) (n.outdoor ? spireEntrance : deepEntrance)(pm, n); else console.warn(`  ! ${n.id}: 부모 맵 ${n.parent} 이(가) 없어요`);
+  }
+  // 바람골(손으로 만든 마을)에도 호감도 주민 2명
+  { const wv = nodes.windvale; if (wv) residents(wv, ['wp_plaza', 'wp_mill']); }
+  data.hands = hands;
   return { builders, data, nodes };
+
+  /** 방 하나짜리 깊은 곳의 볼거리: 스텔라의 요람 · 탑 꼭대기 받침대 · 기둥 */
+  function featureDeep(m, n) {
+    if (!n.chamber) return;
+    const cx = 20, cy = 12;
+    for (const [dx, dy] of [[-6, -2], [6, -2], [-6, 3], [6, 3]]) m.place(n.feature === 'stella' ? 'crystal' : 'ruin_pillar', cx + dx, cy + dy, { force: true });
+    if (n.feature === 'stella') { m.spawn('stella', cx, cy - 1); for (const [dx, dy] of [[-3, -3], [3, -3], [-2, 2], [2, 2]]) m.place('crystal', cx + dx, cy + dy, { force: true }); }
+    if (n.feature === 'spire_top') m.place('pedestal', cx, cy - 1, { force: true, props: { interact: `spire_top:${n.spire}`, text: `${n.name.split(' · ')[0]}의 빛받이.\n(여기서 악보대로 오카리나를 불면 탑의 빛이 깨어난다고 한다)` } });
+    if (n.spire && !n.feature) m.place('sign', cx + 2, cy + 4, { force: true, props: { interact: 'sign', text: `${n.name.split(' · ')[0]}\n「선율을 아는 자만 위로 오르리라」` } });
+    m.reserve(cx - 2, cy - 3, cx + 2, cy + 1);
+  }
+  /** 탑 입구: 도로 맵의 한적한 빈 땅에 탑을 세우고, 문 앞 한 칸을 밟으면 탑 안으로 */
+  function spireEntrance(m, n) {
+    const W = m.W, pts = m.warps.map((w) => [(w.x + w.width / 2) / 16, (w.y + w.height / 2) / 16]);
+    const ok = (x, y) => m.inb(x, y) && x > 2 && y > 6 && x < W - 3 && y < m.H - 3 && !m.cliff[y * W + x] && !m.cliff[(y - 1) * W + x] && m.terrain[y][x] !== Wt && !m.bridge[y * W + x];
+    const cellOf = (o, k) => o.properties.find((p) => p.name === k)?.value;
+    const big = new Set(); for (const o of m.objects) { const w = cellOf(o, 'cellW') || 1, h = cellOf(o, 'cellH') || 1; if (w * h < 4 && !cellOf(o, 'interact') && !cellOf(o, 'trainer')) continue; const cx = cellOf(o, 'cellX'), cy = cellOf(o, 'cellY'); for (let y = cy - h + 1; y <= cy; y++) for (let x = cx; x < cx + w; x++) big.add(y * W + x); }
+    let best = null, bd = -1;
+    for (let y = 9; y < m.H - 5; y++) for (let x = 5; x < W - 5; x++) {
+      let fine = true;
+      for (let dy = -4; dy <= 2 && fine; dy++) for (let dx = -2; dx <= 2; dx++) if (!ok(x + dx, y + dy) || big.has((y + dy) * W + x + dx) || (dy <= 0 && dy >= -1 && Math.abs(dx) <= 1 && m.reserved[y + dy][x + dx])) { fine = false; break; }
+      if (!fine) continue;
+      const d = Math.min(...pts.map(([px, py]) => Math.hypot(px - x, py - y)));
+      if (d > bd) { bd = d; best = [x, y]; }
+    }
+    if (!best) { console.warn(`  ! ${n.id}: ${m.name} 에 탑 자리가 없어요`); return; }
+    const [x, y] = best;
+    const gone = m.objects.filter((o) => { const cx = cellOf(o, 'cellX'), cy = cellOf(o, 'cellY'); return Math.abs(cx - x) <= 2 && cy >= y - 4 && cy <= y + 2; });
+    for (const o of gone) { const cx = cellOf(o, 'cellX'), cy = cellOf(o, 'cellY'); if (m.inb(cx, cy)) m.blocked[cy][cx] = false; }
+    m.objects = m.objects.filter((o) => !gone.includes(o));
+    for (let dy = -1; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (m.terrain[y + dy][x + dx] === G && dy >= 1) m.terrain[y + dy][x + dx] = S;
+    m.place('spire', x - 1, y, { w: 3, h: 2, force: true, props: { interact: `spire:${n.spire}`, text: n.desc } });
+    m.warp(x, y + 1, 1, 1, n.id, `from_${m.name}`);
+    m.spawn(`from_${n.id}`, x, y + 2);
+    m.reserve(x - 2, y - 4, x + 2, y + 2);
+  }
+  /** 마을 주민 2명 (호감도 · 사이드 스토리 · 텃밭 도우미) */
+  function residents(n, wps = ['wp_npc1', 'wp_npc2']) {
+    hands[n.id] = [];
+    for (let k = 1; k <= 2; k++) {
+      const id = `${n.id}_npc${k}`;
+      const tip = k === 1 ? n.desc : `${n.links.filter((l) => l.type === 'edge').map((l) => nodes[l.to].name.split(' · ')[0]).join(', ')}(으)로 길이 이어져 있어.`;
+      const arc = ARCS[arcIdx++ % ARCS.length], fill = (t) => t.replaceAll('{town}', n.name);
+      hands[n.id].push(id);
+      data.npcs[id] = { id, gen: true, name: nextName(), title: `${n.name} 주민`, sprite: `res_${n.id}_${k}`, speed: 34, color: '#7a8a5a',
+        schedule: [{ time: 600, map: n.id, to: wps[k - 1], idle: 'wander', radius: 3 }],
+        hand: n.id, story: arc.title, asks: arc.steps.map((st) => ({ item: st.item, qty: st.qty, ask: st.ask.map(fill), thanks: st.thanks.map(fill) })), full: arc.full.map(fill),
+        dialogue: { first: [`어서 와, 트레이너! 여기는 ${n.name}이야.`, tip], morning: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow], afternoon: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow, TOWN_LORE[(k + n.tier) % TOWN_LORE.length]],
+          evening: ['밤엔 풀숲에 다른 루미들이 나온대.', TOWN_LORE[(k * 3 + n.tier) % TOWN_LORE.length]], rain: ['비 오는 날은 물가 루미가 많아져.'],
+          random: [n.gym ? `우리 마을 도장 관장은 ${typeTalk(GYMS[n.id]?.type)} 루미를 써. 단단히 준비해!` : '천천히 둘러보고 가!', TOWN_LORE[(k + n.tier * 2) % TOWN_LORE.length]] } };
+    }
+  }
 
   /** 깊은 동굴: 광석이 훨씬 많고, 별가루 결정이 섞여 나옴 */
   function enrichDeep(m, n) {
@@ -144,13 +205,13 @@ export function buildRegion() {
     if (!best) { console.warn(`  ! ${n.id}: ${m.name} 안에 구멍 자리가 없어요`); return; }
     const [hx, hy] = best;
     m.objects = m.objects.filter((o) => { const cx = o.properties.find((p) => p.name === 'cellX')?.value, cy = o.properties.find((p) => p.name === 'cellY')?.value; return !(Math.abs(cx - hx) <= 2 && Math.abs(cy - hy) <= 2); });
-    m.place('cave_hole', hx, hy, { force: true, block: false });
+    m.place(n.up ? 'stairs_up' : 'cave_hole', hx, hy, { force: true, block: false });
     m.warp(hx, hy, 1, 1, n.id, `from_${m.name}`);
     m.spawn(`from_${n.id}`, hx, hy + 1);
     for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
       if (Math.max(Math.abs(dx), Math.abs(dy)) !== 2) continue;
       const x = hx + dx, y = hy + dy;
-      if (!m.inb(x, y) || m.blocked[y][x]) continue;
+      if (!m.inb(x, y) || m.blocked[y][x] || !n.need) continue;
       m.place(OBST[n.need], x, y, { force: true, props: { skill: n.need, interact: `skill:${n.need}` } });
     }
     m.reserve(hx - 2, hy - 2, hx + 2, hy + 2);
@@ -212,6 +273,117 @@ export function buildRegion() {
       m.path(x0, y0, x1, y0, wdt, type); m.path(x1, Math.min(y0, y1), x1, Math.max(y0, y1), wdt, type);
     }
     return pts.map((q) => clampP(m, q));
+  }
+  /** 큰길: 두 점을 잇는 완만한 길. 긴 축을 따라 14칸쯤마다 한 번씩만 옆으로 꺾임 (좁은 ㄷ자 굽이가 생기지 않게) */
+  function trail(m, a, b, R, type = D, wdt = 2) {
+    const horiz = Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]), len = horiz ? Math.abs(b[0] - a[0]) : Math.abs(b[1] - a[1]);
+    const k = Math.max(0, Math.min(3, Math.floor(len / 14)));
+    const pts = [a]; let prev = 0;
+    for (let i = 1; i <= k; i++) {
+      const t = i / (k + 1); let off = Math.round((R() - 0.5) * 9);
+      if (Math.abs(off - prev) < 3) off = prev;   // 한두 칸짜리 잔굴곡은 펴 줌
+      prev = off;
+      pts.push(clampP(m, horiz ? [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t) + off] : [Math.round(a[0] + (b[0] - a[0]) * t) + off, Math.round(a[1] + (b[1] - a[1]) * t)]));
+    }
+    pts.push(b);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i], [x1, y1] = pts[i + 1];
+      if (horiz) { m.path(x0, y0, x1, y0, wdt, type); m.path(x1, Math.min(y0, y1), x1, Math.max(y0, y1) + (wdt - 1), wdt, type); }
+      else { m.path(x0, Math.min(y0, y1), x0, Math.max(y0, y1), wdt, type); m.path(Math.min(x0, x1), y1, Math.max(x0, x1) + (wdt - 1), y1, wdt, type); }
+    }
+    return pts;
+  }
+  /** 연못 자리: 바라던 곳에서 가장 가까우면서 길 · 출구에서 4칸 이상 떨어진 곳 */
+  function pondSpot(m, [px, py, rx, ry], gap = 4) {
+    const far = (cx, cy) => { for (let y = Math.floor(cy - ry - gap); y <= Math.ceil(cy + ry + gap); y++) for (let x = Math.floor(cx - rx - gap); x <= Math.ceil(cx + rx + gap); x++) { if (!m.inb(x, y) || x < 3 || y < 4 || x > m.W - 4 || y > m.H - 4) return false; if (m.terrain[y][x] !== G || m.reserved[y][x] || m.blocked[y][x]) return false; } return true; };
+    let best = null, bd = 1e9;
+    for (let cy = 6; cy < m.H - 6; cy++) for (let cx = 6; cx < m.W - 6; cx++) { const d = Math.hypot(cx - px, cy - py); if (d < bd && far(cx, cy)) { bd = d; best = [cx, cy]; } }
+    return best;
+  }
+  // ── 탐험 보상: 보물 상자 · 반짝이는 것 ──
+  function lootFor(tier, kind, R2) {
+    const chest = tier <= 2 ? [['potion', 2], ['lumi_ball', 3], ['copper_ore', 3], ['seeds_lumi_herb', 6], ['quick_ball', 1]]
+      : tier <= 4 ? [['super_ball', 2], ['super_potion', 1], ['iron_ore', 3], ['quick_ball', 2], ['atk_tonic', 1], ['tide_ball', 2], ['leaf_ball', 2]]
+      : tier <= 6 ? [['hyper_ball', 2], ['super_potion', 2], ['star_shard', 1], ['moon_ball', 2], ['def_tonic', 2], ['ember_ball', 2], ['repeat_ball', 2]]
+      : [['hyper_ball', 3], ['max_potion', 1], ['star_shard', 2], ['star_ball', 1], ['heavy_ball', 2], ['max_potion', 2]];
+    const glint = [['stone', 2], ['herb', 2], ['berry', 3], ['copper_ore', 1], ['lumi_ball', 1], ['wood', 3], ['fiber', 3], ...(tier >= 5 ? [['iron_ore', 1], ['star_shard', 1], ['super_ball', 1]] : [])];
+    const t = kind === 'chest' ? chest : glint;
+    return t[Math.floor(R2() * t.length)];
+  }
+  function stash(m, n, R2, kind, x, y) {
+    if (!m.inb(x, y) || m.terrain[y][x] === Wt) return false;
+    const [item, qty] = lootFor(n.tier ?? 1, kind, R2);
+    m.objects = m.objects.filter((o) => !(o.properties.find((p) => p.name === 'cellX')?.value === x && o.properties.find((p) => p.name === 'cellY')?.value === y));
+    m.place(kind, x, y, { force: true, block: kind === 'chest', props: { interact: 'loot', loot: item, qty } });
+    m.reserve(x - 1, y - 1, x + 1, y + 1);
+    return true;
+  }
+  /** 길에서 떨어진 한적한 빈 땅 (보물 자리): 길 · 출구에서 minD 칸 이상, 서로도 떨어지게 */
+  function farSpots(m, R2, count, minD = 6) {
+    const isPath = (x, y) => m.terrain[y][x] === D || m.terrain[y][x] === S;
+    const cand = [];
+    for (let y = 6; y < m.H - 5; y++) for (let x = 5; x < m.W - 5; x++) {
+      let ok = true;
+      for (let dy = -1; dy <= 1 && ok; dy++) for (let dx = -1; dx <= 1; dx++) if (m.terrain[y + dy][x + dx] !== G || m.blocked[y + dy][x + dx] || m.reserved[y + dy][x + dx] || m.cliff[(y + dy) * m.W + x + dx]) { ok = false; break; }
+      if (!ok) continue;
+      let near = false;
+      for (let dy = -minD; dy <= minD && !near; dy++) for (let dx = -minD; dx <= minD; dx++) if (m.inb(x + dx, y + dy) && isPath(x + dx, y + dy) && Math.hypot(dx, dy) < minD) { near = true; break; }
+      if (!near) cand.push([x, y]);
+    }
+    const out = [];
+    for (let k = 0; k < count && cand.length; k++) {
+      const pick = cand.splice(Math.floor(R2() * cand.length), 1)[0];
+      if (out.some((q) => Math.hypot(q[0] - pick[0], q[1] - pick[1]) < 10)) { k--; if (cand.length < 3) break; continue; }
+      out.push(pick);
+    }
+    return out;
+  }
+  /** 강 + 다리: 큰길이 곧게 지나는 곳을 골라 맵을 가로지르는 강을 내고, 길 자리에는 나무다리를 놓음 */
+  function river(m, R2, horiz, avoid) {
+    const isPath = (x, y) => m.inb(x, y) && m.terrain[y][x] === D;
+    const L = horiz ? m.W : m.H, across = horiz ? m.H : m.W;
+    const line = (k) => { const a = []; for (let j = 0; j < across; j++) if (horiz ? isPath(k, j) : isPath(j, k)) a.push(j); return a.join(','); };
+    const cands = [];
+    for (let k = Math.floor(L * 0.25); k <= Math.floor(L * 0.75); k++) {
+      const base = line(k); if (!base || base.split(',').length > 3) continue;
+      let straight = true; for (let d = -4; d <= 6; d++) if (line(k + d) !== base) { straight = false; break; }
+      if (straight && !avoid.some((a) => Math.abs(a - k) < 7)) cands.push(k);
+    }
+    if (!cands.length) return false;
+    const k0 = cands[Math.floor(R2() * cands.length)], rows = line(k0).split(',').map(Number), ph = R2() * 6;
+    for (let j = 0; j < across; j++) {
+      const nearPath = rows.some((r) => Math.abs(r - j) <= 3);
+      const off = nearPath ? 0 : Math.round(Math.sin(j / 5 + ph) * 1.6);
+      for (let w = 0; w < 3; w++) {
+        const x = horiz ? k0 + off + w : j, y = horiz ? j : k0 + off + w;
+        if (!m.inb(x, y)) continue;
+        const was = m.terrain[y][x] === D;
+        m.setT(x, y, Wt); m.reserved[y][x] = true; m.decor[y * m.W + x] = 0;
+        if (was) m.setBridge(x, y, ROW.WOOD, horiz ? (rows.includes(j - 1) ? WOOD.BRIDGE_BOT : WOOD.BRIDGE_TOP) : WOOD.DOCK_H);
+      }
+    }
+    return true;
+  }
+  /** 단: 세로 도로는 길을 가로지르는 절벽 한 줄(길 자리는 계단), 가로 도로는 길 북쪽에 올라갈 수 있는 윗단(샛길 + 계단) → 윗단 끝에 보물 */
+  function tiers(m, n, R2, horiz) {
+    const isPath = (x, y) => m.inb(x, y) && m.terrain[y][x] === D;
+    if (!horiz) {
+      const line = (y) => { const a = []; for (let x = 0; x < m.W; x++) if (isPath(x, y)) a.push(x); return a.join(','); };
+      const c = [];
+      for (let y = Math.floor(m.H * 0.3); y <= Math.floor(m.H * 0.7); y++) { const b = line(y); if (!b) continue; let ok = true; for (let d = -3; d <= 5; d++) if (line(y + d) !== b) { ok = false; break; } if (ok) c.push(y); }
+      if (!c.length) return false;
+      m.terrace(c[Math.floor(R2() * c.length)]);
+      return true;
+    }
+    let top = m.H; for (let y = 0; y < m.H; y++) for (let x = 6; x < m.W - 6; x++) if (isPath(x, y)) top = Math.min(top, y);
+    const faceY = top - 6; if (faceY < 10) return false;
+    const left = R2() < 0.5, xs = left ? 9 + Math.floor(R2() * 6) : m.W - 11 - Math.floor(R2() * 6);
+    let ry = -1; for (let y = top; y < m.H - 4; y++) if (isPath(xs, y)) { ry = y; break; }
+    if (ry < 0) return false;
+    m.path(xs, faceY - 1, xs, ry, 2, D);
+    m.terrace(faceY);
+    stash(m, n, R2, 'chest', left ? m.W - 8 : 7, faceY - 3);
+    return true;
   }
   function clampP(m, [x, y]) { return [Math.max(3, Math.min(m.W - 5, x)), Math.max(4, Math.min(m.H - 5, y))]; }
   function grassPatches(m, R, n, near) {
@@ -432,18 +604,22 @@ export function buildRegion() {
       const h = m.hill(5 + Math.floor(R() * 3), 2 + Math.floor(R() * 2), area);
       if (h) decorateHill(m, h, R, n.city);
     }
+    if (!m.communityPlot([cx, cy], n.city ? '시민 텃밭' : '마을 텃밭')) console.warn(`  ! ${n.id}: 텃밭 자리가 없어요`);
+    // 마을마다 다른 볼거리: 우물 광장 · 석상과 가로수 · 연못 쉼터 · 노점 거리
+    {
+      const R2 = rng(hashStr(n.id) ^ 0x7e11a), v = hashStr(`${n.id}:look`) % 4, tree = (TREES[n.biome] ?? TREES.meadow)[0];
+      const avenue = () => { for (const ex of exits) { if (ex.side !== 'E' && ex.side !== 'W') continue; for (let x = 4; x < W - 4; x += 4) { if (Math.abs(x - cx) < 10) continue; for (const yy of [ex.p - 2, ex.p + 3]) if (tree) m.place(tree, x, yy, { props: { frameOffset: (x + yy) % 4 } }); } } };
+      if (!n.city && v === 0) { m.place('well', cx - 3, cy + 1, { force: true, props: { interact: 'sign', text: `${n.name}의 우물.\n두레박을 내리면 차가운 물이 찰랑인다.` } }); for (const [dx, dy] of [[-5, 2], [4, 2], [-5, -2], [4, -2]]) m.place('planter', cx + dx, cy + dy, { force: true }); }
+      else if (!n.city && v === 1) { m.place('statue', cx - 3, cy + 1, { force: true, props: { interact: 'sign', text: `${n.name}을(를) 처음 일군 사람과 그 곁을 지킨 루미의 석상.\n「땅을 아는 이가 길을 연다」` } }); avenue(); }
+      else if (v === 2) { const at = pondSpot(m, [cx + (R2() < 0.5 ? -13 : 13), cy + 4, 2.6, 1.7], 2); if (at) { m.ellipse(at[0], at[1], 2.6, 1.7, Wt, 0.05); m.reserve(Math.floor(at[0] - 4), Math.floor(at[1] - 3), Math.ceil(at[0] + 4), Math.ceil(at[1] + 3)); m.place('bench', Math.round(at[0]) - 1, Math.round(at[1]) + 3, { w: 2, force: true, props: { interact: 'bench' } }); } }
+      else { const tier = n.tier ?? 2, mart = tier <= 2 ? 'windvale' : tier <= 4 ? 'mart2' : tier <= 6 ? 'mart3' : 'mart4'; m.place('stall', cx + 3, cy + 2, { w: 3, force: true, props: { interact: `shop:${mart}` } }); m.place('stall_b', cx - 6, cy + 2, { w: 3, force: true, props: { interact: 'shop:cafe' } }); avenue(); }
+      farSpots(m, R2, 2, 4).forEach(([x, y]) => stash(m, n, R2, 'glint', x, y));
+    }
     nature(m, n.biome === 'city' ? 'city' : n.biome, R, exits, n.city ? 0.5 : 0.8);
     finish(m, n, R);
     // 주민 2명
-    for (let k = 1; k <= 2; k++) {
-      const id = `${n.id}_npc${k}`;
-      const tip = k === 1 ? n.desc : `${n.links.filter((l) => l.type === 'edge').map((l) => nodes[l.to].name.split(' · ')[0]).join(', ')}(으)로 길이 이어져 있어.`;
-      data.npcs[id] = { id, gen: true, name: nextName(), title: `${n.name} 주민`, sprite: (R(), `res_${n.id}_${k}`), speed: 34, color: '#7a8a5a',
-        schedule: [{ time: 600, map: n.id, to: `wp_npc${k}`, idle: 'wander', radius: 3 }],
-        dialogue: { first: [`어서 와, 트레이너! 여기는 ${n.name}이야.`, tip], morning: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow], afternoon: [tip, BIOME_TIP[n.biome] ?? BIOME_TIP.meadow, TOWN_LORE[(k + n.tier) % TOWN_LORE.length]],
-          evening: ['밤엔 풀숲에 다른 루미들이 나온대.', TOWN_LORE[(k * 3 + n.tier) % TOWN_LORE.length]], rain: ['비 오는 날은 물가 루미가 많아져.'],
-          random: [n.gym ? `우리 마을 도장 관장은 ${typeTalk(GYMS[n.id]?.type)} 루미를 써. 단단히 준비해!` : '천천히 둘러보고 가!', TOWN_LORE[(k + n.tier * 2) % TOWN_LORE.length]] } };
-    }
+    R(); R();
+    residents(n);
     if (coastal) addEncounters(n.id, POOLS.beach, n.tier, 'beach', true); else if (n.biome === 'swamp') addEncounters(n.id, POOLS.swamp, n.tier, 'swamp', true);
     return m;
   }
@@ -460,7 +636,7 @@ export function buildRegion() {
     const m = new MapBuilder(n.id, W, H, hashStr(n.id));
     const biome = n.biome;
     // 물: 해변은 긴 쪽 가장자리 바다, 늪은 웅덩이 여러 개, 그 밖엔 연못 하나
-    let water = false;
+    let water = false, pond = null; const bogs = [];
     const exits = sidePositions(n, W, H);
     const usedSides = new Set(exits.map((e) => e.side));
     if (biome === 'beach') {
@@ -471,22 +647,44 @@ export function buildRegion() {
         if (d < 6 + wob) m.setT(x, y, Wt); else if (d < 9 + wob) m.setT(x, y, D);
       }
       water = true;
-    } else if (biome === 'swamp') { for (let k = 0; k < 7; k++) m.ellipse(5 + R() * (W - 10), 6 + R() * (H - 12), 2 + R() * 2.5, 1.5 + R() * 1.5, Wt, 0.1); water = true; }
-    else if (biome !== 'desert' && R() < 0.65) { m.ellipse(6 + R() * (W - 12), 6 + R() * (H - 12), 3 + R() * 3, 2 + R() * 2, Wt, 0.08); water = true; }
+    } else if (biome === 'swamp') { for (let k = 0; k < 7; k++) bogs.push([5 + R() * (W - 10), 6 + R() * (H - 12), 2 + R() * 2.5, 1.5 + R() * 1.5]); water = true; }   // 늪 웅덩이도 길을 낸 뒤에
+    else if (biome !== 'desert' && R() < 0.65) pond = [6 + R() * (W - 12), 6 + R() * (H - 12), 3 + R() * 3, 2 + R() * 2];   // 연못은 길을 낸 뒤에, 길에서 떨어진 곳에
     // 출구 → 중심
     const hub = [Math.floor(W / 2) + Math.floor((R() - 0.5) * 6), Math.floor(H / 2) + Math.floor((R() - 0.5) * 4)];
     let path = [hub];
-    for (const ex of exits) { const inner = edgeExit(m, ex, D); path = path.concat(meander(m, inner, hub, R, D, 2)); }
+    {
+      // 큰길: 가장 멀리 떨어진 두 출구를 한 줄로 잇고, 나머지 출구는 큰길 가운데로 붙임 (가운데에서 길이 삐죽 튀어나오지 않게)
+      const inners = exits.map((ex) => edgeExit(m, ex, D));
+      if (inners.length >= 2) {
+        let a = 0, b = 1, bd = -1;
+        for (let i = 0; i < inners.length; i++) for (let j = i + 1; j < inners.length; j++) { const d = Math.hypot(inners[i][0] - inners[j][0], inners[i][1] - inners[j][1]); if (d > bd) { bd = d; a = i; b = j; } }
+        const main = trail(m, inners[a], inners[b], R, D, 2);
+        const mid = main[Math.floor(main.length / 2)]; hub[0] = mid[0]; hub[1] = mid[1];
+        path = [hub, ...main];
+        inners.forEach((q, i) => { if (i === a || i === b) return; const to = main.slice(1, -1).sort((u, v) => Math.hypot(u[0] - q[0], u[1] - q[1]) - Math.hypot(v[0] - q[0], v[1] - q[1]))[0] ?? mid; path = path.concat(trail(m, q, to, R, D, 2)); });
+      } else for (const q of inners) path = path.concat(meander(m, q, hub, R, D, 2));
+    }
     m.roughen(D, 0.2);
+    // 지형 변화 (5세대 도로처럼): 강과 다리 · 계단으로 오르는 단 — 그리고 길에서 벗어난 곳의 보물
+    const R2 = rng(hashStr(n.id) ^ 0x7e11a);
+    {
+      const avoid = exits.filter((e) => (horiz ? e.side === 'N' || e.side === 'S' : e.side === 'E' || e.side === 'W')).map((e) => e.p);
+      const wet = !['beach', 'desert', 'volcano', 'swamp', 'city'].includes(biome) && !n.links.some((l) => l.type === 'mouth' || l.type === 'dock') && R2() < 0.5;
+      if (wet && river(m, R2, horiz, avoid)) { water = true; pond = null; }
+      else if (biome !== 'beach' && biome !== 'city' && !n.need && R2() < 0.7) tiers(m, n, R2, horiz);
+    }
+    for (const b of bogs) { const at = pondSpot(m, b, 2); if (at) { m.ellipse(at[0], at[1], b[2], b[3], Wt, 0.1); m.reserve(Math.floor(at[0] - b[2]), Math.floor(at[1] - b[3]), Math.ceil(at[0] + b[2]), Math.ceil(at[1] + b[3])); } }
+    if (pond) { const at = pondSpot(m, pond); if (at) { m.ellipse(at[0], at[1], pond[2], pond[3], Wt, 0.08); water = true; } }
     for (const l of n.links.filter((x) => x.type === 'mouth')) caveMouth(m, l, hub, R);
     for (const l of n.links.filter((x) => x.type === 'dock')) dock(m, l, Math.floor(W / 2), H - 7);
     // 2.5D: 길에서 떨어진 바위 언덕 (올라가지 못하는 둔덕, 윗면엔 나무)
-    if (biome !== 'city') for (let k = 0; k < 2; k++) { const h = m.hill(4 + Math.floor(R() * 4), 2 + Math.floor(R() * 2), undefined, { stairs: R() < 0.4 }); if (h) decorateHill(m, h, R, false, biome); }
+    if (biome !== 'city') for (let k = 0; k < 2; k++) { const st = R() < 0.4; const h = m.hill(4 + Math.floor(R() * 4), 2 + Math.floor(R() * 2), undefined, { stairs: st }); if (h) { decorateHill(m, h, R, false, biome); if (st && h[2] - h[0] >= 3) { const sx = h[0] + Math.floor((h[2] - h[0] + 1) / 2), cxk = sx + 1 <= h[2] - 1 ? sx + 1 : sx - 1; const gone = m.objects.filter((o) => o.properties.find((p) => p.name === 'cellY')?.value === h[3] && [sx, cxk].includes(o.properties.find((p) => p.name === 'cellX')?.value)); for (const o of gone) m.blocked[h[3]][o.properties.find((p) => p.name === 'cellX').value] = false; m.objects = m.objects.filter((o) => !gone.includes(o)); stash(m, n, R2, 'chest', cxk, h[3]); } } }
     // 풀숲 · 트레이너 · 소품
     grassPatches(m, R, biome === 'city' ? 2 : horiz ? 8 : 8, path);
     trainers(m, n, R, path, 2 + (n.tier >= 4 ? 1 : 0) + (R() < 0.4 ? 1 : 0), CLASSES[biome] ?? CLASSES.meadow);
     if (biome === 'rocky' || biome === 'volcano') ores(m, R, 7, n.tier);
     for (const ex of exits) { const [x, y] = inward(W, H, ex.side, ex.p, 4); signAt(m, x + (ex.side === 'N' || ex.side === 'S' ? 2 : 0), y + (ex.side === 'E' || ex.side === 'W' ? 2 : 0), `${n.name}\n→ ${nodes[ex.link.to].name}`); }
+    farSpots(m, R2, 3).forEach(([x, y], i) => stash(m, n, R2, i === 0 ? 'chest' : 'glint', x, y));
     nature(m, biome, R, exits);
     // 2.5D 턱: 아래로만 뛰어내릴 수 있는 짧은 턱 (길 · 풀숲 · 물은 피함)
     if (biome !== 'city') {
@@ -518,7 +716,7 @@ export function buildRegion() {
     const hub = [cx, cy + 3];
     for (const ex of exits) { const inner = edgeExit(m, ex, D); meander(m, inner, hub, R, n.tpl === 'altar' ? S : D, 2); }
     let water = isle;
-    if (n.tpl === 'lake') { m.ellipse(cx, cy - 2, 11, 6.5, Wt, 0.1); m.ellipse(cx, cy - 2, 2.2, 1.6, G, 0); water = true; m.path(cx - 14, cy + 6, cx + 14, cy + 6, 2, D); m.place('sign', cx + 3, cy + 7, { force: true, props: { interact: 'sign', text: `${n.name}\n${n.desc}` } }); m.place('ruin_pillar', cx, cy - 2, { force: true, props: { interact: 'sign', text: '호수 한가운데 작은 섬에 오래된 돌기둥이 서 있다.\n물결이 기둥을 감싸며 빛난다…' } }); }
+    if (n.tpl === 'lake') { m.ellipse(cx, cy - 2, 11, 6.5, Wt, 0.1); m.ellipse(cx, cy - 2, 2.2, 1.6, G, 0); water = true; for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) { const dx = (x + 0.5 - cx) / 14.2, dy = (y + 0.5 - (cy - 2)) / 9.4, ix = (x + 0.5 - cx) / 12.2, iy = (y + 0.5 - (cy - 2)) / 7.6; if (dx * dx + dy * dy <= 1 && ix * ix + iy * iy > 1 && m.terrain[y][x] !== Wt) { m.setT(x, y, D); m.reserved[y][x] = true; } } m.place('sign', cx + 3, cy + 9, { force: true, props: { interact: 'sign', text: `${n.name}\n${n.desc}` } }); m.place('ruin_pillar', cx, cy - 2, { force: true, props: { interact: 'sign', text: '호수 한가운데 작은 섬에 오래된 돌기둥이 서 있다.\n물결이 기둥을 감싸며 빛난다…' } }); }
     if (n.tpl === 'altar') {
       for (let y = 4; y < H - 3; y++) for (let x = 4; x < W - 4; x++) m.setT(x, y, S);
       for (let a = 0; a < 10; a++) { const x = Math.round(cx + Math.cos((a / 10) * Math.PI * 2) * 12), y = Math.round(cy + Math.sin((a / 10) * Math.PI * 2) * 8); m.place(a % 3 === 1 ? 'ruin_broken' : 'ruin_pillar', x, y, { force: true }); }
@@ -545,6 +743,7 @@ export function buildRegion() {
     // 풀숲·트레이너
     const enc = !['park', 'altar', 'battle'].includes(n.tpl);
     if (enc) grassPatches(m, R, n.tpl === 'marsh' ? 22 : 9, null);
+    if (n.tpl !== 'altar' && n.tpl !== 'distortion') { const R2 = rng(hashStr(n.id) ^ 0x7e11a); farSpots(m, R2, big ? 5 : 3, 5).forEach(([x, y], i) => stash(m, n, R2, i < 2 ? 'chest' : 'glint', x, y)); }
     if (n.tpl !== 'park' && n.tpl !== 'altar') trainers(m, n, R, [hub, [cx - 8, cy], [cx + 8, cy], [cx, cy - 6]], n.tpl === 'battle' ? 4 : 2, n.tpl === 'battle' ? [['에이스 트레이너', 'ace_m'], ['에이스 트레이너', 'ace_f']] : CLASSES[n.biome] ?? CLASSES.meadow);
     const density = n.tpl === 'forest_maze' ? 4 : n.tpl === 'garden' ? 0.6 : 1;
     if (n.tpl === 'forest_maze') for (let i = 0; i < 140; i++) m.scatter(R() < 0.6 ? 'pine' : 'oak', 1);
@@ -578,11 +777,18 @@ export function buildRegion() {
     }
     // 바위 · 광석 · 트레이너
     const floor = []; for (let y = 3; y < lay.H - 2; y++) for (let x = 2; x < lay.W - 2; x++) if (!lay.wall[y][x] && !m.reserved[y][x]) floor.push([x, y]);
-    for (let k = 0; k < 8 && floor.length; k++) { const [x, y] = floor.splice(Math.floor(R() * floor.length), 1)[0]; const kinds = n.tier >= 7 ? ['ore_iron', 'ore_star', 'ore_copper'] : ['ore_stone', 'ore_copper', 'ore_iron']; const t = kinds[Math.floor(R() * kinds.length)]; m.place(t, x, y, { force: true, props: { mine: t.slice(4) } }); m.reserve(x, y, x, y); }
-    trainers(m, { ...n, biome: n.theme }, R, floor.length ? [floor[0], floor[Math.floor(floor.length / 2)], floor[floor.length - 1]] : [], n.tier >= 5 ? 2 : 1, CLASSES.cave);
+    for (let k = 0; k < (n.safe || n.noOre ? 0 : 8) && floor.length; k++) { const [x, y] = floor.splice(Math.floor(R() * floor.length), 1)[0]; const kinds = n.tier >= 7 ? ['ore_iron', 'ore_star', 'ore_copper'] : ['ore_stone', 'ore_copper', 'ore_iron']; const t = kinds[Math.floor(R() * kinds.length)]; m.place(t, x, y, { force: true, props: { mine: t.slice(4) } }); m.reserve(x, y, x, y); }
+    if (!n.safe) {
+      // 보물 상자: 출입구에서 가장 먼 막다른 곳 2군데
+      const R2 = rng(hashStr(n.id) ^ 0x7e11a), far = (q) => Math.min(...lay.points.map((p) => Math.hypot(p.x - q[0], p.y - q[1])));
+      const sorted = [...floor].sort((a, b) => far(b) - far(a)), got = [];
+      for (const q of sorted) { if (got.length >= 2) break; if (got.some((g) => Math.hypot(g[0] - q[0], g[1] - q[1]) < 9)) continue; got.push(q); }
+      for (const [x, y] of got) { stash(m, n, R2, 'chest', x, y); const i = floor.findIndex((f) => f[0] === x && f[1] === y); if (i >= 0) floor.splice(i, 1); }
+    }
+    if (!n.safe) trainers(m, { ...n, biome: n.theme }, R, floor.length ? [floor[0], floor[Math.floor(floor.length / 2)], floor[floor.length - 1]] : [], n.spire ? 3 : n.tier >= 5 ? 2 : 1, n.spire ? [['성간단 단원', 'grunt_m'], ['성간단 단원', 'grunt_f'], ['성간단 특공대', 'grunt_elite_m']] : CLASSES.cave);
     m.props.push({ name: 'cave', type: 'string', value: 'true' }, { name: 'bg', type: 'string', value: `cave_${n.id}` }, { name: 'theme', type: 'string', value: n.theme }, { name: 'battleBg', type: 'string', value: 'cave' }, { name: 'title', type: 'string', value: n.name }, { name: 'biome', type: 'string', value: 'cave' });
     { const f = m.spawns.find((sp) => sp.name === `from_${lay.points[0].to}`); m.spawn('player', Math.floor(f.x / 16), Math.floor(f.y / 16)); }
-    addEncounters(n.id, POOLS[n.theme] ?? POOLS.rock, n.tier, n.theme, n.theme === 'sea');
+    if (!n.safe) addEncounters(n.id, POOLS[n.theme] ?? POOLS.rock, n.tier, n.theme, n.theme === 'sea');
     return m;
   }
 

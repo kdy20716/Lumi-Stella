@@ -250,7 +250,7 @@
     "icon": "lumi_ball",
     "sellPrice": 20,
     "maxStack": 99,
-    "description": "야생 루미를 담는 기본 포획볼. 구리와 돌로 작업대에서 만들 수 있어요.",
+    "description": "가장 기본적인 포획볼. 야생 루미의 체력을 깎고 던지면 잘 잡혀요. (포획 보정 ×1)",
     "catchBonus": 1
   },
   "super_ball": {
@@ -260,7 +260,7 @@
     "icon": "super_ball",
     "sellPrice": 60,
     "maxStack": 99,
-    "description": "쇠테를 두른 튼튼한 포획볼. 루미볼보다 잘 잡혀요.",
+    "description": "루미볼보다 잘 잡히는 포획볼. (포획 보정 ×1.6)",
     "catchBonus": 1.6
   },
   "hyper_ball": {
@@ -270,7 +270,7 @@
     "icon": "hyper_ball",
     "sellPrice": 120,
     "maxStack": 99,
-    "description": "민수의 비법으로 벼린 고급 포획볼. 아주 잘 잡혀요.",
+    "description": "슈퍼 루미볼보다 훨씬 잘 잡히는 고급 포획볼. (포획 보정 ×2.2)",
     "catchBonus": 2.2
   },
   "star_ball": {
@@ -280,7 +280,7 @@
     "icon": "star_ball",
     "sellPrice": 300,
     "maxStack": 99,
-    "description": "별가루 결정을 녹여 만든 전설의 포획볼. 거의 놓치지 않아요.",
+    "description": "별가루 결정을 녹여 만든 최고급 포획볼. 거의 놓치지 않아요. (포획 보정 ×3.5)",
     "catchBonus": 3.5
   },
   "potion": {
@@ -605,7 +605,7 @@
     "sellPrice": 0,
     "maxStack": 99,
     "catchBonus": 999,
-    "description": "별빛의 씨앗 껍질로 만들었다는 전설의 볼. 어떤 루미든 반드시 잡을 수 있다."
+    "description": "루미 마스터가 인정한 트레이너에게만 건네는 궁극의 볼. 어떤 루미든 반드시 잡을 수 있다."
   },
   "ocarina": {
     "id": "ocarina",
@@ -614,7 +614,7 @@
     "icon": "ocarina",
     "sellPrice": 0,
     "maxStack": 1,
-    "description": "루미 마스터의 시련을 넘은 사람에게 주어지는 오카리나. 별마루산 꼭대기 별의 제단에서 불면 무언가가 깨어난다고 한다."
+    "description": "루미 마스터가 건넨 오래된 오카리나. 악보대로 불면 동서남북 네 탑의 봉인이 풀리고, 별의 제단에서는 태초의 루미가 대답한다고 한다."
   },
   "hoe_copper": {
     "id": "hoe_copper",
@@ -825,5 +825,82 @@
     "durability": 240,
     "tier": 3,
     "power": 5
+  },
+  "quick_ball": {
+    "id": "quick_ball",
+    "name": "번개 루미볼",
+    "type": "battle",
+    "icon": "quick_ball",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "배틀이 시작되자마자 던지면 아주 잘 잡히는 볼. (첫 턴 ×5, 그 뒤 ×1)",
+    "catchBonus": 1,
+    "ballRule": "quick"
+  },
+  "moon_ball": {
+    "id": "moon_ball",
+    "name": "달그림자 루미볼",
+    "type": "battle",
+    "icon": "moon_ball",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "어두운 곳에서 힘을 내는 볼. (밤 · 동굴 ×3.5, 그 밖 ×1)",
+    "catchBonus": 1,
+    "ballRule": "dark"
+  },
+  "tide_ball": {
+    "id": "tide_ball",
+    "name": "물결 루미볼",
+    "type": "battle",
+    "icon": "tide_ball",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "물 타입 루미가 편안해하는 볼. (물 타입 ×3.5, 그 밖 ×1)",
+    "catchBonus": 1,
+    "ballRule": "type:물"
+  },
+  "leaf_ball": {
+    "id": "leaf_ball",
+    "name": "새싹 루미볼",
+    "type": "battle",
+    "icon": "leaf_ball",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "풀 타입 루미가 편안해하는 볼. (풀 타입 ×3.5, 그 밖 ×1)",
+    "catchBonus": 1,
+    "ballRule": "type:풀"
+  },
+  "ember_ball": {
+    "id": "ember_ball",
+    "name": "불씨 루미볼",
+    "type": "battle",
+    "icon": "ember_ball",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "불 타입 루미가 편안해하는 볼. (불 타입 ×3.5, 그 밖 ×1)",
+    "catchBonus": 1,
+    "ballRule": "type:불"
+  },
+  "repeat_ball": {
+    "id": "repeat_ball",
+    "name": "단골 루미볼",
+    "type": "battle",
+    "icon": "repeat_ball",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "이미 잡아 본 종류의 루미라면 아주 잘 잡히는 볼. (도감에 있는 종 ×3.5)",
+    "catchBonus": 1,
+    "ballRule": "repeat"
+  },
+  "heavy_ball": {
+    "id": "heavy_ball",
+    "name": "묵직 루미볼",
+    "type": "battle",
+    "icon": "heavy_ball",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "레벨이 높은 루미일수록 잘 잡히는 볼. (Lv.40 이상 ×3, Lv.25 이상 ×2)",
+    "catchBonus": 1,
+    "ballRule": "level"
   }
 }

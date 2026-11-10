@@ -46,6 +46,22 @@ export class EventDirector {
     this.actors.push(a);
     return a;
   }
+  private entrance() { const sp = this.h.world.info.spawns; const e = sp.get('player') ?? [...sp.values()][0]; return e ? [Math.floor(e.x / TILE), Math.floor(e.y / TILE)] as [number, number] : this.h.player.cell(); }
+  /** 입구에서 걸어 들어와 주인공 앞에 섬 */
+  private async walkIn(id: string) {
+    const c = this.cast(id), meta = this.h.manifest.characters[c.sprite]; if (!meta) return null;
+    const [ex, ey] = this.entrance(), at = cellCenter(ex, ey), grid = this.h.world.grid;
+    const a = new Actor(this.h.scene, id, c.sprite, at.x, at.y, meta, grid, c.name, this.h.zoom);
+    this.actors.push(a);
+    const [px, py] = this.h.player.cell();
+    const spot = [[px, py + 2], [px, py + 1], [px + 1, py], [px - 1, py], [px, py - 1]].find(([x, y]) => !grid.blocked(x, y)) ?? [px, py + 1];
+    await a.walkTo(spot[0], spot[1]);
+    a.faceTo(this.h.player.x, this.h.player.y);
+    this.h.player.play('idle', a.y > this.h.player.y ? 'down' : a.y < this.h.player.y ? 'up' : a.x > this.h.player.x ? 'right' : 'left');
+    return a;
+  }
+  /** 돌아서서 입구로 걸어 나감 */
+  private async walkOut(a: Actor) { const [ex, ey] = this.entrance(); await a.walkTo(ex, ey); await a.vanish(); }
   update(dt: number) { for (const a of this.actors) if (a.sprite.active) a.tick(dt); this.actors = this.actors.filter((a) => a.sprite.active); }
 
   /** 맵에 들어왔을 때 · 사건이나 승부가 끝났을 때 */
@@ -60,7 +76,9 @@ export class EventDirector {
     const ch = CHAPTERS.chapters.find((c) => c.n === ev.chapter);
     if (ch && !CHAPTERS.events.some((e) => e.chapter === ev.chapter && this.me.flags?.includes(e.id))) ui.banner.show(ch.title, '');
     await new Promise<void>((r) => this.h.scene.time.delayedCall(500, r));
-    const foe = ev.battle ? this.standIn(ev.battle.cast) : null;
+    let foe = ev.battle ? this.standIn(ev.battle.cast) : null;
+    // 걸어 들어오는 인물: 이 맵의 입구에서 주인공 곁까지
+    if (ev.walkIn && !foe) foe = await this.walkIn(ev.walkIn);
     // 사건 음악: 지정이 없으면 성간단 → 그림자 테마, 소꿉친구 → 라이벌 테마
     const speaker = ev.battle?.cast ?? ev.scene[0]?.[0] ?? '';
     const bgm = ev.bgm ?? (VILLAIN_CAST.has(speaker) ? 'villain' : speaker === 'rival' ? 'rival' : ev.ending ? 'league' : '');
@@ -77,11 +95,13 @@ export class EventDirector {
     if (ev.afterBgm) music.play(ev.afterBgm);
     await this.lines(ev.after);
     if (ev.ending) { await this.ending(); return; }
+    if (ev.walkIn && foe?.sprite.active) { await this.walkOut(foe); foe = null; }
+    if (ev.toast) ui.toast.push(ev.toast, 'heart');
     this.done(foe);
   }
   private async afterBattle(ev: StoryEvent, foe: Actor | null) {
     this.h.lock();
-    if (this.me.flags?.includes(ev.id)) { if (ev.afterBgm) music.play(ev.afterBgm); await this.lines(ev.after); }
+    if (this.me.flags?.includes(ev.id)) { if (ev.afterBgm) music.play(ev.afterBgm); await this.lines(ev.after); if (ev.toast) ui.toast.push(ev.toast, 'heart'); }
     this.done(foe);
   }
   private done(foe: Actor | null) {
@@ -95,7 +115,7 @@ export class EventDirector {
   private async ending() {
     music.play('ending');
     const mem = loadMemories(this.me.id).sort((a, b) => a.t - b.t);   // 찍은 순서대로
-    await showCredits(this.me.name, CHAPTERS.chapters.map((c) => c.title), mem.map((m) => ({ img: m.img, caption: m.caption })));
+    await showCredits(this.me.name, CHAPTERS.chapters.filter((c) => !c.side).map((c) => c.title), mem.map((m) => ({ img: m.img, caption: m.caption })));
     EventDirector.pendingEpilogue = true;
     const r = await this.h.auth.request({ kind: 'epilogue' });
     if (!r.ok) { EventDirector.pendingEpilogue = false; this.busy = false; this.h.unlock(); this.h.playMapMusic?.(); }

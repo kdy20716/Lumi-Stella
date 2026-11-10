@@ -213,7 +213,7 @@ function battleUntilWin(start: () => any, label: string, lv: number): boolean {
 /** 본편 사건: 조건이 맞은 것부터 순서대로 그 장소로 가서 진행 */
 function doEvents(): boolean {
   for (;;) {
-    const ev = CHAPTERS.events.find((e) => !p.flags.includes(e.id) && e.needs.every((k) => hasDone(p, k)));
+    const ev = CHAPTERS.events.find((e) => !e.id.startsWith('side_') && !p.flags.includes(e.id) && e.needs.every((k) => hasDone(p, k)));
     if (!ev) return true;
     if (!travel(ev.map)) { problems.push(`사건 ${ev.id}: ${ev.map} 에 갈 수 없음 (지금 ${p.map}, 배지 ${p.badges.length})`); say(`✗ 사건 ${ev.id}: 길 없음`); return false; }
     const lv = ev.battle ? Math.max(...ev.battle.team.map((t) => t[1])) : 0;

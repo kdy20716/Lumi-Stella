@@ -59,6 +59,7 @@ export function buildWindvale() {
   m.warp(0, 18, 1, 4, 'route1b', 'from_windvale');
   m.warp(49, 18, 1, 4, 'route2', 'from_windvale'); m.spawn('from_route2', 47, 19);
   m.warp(45, 0, 4, 1, 'route3', 'from_windvale'); m.spawn('from_route3', 46, 2);
+  m.communityPlot([25, 21]);
   void S;
   return m;
 }

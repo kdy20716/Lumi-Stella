@@ -1,0 +1,21 @@
+{
+  "_": "사이드 스토리: 막힌 곳(gates) · 네 탑(spires) · 마지막 선율(finale). notes 는 오카리나 구멍 번호 0=위 1=왼쪽 2=오른쪽 3=아래",
+  "gates": {
+    "stella_nest": { "flag": "side_master", "msg": "방 건너편에서 눈부신 기척이 느껴지지만, 누군가의 시선이 길을 막고 있다." },
+    "spire_n": { "flag": "side_flute", "msg": "탑의 문은 굳게 닫혀 있다. 어디선가 들려올 오카리나 소리를 기다리는 듯하다…" },
+    "spire_e": { "flag": "side_flute", "msg": "탑의 문은 굳게 닫혀 있다. 어디선가 들려올 오카리나 소리를 기다리는 듯하다…" },
+    "spire_s": { "flag": "side_flute", "msg": "탑의 문은 굳게 닫혀 있다. 어디선가 들려올 오카리나 소리를 기다리는 듯하다…" },
+    "spire_w": { "flag": "side_flute", "msg": "탑의 문은 굳게 닫혀 있다. 어디선가 들려올 오카리나 소리를 기다리는 듯하다…" },
+    "spire_n_2f": { "flag": "open_n", "seal": "n", "msg": "위로 가는 계단이 빛의 막으로 봉인되어 있다." },
+    "spire_e_2f": { "flag": "open_e", "seal": "e", "msg": "위로 가는 계단이 빛의 막으로 봉인되어 있다." },
+    "spire_s_2f": { "flag": "open_s", "seal": "s", "msg": "위로 가는 계단이 빛의 막으로 봉인되어 있다." },
+    "spire_w_2f": { "flag": "open_w", "seal": "w", "msg": "위로 가는 계단이 빛의 막으로 봉인되어 있다." }
+  },
+  "spires": {
+    "n": { "name": "북쪽 탑", "score": "북쪽 악보 「눈보라의 선율」", "boss": "side_spire_n", "color": "#8ad8ff", "notes": [0, 0, 2, 3, 1, 0] },
+    "e": { "name": "동쪽 탑", "score": "동쪽 악보 「해돋이의 선율」", "boss": "side_spire_e", "color": "#ffb04a", "notes": [2, 0, 2, 3, 2, 1] },
+    "s": { "name": "남쪽 탑", "score": "남쪽 악보 「밀물의 선율」", "boss": "side_spire_s", "color": "#7ae0a0", "notes": [3, 1, 3, 2, 0, 3] },
+    "w": { "name": "서쪽 탑", "score": "서쪽 악보 「해넘이의 선율」", "boss": "side_spire_w", "color": "#c89aff", "notes": [1, 3, 1, 0, 2, 1] }
+  },
+  "finale": { "score": "마지막 악보 「태초의 선율」", "boss": "side_nox", "notes": [0, 2, 3, 1, 0, 1, 3, 2, 0] }
+}

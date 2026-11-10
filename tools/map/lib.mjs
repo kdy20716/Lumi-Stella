@@ -143,6 +143,40 @@ export class MapBuilder {
   plot(name, x, y, w, h, crop, stage, watered = 0) {
     this.plots.push({ id: this.oid++, name, type: 'plot', x: x * T, y: y * T, width: w * T, height: h * T, rotation: 0, visible: true, properties: [{ name: 'crop', type: 'string', value: crop }, { name: 'stage', type: 'int', value: stage }, { name: 'watered', type: 'int', value: watered }] });
   }
+  /** 마을 텃밭: 빈 땅을 찾아 농지 구역(누구나 자기 몫의 밭)으로 만듦. near 에서 너무 가깝지도 멀지도 않은 곳.
+   *  안내판 · 허수아비 · 도우미가 서는 자리(wp_hand)를 함께 둠. 자리가 없으면 false */
+  communityPlot(near, label = '마을 텃밭') {
+    const { W, H } = this;
+    const occ = new Set();
+    for (const o of this.objects) { const g = (k) => o.properties.find((p) => p.name === k)?.value ?? 0; const cx = g('cellX'), cy = g('cellY'), w = g('cellW') || 1, h = g('cellH') || 1; for (let y = cy - h + 1; y <= cy; y++) for (let x = cx; x < cx + w; x++) occ.add(y * W + x); }
+    const warpNear = (x, y) => this.warps.some((w) => x >= w.x / T - 4 && x <= (w.x + w.width) / T + 4 && y >= w.y / T - 4 && y <= (w.y + w.height) / T + 4);
+    const spawnNear = (x, y) => this.spawns.some((s) => Math.abs(s.x / T - x) < 1.5 && Math.abs(s.y / T - y) < 1.5);
+    const free = (x, y, strict) => this.inb(x, y) && x > 1 && y > 3 && x < W - 2 && y < H - 2 && !this.blocked[y][x] && this.terrain[y][x] !== Wt && !this.cliff[y * W + x] && !(y > 0 && this.cliff[(y - 1) * W + x]) && !this.bridge[y * W + x]
+      && !occ.has(y * W + x) && !warpNear(x, y) && !spawnNear(x, y) && (!strict || (!this.reserved[y][x] && this.terrain[y][x] === G));
+    for (const [w, h, strict] of [[7, 5, true], [6, 4, true], [5, 4, true], [6, 4, false], [5, 3, false], [4, 3, false]]) {
+      let best = null, bd = 1e9;
+      for (let y0 = 4; y0 + h + 2 < H - 2; y0++) for (let x0 = 2; x0 + w + 2 < W - 2; x0++) {
+        let ok = true;
+        for (let y = y0; y < y0 + h + 2 && ok; y++) for (let x = x0; x < x0 + w + 2; x++) if (!free(x, y, strict)) { ok = false; break; }
+        if (!ok) continue;
+        const d = Math.hypot(x0 + w / 2 + 1 - near[0], y0 + h / 2 + 1 - near[1]);
+        const score = d < 7 ? 100 - d : d;
+        if (score < bd) { bd = score; best = [x0, y0]; }
+      }
+      if (!best) continue;
+      const [x0, y0] = best;
+      for (let y = y0 + 1; y <= y0 + h; y++) for (let x = x0 + 1; x <= x0 + w; x++) { this.terrain[y][x] = G; this.decor[y * W + x] = 0; }
+      this.plot('town_plot', x0 + 1, y0 + 1, w, h, '*', 0);
+      this.reserve(x0, y0, x0 + w + 1, y0 + h + 1);
+      this.place('sign', x0, y0, { force: true, props: { interact: 'sign', text: `${label}\n괭이로 갈고 씨앗을 심어 보세요. 내 밭은 나에게만 보여요.\n마을 사람과 친해지면 밭일을 도와준대요.` } });
+      this.place('scarecrow', x0 + w + 1, y0, { force: true });
+      this.spawn('wp_hand', x0 + w + 1, y0 + 2);
+      this.spawn('wp_plot', x0 + Math.floor(w / 2) + 1, y0 + h + 1);
+      return true;
+    }
+    return false;
+  }
+
   /** 다른 맵으로 넘어가는 영역 (셀 단위) */
   warp(x, y, w, h, to, spawn, extra = {}) {
     this.warps.push({ id: this.oid++, name: `to_${to}`, type: 'warp', x: x * T, y: y * T, width: w * T, height: h * T, rotation: 0, visible: true, properties: [{ name: 'to', type: 'string', value: to }, { name: 'spawn', type: 'string', value: spawn }, ...Object.entries(extra).map(([name, value]) => ({ name, type: 'string', value: String(value) }))] });

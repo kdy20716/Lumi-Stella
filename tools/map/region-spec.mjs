@@ -130,6 +130,20 @@ export const DEEP_CAVES = [
   { id: 'wayward_deep', name: '헤매는 동굴 바닥', parent: 'wayward_2f', need: 'climb', theme: 'dark', tier: 6, x: 66, y: 118, desc: '절벽 아래 숨은 어둠의 굴. 낯선 루미가 산다.' },
   { id: 'iron_deep', name: '무쇠섬 최심부', parent: 'iron_2f', need: 'smash', theme: 'mine', tier: 8, x: 344, y: 212, desc: '쇳덩이 바위 속 깊은 곳의 보물 광맥.' },
   { id: 'coronet_deep', name: '별마루산 수정 동굴', parent: 'coronet_2f', need: 'climb', theme: 'crystal', tier: 8, x: 186, y: 74, desc: '바위벽 너머, 별빛이 굳어 수정이 된 동굴.' },
+  // ── 사이드 스토리: 별마루산 미로 → 시험의 방(루미 마스터) → 별의 요람(전설 스텔라) ──
+  { id: 'star_maze', name: '별마루산 미로', parent: 'coronet_3f', need: 'climb', theme: 'crystal', tier: 9, x: 200, y: 74, maze: true, desc: '수정 벽이 길을 감추는 산속의 미로. 끝까지 뚫고 간 사람은 손에 꼽는다.' },
+  { id: 'master_hall', name: '시험의 방', parent: 'star_maze', theme: 'crystal', tier: 9, x: 203, y: 71, chamber: true, safe: true, desc: '미로 끝의 고요한 방. 누군가 기다리고 있다.' },
+  { id: 'stella_nest', name: '별의 요람', parent: 'master_hall', theme: 'crystal', tier: 9, x: 206, y: 68, chamber: true, safe: true, feature: 'stella', desc: '별빛이 고여 잠든 방. 전설의 루미 스텔라의 보금자리.' },
+  // ── 사이드 스토리: 동서남북 네 탑 (입구 → 시련의 층 → 꼭대기) ──
+  ...[['n', '북쪽 탑', 'route18', 'ice', 150, 12], ['e', '동쪽 탑', 'route24', 'ruin', 322, 110], ['s', '남쪽 탑', 'route5', 'ruin', 162, 226], ['w', '서쪽 탑', 'route25', 'dark', 22, 110]].flatMap(([d, nm, parent, theme, x, y]) => [
+    { id: `spire_${d}`, name: `${nm} · 입구`, parent, outdoor: true, theme, tier: 9, x, y, chamber: true, safe: true, spire: d, desc: `${nm}. 오래전 별빛을 지키려 세운 네 탑 가운데 하나.` },
+    { id: `spire_${d}_2f`, name: `${nm} · 시련의 층`, parent: `spire_${d}`, up: true, theme, tier: 9, x, y: y - 3, noOre: true, maze: true, spire: d },
+    { id: `spire_${d}_top`, name: `${nm} · 꼭대기`, parent: `spire_${d}_2f`, up: true, theme, tier: 9, x, y: y - 6, chamber: true, safe: true, feature: 'spire_top', spire: d },
+  ]),
 ];
 /** 비전 기술로 여는 숨은 지역 (그 지역 맵 안, 들어온 입구에서 몇 칸 안쪽을 막음) */
 export const PLACE_GATES = { eterna_forest: 'cut', marsh: 'cut', acuity_lake: 'climb', valor_lake: 'cut' };
+
+/** 깊은 동굴 가운데 '방 하나짜리' (미로가 아니라 가운데 둥근 방) — 맵과 배경 그림이 같은 모양을 쓰도록 여기서 한 번만 정함 */
+export const CHAMBERS = new Set(DEEP_CAVES.filter((d) => d.chamber).map((d) => d.id));
+export const MAZES = new Set(DEEP_CAVES.filter((d) => d.maze).map((d) => d.id));

@@ -75,11 +75,11 @@ export abstract class Authority {
       case 'time': case 'newDay': this.time = { ...e.time }; this.subMs = 0; break;
       case 'gold': if (e.playerId === me.id) { this.gold = e.gold; me.gold = e.gold; } break;
       case 'player': if (e.id === me.id) { me.energy = e.energy; me.inventory = e.inventory.map((s) => ({ ...s })); } break;
-      case 'tile': if (me.map === 'farm' && e.owner === this.farmOwner) { const k = `${e.tile.x},${e.tile.y}`; if (e.tile.soil === SoilState.Unplowed) this.tiles.delete(k); else this.tiles.set(k, { ...e.tile, crop: e.tile.crop ? { ...e.tile.crop } : null }); } break;
+      case 'tile': if ((e.map ?? 'farm') === me.map && e.owner === this.farmOwner) { const k = `${e.tile.x},${e.tile.y}`; if (e.tile.soil === SoilState.Unplowed) this.tiles.delete(k); else this.tiles.set(k, { ...e.tile, crop: e.tile.crop ? { ...e.tile.crop } : null }); } break;
       case 'objectRemoved': if (!e.owner || e.owner === this.farmOwner) this.removed.add(e.key); break;
       case 'objectRestored': for (const k of e.keys) this.removed.delete(k); break;
       case 'forage': this.forage = [...e.spots]; break;
-      case 'party': if (e.id === me.id) Object.assign(me, { party: e.party.map((c) => ({ ...c, moves: [...c.moves] })), bag: { ...e.bag }, badges: [...e.badges], defeated: [...e.defeated], seen: [...e.seen], caught: [...e.caught], visited: [...e.visited], recipes: [...(e.recipes ?? [])], flags: [...(e.flags ?? [])] }); break;
+      case 'party': if (e.id === me.id) Object.assign(me, { party: e.party.map((c) => ({ ...c, moves: [...c.moves] })), bag: { ...e.bag }, badges: [...e.badges], defeated: [...e.defeated], seen: [...e.seen], caught: [...e.caught], visited: [...e.visited], recipes: [...(e.recipes ?? [])], flags: [...(e.flags ?? [])], bonds: { ...(e.bonds ?? me.bonds ?? {}) }, asks: { ...(e.asks ?? me.asks ?? {}) }, stock: JSON.parse(JSON.stringify(e.stock ?? me.stock ?? {})), opened: [...(e.opened ?? me.opened ?? [])] }); break;
       case 'room': if (e.playerId === me.id) { Object.assign(me, { map: e.map, inst: e.inst, world: e.world, x: e.x, y: e.y }); this.applySnapshot(e.snapshot); } break;
       case 'look': { if (e.id === me.id) { me.look = e.look; me.name = e.name; } const r = this.roster.get(e.id); if (r) { r.look = e.look; r.name = e.name; } break; }
       case 'dish': if (e.room === this.room) this.dish = e.dish; break;

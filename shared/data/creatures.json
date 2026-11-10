@@ -508,20 +508,63 @@
         "star_rain"
       ]
     ],
-    "description": "별마루산 꼭대기 별의 제단에서 하늘의 별빛을 땅으로 나누어 주는 전설의 루미. 그믐단이 그 힘을 노렸다.",
+    "description": "별마루산 꼭대기 별의 제단에서 하늘의 별빛을 땅으로 나누어 주는 전설의 루미. 성간단이 그 힘을 노렸다.",
+    "helps": "exp",
+    "legend": "legend"
+  },
+  "stella": {
+    "id": "stella",
+    "name": "스텔라",
+    "type": "빛",
+    "kind": "별빛 루미 · 전설",
+    "base": {
+      "hp": 95,
+      "atk": 100,
+      "def": 90,
+      "spd": 110
+    },
+    "catchRate": 0.03,
+    "expYield": 320,
+    "learnset": [
+      [
+        1,
+        "flash"
+      ],
+      [
+        1,
+        "quick_attack"
+      ],
+      [
+        1,
+        "starlight"
+      ],
+      [
+        45,
+        "healing_light"
+      ],
+      [
+        55,
+        "meteor"
+      ],
+      [
+        70,
+        "star_rain"
+      ]
+    ],
+    "description": "별마루산 미로 가장 깊은 곳, 별의 요람에서 잠든 전설의 루미. 이 지방의 이름 「루미 스텔라」가 이 루미에게서 왔다고 한다. 진짜 강한 트레이너 앞에만 눈을 뜬다.",
     "helps": "exp",
     "legend": "legend"
   },
   "onnuri": {
     "id": "onnuri",
-    "name": "온누리",
+    "name": "제네시스",
     "type": "노말",
     "kind": "태초의 루미 · 환상",
     "base": {
-      "hp": 120,
-      "atk": 120,
-      "def": 120,
-      "spd": 120
+      "hp": 160,
+      "atk": 100,
+      "def": 110,
+      "spd": 100
     },
     "catchRate": 0,
     "fixedCatch": 0.001,
@@ -548,9 +591,15 @@
         "genesis"
       ]
     ],
-    "description": "하늘에서 떨어진 첫 별빛의 씨앗에서 태어나 루미나 지방을 빚었다는 환상의 루미. 시련의 오카리나 소리에만 모습을 드러낸다.",
+    "description": "하늘에서 떨어진 첫 별빛의 씨앗에서 태어나 루미나 지방을 빚었다는 태초의 루미. 네 탑의 빛이 모두 켜지고 별의 제단에 마지막 선율이 울릴 때에만 모습을 드러낸다.",
     "helps": "exp",
-    "legend": "myth"
+    "legend": "myth",
+    "boss": {
+      "ballBelow": 0.5,
+      "rate": 0.001,
+      "lowBelow": 0.2,
+      "lowRate": 0.1
+    }
   },
   "g1a": {
     "id": "g1a",

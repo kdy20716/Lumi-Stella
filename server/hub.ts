@@ -32,12 +32,13 @@ export class Hub {
     const m: S2C = { t: 'sim', event };
     switch (event.type) {
       case 'player': case 'party': case 'story': return this.sendTo(event.id, m);
-      case 'help': case 'gold': case 'cleared': return this.sendTo(event.playerId, m);
+      case 'help': case 'gold': case 'cleared': case 'opened': return this.sendTo(event.playerId, m);
       case 'room': this.rosterDirty = true; return this.sendTo(event.playerId, m);
       case 'invite': return this.sendTo(event.to, m);
       case 'toast': if (event.playerId) return this.sendTo(event.playerId, m); if (event.room) return this.toRoom(event.room, m); return this.broadcast(m);
       case 'emote': case 'dish': return this.toRoom(event.room, m);
-      case 'tile': case 'placed': case 'unplaced': return this.toRoom(roomKey('farm', event.owner), m);
+      case 'tile': if (event.map && event.map !== 'farm') return this.sendTo(event.owner, m); return this.toRoom(roomKey('farm', event.owner), m);   // 마을 텃밭은 주인에게만
+      case 'placed': case 'unplaced': return this.toRoom(roomKey('farm', event.owner), m);
       case 'objectRemoved': if (event.owner) { this.toRoom(roomKey('farm', event.owner), m); return this.toRoom(roomKey('home', event.owner), m); } return this.broadcast(m);
       case 'look': this.rosterDirty = true; return this.broadcast(m);
       case 'newDay': this.broadcast(m); this.onNewDay(); return;

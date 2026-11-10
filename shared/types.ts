@@ -45,6 +45,8 @@ export interface ItemDef {
   tier?: number;         // 도구 등급 0 기본 · 1 구리 · 2 강철 · 3 별빛
   energy?: number;       // 음식: 회복 에너지
   catchBonus?: number;   // 루미볼 포획 보정
+  /** 특수 볼: quick 첫 턴 · dark 밤/동굴 · type:<속성> · repeat 잡아 본 종 · level 높은 레벨 */
+  ballRule?: string;
   heal?: number;         // 배틀 회복량
   boost?: { atk?: number; def?: number }; // 도핑약: 배틀 중 능력 단계 상승
   place?: string;        // 설치물: 농장에 놓이는 오브젝트 종류 (망치로 부수면 아이템으로 돌아옴)
@@ -115,7 +117,20 @@ export interface PlayerState {
   /** 이 맵에서 비전 기술로 치운 장애물 (맵을 떠나면 다시 생김) */
   cleared?: string[];
   flags: string[];                // 본편 사건 진행 (shared/data/chapters.json 의 사건 id)
+  // ── 마을 텃밭 · 주민 호감도 ──
+  /** 주민 호감도 (0~10점 = 하트 5개) */
+  bonds?: Record<string, number>;
+  /** 주민과 마지막으로 이야기한 날 (하루 한 번만 호감도가 오름) */
+  bondDay?: Record<string, number>;
+  /** 주민 부탁을 들어준 횟수 (사이드 스토리 단계) */
+  asks?: Record<string, number>;
+  /** 도우미가 거둬서 맡아 둔 수확물: 마을 → 아이템 → 개수 */
+  stock?: Record<string, Record<string, number>>;
+  /** 연 보물 상자 · 주운 반짝이 (`맵:오브젝트id`) — 한 번 열면 다시 생기지 않음 */
+  opened?: string[];
 }
+/** 호감도 규칙 */
+export const BOND_MAX = 10, BOND_WATER = 4, BOND_ASK_AT = [0, 3, 6];
 
 export type LumiType = '노말' | '풀' | '물' | '불' | '땅' | '바람' | '빛';
 export interface CreatureInst { uid: string; species: string; level: number; exp: number; hp: number; moves: string[]; /** 기술별 남은 PP (moves 와 같은 순서). 없으면 가득 */ pp?: number[] }
@@ -126,6 +141,8 @@ export interface SpeciesDef {
   helps: 'farm' | 'fish' | 'mine' | 'forage' | 'energy' | 'exp';
   /** 전설 · 환상: 야생에 나오지 않고 정해진 곳에서만 */
   legend?: 'legend' | 'myth';
+  /** 보스(제네시스): 체력이 ballBelow 보다 많으면 볼을 못 던짐 · 그 아래는 rate · lowBelow 아래는 lowRate (태초볼은 그 아래에서 100%) */
+  boss?: { ballBelow: number; rate: number; lowBelow: number; lowRate: number };
   /** 체력과 볼에 상관없이 고정 포획률 (태초볼 제외) */
   fixedCatch?: number;
   /** 진화: 이 레벨이 되면 to 로 */
@@ -174,6 +191,11 @@ export interface SaveData {
   farm: { tiles: FarmTile[]; removed: number[]; placed?: PlacedObject[]; ver?: number };
   story?: number;
   flags?: string[];
+  bonds?: Record<string, number>; bondDay?: Record<string, number>; asks?: Record<string, number>; stock?: Record<string, Record<string, number>>;
+  /** 마을 텃밭 (마을 → 경작지) */
+  plots?: Record<string, FarmTile[]>;
+  opened?: string[];
+  day?: number;
   visited?: string[];
   recipes?: string[];
   /** 마지막 위치 (다시 접속하면 그 자리에서 이어서). 실내면 나갈 곳(ret)도 */
@@ -193,7 +215,13 @@ export type ActionIntent =
   | { kind: 'sleep' }
   | { kind: 'debugDay' }                              // 테스트용: 자리 그대로 다음 날 (혼자일 때만, 키는 없음)
   | { kind: 'legend' }                                // 별의 제단: 전설 별무리
-  | { kind: 'ocarina' }                               // 별의 제단에서 오카리나: 환상 온누리
+  | { kind: 'ocarina' }                               // 별의 제단: 깨어난 제네시스에게 말을 걺
+  | { kind: 'stella' }                                // 별의 요람: 전설 스텔라
+  | { kind: 'flute'; at: string }                     // 시련의 오카리나: 'seal:<탑>' 봉인 · 'top:<탑>' 꼭대기 · 'altar' 마지막 선율
+  | { kind: 'talk'; npc: string }                     // 주민과 이야기 (하루 한 번 호감도)
+  | { kind: 'ask'; npc: string }                      // 주민 부탁 들어주기 (물건 건네기)
+  | { kind: 'collect'; map: string }
+  | { kind: 'loot'; objectId: number }                // 보물 상자 열기 · 반짝이는 것 줍기                  // 도우미가 맡아 둔 수확물 받기
   | { kind: 'rematch' }                               // 루미 리그: 루미 마스터 재대결 (도감 완성)
   | { kind: 'pull'; objectId: number }               // 잡초 뽑기 (맨손)
   | { kind: 'place'; slot: number; tx: number; ty: number }

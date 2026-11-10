@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T17:08:41.147Z",
+  "generatedAt": "2026-11-10T14:50:28.291Z",
   "tileSize": 16,
   "images": {
     "water0": {
@@ -202,6 +202,24 @@
     },
     "cave_hole": {
       "path": "assets/objects/cave_hole.png",
+      "w": 16,
+      "h": 16,
+      "originY": 0.875
+    },
+    "spire": {
+      "path": "assets/objects/spire.png",
+      "w": 48,
+      "h": 104,
+      "originY": 0.9903846153846154
+    },
+    "chest": {
+      "path": "assets/objects/chest.png",
+      "w": 16,
+      "h": 16,
+      "originY": 0.9375
+    },
+    "glint": {
+      "path": "assets/objects/glint.png",
       "w": 16,
       "h": 16,
       "originY": 0.875
@@ -734,6 +752,96 @@
       "h": 480,
       "originY": 1
     },
+    "cave_star_maze": {
+      "path": "assets/caves/star_maze.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_master_hall": {
+      "path": "assets/caves/master_hall.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_stella_nest": {
+      "path": "assets/caves/stella_nest.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_n": {
+      "path": "assets/caves/spire_n.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_n_2f": {
+      "path": "assets/caves/spire_n_2f.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_n_top": {
+      "path": "assets/caves/spire_n_top.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_e": {
+      "path": "assets/caves/spire_e.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_e_2f": {
+      "path": "assets/caves/spire_e_2f.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_e_top": {
+      "path": "assets/caves/spire_e_top.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_s": {
+      "path": "assets/caves/spire_s.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_s_2f": {
+      "path": "assets/caves/spire_s_2f.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_s_top": {
+      "path": "assets/caves/spire_s_top.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_w": {
+      "path": "assets/caves/spire_w.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_w_2f": {
+      "path": "assets/caves/spire_w_2f.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
+    "cave_spire_w_top": {
+      "path": "assets/caves/spire_w_top.png",
+      "w": 640,
+      "h": 480,
+      "originY": 1
+    },
     "windmill_blades": {
       "path": "assets/buildings/windmill_blades.png",
       "w": 64,
@@ -1231,7 +1339,7 @@
       "path": "assets/ui/icons.png",
       "frameWidth": 16,
       "frameHeight": 16,
-      "frames": 84,
+      "frames": 91,
       "originY": 0.9375,
       "ids": [
         "hoe",
@@ -1303,6 +1411,13 @@
         "planter_box",
         "origin_ball",
         "ocarina",
+        "quick_ball",
+        "moon_ball",
+        "tide_ball",
+        "leaf_ball",
+        "ember_ball",
+        "repeat_ball",
+        "heavy_ball",
         "hoe_copper",
         "hoe_iron",
         "hoe_star",
@@ -1427,6 +1542,13 @@
     },
     "lumi_onnuri": {
       "path": "assets/lumi/onnuri.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_stella": {
+      "path": "assets/lumi/stella.png",
       "frameWidth": 32,
       "frameHeight": 32,
       "frames": 6,
@@ -2183,6 +2305,13 @@
     },
     "lumi_big_onnuri": {
       "path": "assets/lumi/big_onnuri.png",
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "frames": 2,
+      "originY": 0.9583333333333334
+    },
+    "lumi_big_stella": {
+      "path": "assets/lumi/big_stella.png",
       "frameWidth": 96,
       "frameHeight": 96,
       "frames": 2,
@@ -28151,6 +28280,7 @@
     "ikkigom": "lumi_ikkigom",
     "byeolmuri": "lumi_byeolmuri",
     "onnuri": "lumi_onnuri",
+    "stella": "lumi_stella",
     "astra": "lumi_astra",
     "g1a": "lumi_g1a",
     "g1b": "lumi_g1b",
@@ -28260,6 +28390,7 @@
   },
   "lumiBig": {
     "byeolmuri": "lumi_big_byeolmuri",
-    "onnuri": "lumi_big_onnuri"
+    "onnuri": "lumi_big_onnuri",
+    "stella": "lumi_big_stella"
   }
-}
+}

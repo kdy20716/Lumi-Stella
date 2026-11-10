@@ -187,6 +187,7 @@ const CAVE_THEME = {
   ice: { floor: '#a8c8dc', floor2: '#c4dcea', wall: '#2e4a66', face: '#5a84a8', rim: '#a8d0ec' },
   dark: { floor: '#3e3a46', floor2: '#4a4654', wall: '#100e14', face: '#2a2632', rim: '#4e4858' },
   mine: { floor: '#7e684e', floor2: '#907a5c', wall: '#2a2018', face: '#4e3c2c', rim: '#7e6450', beam: true },
+  ruin: { floor: '#8a8478', floor2: '#9a9486', wall: '#22222c', face: '#4a4a58', rim: '#8a8a9a' },
   sea: { floor: '#5e6e6c', floor2: '#6e8080', wall: '#1a262c', face: '#32464e', rim: '#5a7a80', puddle: '#3a8a9a' },
 };
 export function buildCaveBg(node) {

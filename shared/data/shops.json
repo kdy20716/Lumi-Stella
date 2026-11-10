@@ -134,6 +134,10 @@
         "price": 200
       },
       {
+        "itemId": "quick_ball",
+        "price": 300
+      },
+      {
         "itemId": "potion",
         "price": 100
       },
@@ -152,6 +156,272 @@
       {
         "itemId": "bread",
         "price": 80
+      }
+    ]
+  },
+  "mart2": {
+    "id": "mart2",
+    "name": "루미 마트",
+    "owner": null,
+    "open": 800,
+    "close": 2200,
+    "greeting": "루미 마트예요. 먼 길 가기 전에 든든히 챙겨 가세요!",
+    "items": [
+      {
+        "itemId": "lumi_ball",
+        "price": 80
+      },
+      {
+        "itemId": "super_ball",
+        "price": 200
+      },
+      {
+        "itemId": "quick_ball",
+        "price": 300
+      },
+      {
+        "itemId": "tide_ball",
+        "price": 300
+      },
+      {
+        "itemId": "leaf_ball",
+        "price": 300
+      },
+      {
+        "itemId": "potion",
+        "price": 100
+      },
+      {
+        "itemId": "super_potion",
+        "price": 260
+      },
+      {
+        "itemId": "seeds_lumi_herb",
+        "price": 30
+      },
+      {
+        "itemId": "seeds_fire_pepper",
+        "price": 60
+      },
+      {
+        "itemId": "seeds_iron_bean",
+        "price": 60
+      },
+      {
+        "itemId": "seeds_parsnip",
+        "price": 20
+      },
+      {
+        "itemId": "seeds_tomato",
+        "price": 50
+      },
+      {
+        "itemId": "hoe",
+        "price": 150
+      },
+      {
+        "itemId": "watering_can",
+        "price": 120
+      },
+      {
+        "itemId": "pickaxe",
+        "price": 250
+      },
+      {
+        "itemId": "rod",
+        "price": 180
+      },
+      {
+        "itemId": "bread",
+        "price": 80
+      }
+    ]
+  },
+  "mart3": {
+    "id": "mart3",
+    "name": "루미 마트",
+    "owner": null,
+    "open": 800,
+    "close": 2200,
+    "greeting": "루미 마트예요. 먼 길 가기 전에 든든히 챙겨 가세요!",
+    "items": [
+      {
+        "itemId": "lumi_ball",
+        "price": 80
+      },
+      {
+        "itemId": "super_ball",
+        "price": 200
+      },
+      {
+        "itemId": "hyper_ball",
+        "price": 420
+      },
+      {
+        "itemId": "quick_ball",
+        "price": 300
+      },
+      {
+        "itemId": "moon_ball",
+        "price": 300
+      },
+      {
+        "itemId": "ember_ball",
+        "price": 300
+      },
+      {
+        "itemId": "repeat_ball",
+        "price": 300
+      },
+      {
+        "itemId": "potion",
+        "price": 100
+      },
+      {
+        "itemId": "super_potion",
+        "price": 260
+      },
+      {
+        "itemId": "atk_tonic",
+        "price": 300
+      },
+      {
+        "itemId": "def_tonic",
+        "price": 300
+      },
+      {
+        "itemId": "seeds_lumi_herb",
+        "price": 30
+      },
+      {
+        "itemId": "seeds_fire_pepper",
+        "price": 60
+      },
+      {
+        "itemId": "seeds_iron_bean",
+        "price": 60
+      },
+      {
+        "itemId": "seeds_parsnip",
+        "price": 20
+      },
+      {
+        "itemId": "seeds_tomato",
+        "price": 50
+      },
+      {
+        "itemId": "hoe",
+        "price": 150
+      },
+      {
+        "itemId": "watering_can",
+        "price": 120
+      },
+      {
+        "itemId": "pickaxe",
+        "price": 250
+      },
+      {
+        "itemId": "rod",
+        "price": 180
+      },
+      {
+        "itemId": "bread",
+        "price": 80
+      }
+    ]
+  },
+  "mart4": {
+    "id": "mart4",
+    "name": "루미 마트",
+    "owner": null,
+    "open": 800,
+    "close": 2200,
+    "greeting": "루미 마트예요. 먼 길 가기 전에 든든히 챙겨 가세요!",
+    "items": [
+      {
+        "itemId": "super_ball",
+        "price": 200
+      },
+      {
+        "itemId": "hyper_ball",
+        "price": 420
+      },
+      {
+        "itemId": "star_ball",
+        "price": 1200
+      },
+      {
+        "itemId": "quick_ball",
+        "price": 300
+      },
+      {
+        "itemId": "moon_ball",
+        "price": 300
+      },
+      {
+        "itemId": "heavy_ball",
+        "price": 300
+      },
+      {
+        "itemId": "repeat_ball",
+        "price": 300
+      },
+      {
+        "itemId": "super_potion",
+        "price": 260
+      },
+      {
+        "itemId": "max_potion",
+        "price": 900
+      },
+      {
+        "itemId": "atk_tonic",
+        "price": 300
+      },
+      {
+        "itemId": "def_tonic",
+        "price": 300
+      },
+      {
+        "itemId": "seeds_lumi_herb",
+        "price": 30
+      },
+      {
+        "itemId": "seeds_fire_pepper",
+        "price": 60
+      },
+      {
+        "itemId": "seeds_iron_bean",
+        "price": 60
+      },
+      {
+        "itemId": "seeds_parsnip",
+        "price": 20
+      },
+      {
+        "itemId": "seeds_tomato",
+        "price": 50
+      },
+      {
+        "itemId": "hoe",
+        "price": 150
+      },
+      {
+        "itemId": "watering_can",
+        "price": 120
+      },
+      {
+        "itemId": "pickaxe",
+        "price": 250
+      },
+      {
+        "itemId": "rod",
+        "price": 180
+      },
+      {
+        "itemId": "cake",
+        "price": 150
       }
     ]
   }

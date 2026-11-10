@@ -327,13 +327,13 @@ export const phone = {
     const seen = new Set(me.seen), caught = new Set(me.caught);
     const goal = all.filter((sp) => sp.legend !== 'myth'), done = goal.filter((sp) => caught.has(sp.id)).length;
     return `<div class="ph-dexhead"><span>본 루미 <b>${seen.size}</b></span><span>잡은 루미 <b>${caught.size}</b></span><span>완성 <b>${done}/${goal.length}</b></span></div>
-      ${done >= goal.length ? '<div class="ph-heldbar">🏆 루미 도감 완성! 루미 리그의 루미 마스터가 다시 기다리고 있어요.</div>' : ''}
+      ${done >= goal.length ? '<div class="ph-heldbar">🏆 루미 도감 완성! 별의 요람에서 루미 마스터가 기다리고 있어요.</div>' : ''}
       <div class="ph-dex">${all.map((sp, i) => {
         const s = seen.has(sp.id) || caught.has(sp.id), c = caught.has(sp.id);
-        return `<div class="ph-dexcell ${s ? '' : 'unk'}" title="${s ? `${sp.name} · ${sp.type} · ${esc(sp.description)}` : '아직 만나지 못한 루미'}">
+        return `<div class="ph-dexcell ${s ? '' : 'unk'}" title="${s ? `${sp.name} · ${sp.type} · ${esc(sp.description)}` : '??? — 아직 한 번도 겨뤄 보지 못한 루미'}">
           <span class="no">${String(i + 1).padStart(3, '0')}</span>
-          <span class="lumi-icon" style="background-image:url(assets/lumi/${sp.id}.png);width:40px;height:40px;background-size:240px 40px;${s ? '' : 'filter:brightness(0) opacity(.35)'}"></span>
-          <span class="nm">${s ? sp.name : '???'}</span>${sp.legend ? `<span class="ph-small" style="color:${sp.legend === 'myth' ? '#d0547a' : '#6a4ab8'}">${sp.legend === 'myth' ? '환상' : '전설'}</span>` : ''}${c ? `<span class="ball px-icon" style="${iconStyle('lumi_ball', 14)}"></span>` : ''}</div>`;
+          <span class="lumi-icon" style="background-image:url(assets/lumi/${sp.id}.png);width:40px;height:40px;background-size:240px 40px;${s ? '' : 'filter:brightness(0)'}"></span>
+          <span class="nm">${s ? sp.name : '???'}</span>${sp.legend && s ? `<span class="ph-small" style="color:${sp.legend === 'myth' ? '#d0547a' : '#6a4ab8'}">${sp.legend === 'myth' ? '환상' : '전설'}</span>` : ''}${c ? `<span class="ball px-icon" style="${iconStyle('lumi_ball', 14)}"></span>` : ''}</div>`;
       }).join('')}</div>
       <div class="ph-foot">생활 도감(농사 · 채광 · 낚시)은 다음 업데이트에서 추가돼요</div>`;
   },

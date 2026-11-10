@@ -190,6 +190,24 @@ async function buildMap(id: string, man: Manifest, maps: Record<string, MapWithP
       buildings.push(Object.assign(o, { door: [doorX, cellY + 1] as [number, number] }));
       continue;
     }
+    // 동서남북의 탑: 납작한 그림 대신 진짜 돌탑 (팔각 기둥 + 톱니 난간 + 빛받이 수정)
+    if (type === 'spire') {
+      const cx = cellX + cellW / 2, cz = cellY + 1 - cellH / 2, y0 = hts.sample(cx, Math.min(H - 0.01, cellY + 0.5));
+      const g = new THREE.Group();
+      const cv = document.createElement('canvas'); cv.width = 64; cv.height = 96; const c2 = cv.getContext('2d')!;
+      c2.fillStyle = '#8e94aa'; c2.fillRect(0, 0, 64, 96);
+      for (let r = 0; r < 16; r++) for (let k = 0; k < 9; k++) { c2.fillStyle = (r * 7 + k * 3) % 5 === 0 ? '#6a6e84' : (r + k) % 3 === 0 ? '#a6acc0' : '#8e94aa'; c2.fillRect(k * 8 - (r % 2 ? 4 : 0), r * 6, 7, 5); }
+      c2.fillStyle = '#3a3c4c'; for (const yy of [30, 62]) c2.fillRect(0, yy, 64, 3);
+      const st = new THREE.CanvasTexture(cv); st.magFilter = THREE.NearestFilter; st.minFilter = THREE.NearestFilter; st.colorSpace = THREE.SRGBColorSpace;
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.5, 6.4, 8), new THREE.MeshBasicMaterial({ map: st })); body.position.y = 3.2; g.add(body);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.2, 0.5, 8), new THREE.MeshBasicMaterial({ color: 0x6a6e84 })); rim.position.y = 6.6; g.add(rim);
+      for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2 + Math.PI / 8; const m2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), new THREE.MeshBasicMaterial({ color: 0xa6acc0 })); m2.position.set(Math.cos(a) * 1.15, 7.05, Math.sin(a) * 1.15); g.add(m2); }
+      const gem = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1, 4), new THREE.MeshBasicMaterial({ color: 0x8aecff })); gem.position.y = 7.5; g.add(gem);
+      const door = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.3), new THREE.MeshBasicMaterial({ color: 0x1c1826 })); door.position.set(0, 0.66, 1.44); door.rotation.x = -0.07; g.add(door);
+      const ao = new THREE.Mesh(new THREE.CircleGeometry(2, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false })); ao.rotation.x = -Math.PI / 2; ao.position.y = 0.03; g.add(ao);
+      g.position.set(cx, y0, cz); group.add(g);
+      continue;
+    }
     let bb: Billboard | null = null;
     if (sh) {
       const img = await loadImg(sh.path);
@@ -223,6 +241,17 @@ async function buildMap(id: string, man: Manifest, maps: Record<string, MapWithP
     const a = new Actor(meta, pixelTex(img, `char:${n.sprite}`), shadowTex, Math.round(img.height / meta.frameHeight));
     a.x = at.x; a.y = at.y + 5; a.play('idle', 'down');
     group.add(a.bb.mesh, a.shadow); actors.push(a);
+  }
+  // 마을 텃밭: 옅은 흙빛 바닥 + 나무 말뚝
+  for (const z of info.farmZones) {
+    if (id === 'farm') break;
+    const y0 = hts.sample(z.x + z.w / 2, z.y + z.h / 2) + 0.03;
+    const soil = new THREE.Mesh(new THREE.PlaneGeometry(z.w, z.h), new THREE.MeshBasicMaterial({ color: 0x7a5230, transparent: true, opacity: 0.45, depthWrite: false }));
+    soil.rotation.x = -Math.PI / 2; soil.position.set(z.x + z.w / 2, y0, z.y + z.h / 2); group.add(soil);
+    const post = new THREE.BoxGeometry(0.16, 0.5, 0.16), pm = new THREE.MeshBasicMaterial({ color: 0x8a5a32 });
+    const put = (x: number, zz: number) => { const p = new THREE.Mesh(post, pm); p.position.set(x, y0 + 0.25, zz); group.add(p); };
+    for (let i = 0; i <= z.w; i++) { put(z.x + i, z.y); put(z.x + i, z.y + z.h); }
+    for (let j = 1; j < z.h; j++) { put(z.x, z.y + j); put(z.x + z.w, z.y + j); }
   }
   return { group, info, hts, interior, waterTex, waterMat, sway, buildings, actors, tall };
 }
@@ -625,6 +654,8 @@ export async function start(first = 'town') {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(20, 1, 0.1, 400);
   const cam = { el: 45, fov: 20, dist: 30, pixel: false, stretch: true };
+  // 확인용: ?dist=거리&el=각도 → 맵 전체를 내려다보는 화면 (지도 검수)
+  { const q = new URLSearchParams(location.search), d = Number(q.get('dist')), e = Number(q.get('el')); if (d > 0) { cam.dist = d; camera.far = Math.max(400, d * 3); } if (e > 0) cam.el = e; }
   const resize = () => {
     renderer.setPixelRatio(cam.pixel ? 0.5 : Math.min(2, window.devicePixelRatio || 1));
     renderer.setSize(window.innerWidth, window.innerHeight, false);

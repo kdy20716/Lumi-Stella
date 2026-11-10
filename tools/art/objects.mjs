@@ -558,3 +558,53 @@ export function buildCaveHole() {
   for (let y = 4; y < 14; y++) { t.set(5, y, '#8a5a32'); t.set(10, y, '#8a5a32'); if (y % 3 === 0) t.hline(5, y, 6, '#b07a42'); }
   return t;
 }
+
+/** 동서남북의 탑 (바깥 모습): 3칸 너비 · 6칸 높이의 오래된 돌탑. 꼭대기에 빛받이 */
+export function buildSpire() {
+  const W = 48, H = 104, t = new Img(W, H);
+  const st = ['#3a3c4c', '#6a6e84', '#8e94aa', '#b8bed0'];
+  // 몸통: 위로 갈수록 살짝 좁아짐
+  for (let y = 18; y < H - 2; y++) {
+    const k = (y - 18) / (H - 20), half = 12 + k * 9;
+    for (let x = Math.round(24 - half); x < Math.round(24 + half); x++) {
+      const u = (x - (24 - half)) / (half * 2);
+      let c = u < 0.18 ? st[3] : u < 0.55 ? st[2] : u < 0.85 ? st[1] : st[0];
+      const row = Math.floor(y / 6), off = row % 2 ? 4 : 0;
+      if (y % 6 === 0 || (x + off) % 8 === 0) c = u < 0.55 ? st[1] : st[0];
+      if (vnoise(x / 3, y / 3, 17, 2) > 0.72) c = u < 0.55 ? st[1] : st[0];
+      t.set(x, y, c);
+    }
+  }
+  // 층을 나누는 띠 (세 줄)
+  for (const y of [40, 62, 84]) { const k = (y - 18) / (H - 20), half = 13 + k * 9; t.rect(Math.round(24 - half), y, Math.round(half * 2), 3, st[0]); t.hline(Math.round(24 - half), y, Math.round(half * 2), st[3]); }
+  // 창 (좁은 틈)
+  for (const [x, y] of [[23, 26], [16, 48], [30, 48], [23, 68]]) { t.rect(x, y, 3, 8, '#16141e'); t.set(x + 1, y + 1, '#ffe58a'); t.set(x + 1, y + 2, '#c9a23a'); }
+  // 문
+  t.rect(18, H - 18, 12, 16, '#16141e'); t.rect(19, H - 17, 10, 15, '#2a2438');
+  for (let i = 0; i < 6; i++) t.set(18 + i, H - 19 - Math.round(Math.sin((i / 5) * Math.PI / 2) * 3), st[3]), t.set(29 - i, H - 19 - Math.round(Math.sin((i / 5) * Math.PI / 2) * 3), st[0]);
+  t.rect(21, H - 10, 6, 2, '#c9a23a'); t.set(24, H - 14, '#ffe58a');
+  // 꼭대기: 톱니 난간 + 빛받이 수정
+  t.rect(10, 14, 28, 5, st[1]); t.hline(10, 14, 28, st[3]);
+  for (let x = 10; x < 38; x += 6) { t.rect(x, 9, 4, 5, st[2]); t.hline(x, 9, 4, st[3]); }
+  t.rect(22, 3, 4, 8, '#8aecff'); t.set(23, 1, '#ffffff'); t.set(24, 2, '#ffffff'); t.rect(22, 3, 1, 8, '#d8faff'); t.rect(25, 3, 1, 8, '#3ab4e0');
+  // 이끼 · 덩굴
+  for (let i = 0; i < 26; i++) { const x = 6 + Math.floor(vnoise(i, 3, 5, 1) * 36), y = 30 + Math.floor(vnoise(i, 7, 9, 1) * 68); if (t.get?.(x, y)?.[3] !== 0) t.set(x, y, i % 3 ? '#4f8a4a' : '#7ab86a'); }
+  t.outline('#1c1a26');
+  return t;
+}
+
+/** 보물 상자 (탐험 보상) */
+export function buildChest() {
+  const t = new Img(16, 16);
+  t.rect(2, 6, 12, 8, '#8a5a2a'); t.rect(2, 4, 12, 4, '#a8703a'); t.hline(3, 4, 10, '#c8904a'); t.rect(2, 8, 12, 1, '#5a3a1c');
+  for (const x of [2, 13]) t.rect(x, 4, 1, 10, '#d0a030'); t.rect(2, 13, 12, 1, '#5a3a1c');
+  t.rect(7, 7, 2, 3, '#ffd65a'); t.set(7, 8, '#8a5a1a'); t.hline(3, 5, 3, '#e0b070');
+  t.outline('#2a1b14');
+  return t;
+}
+/** 반짝이는 것 (숨은 물건): 작은 별빛 */
+export function buildGlint() {
+  const t = new Img(16, 16);
+  for (const [x, y, c] of [[8, 10, '#ffffff'], [7, 10, '#fff4b0'], [9, 10, '#fff4b0'], [8, 9, '#fff4b0'], [8, 11, '#fff4b0'], [6, 10, '#ffd65a'], [10, 10, '#ffd65a'], [8, 8, '#ffd65a'], [8, 12, '#ffd65a'], [11, 7, '#fff4b0'], [5, 13, '#fff4b0']]) t.set(x, y, c);
+  return t;
+}

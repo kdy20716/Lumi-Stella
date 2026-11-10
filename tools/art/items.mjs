@@ -110,7 +110,8 @@ export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_caul
   'berry', 'wild_mushroom', 'dandelion', 'herb', 'stone', 'copper_ore', 'iron_ore', 'star_shard', 'lumi',
   'badge_water', 'badge_leaf', 'badge_earth', 'badge_flame', 'badge_light', 'badge_normal', 'badge_star',
   'seeds_lumi_herb', 'seeds_fire_pepper', 'seeds_iron_bean', 'lumi_herb', 'fire_pepper', 'iron_bean', 'craft',
-  'hammer', 'wood', 'fiber', 'fence_wood', 'crate_wood', 'barrel_wood', 'scarecrow', 'lamp_post', 'planter_box', 'origin_ball', 'ocarina'];
+  'hammer', 'wood', 'fiber', 'fence_wood', 'crate_wood', 'barrel_wood', 'scarecrow', 'lamp_post', 'planter_box', 'origin_ball', 'ocarina',
+  'quick_ball', 'moon_ball', 'tide_ball', 'leaf_ball', 'ember_ball', 'repeat_ball', 'heavy_ball'];
 // 도구 등급 아이콘 (구리 · 강철 · 별빛): 기본 도구 그림의 쇠 부분을 등급 색으로 바꿈
 export const TOOL_TIERS = { copper: ['#8a4a20', '#c8743a', '#f0a868'], iron: ['#4a5a70', '#9aaec4', '#e4eef8'], star: ['#8a6a10', '#e8b830', '#fff2a0'] };
 for (const base of ['hoe', 'watering_can', 'axe', 'pickaxe', 'rod']) for (const tier of Object.keys(TOOL_TIERS)) ICONS.push(`${base}_${tier}`);
@@ -134,6 +135,13 @@ export function buildIcons() {
     lumi_ball: (t) => lumiBall(t, 2, 2, 5, '#5ec8b8', '#c9733a', '#ffd65a'),
     super_ball: (t) => lumiBall(t, 2, 2, 5, '#5a8ae8', '#a8b0c8', '#fff4b0'),
     hyper_ball: (t) => lumiBall(t, 2, 2, 5, '#9a5ae0', '#ffd65a', '#ff9cbc'),
+    quick_ball: (t) => { lumiBall(t, 2, 2, 5, '#f0d030', '#3a6ab0', '#ffffff'); t.line(9, 6, 6, 10, '#3a2a10'); t.line(6, 10, 9, 10, '#3a2a10'); t.line(9, 10, 6, 14, '#3a2a10'); },
+    moon_ball: (t) => { lumiBall(t, 2, 2, 5, '#2a2440', '#8a80c8', '#ffe58a'); t.set(10, 7, '#ffe58a'); t.set(11, 8, '#ffe58a'); t.set(10, 9, '#ffe58a'); },
+    tide_ball: (t) => { lumiBall(t, 2, 2, 5, '#2f7fc8', '#bfe6ff', '#ffffff'); t.hline(4, 11, 3, '#bfe6ff'); t.hline(8, 12, 3, '#bfe6ff'); },
+    leaf_ball: (t) => { lumiBall(t, 2, 2, 5, '#4fae4a', '#8a5a2a', '#e0ffe0'); t.set(5, 11, '#c8f0a0'); t.set(9, 12, '#c8f0a0'); },
+    ember_ball: (t) => { lumiBall(t, 2, 2, 5, '#e0522a', '#3a2a2a', '#ffd65a'); t.set(5, 11, '#ffb04a'); t.set(9, 12, '#ffb04a'); t.set(7, 13, '#ffd65a'); },
+    repeat_ball: (t) => { lumiBall(t, 2, 2, 5, '#c84a6a', '#f0e0c0', '#ffffff'); t.hline(4, 9, 7, '#f0e0c0'); t.hline(4, 12, 7, '#f0e0c0'); },
+    heavy_ball: (t) => { lumiBall(t, 2, 2, 5, '#5a6270', '#2a2e38', '#9aaec4'); t.rect(5, 11, 5, 2, '#2a2e38'); t.set(6, 11, '#9aaec4'); },
     star_ball: (t) => { lumiBall(t, 2, 2, 5, '#2a3a8a', '#e8e8f8', '#ffd65a'); t.set(5, 9, '#fff4b0'); t.set(10, 12, '#fff4b0'); t.set(9, 8, '#ffffff'); },
     potion: (t) => flask(t, '#5fc86a', P.wood.base),
     super_potion: (t) => flask(t, '#4a9ae8', P.wood.base),

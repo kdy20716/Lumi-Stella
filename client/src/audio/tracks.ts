@@ -426,6 +426,32 @@ const T: Track[] = [
     ],
   },
   {
+    // 제네시스가 깨어나는 장면: 낮게 깔린 오르간 · 어긋난 종소리 (섬뜩하게)
+    id: 'omen', title: '태초의 숨결', bpm: 52, bars: 8,
+    chords: 'Cm:16 Cm:16 Abm:16 Abm:16 Cm:16 F#:16 Abm:16 G:16',
+    parts: [
+      { inst: 'bell', vol: 0.75, pan: 0.35, seq: 'C6:4 -:4 F#5:4 -:4 | -:8 Eb6:2 D6:2 -:4 | B5:4 -:4 Eb5:4 -:4 | -:6 Ab5:2 G5:8 | C6:4 -:4 F#5:2 G5:2 -:4 | A#5:4 -:4 C#6:8 | -:4 B5:4 Eb6:4 D6:4 | B5:16' },
+      { inst: 'organ', oct: -2, vol: 0.9, pan: -0.2, seq: 'C4:16 | C4:8 Db4:8 | Ab3:16 | Ab3:8 G3:8 | C4:16 | F#3:16 | Ab3:16 | G3:16' },
+      { inst: 'strings', gen: 'pad', vol: 0.7, pan: 0.1 },
+      { inst: 'sbass', gen: 'bass-half', vol: 0.9 },
+    ],
+    drums: ['k...............', '................', 'k.......k.......', '................', 'k...............', '........k.......', 'k.......k.......', 'k...k...k.k.kkkk'],
+    night: false,
+  },
+  {
+    id: 'battle_genesis', title: '배틀! 태초의 루미', bpm: 176, bars: 8,
+    chords: 'Cm:16 Ab:16 Fm:16 G:16 Cm:16 Eb:16 Fm:16 G7:16',
+    parts: [
+      { inst: 'organ', pan: -0.1, vol: 1.1, seq: 'C5:4 Eb5:2 G5:2 C6:4 B5:2 G5:2 | Ab5:6 G5:2 Eb5:4 C5:4 | F5:2 Ab5:2 C6:4 Db6:2 C6:2 Ab5:4 | G5:6 B5:2 D6:8 | C6:2 Eb6:2 G6:4 F6:2 Eb6:2 D6:4 | Eb6:4 Bb5:4 G5:4 Eb5:4 | F5:2 Ab5:2 C6:2 F6:2 Eb6:4 C6:4 | D6:4 B5:4 G5:4 F6:4' },
+      { inst: 'brass', oct: -1, vol: 0.85, pan: 0.25, seq: 'C5:8 G5:8 | Ab5:8 Eb5:8 | F5:8 C6:8 | G5:8 D6:8 | C6:8 G6:8 | Eb6:8 Bb5:8 | F5:8 C6:8 | D6:8 G5:8' },
+      { inst: 'strings', gen: 'pad', vol: 0.85, pan: -0.3 },
+      { inst: 'bell', gen: 'arp16', vol: 0.4, pan: 0.45 },
+      { inst: 'sbass', gen: 'bass-gallop', vol: 1.3 },
+    ],
+    drums: ['c.hks.hkk.hks.hs', 'k.hks.hkk.hks.hs', 'k.kks.hkk.kks.hs', 'kkhks.hkksssssss'],
+    night: false,
+  },
+  {
     id: 'jingle_badge', title: '배지 획득', bpm: 132, bars: 3, once: true,
     chords: 'C:8 F:8 G:16 C:16',
     parts: [

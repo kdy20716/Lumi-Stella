@@ -63,6 +63,8 @@ export interface BattleState {
   script?: 'rival';
   eventId?: string;          // 본편 사건 승부 (이기면 그 사건 완료)          // 스토리 각본: 라이벌 첫 대결 (주고받다가 버프만 쓰고 짐)
   turn: number;
+  /** 밤 · 동굴 (달그림자 루미볼) */
+  dark?: boolean;
   bg: string;
   foes: CreatureInst[];
   foeIdx: number;
@@ -146,12 +148,22 @@ export class BattleEngine {
     if (!def || (p.bag[itemId] ?? 0) <= 0) return { ok: false as const, reason: 'no-item' };
     if (def.catchBonus) {
       if (st.kind === 'trainer') { log.push({ t: 'text', text: '남의 루미는 잡을 수 없어요!' }); return { ok: true as const, update: { view: this.view(p, st), log } }; }
-      p.bag[itemId]--;
       const foe = st.foes[st.foeIdx], s = stats(foe);
-      const hpFactor = 1 - (foe.hp / s.maxHp) * 0.7;
-      const sp = SPECIES[foe.species];
-      // 태초볼(catchBonus ≥ 100)은 반드시 · 환상 루미는 체력과 상관없이 고정 확률(0.1%)
-      const chance = def.catchBonus >= 100 ? 1 : sp.fixedCatch != null ? sp.fixedCatch : Math.min(0.97, sp.catchRate * def.catchBonus * (0.35 + hpFactor * 1.1));
+      const sp = SPECIES[foe.species], frac = foe.hp / s.maxHp;
+      // 보스(제네시스): 체력이 절반보다 많으면 어떤 볼도 던질 수 없음 (볼도 턴도 쓰지 않음)
+      if (sp.boss && frac > sp.boss.ballBelow) { log.push({ t: 'text', text: '바람이 강하게 불어 루미볼을 던질 수가 없어!' }); return { ok: true as const, update: { view: this.view(p, st), log } }; }
+      p.bag[itemId]--;
+      const hpFactor = 1 - frac * 0.7;
+      // 특수 볼: 조건이 맞으면 보정이 크게 오름
+      let bonus = def.catchBonus;
+      const rule = def.ballRule ?? '';
+      if (rule === 'quick') bonus = st.turn === 0 ? 5 : 1;
+      else if (rule === 'dark') bonus = st.dark ? 3.5 : 1;
+      else if (rule.startsWith('type:')) bonus = sp.type === rule.slice(5) ? 3.5 : 1;
+      else if (rule === 'repeat') bonus = p.caught.includes(foe.species) ? 3.5 : 1;
+      else if (rule === 'level') bonus = foe.level >= 40 ? 3 : foe.level >= 25 ? 2 : 1;
+      // 태초볼(catchBonus ≥ 100)은 반드시 · 보스는 체력 구간별 고정 확률 · 환상 루미는 고정 확률
+      const chance = def.catchBonus >= 100 ? 1 : sp.boss ? (frac <= sp.boss.lowBelow ? sp.boss.lowRate : sp.boss.rate) : sp.fixedCatch != null ? sp.fixedCatch : Math.min(0.97, sp.catchRate * bonus * (0.35 + hpFactor * 1.1));
       const success = this.rand() < chance;
       const shakes = success ? 3 : chance > 0.5 ? 2 : chance > 0.2 ? 1 : 0;
       log.push({ t: 'text', text: `${def.name}을(를) 던졌다!` });

@@ -144,7 +144,50 @@ function onnuri(N, f) {
   return t;
 }
 
-const DRAW = { byeolmuri, onnuri };
+
+// ── 스텔라 (전설 · 빛): 별의 요람에서 잠든 별빛 사슴 — 수정 뿔 · 은하수 갈기 · 혜성 꼬리 ──
+const MOON = ['#8a92c8', '#c8d0f4', '#f0f2ff', '#ffffff'];
+const MOON_D = ['#6a70a8', '#a0a8dc', '#d0d6f8', '#f0f2ff'];
+const MILKY = ['#3a2a7a', '#6a52c8', '#b08af0', '#f0d8ff'];
+const ROSE = ['#a83a78', '#f07ab0', '#ffc0dc', '#ffffff'];
+function stella(N, f) {
+  const t = new Img(N, N), bob = f ? -1.5 : 0;
+  // 혜성 꼬리 (등 뒤로 길게 흐르는 세 갈래 빛)
+  for (const [dy, len, pal] of [[-6, 34, MILKY], [0, 40, ROSE], [7, 30, MILKY]]) paint(t, N, chain([[66, 56 + bob], [78, 50 + dy + bob], [88, 40 + dy * 1.4 + bob], [94 - (40 - len) * 0.3, 26 + dy * 1.8 + bob]], 5, 1.2), pal);
+  // 먼 다리
+  paint(t, N, any(cap(60, 62 + bob, 63, 78, 4, 3), cap(63, 78, 62, 91, 3, 2.4)), MOON_D);
+  paint(t, N, any(cap(40, 62 + bob, 37, 78, 4, 3), cap(37, 78, 38, 91, 3, 2.4)), MOON_D);
+  // 몸통
+  paint(t, N, ell(52, 58 + bob, 19, 12.5), MOON, { band: (x, y, c) => (c === MOON[1] && y > 62 + bob ? MOON[2] : null) });
+  // 가까운 다리 (별빛 발굽)
+  paint(t, N, any(cap(66, 64 + bob, 70, 79, 4.4, 3.2), cap(70, 79, 69, 91, 3.2, 2.6)), MOON);
+  paint(t, N, any(cap(45, 65 + bob, 45, 79, 4.4, 3.2), cap(45, 79, 46, 91, 3.2, 2.6)), MOON);
+  for (const [x, y] of [[69, 92], [46, 92], [62, 92], [38, 92]]) paint(t, N, ell(x, y, 3.2, 2), GOLD);
+  // 목 · 머리
+  paint(t, N, cap(40, 52 + bob, 30, 30 + bob, 8, 6), MOON);
+  paint(t, N, any(ell(26, 26 + bob, 10, 8.5), cap(22, 28 + bob, 12, 33 + bob, 5.5, 3.6)), MOON);
+  // 귀
+  paint(t, N, poly([[30, 20 + bob], [40, 9 + bob], [38, 22 + bob]]), MOON); paint(t, N, poly([[32, 19 + bob], [38, 13 + bob], [37, 21 + bob]]), ROSE);
+  // 은하수 갈기 (목덜미에서 등까지)
+  paint(t, N, chain([[33, 18 + bob], [42, 26 + bob], [48, 40 + bob], [58, 46 + bob], [68, 50 + bob]], 6.5, 3), MILKY, { band: (x, y, c) => ((Math.floor(x * 1.3 + y) % 9) === 0 ? '#ffffff' : null) });
+  // 수정 뿔 (가지 두 쌍)
+  const horn = any(cap(27, 19 + bob, 20, 2 + bob, 2, 0.9), cap(23, 10 + bob, 14, 5 + bob, 1.5, 0.7), cap(31, 18 + bob, 33, 1 + bob, 2, 0.9), cap(32, 9 + bob, 41, 3 + bob, 1.5, 0.7));
+  paint(t, N, horn, CRYSTAL);
+  t.outline('#1c1838', 0.75);
+  // 세부: 이마의 별 · 눈 · 몸의 별자리
+  starAt(t, N, 27, 19 + bob, '#ffd65a', N >= 64 ? 2 : 1);
+  dotAt(t, N, 21, 26 + bob, '#3a2a8a', N >= 64 ? 1 : 0); if (N >= 64) dotAt(t, N, 20.4, 25.2 + bob, '#ffffff');
+  dotAt(t, N, 12, 33 + bob, '#f07ab0');
+  if (N >= 64) {
+    const cons = [[44, 56], [52, 52], [60, 57], [56, 64], [48, 63]];
+    for (let i = 0; i < cons.length; i++) { const a = cons[i], b = cons[(i + 1) % cons.length]; stroke(t, N, [[a[0], a[1] + bob], [b[0], b[1] + bob]], f ? '#d8c8ff' : '#b0a8e8'); }
+    for (const [x, y] of cons) starAt(t, N, x, y + bob, f ? '#fff4b0' : '#ffd65a');
+    for (let i = 0; i < 9; i++) dotAt(t, N, 70 + hash2(i, 2, 5) * 24, 20 + hash2(i, 3, 5) * 40 + bob, i % 2 === f ? '#ffffff' : '#ffc0dc');
+  }
+  return t;
+}
+
+const DRAW = { byeolmuri, onnuri, stella };
 export const LEGEND_ART = Object.keys(DRAW);
 /** 배틀용 큰 그림: 96×96 두 프레임 (숨쉬기 · 빛) */
 export function buildLegendBig(id) { const img = new Img(D * 2, D); for (let f = 0; f < 2; f++) img.blit(DRAW[id](D, f), f * D, 0); return img; }

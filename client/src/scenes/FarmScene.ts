@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { ITEMS, NPCS, SHOPS, SKILLS, SPECIES, TRAINERS, nextEvent } from '@shared/data';
+import { ITEMS, NPCS, QUESTS, SHOPS, SKILLS, SPECIES, TRAINERS, martFor, nextEvent } from '@shared/data';
 import { MapInfo, type TiledMap, type WarpDef } from '@shared/sim/MapInfo';
-import { BADGE_GATES, DIR_VEC, INTERIOR_OF, MAP_IDS, MAP_META, MAP_NAMES, roomOf, type BattleUpdate, type MapId } from '@shared/types';
+import { BADGE_GATES, BOND_ASK_AT, BOND_MAX, DIR_VEC, INTERIOR_OF, MAP_IDS, MAP_META, MAP_NAMES, roomOf, type BattleUpdate, type MapId } from '@shared/types';
 import type { RosterEntry } from '@shared/protocol';
 import { DEPTH, TILE, pickZoom, type Manifest } from '../config';
 import { Atmosphere } from '../fx/Atmosphere';
@@ -25,7 +25,9 @@ import { StoryDirector } from '../story/StoryDirector';
 import { EventDirector, VILLAIN_CAST } from '../story/EventDirector';
 import { captureMemory } from '../story/Memories';
 import { STORY } from '@shared/story';
-import { LEGEND, MYTH, dexComplete } from '@shared/sim/FarmSimulation';
+import { LEGEND, MYTH, STELLA, dexComplete } from '@shared/sim/FarmSimulation';
+import { playFlute } from '../ui/Flute';
+import { stormFx, questClear } from '../fx/Storm';
 import { World, type WorldObject } from '../world/World';
 import ILLUST_SPEC from '@shared/data/illust.json';
 
@@ -148,6 +150,7 @@ export class FarmScene extends Phaser.Scene {
     this.world = new World(this, this.manifest, this.mapId);
     const info = this.world.info;
     for (const key of this.auth.removed) { const [m, id] = key.split(':'); if (m === this.mapId) this.world.removeObject(Number(id), false); }
+    for (const key of this.auth.me.opened ?? []) { const [m, id] = key.split(':'); if (m === this.mapId) this.world.removeObject(Number(id), false); }   // 이미 연 보물 상자 · 주운 반짝이
 
     if (this.mapId === 'farm') {
       this.farm = new FarmRenderer(this, this.world, this.manifest);
@@ -159,6 +162,22 @@ export class FarmScene extends Phaser.Scene {
       }
     } else {
       this.farm = undefined;
+      // 마을 텃밭: 내 몫의 밭을 그림 (나에게만 보임)
+      if (info.farmZones.length) {
+        this.farm = new FarmRenderer(this, this.world, this.manifest); this.farm.load([...this.auth.tiles.values()]);
+        // 텃밭 자리 표시: 옅은 흙빛 바닥 + 나무 말뚝 울타리 줄
+        const g = this.add.graphics().setDepth(DEPTH.soil - 1);
+        for (const z of info.farmZones) {
+          const x = z.x * TILE, y = z.y * TILE, w = z.w * TILE, h = z.h * TILE;
+          g.fillStyle(0x7a5230, 0.22).fillRect(x, y, w, h);
+          g.lineStyle(1, 0x5a3a1c, 0.75).strokeRect(x - 1.5, y - 1.5, w + 3, h + 3);
+          g.fillStyle(0x8a5a32, 1);
+          for (let i = 0; i <= z.w; i += 1) { g.fillRect(x + i * TILE - 1.5, y - 4, 3, 5); g.fillRect(x + i * TILE - 1.5, y + h - 1, 3, 5); }
+          for (let j = 1; j < z.h; j += 1) { g.fillRect(x - 3, y + j * TILE - 2, 3, 4); g.fillRect(x + w, y + j * TILE - 2, 3, 4); }
+          g.fillStyle(0xc89a5a, 1);
+          for (let i = 0; i <= z.w; i += 1) { g.fillRect(x + i * TILE - 1.5, y - 4, 3, 1); g.fillRect(x + i * TILE - 1.5, y + h - 1, 3, 1); }
+        }
+      }
       const isWater = (px: number, py: number) => info.terrainAt(Math.floor(px / TILE), Math.floor(py / TILE)) === '2';
       for (const s of info.spawnList.filter((o) => o.name === 'duck')) this.ducks.push(new Duck(this, s.x, s.y, isWater));
     }
@@ -206,13 +225,17 @@ export class FarmScene extends Phaser.Scene {
     if (this.mapId !== 'farm') for (const base of Object.values(NPCS)) {
       // 루미 센터는 마을마다 다른 간호사 (같은 실내 맵을 쓰지만 어느 마을 건물인지에 따라 사람이 바뀜)
       const nurse = base.id === 'daon' && this.mapId === 'in_center' ? this.centerNurse() : null;
-      const def = nurse ? { ...base, name: nurse.name, title: nurse.title, sprite: nurse.sprite } : base;
+      let def = nurse ? { ...base, name: nurse.name, title: nurse.title, sprite: nurse.sprite } : base;
       if (!this.manifest.characters[def.sprite]) continue;
       if (def.gen && def.schedule[0]?.map !== this.mapId) continue;   // 생성된 주민은 자기 마을에만
+      // 호감도를 다 쌓은 주민은 텃밭 도우미: 텃밭 곁에서 밭일을 함
+      const helper = !!def.hand && (this.auth.me.bonds?.[def.id] ?? 0) >= BOND_MAX && info.spawns.has('wp_hand');
+      if (helper) { const spot = this.npcs.some((q) => q.def.title.endsWith('텃밭 도우미')) ? 'wp_plot' : 'wp_hand'; Object.assign(def = { ...def }, { title: `${MAP_NAMES[this.mapId] ?? ''} 텃밭 도우미`, schedule: [{ time: 600, map: this.mapId, to: spot, idle: 'work', work: 'water', radius: 2 }] }); }
       const n = new Npc(this, def, this.manifest.characters[def.sprite], this.world.grid, info.spawns, this.zoom, this.mapId);
       n.resetForDay(this.auth.time.minutes);
       this.npcs.push(n);
     }
+    this.spawnLegends();
     this.atmo = new Atmosphere(this, this.world);
     this.atmo.setWeather(this.auth.time.weather);
 
@@ -535,10 +558,11 @@ export class FarmScene extends Phaser.Scene {
     const [tx, ty] = this.faceCell(cell);
     const dir = this.player.dir;
     if (item.type === 'food') { this.eatSlot(this.slot); return; }
-    const farmOnly = item.type === 'seed' || item.type === 'placeable' || item.tool === 'hoe' || item.tool === 'watering_can' || item.tool === 'axe' || item.tool === 'hammer';
-    if (this.mapId !== 'farm' && farmOnly) {
+    const fieldOnly = item.type === 'seed' || item.tool === 'hoe' || item.tool === 'watering_can';   // 농장 + 마을 텃밭
+    const farmOnly = item.type === 'placeable' || item.tool === 'axe' || item.tool === 'hammer';
+    if ((this.mapId !== 'farm' && farmOnly) || (fieldOnly && !this.fieldMap)) {
       if (item.type === 'tool') { const a = item.tool === 'watering_can' ? 'water' : item.tool === 'axe' ? 'axe' : item.tool === 'hammer' ? 'pick' : 'hoe'; this.auth.sendAnim(a, dir); this.player.playOnce(a, dir); }
-      ui.toast.push('이건 내 농장에서만 쓸 수 있어요. 농장으로 돌아가세요!', item.icon);
+      ui.toast.push(fieldOnly ? '이건 내 농장이나 마을 텃밭에서 쓸 수 있어요.' : '이건 내 농장에서만 쓸 수 있어요. 농장으로 돌아가세요!', item.icon);
       return;
     }
     if (item.tool === 'rod') { this.castLine(tx, ty); return; }
@@ -575,7 +599,7 @@ export class FarmScene extends Phaser.Scene {
           else if (r.reason === 'too-big') this.world.shake(o, 1);
         } else {
           // 괭이로 잡초를 치면 뽑힘
-          const weed = item.tool === 'hoe' ? this.world.weedAt(tx, ty) : undefined;
+          const weed = item.tool === 'hoe' && this.mapId === 'farm' ? this.world.weedAt(tx, ty) : undefined;
           if (weed) { void this.auth.request({ kind: 'pull', objectId: weed.id }).then((r) => r.ok && sfx.play('forage')); return; }
           const r = await this.auth.request({ kind: 'useTool', slot: this.slot, tx, ty });
           if (!r.ok && r.reason === 'cannot-till') this.thunk(tx, ty);
@@ -597,7 +621,7 @@ export class FarmScene extends Phaser.Scene {
   }
   /** 씨앗: 바라보는 칸 먼저, 그다음 내 주변 8칸 중 갈아 둔 빈 밭에 차례로 심기 */
   private plantAround(slot: number, first?: [number, number]) {
-    if (this.mapId !== 'farm' || !this.farm) { ui.toast.push('씨앗은 내 농장 밭에 심을 수 있어요.', 'seeds_parsnip'); return; }
+    if (!this.fieldMap || !this.farm) { ui.toast.push('씨앗은 내 농장이나 마을 텃밭에 심을 수 있어요.', 'seeds_parsnip'); return; }
     const [px, py] = this.player.cell();
     const cells: [number, number][] = [];
     if (first) cells.push(first); else cells.push(this.player.facingCell());
@@ -636,7 +660,7 @@ export class FarmScene extends Phaser.Scene {
     if (item.type === 'seed') out.push({ label: '주변 밭에 심기', run: () => this.plantAround(slot), primary: true });
     if (item.type === 'placeable') out.push({ label: '바로 앞에 설치하기', run: () => { const [x, y] = this.player.facingCell(); this.placeAt(slot, x, y); }, primary: true });
     if (item.type === 'food') out.push({ label: '먹기', run: () => this.eatSlot(slot), primary: true });
-    if (item.id === 'ocarina') out.push({ label: '불기', run: () => { if (this.mapId === 'altar' && !this.caughtSp(MYTH)) void this.mythScene(); else { sfx.play('ocarina'); this.say(this.caughtSp(MYTH) ? ['맑은 오카리나 소리가 울려 퍼진다. 어딘가에서 온누리가 대답하는 것 같다.'] : ['맑은 오카리나 소리가 울려 퍼졌지만 아무 일도 일어나지 않았다.', '(별마루산 꼭대기, 별의 제단에서 불어 보자)']); } }, primary: true });
+    if (item.id === 'ocarina') out.push({ label: '불기', run: () => this.fluteAnywhere(), primary: true });
     if (nearTable && (item.type === 'food' || item.type === 'crop')) out.push({ label: '식탁에 차리기 (4인분)', run: () => { this.auth.sendAnim('interact', this.player.dir); this.player.playOnce('interact', this.player.dir, () => void this.auth.request({ kind: 'serve', slot }), 1); } });
     if (nearBin && item.sellPrice > 0 && item.type !== 'tool') out.push({ label: `출하하기 (${item.sellPrice * s!.quantity}G)`, run: () => this.shipSlot(slot), primary: true });
     if (item.type !== 'food' && item.type !== 'key') out.push(hold);
@@ -652,6 +676,8 @@ export class FarmScene extends Phaser.Scene {
     const tr = this.trainers.find((t) => !t.approaching && Math.hypot(t.x - fx, t.y - fy) < 15);
     if (tr) return { label: label(`${tr.def.title} ${tr.def.name}에게 말 걸기`), run: () => this.talkTrainer(tr) };
     for (const f of this.auth.forage) if (f.map === this.mapId && Math.hypot(f.x - fx, f.y - 4 - fy) < 14) return { label: label(`${ITEMS[f.item].name} 채집하기`), run: () => this.pickForage(f.key) };
+    const lg = this.legendSprite;
+    if (lg?.active && Math.hypot(lg.x - fx, lg.y - 8 - fy) < (this.legendId === 'genesis' ? 34 : 22)) return this.legendId === 'genesis' ? { label: label('제네시스에게 말을 건다'), run: () => void this.genesisBattle() } : { label: label('잠든 루미에게 다가가기'), run: () => void this.stellaScene() };
     const npc = this.npcs.find((n) => n.state !== 'gone' && Math.hypot(n.x - fx, n.y - fy) < 15);
     if (npc) return { label: label(`${npc.def.name}와(과) 대화하기`), run: () => this.talk(npc) };
     const tile = this.farm?.get(tx, ty);
@@ -689,14 +715,27 @@ export class FarmScene extends Phaser.Scene {
       return { label: label(`${name} 들어가기${extra}`), run: () => this.enterBuilding(o, owner) };
     }
     // 비전 기술 장애물 (풀베기 · 바위 부수기 · 암석 오르기)
+    if (it === 'loot') return { label: label(o.type === 'chest' ? '보물 상자 열기' : '반짝이는 것 줍기'), run: () => {
+      this.player.playOnce('interact', this.player.dir, () => void this.auth.request({ kind: 'loot', objectId: o.id }).then((r) => {
+        if (!r.ok) { if (r.reason === 'far') ui.toast.push('바로 앞에 서서 눌러 주세요.', 'heart'); return; }
+        const item = ITEMS[r.data?.item ?? ''], n = r.data?.qty ?? 1;
+        sfx.play(o.type === 'chest' ? 'chest' : 'pickup'); if (o.type === 'chest') this.time.delayedCall(220, () => sfx.play('item'));
+        this.partner?.cheer(2);
+        this.say([o.type === 'chest' ? '보물 상자를 열었다!' : '풀숲 사이에서 무언가 반짝인다…', `${item?.name ?? '물건'}${n > 1 ? ` ×${n}` : ''}을(를) 손에 넣었다!`]);
+      }), 1);
+    } };
     if (it.startsWith('skill:')) {
       const id = it.slice(6), sk = SKILLS[id]; if (!sk) return null;
       const me = this.auth.me;
       if (!me.badges.includes(sk.badge) || !me.party.length) return { label: label('살펴보기'), run: () => this.say([sk.look, sk.need]) };
       return { label: label(`${sk.name} 쓰기`), run: () => this.useSkill(o, id) };
     }
+    if (it.startsWith('spire_top:')) return this.spireTopInteraction(it.slice(10), o);
+    if (it.startsWith('spire:')) { const d = it.slice(6), sp = QUESTS.spires[d], lit = this.auth.me.flags.includes(`lit_${d}`); return { label: label(`${sp?.name ?? '탑'} 살펴보기`), run: () => this.say([o.text ?? '오래된 탑.', lit ? '꼭대기에서 빛줄기가 하늘로 솟고 있다.' : this.auth.me.flags.includes('side_flute') ? '문틈으로 바람 소리가 샌다. 들어가 볼 수 있을 것 같다.' : '문은 굳게 닫혀 있다. 무언가를 기다리는 듯하다…']) }; }
     if (it.startsWith('shop:')) {
-      const shop = SHOPS[it.slice(5)];
+      // 생성 마을의 루미 마트는 마을 단계에 맞는 물건을 팖 (멀리 갈수록 좋은 볼)
+      const sid = it.slice(5), town = this.mapId === 'in_shop_w' ? this.auth.me.inst.split(':')[0] : this.mapId;
+      const shop = SHOPS[sid === 'windvale' && town !== 'windvale' && MAP_META[town]?.kind === 'town' ? martFor(town) : sid];
       return shop ? { label: label(`${shop.name} 이용하기`), run: () => this.openShop(shop.id) } : null;
     }
     const ownHome = this.mapId === 'home' && this.auth.me.inst === this.auth.me.id;
@@ -754,6 +793,7 @@ export class FarmScene extends Phaser.Scene {
 
   private talk(npc: Npc) {
     if (npc.def.id === 'hanbyeol') { npc.beginTalk(this.player.x, this.player.y, this.auth.time.day); this.professor(() => npc.endTalk()); return; }
+    if (npc.def.hand) { void this.handTalk(npc); return; }
     if (npc.def.id === 'daon') { this.healAt(npc.def.name, '맡겨 주신 루미들이 모두 건강해졌어요! 또 오세요♪', undefined, npc.def.sprite); return; }
     const dir = facingFromVector(npc.x - this.player.x, npc.y - this.player.y, this.player.dir);
     this.player.play('idle', dir);
@@ -821,6 +861,14 @@ export class FarmScene extends Phaser.Scene {
       this.say([`보이지 않는 힘이 앞을 가로막는다…`, `(배지를 ${gate}개 모으면 지나갈 수 있을 것 같다. 지금 ${this.auth.me.badges.length}개)`]);
       return;
     }
+    // 사이드 스토리로 막힌 곳 (탑의 문 · 봉인된 계단 · 별의 요람)
+    const qg = QUESTS.gates[w.to];
+    if (qg && !this.auth.me.flags.includes(qg.flag)) {
+      const [dx, dy] = DIR_VEC[this.player.dir]; this.player.setPosition(this.player.x - dx * TILE, this.player.y - dy * TILE); this.player.stopStep();
+      sfx.play('error');
+      if (qg.seal) void this.sealScene(qg.seal, qg.msg); else this.say([qg.msg]);
+      return;
+    }
     const index = this.world.info.warps.indexOf(w);
     // 부두 끝: 정기선을 타고 섬 ↔ 항구
     if (w.ferry) {
@@ -875,11 +923,12 @@ export class FarmScene extends Phaser.Scene {
     switch (e.type) {
       case 'sim': {
         const ev = e.event;
-        if (ev.type === 'tile') { if (this.mapId === 'farm' && ev.owner === this.auth.farmOwner) this.farm?.apply(ev.tile); }
+        if (ev.type === 'tile') { if ((ev.map ?? 'farm') === this.mapId && ev.owner === this.auth.farmOwner) this.farm?.apply(ev.tile); }
         else if (ev.type === 'time') { ui.hud.time(ev.time); phone.tick(ev.time); if (ev.time.minutes === 18 * 60) ui.toast.push('해가 지고 있어요. 가로등이 켜집니다.', 'sun'); if (ev.time.minutes === 24 * 60) ui.toast.push('자정이 넘었어요! 곧 자러 가야 해요.', 'energy'); }
         else if (ev.type === 'gold') { if (ev.playerId === me.id) { ui.hud.gold(ev.gold); ui.shop.gold(ev.gold); phone.refresh(); if (ev.delta > 0) ui.toast.push(`+${ev.delta}G`, 'gold'); } }
         else if (ev.type === 'player' && ev.id === me.id) { ui.hud.energy(ev.energy, me.maxEnergy); this.ensureHeld(); ui.craft.refresh(); phone.refresh(); }
         else if (ev.type === 'objectRemoved') { const [m, id] = ev.key.split(':'); if (m === this.mapId && (!ev.owner || ev.owner === this.auth.farmOwner)) this.world.removeObject(Number(id)); }
+        else if (ev.type === 'opened' && ev.playerId === me.id) { const [m, id] = ev.key.split(':'); if (m === this.mapId) this.world.removeObject(Number(id)); }
         else if (ev.type === 'cleared' && ev.playerId === me.id) { const [m, id] = ev.key.split(':'); if (m === this.mapId) this.world.removeObject(Number(id)); }
         else if (ev.type === 'objectRestored') { for (const k of ev.keys) { const [m, id] = k.split(':'); if (m === this.mapId) this.world.restoreObject(Number(id)); } }
         else if (ev.type === 'forage') this.renderForage();
@@ -1093,7 +1142,7 @@ export class FarmScene extends Phaser.Scene {
     const it = this.auth.me.inventory[this.slot]?.itemId;
     const type = it ? ITEMS[it].type : null;
     const tool = it ? ITEMS[it].tool : undefined;
-    const show = (this.mapId === 'farm' && (type === 'tool' || type === 'seed')) || tool === 'pickaxe' || tool === 'rod';
+    const show = (this.mapId === 'farm' && (type === 'tool' || type === 'seed')) || (this.fieldMap && (type === 'seed' || tool === 'hoe' || tool === 'watering_can')) || tool === 'pickaxe' || tool === 'rod';
     this.cursor.setVisible(show).setPosition(tx * TILE - 1, ty * TILE - 1).setAlpha(0.65 + Math.sin(this.time.now / 180) * 0.25);
     ui.hint.set(this.player.busy ? null : this.findInteraction(cell)?.label ?? null);
   }
@@ -1223,12 +1272,14 @@ export class FarmScene extends Phaser.Scene {
   }
   /** 별의 제단: 챔피언 → 전설 별무리 · 오카리나 → 환상 온누리 */
   private altarInteraction(o: WorldObject): { label: string; run: () => void } {
-    const me = this.auth.me;
+    const me = this.auth.me, has = (k: string) => me.flags.includes(k);
+    const hasFlute = me.inventory.some((s) => s.itemId === 'ocarina');
+    if (has('genesis_awake') && !this.caughtSp(MYTH)) return { label: label('제네시스에게 말을 건다'), run: () => void this.genesisBattle() };
+    if (has(QUESTS.finale.boss) && hasFlute && !this.caughtSp(MYTH)) return { label: label('시련의 오카리나 불기'), run: () => void this.genesisScene() };
     if (!me.defeated.includes('champion')) return { label: label('별의 제단 살펴보기'), run: () => this.say([o.text ?? '별의 제단.', '(루미 리그의 챔피언이 되면 이곳에 무언가가 내려온다고 한다…)']) };
     if (!this.caughtSp(LEGEND)) return { label: label('별의 제단에 손을 얹기'), run: () => this.legendScene() };
-    const hasOcarina = me.inventory.some((s) => s.itemId === 'ocarina');
-    if (hasOcarina && !this.caughtSp(MYTH)) return { label: label('시련의 오카리나 불기'), run: () => void this.mythScene() };
-    return { label: label('별의 제단 살펴보기'), run: () => this.say(this.caughtSp(MYTH) ? ['제단 위로 따스한 별빛이 고요히 흐른다.', '온누리와 별무리가 지켜보는 듯하다.'] : ['별무리가 머물던 자리에 별가루가 반짝인다.', '(루미 도감을 모두 채우면 루미 마스터가 다시 기다린다고 한다…)']) };
+    const lit = Object.keys(QUESTS.spires).filter((d) => has(`lit_${d}`)).length;
+    return { label: label('별의 제단 살펴보기'), run: () => this.say(this.caughtSp(MYTH) ? ['제단 위로 따스한 햇살이 고요히 흐른다.', '제네시스와 별무리가 지켜보는 듯하다.'] : hasFlute ? ['제단 한가운데에 네 방향을 가리키는 홈이 파여 있다.', `(동서남북 네 탑의 빛이 모이면 무슨 일이 생길 것 같다 — 지금 ${lit}/4)`] : ['별무리가 머물던 자리에 별가루가 반짝인다.', '(별마루산 미로 끝에서 누군가 기다리고 있다는 소문이 있다…)']) };
   }
   private legendScene() {
     if (!this.auth.me.party.some((c) => c.hp > 0)) { this.say(['싸울 수 있는 루미가 없다. 먼저 회복하고 오자.']); return; }
@@ -1241,33 +1292,201 @@ export class FarmScene extends Phaser.Scene {
       if (r.battle) this.startBattle(r.battle); else this.playing = true;
     });
   }
-  /** 오카리나 연출: 안개 → 2D 화면이 3D 처럼 기울며 구름 위로 → 하얀 빛 → 환상 루미 배틀 */
-  private async mythScene() {
-    if (this.mapId !== 'altar') { this.say(['오카리나를 불어 보았지만 아무 일도 일어나지 않았다.', '(별마루산 꼭대기, 별의 제단에서 불어 보자)']); return; }
+  // ── 사이드 스토리: 전설 스텔라 · 시련의 오카리나 · 네 탑 · 제네시스 ──
+  private legendSprite?: Phaser.GameObjects.Sprite;
+  private legendId = '';
+  private get fieldMap() { return this.mapId === 'farm' || this.world.info.farmZones.length > 0; }
+  /** 맵에 서 있는 전설: 별의 요람의 스텔라 · 별의 제단에 깨어난 제네시스 */
+  private spawnLegends() {
+    this.legendSprite = undefined; this.legendId = '';
+    const me = this.auth.me;
+    const put = (id: string, key: string, x: number, y: number, scale: number) => {
+      if (!this.textures.exists(key)) return;
+      const s = this.add.sprite(x, y, key, 0).setOrigin(0.5, 92 / 96).setScale(scale).setDepth(y);
+      if (this.anims.exists(`${key}:idle`)) s.play(`${key}:idle`);
+      this.tweens.add({ targets: s, y: y - 3, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.legendSprite = s; this.legendId = id;
+    };
+    if (this.mapId === 'stella_nest' && !this.caughtSp(STELLA)) { const sp = this.world.info.spawns.get('stella'); if (sp) put('stella', 'lumi_big_stella', sp.x, sp.y + 10, 0.5); }
+    if (this.mapId === 'altar' && me.flags.includes('genesis_awake') && !this.caughtSp(MYTH)) { const a = this.world.objects.find((o) => o.interact === 'altar'); if (a) put('genesis', 'lumi_big_onnuri', a.sprite.x, a.sprite.y - 14, 0.8); }
+    // 빛이 켜진 탑 꼭대기: 빛줄기
+    const top = /^spire_(\w)_top$/.exec(this.mapId);
+    if (top && me.flags.includes(`lit_${top[1]}`)) this.spireBeam(top[1], false);
+  }
+  private spireBeam(d: string, burst: boolean) {
+    const ped = this.world.objects.find((o) => (o.interact ?? '').startsWith('spire_top:')); if (!ped) return;
+    const col = Phaser.Display.Color.HexStringToColor(QUESTS.spires[d]?.color ?? '#ffe58a').color;
+    const x = ped.sprite.x, y = ped.sprite.y - 10;
+    const beam = this.add.rectangle(x, y, 10, 400, col, 0.55).setOrigin(0.5, 1).setDepth(DEPTH.glow).setBlendMode(Phaser.BlendModes.ADD);
+    const glow = this.add.rectangle(x, y, 26, 400, col, 0.22).setOrigin(0.5, 1).setDepth(DEPTH.glow).setBlendMode(Phaser.BlendModes.ADD);
+    if (burst) { beam.setScale(0.1, 0); glow.setScale(0.1, 0); this.tweens.add({ targets: [beam, glow], scaleX: 1, scaleY: 1, duration: 900, ease: 'Cubic.Out' }); }
+    this.tweens.add({ targets: [beam, glow], alpha: { from: 0.75, to: 0.35 }, duration: 1100, yoyo: true, repeat: -1 });
+  }
+  private hasFlute() { return this.auth.me.inventory.some((s) => s.itemId === 'ocarina'); }
+  /** 가방에서 오카리나를 꺼내 불었을 때: 있는 곳에 맞는 연주 */
+  private fluteAnywhere() {
+    const seal = /^spire_(\w)$/.exec(this.mapId), top = /^spire_(\w)_top$/.exec(this.mapId), me = this.auth.me;
+    if (seal && !me.flags.includes(`open_${seal[1]}`)) { void this.sealScene(seal[1], QUESTS.gates[`spire_${seal[1]}_2f`]?.msg ?? ''); return; }
+    if (top && !me.flags.includes(`lit_${top[1]}`)) { void this.spireTopScene(top[1]); return; }
+    if (this.mapId === 'altar' && me.flags.includes(QUESTS.finale.boss) && !me.flags.includes('genesis_awake')) { void this.genesisScene(); return; }
+    sfx.play('ocarina');
+    const got = Object.values(QUESTS.spires).filter((sp) => me.flags.includes(sp.boss)).map((sp) => sp.score);
+    this.say(['시련의 오카리나를 불어 보았다. 맑은 소리가 멀리 퍼진다.', got.length ? `가진 악보: ${got.join(', ')}${me.flags.includes(QUESTS.finale.boss) ? `, ${QUESTS.finale.score}` : ''}` : '(악보가 있어야 제대로 된 선율을 불 수 있을 것 같다. 동서남북 네 탑을 찾아가 보자)']);
+  }
+  /** 탑 입구의 봉인된 계단: 그 탑의 악보대로 오카리나를 불면 열림 */
+  private async sealScene(d: string, msg: string) {
+    const sp = QUESTS.spires[d]; if (!sp) return;
+    if (!this.hasFlute() || !this.auth.me.flags.includes(sp.boss)) { this.say([msg, '(이 탑의 악보가 있어야 봉인을 풀 수 있을 것 같다)']); return; }
+    this.playing = false; phone.close(); ui.dialogue.close(false);
+    const ok = await playFlute(sp.score, sp.notes, sp.color);
+    if (ok && (await this.auth.request({ kind: 'flute', at: `seal:${d}` })).ok) {
+      sfx.play('sparkle'); this.cameras.main.flash(700, 255, 250, 220);
+      await ui.dialogue.say({ name: '', pages: ['봉인이 빛의 가루가 되어 흩어졌다!', '위로 가는 계단이 열렸다.'] });
+    }
+    this.playing = true;
+  }
+  private spireTopInteraction(d: string, o: WorldObject): { label: string; run: () => void } {
+    const lit = this.auth.me.flags.includes(`lit_${d}`);
+    if (lit || !this.hasFlute()) return { label: label('빛받이 살펴보기'), run: () => this.say(lit ? ['빛받이에서 빛줄기가 하늘로 솟고 있다.', '빛은 별마루산 꼭대기 쪽으로 휘어 간다.'] : [o.text ?? '오래된 빛받이.']) };
+    return { label: label('시련의 오카리나 불기'), run: () => void this.spireTopScene(d) };
+  }
+  /** 탑 꼭대기에서 오카리나를 불면: 탑이 흔들리고 빛이 켜짐 */
+  private async spireTopScene(d: string) {
+    const sp = QUESTS.spires[d]; if (!sp) return;
+    this.playing = false; phone.close(); ui.dialogue.close(false);
+    const ok = await playFlute(sp.score, sp.notes, sp.color);
+    const r = ok ? await this.auth.request({ kind: 'flute', at: `top:${d}` }) : { ok: false as const };
+    if (r.ok) {
+      const cam = this.cameras.main;
+      sfx.play('roar'); cam.shake(2200, 0.012);
+      await new Promise((res) => this.time.delayedCall(1500, res));
+      sfx.play('sparkle'); cam.flash(900, 255, 250, 220);
+      this.spireBeam(d, true);
+      await new Promise((res) => this.time.delayedCall(1100, res));
+      const n = Object.keys(QUESTS.spires).filter((k) => this.auth.me.flags.includes(`lit_${k}`)).length;
+      const left = Object.entries(QUESTS.spires).filter(([k]) => !this.auth.me.flags.includes(`lit_${k}`)).map(([, v]) => v.name);
+      await ui.dialogue.say({ name: '', pages: ['탑이 크게 흔들리더니, 빛받이에서 빛줄기가 솟아올랐다!', n >= 4 ? '네 줄기 빛이 별마루산 꼭대기, 별의 제단으로 모이고 있다…!' : `${sp.name}의 빛이 켜졌다. (${n}/4 · 남은 탑: ${left.join(', ')})`] });
+    }
+    this.playing = true;
+  }
+  /** 별의 요람: 잠든 스텔라를 깨움 */
+  private async stellaScene() {
     if (!this.auth.me.party.some((c) => c.hp > 0)) { this.say(['싸울 수 있는 루미가 없다. 먼저 회복하고 오자.']); return; }
+    this.playing = false; phone.close();
+    sfx.play('sparkle'); this.cameras.main.flash(900, 220, 230, 255);
+    await new Promise((res) => this.time.delayedCall(900, res));
+    const r = await this.auth.request({ kind: 'stella' });
+    if (r.battle) this.startBattle(r.battle, () => { if (this.caughtSp(STELLA)) { this.legendSprite?.destroy(); this.legendSprite = undefined; } });
+    else { this.playing = true; this.say(['루미는 깊이 잠들어 있다. 아직 때가 아닌 것 같다.']); }
+  }
+  /** 마지막 선율: 안개 · 번개 · 섬뜩한 음악 속에서 제네시스가 서서히 모습을 드러냄 */
+  private async genesisScene() {
+    if (this.mapId !== 'altar') return;
     this.playing = false; phone.close(); ui.dialogue.close(false);
     this.player.play('idle', 'up');
+    const ok = await playFlute(QUESTS.finale.score, QUESTS.finale.notes, '#e8d8ff');
+    if (!ok || !(await this.auth.request({ kind: 'flute', at: 'altar' })).ok) { this.playing = true; return; }
+    const cam = this.cameras.main, wait = (ms: number) => new Promise((res) => this.time.delayedCall(ms, res));
     music.stop();
-    sfx.play('ocarina');
-    const canvas = this.game.canvas;
-    const fx = ui.mythFx();
-    await new Promise((r) => setTimeout(r, 900));
-    fx.fog();
-    const holder = canvas.parentElement;
-    if (holder) holder.style.background = 'linear-gradient(#6a5ac8 0%, #c8a8f0 35%, #f6d8f0 60%, #fff8ee 100%)';
-    canvas.style.transition = 'transform 3.2s cubic-bezier(.4,0,.2,1), filter 3.2s';
-    canvas.style.transformOrigin = '50% 65%';
-    canvas.style.transform = 'perspective(720px) rotateX(58deg) scale(1.45) translateY(-6%)';
-    canvas.style.filter = 'saturate(.7) brightness(1.15)';
-    await new Promise((r) => setTimeout(r, 3300));
-    fx.flash();
-    await new Promise((r) => setTimeout(r, 450));
-    canvas.style.transition = ''; canvas.style.transform = ''; canvas.style.filter = ''; if (holder) holder.style.background = '';
-    const res = await this.auth.request({ kind: 'ocarina' });
-    // 하얀 빛은 배틀 화면이 뜬 뒤에 걷힘 (평면 화면이 잠깐 보이지 않도록)
-    setTimeout(() => fx.done(), res.battle ? 900 : 0);
-    if (res.battle) this.startBattle(res.battle, () => { if (this.caughtSp(MYTH)) this.say(['온누리가 별빛 농장 쪽 하늘을 바라본다…', '루미나 지방의 모든 별빛이 한 번 반짝였다.', '— 별빛의 씨앗 이야기, 진짜 끝 —'], '온누리'); });
-    else { this.playing = true; this.playMapMusic(); }
+    await wait(900);
+    const fx = stormFx();
+    fx.gather();
+    music.play('omen');
+    await wait(2600);
+    await ui.dialogue.say({ name: '', pages: ['…오카리나 소리가 멎자, 바람이 멈췄다.', '안개가 제단을 삼키기 시작한다.'] });
+    for (const [gap, power] of [[900, 0.006], [1500, 0.01], [700, 0.008], [1800, 0.016]] as const) { await wait(gap); fx.bolt(); sfx.play('roar'); cam.shake(500, power); }
+    await wait(1000);
+    await ui.dialogue.say({ name: '', pages: ['하늘이 갈라지는 소리가 난다.', '무언가가… 내려오고 있다.'] });
+    this.spawnLegends();
+    const g = this.legendSprite;
+    if (g) { g.setAlpha(0).setTint(0x18102a); this.tweens.add({ targets: g, alpha: 1, duration: 6000, ease: 'Sine.easeIn' }); this.tweens.addCounter({ from: 0, to: 100, duration: 7000, onUpdate: (t) => { const v = Math.round(24 + ((t.getValue() ?? 0) / 100) * 231); g.setTint(Phaser.Display.Color.GetColor(v, v, v)); }, onComplete: () => g.clearTint() }); }
+    await wait(1800); fx.bolt(); cam.shake(700, 0.02); sfx.play('roar');
+    await wait(2600); fx.thin();
+    await wait(2800); fx.bolt(); cam.shake(400, 0.01);
+    await wait(1200);
+    await ui.dialogue.say({ name: '', pages: ['안개 속에서 거대한 그림자가 이쪽을 내려다보고 있다.', '태초의 루미, 제네시스.', '(말을 걸면 승부가 시작된다. 단단히 준비하고 다가가자)'] });
+    fx.end(2500);
+    this.playing = true;
+  }
+  private async genesisBattle() {
+    if (!this.auth.me.party.some((c) => c.hp > 0)) { this.say(['싸울 수 있는 루미가 없다. 먼저 회복하고 오자.']); return; }
+    this.playing = false; phone.close();
+    await ui.dialogue.say({ name: '제네시스', pages: ['………………', '(머릿속에 직접 울리는 소리. 「보여 다오, 작은 별의 아이야.」)'] });
+    this.cameras.main.shake(900, 0.012); sfx.play('roar');
+    await new Promise((res) => this.time.delayedCall(900, res));
+    const r = await this.auth.request({ kind: 'ocarina' });
+    if (r.battle) this.startBattle(r.battle, () => { if (this.caughtSp(MYTH)) void this.genesisFinale(); });
+    else this.playing = true;
+  }
+  /** 포획 완료: 안개가 걷히고 햇살 → 카메라가 주인공에게 다가감 → 볼을 들어 올림 → 사이드 퀘스트 클리어 */
+  private async genesisFinale() {
+    this.playing = false;
+    this.legendSprite?.destroy(); this.legendSprite = undefined;
+    const cam = this.cameras.main, wait = (ms: number) => new Promise((res) => this.time.delayedCall(ms, res)), p = this.player;
+    music.play('homecoming');
+    const fx = stormFx(); fx.gather();
+    await wait(600);
+    fx.clear();
+    p.play('idle', 'down');
+    const z = cam.zoom;
+    cam.zoomTo(z * 1.7, 3200, 'Sine.easeInOut');
+    await wait(3000);
+    // 루미볼을 번쩍 들어 올림
+    const key = this.textures.exists('jar_throw') ? 'jar_throw' : 'sparkle';
+    const ball = this.add.image(p.x, p.y - 14, key).setDepth(p.y + 500).setScale(0.9);
+    p.playOnce('interact', 'down', () => p.play('idle', 'down'), 1);
+    this.tweens.add({ targets: ball, y: p.y - 30, duration: 500, ease: 'Back.Out' });
+    sfx.play('catch'); cam.flash(600, 255, 244, 190);
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2, s = this.add.image(ball.x, p.y - 30, 'sparkle').setDepth(p.y + 501).setScale(0.6); this.tweens.add({ targets: s, x: ball.x + Math.cos(a) * 26, y: p.y - 30 + Math.sin(a) * 20, alpha: 0, duration: 1100, onComplete: () => s.destroy() }); }
+    await wait(700);
+    music.jingle('jingle_badge');
+    questClear('제네시스 포획 완료', '사이드 퀘스트 「태초의 선율」 클리어');
+    captureMemory(this, this.auth.me.id, 'side_genesis', '태초의 루미 제네시스');
+    await wait(5200);
+    this.tweens.add({ targets: ball, alpha: 0, duration: 500, onComplete: () => ball.destroy() });
+    cam.zoomTo(z, 1600, 'Sine.easeInOut');
+    fx.end(2500);
+    await wait(1700);
+    await ui.dialogue.say({ name: '', pages: ['제단 위로 햇살이 쏟아진다. 루미나 지방의 모든 별빛이 한 번 반짝였다.', '— 별빛의 씨앗 이야기, 진짜 끝 —'] });
+    this.playing = true; this.playMapMusic();
+  }
+  // ── 마을 주민 호감도: 이야기 → 부탁(사이드 스토리) → 텃밭 도우미 ──
+  private async handTalk(npc: Npc) {
+    const def = npc.def, id = def.id, me = this.auth.me, t = this.auth.time;
+    this.player.play('idle', facingFromVector(npc.x - this.player.x, npc.y - this.player.y, this.player.dir));
+    npc.beginTalk(this.player.x, this.player.y, t.day);
+    this.playing = false;
+    await this.auth.request({ kind: 'talk', npc: id });
+    const bond = () => me.bonds?.[id] ?? 0;
+    const who = () => ({ name: def.name, title: bond() >= BOND_MAX ? `${MAP_NAMES[this.mapId] ?? ''} 텃밭 도우미` : def.title, sprite: def.sprite, color: def.color, hearts: Math.floor(bond() / 2) });
+    const step = me.asks?.[id] ?? 0, a = def.asks?.[step];
+    const pages: string[] = [];
+    // 도우미가 맡아 둔 수확물
+    const stock = me.stock?.[this.mapId];
+    if (stock && Object.keys(stock).length) {
+      await ui.dialogue.say({ ...who(), pages: [`텃밭에서 거둔 걸 맡아 뒀어. ${Object.entries(stock).map(([it, n]) => `${ITEMS[it]?.name ?? it} ${n}개`).join(', ')}!`] });
+      const r = await this.auth.request({ kind: 'collect', map: this.mapId }); if (r.ok) sfx.play('harvest');
+    }
+    if (a && bond() >= (BOND_ASK_AT[step] ?? 0)) {
+      const have = me.inventory.reduce((n, s) => n + (s.itemId === a.item ? s.quantity : 0), 0);
+      await ui.dialogue.say({ ...who(), pages: [`「${def.story}」 ${step + 1}/${def.asks!.length}`, ...a.ask, `(부탁: ${ITEMS[a.item]?.name ?? a.item} ${have}/${a.qty}개)`] });
+      if (have >= a.qty) {
+        const yes = await new Promise<boolean>((res) => ui.confirm.show(`${ITEMS[a.item]?.name} ${a.qty}개를 건네줄까요?`, () => res(true), { yes: '건네준다', no: '다음에', onNo: () => res(false) }));
+        if (yes && (await this.auth.request({ kind: 'ask', npc: id })).ok) {
+          sfx.play('item');
+          await ui.dialogue.say({ ...who(), pages: a.thanks });
+          if (bond() >= BOND_MAX && def.full) await ui.dialogue.say({ ...who(), pages: def.full });
+        }
+      }
+    } else {
+      if (bond() >= BOND_MAX && def.full && Math.random() < 0.5) pages.push(...def.full);
+      else pages.push(...npc.pickLines(t.minutes, t.weather));
+      if (a) pages.push(`(조금 더 친해지면 속 얘기를 들려줄 것 같다 — 하트 ${Math.ceil((BOND_ASK_AT[step] ?? 0) / 2)}개부터. 매일 이야기를 나눠 보자)`);
+      else if (bond() < BOND_MAX) pages.push('(매일 이야기를 나누면 더 가까워질 것 같다)');
+      await ui.dialogue.say({ ...who(), pages });
+    }
+    npc.endTalk();
+    this.playing = true;
   }
 
   private challenge(t: Trainer) {
@@ -1304,7 +1523,7 @@ export class FarmScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.flash(160, 255, 255, 255);
     sfx.play('encounter');
-    music.play(SPECIES[update.view.foe.species]?.legend || update.view.trainer?.title === '루미 마스터' ? 'battle_champion' : battleTrack(update.view.kind, update.view.trainer?.title));
+    music.play(update.view.foe.species === MYTH ? 'battle_genesis' : SPECIES[update.view.foe.species]?.legend || update.view.trainer?.title === '루미 마스터' ? 'battle_champion' : battleTrack(update.view.kind, update.view.trainer?.title));
     this.time.delayedCall(180, () => cam.flash(160, 255, 255, 255));
     this.time.delayedCall(420, () => {
       const data: BattleData = {

@@ -121,6 +121,12 @@ export async function buildLayout(id) {
   const p = m.spawns.find((s) => s.name === L.PLAYER) ?? m.spawns[0];
   if (p) m.spawn('player', Math.floor(p.x / 16), Math.floor(p.y / 16));
   for (const [name, value] of Object.entries(L.PROPS ?? {})) m.props.push({ name, type: typeof value === 'number' ? 'int' : 'string', value });
+  // 마을 텃밭 (도시는 '시민 텃밭')
+  if (!m.communityPlot([Math.floor(W / 2), Math.floor(H / 2)], urban ? '시민 텃밭' : '마을 텃밭')) warn('텃밭 자리가 없어요');
+  else if (urban) {   // 도시: 포장 그림(surface)도 그 자리만 흙밭(풀)으로
+    const pl = m.plots[m.plots.length - 1], sp = m.props.find((q) => q.name === 'surface');
+    if (sp) { const rows = String(sp.value).split('|').map((r) => [...r]); for (let y = pl.y / 16; y < (pl.y + pl.height) / 16; y++) for (let x = pl.x / 16; x < (pl.x + pl.width) / 16; x++) if (rows[y]?.[x]) rows[y][x] = 'g'; sp.value = rows.map((r) => r.join('')).join('|'); }
+  }
   return m;
 }
 
