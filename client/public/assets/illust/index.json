@@ -80,7 +80,21 @@
     "nurse_windvale",
     "shop_windvale",
     "craft_windvale",
-    "cafe_windvale"
+    "cafe_windvale",
+    "guide_windvale",
+    "shop_harbor",
+    "craft_harbor",
+    "cafe_harbor",
+    "guide_harbor",
+    "nurse_maple",
+    "shop_maple",
+    "craft_maple",
+    "cafe_maple",
+    "guide_maple",
+    "nurse_bloom",
+    "shop_bloom",
+    "craft_bloom",
+    "cafe_bloom"
   ],
   "files": {
     "mom": "mom.png",
@@ -163,8 +177,22 @@
     "nurse_windvale": "nurse_windvale.png",
     "shop_windvale": "shop_windvale.png",
     "craft_windvale": "craft_windvale.png",
-    "cafe_windvale": "cafe_windvale.png"
+    "cafe_windvale": "cafe_windvale.png",
+    "guide_windvale": "guide_windvale.png",
+    "shop_harbor": "shop_harbor.png",
+    "craft_harbor": "craft_harbor.png",
+    "cafe_harbor": "cafe_harbor.png",
+    "guide_harbor": "guide_harbor.png",
+    "nurse_maple": "nurse_maple.png",
+    "shop_maple": "shop_maple.png",
+    "craft_maple": "craft_maple.png",
+    "cafe_maple": "cafe_maple.png",
+    "guide_maple": "guide_maple.png",
+    "nurse_bloom": "nurse_bloom.png",
+    "shop_bloom": "shop_bloom.png",
+    "craft_bloom": "craft_bloom.png",
+    "cafe_bloom": "cafe_bloom.png"
   },
   "model": "gemini-3.1-flash-image (Nano Banana)",
-  "updatedAt": "2026-11-07T00:35:24.402Z"
+  "updatedAt": "2026-11-11T16:27:02.628Z"
 }
