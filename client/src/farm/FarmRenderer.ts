@@ -16,6 +16,8 @@ export class FarmRenderer {
 
   load(tiles: FarmTile[]) { for (const t of tiles) this.apply(t, false); }
   get(x: number, y: number) { return this.tiles.get(`${x},${y}`); }
+  getTiles() { return this.tiles; }
+  getCrops() { return this.crops; }
 
   apply(t: FarmTile, fx = true) {
     const k = `${t.x},${t.y}`;

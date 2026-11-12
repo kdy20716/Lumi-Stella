@@ -4,6 +4,7 @@ import type { MapId } from '@shared/types';
 import { DEPTH, TILE, type Manifest } from '../config';
 import { Grid } from './Grid';
 import type { Surface } from '../audio/Sfx';
+import { paintUrban } from '../three/Proto3D';
 
 /** 실내에서 빛을 내는 물건 */
 const LIGHT_OBJECTS = new Set(['lamp_floor', 'forge', 'fireplace', 'lamp']);
@@ -119,6 +120,17 @@ export class World {
     this.soil = this.map.createBlankLayer('Soil', ts, 0, 0)!.setDepth(DEPTH.soil);
     this.map.createLayer('Decor', ts, 0, 0)?.setDepth(DEPTH.decor);
     this.map.createLayer('Bridge', ts, 0, 0)?.setDepth(DEPTH.bridge);
+    // 도시 바닥(차도·횡단보도·인도·광장): 2D 모드에서도 선명하게 표시
+    const surface = String(prop(raw, 'surface', ''));
+    if (surface) {
+      const surfKey = `urban_surf_${mapId}`;
+      if (!scene.textures.exists(surfKey)) {
+        const ct = scene.textures.createCanvas(surfKey, this.widthPx, this.heightPx)!;
+        paintUrban(ct.getContext(), surface.split('|'));
+        ct.refresh();
+      }
+      scene.add.image(0, 0, surfKey).setOrigin(0).setDepth(DEPTH.decor + 1);
+    }
     // 2.5D 절벽 · 계단 · 턱 (바닥 장식 위, 캐릭터 아래)
     if (raw.layers.some((l) => l.name === 'Cliff')) this.map.createLayer('Cliff', ts, 0, 0)?.setDepth(DEPTH.decor + 5);
     // 실내 조명 (벽난로·스탠드)
@@ -163,17 +175,57 @@ export class World {
         continue;
       }
       else if (String(prop(o, 'blockout', '')) === '1') {
-        // 그림이 아직 없는 건물(고층 빌딩 · 백화점 · 아파트): 2D 에서는 층수만큼 높은 단색 상자로 자리만 표시
-        const floors = Number(prop(o, 'floors', 3)), hpx = cellH * 16 + floors * 12;
-        const col = Phaser.Display.Color.HexStringToColor(String(prop(o, 'color', '#c8c8c8'))).color;
-        const r = s.add.rectangle(cellX * 16 + (cellW * 16) / 2, (cellY + 1) * 16, cellW * 16, hpx, col).setOrigin(0.5, 1).setStrokeStyle(1, 0x2a2a33).setDepth((cellY + 1) * 16);
+        // 2.5D 스타일 다층 빌딩 (옥상 깊이 + 옆벽 입체 음영 + 창문 격자 + 1층 쇼윈도/차양 + 간판)
+        const floors = Math.max(1, Number(prop(o, 'floors', 3)));
+        const colHex = String(prop(o, 'color', '#c8c8c8'));
         const label = String(prop(o, 'label', ''));
         const accent = String(prop(o, 'accent', ''));
-        if (accent) s.add.rectangle(r.x, (cellY + 1) * 16 - 14, cellW * 16, 4, Phaser.Display.Color.HexStringToColor(accent).color).setOrigin(0.5, 1).setDepth((cellY + 1) * 16 + 0.5);   // 도시형 시설 색 띠
-        if (label) s.add.text(r.x, (cellY + 1) * 16 - 10, label, { fontFamily: 'Galmuri9, sans-serif', fontSize: '8px', color: '#fff6d8', backgroundColor: accent ? `${accent}dd` : '#14182099' }).setOrigin(0.5, 1).setDepth((cellY + 1) * 16 + 1).setResolution(2);
-        // 들어갈 수 있는 도시형 시설(센터 · 마트 · 체육관)은 문 · 대화가 되도록 보이지 않는 자리표시를 두고 아래로 계속
-        if (!prop(o, 'interact', '') && !prop(o, 'interior', '')) continue;
-        sprite = s.add.image(o.x, o.y, '__DEFAULT').setVisible(false);
+        const bKey = `bo25d:${type}:${colHex}:${floors}:${cellW}:${cellH}:${label}:${accent}`;
+        if (!s.textures.exists(bKey)) {
+          const fh = 12, lobby = 16, roofD = Math.max(10, Math.round(cellH * 7)), sideW = 6;
+          const Wp = cellW * 16 + sideW, Hp = roofD + floors * fh + (lobby - fh);
+          const ct = s.textures.createCanvas(bKey, Wp, Hp)!;
+          const cx = ct.getContext();
+          const baseC = Phaser.Display.Color.HexStringToColor(colHex);
+          const shade = (f: number) => `rgb(${Math.round(baseC.red * f)},${Math.round(baseC.green * f)},${Math.round(baseC.blue * f)})`;
+          const fw = cellW * 16;
+          // 옥상 입체 윗면 (사다리꼴/평행사변형 2.5D 깊이감)
+          cx.fillStyle = shade(0.68);
+          cx.beginPath(); cx.moveTo(sideW, 0); cx.lineTo(Wp, 0); cx.lineTo(fw, roofD); cx.lineTo(0, roofD); cx.closePath(); cx.fill();
+          cx.strokeStyle = shade(0.45); cx.lineWidth = 1; cx.stroke();
+          // 오른쪽 옆벽 (2.5D 입체 옆면)
+          cx.fillStyle = shade(0.72);
+          cx.beginPath(); cx.moveTo(fw, roofD); cx.lineTo(Wp, 0); cx.lineTo(Wp, Hp - roofD); cx.lineTo(fw, Hp); cx.closePath(); cx.fill();
+          // 정면 외벽
+          cx.fillStyle = colHex; cx.fillRect(0, roofD, fw, Hp - roofD);
+          cx.fillStyle = shade(0.5); cx.fillRect(0, roofD, fw, 2);
+          // 층별 창문
+          const glass = type === 'apart' ? '#5f7c93' : '#4e6f8c', glassHi = '#9ec4e0';
+          for (let f = 0; f < floors - 1; f++) {
+            const yy = roofD + f * fh;
+            cx.fillStyle = shade(0.76); cx.fillRect(0, yy + fh - 1, fw, 1);
+            const step = type === 'apart' ? 10 : 6, ww = type === 'apart' ? 6 : 4;
+            for (let xx = 3; xx + ww <= fw - 3; xx += step) {
+              cx.fillStyle = glass; cx.fillRect(xx, yy + 3, ww, 6);
+              cx.fillStyle = glassHi; cx.fillRect(xx, yy + 3, ww, 1);
+            }
+          }
+          // 1층 로비 + 차양 + 유리문
+          const ly = Hp - lobby;
+          cx.fillStyle = accent || shade(0.62); cx.fillRect(0, ly - 3, fw, 4);
+          const dw = Math.min(16, fw - 8), dx = Math.floor(fw / 2 - dw / 2);
+          cx.fillStyle = '#2d3b48'; cx.fillRect(dx, ly + 3, dw, lobby - 3);
+          cx.fillStyle = glassHi; cx.fillRect(dx + 1, ly + 4, Math.max(2, dw / 2 - 2), lobby - 5);
+          cx.fillRect(dx + dw / 2 + 1, ly + 4, Math.max(2, dw / 2 - 2), lobby - 5);
+          if (label) {
+            cx.font = 'bold 8px Galmuri9, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+            const tw = Math.min(fw - 4, cx.measureText(label).width + 8), py = Math.max(roofD + 2, ly - 13);
+            cx.fillStyle = accent || 'rgba(20,24,32,0.88)'; cx.fillRect(fw / 2 - tw / 2, py, tw, 10);
+            cx.fillStyle = '#fff8ec'; cx.fillText(label, fw / 2, py + 5, fw - 6);
+          }
+          ct.refresh();
+        }
+        sprite = s.add.image(cellX * 16 + (cellW * 16) / 2 + 3, (cellY + 1) * 16, bKey).setOrigin(0.5, 1);
         blockoutFacility = true;
       } else continue;
       // 풀숲은 칸 아래쪽 기준 깊이 → 그 칸에 선 캐릭터의 다리를 덮음
@@ -186,7 +238,7 @@ export class World {
       else if (building && !blockoutFacility) shadow = s.add.image(o.x, o.y - 2, 'shadow').setScale(cellW * 0.55, 1.5).setDepth(DEPTH.cursor - 1).setAlpha(0.6);
 
       const wo: WorldObject = {
-        id: o.id, type, cellX, cellY, cellW, cellH, sprite, shadow, tall: TALL.has(type) || !!building, blocks: !NON_BLOCKING.has(type),
+        id: o.id, type, cellX, cellY, cellW, cellH, sprite, shadow, tall: TALL.has(type) || !!building || blockoutFacility, blocks: !NON_BLOCKING.has(type),
         interact: prop<string | undefined>(o, 'interact', undefined), text: prop<string | undefined>(o, 'text', undefined), interior: prop<string | undefined>(o, 'interior', undefined),
       };
       this.objects.push(wo);
@@ -194,7 +246,7 @@ export class World {
       if (type === 'lamp') {
         this.lights.push({ x: o.x, y: o.y - 37, scale: 0.75, tint: 0xffd88a, base: 1 }, { x: o.x, y: o.y - 7, scale: 1.2, tint: 0xffb860, base: 0.5 });
       }
-      if (type === 'house' || building) {
+      if ((type === 'house' || building) && img && !blockoutFacility) {
         const top = o.y - img!.h * img!.originY;
         const glowKey = type === 'house' ? 'house_glow' : `${type}_glow`;
         if (s.textures.exists(glowKey)) this.windowGlows.push(s.add.image(o.x, o.y, glowKey).setOrigin(0.5, img!.originY).setDepth(o.y + 1).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0));

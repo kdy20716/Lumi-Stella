@@ -56,15 +56,15 @@ export function buildTown() {
   const homeE = build('house_c', 44, 36, 'home:mio');
 
   // 5. 소품
-  m.place('anvil', smithDoor + 2, 14, { force: true, props: { interact: 'smithy' } });
+  m.place('anvil', smithDoor + 2, 15, { force: true, props: { interact: 'smithy' } });
   m.place('cafe_table', cafeDoor - 3, 15, { w: 2, force: true }); m.place('cafe_table', cafeDoor + 2, 15, { w: 2, force: true });
   m.place('board', 2, 15, { w: 2, force: true, props: { interact: 'board' } });
   m.place('sign', 1, 23, { force: true, props: { interact: 'sign', text: '← 별빛 농장' } });
   m.place('stall', 52, 19, { w: 3, force: true, props: { interact: 'shop:market' } });
   m.place('stall_b', 52, 24, { w: 3, force: true, props: { interact: 'shop:market' } });
   for (const [x, y] of [[24, 16], [37, 16], [22, 30], [38, 30]]) m.place('bench', x, y, { w: 2, force: true, props: { interact: 'bench' } });
-  for (const [x, y] of [[19, 22], [43, 22], [27, 16], [34, 16], [27, 31], [34, 31], [12, 20], [47, 20], [10, 38], [48, 38]]) m.place('lamp', x, y, { force: true });
-  for (const [x, y] of [[storeDoor - 3, 14], [storeDoor + 2, 14], [hallDoor - 3, 14], [hallDoor + 3, 14], [homeA + 2, 14], [homeB + 2, 39], [homeC - 2, 39], [homeD + 2, 39], [homeE + 2, 39]]) m.place('planter', x, y, { force: true });
+  for (const [x, y] of [[19, 22], [43, 22], [27, 16], [34, 16], [27, 31], [34, 31], [12, 19], [47, 19], [10, 36], [48, 36]]) m.place('lamp', x, y, { force: true });
+  for (const [x, y] of [[storeDoor - 3, 15], [storeDoor + 2, 15], [hallDoor - 3, 15], [hallDoor + 3, 15], [homeA + 2, 15], [homeB + 2, 39], [homeC - 2, 39], [homeD + 2, 39], [homeE + 2, 39]]) m.place('planter', x, y, { force: true });
   m.place('barrel', smithDoor - 3, 12, { force: true }); m.place('crate', smithDoor - 2, 12, { force: true });
 
   // 2.5D: 북쪽 상점가는 한 단 높은 언덕 — 16·17번 줄이 절벽, 가운데 큰길만 계단 (호수와 겹치지 않음)

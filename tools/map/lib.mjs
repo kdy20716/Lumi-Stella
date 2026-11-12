@@ -227,12 +227,12 @@ export class MapBuilder {
     }
   }
 
-  /** 가로등 · 벤치가 길(흙 · 돌 · 계단) 위에 있으면 길 바로 옆 풀밭으로 옮김 → 지나갈 때 방해되지 않게 */
+  /** 가로등 · 벤치 · 화분이 길(흙 · 돌 · 계단) 위에 있으면 길 바로 옆 풀밭으로 옮김 → 지나갈 때 방해되지 않게 */
   tidyProps() {
     const isPath = (x, y) => this.inb(x, y) && (this.terrain[y][x] === S || this.terrain[y][x] === D);
     const cellOf = (o, k) => o.properties.find((p) => p.name === k)?.value;
     for (const o of this.objects) {
-      if (o.type !== 'lamp' && o.type !== 'bench') continue;
+      if (o.type !== 'lamp' && o.type !== 'bench' && o.type !== 'planter') continue;
       const w = cellOf(o, 'cellW') ?? 1, cx = cellOf(o, 'cellX'), cy = cellOf(o, 'cellY');
       const cells = (x) => Array.from({ length: w }, (_, i) => [x + i, cy]);
       const bad = (x, y) => Array.from({ length: w }, (_, i) => [x + i, y]).some(([a, b]) => !this.inb(a, b) || isPath(a, b) || this.terrain[b][a] === Wt || this.cliff[b * this.W + a]);
@@ -257,8 +257,69 @@ export class MapBuilder {
     this.objects = this.objects.filter((o) => o.type !== '_removed');
   }
 
+  /** 소품 발밑 타일 정리 및 끊긴 길 조각(stray) 제거 */
+  cleanPaths() {
+    if (this.noGround || this.props.some((p) => p.name === 'cave')) return;
+    const { W, H, terrain } = this;
+    const PASSABLE = new Set(['tallgrass', 'tuft', 'glint', 'stairs_up', 'cave_hole', 'portal', 'vine', 'crack_rock', 'climb_wall', 'boulder', 'water_gate']);
+    const P = (o, k) => o.properties?.find((p) => p.name === k)?.value;
+    // 1) 지나갈 수 없는 오브젝트가 길(D/S) 위에 놓인 경우, 발밑 타일을 잔디/화단(G)으로 정리
+    for (const o of this.objects) {
+      if (PASSABLE.has(o.type)) continue;
+      const cx = P(o, 'cellX'), cy = P(o, 'cellY'), w = P(o, 'cellW') ?? 1, h = P(o, 'cellH') ?? 1;
+      if (cx == null || cy == null) continue;
+      for (let y = cy - h + 1; y <= cy; y++) for (let x = cx; x < cx + w; x++) {
+        if (this.inb(x, y) && (terrain[y][x] === D || terrain[y][x] === S)) terrain[y][x] = G;
+      }
+    }
+    // 2) 큰길과 이어지지 않은 외딴 길 조각(stray) 또는 3칸 이하 잔조각을 G로 정리
+    const isP = (x, y) => this.inb(x, y) && (terrain[y][x] === D || terrain[y][x] === S);
+    const comp = new Int32Array(W * H).fill(-1), comps = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!isP(x, y) || comp[y * W + x] >= 0) continue;
+      const c = { cells: [], edge: false, door: false }, st = [[x, y]];
+      comp[y * W + x] = comps.length;
+      while (st.length) {
+        const [a, b] = st.pop();
+        c.cells.push([a, b]);
+        if (a === 0 || b === 0 || a === W - 1 || b === H - 1) c.edge = true;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = a + dx, ny = b + dy;
+          if (isP(nx, ny) && comp[ny * W + nx] < 0) { comp[ny * W + nx] = comps.length; st.push([nx, ny]); }
+        }
+      }
+      comps.push(c);
+    }
+    for (const o of this.objects) {
+      const dx = P(o, 'doorCellX'); if (dx == null) continue;
+      const cy = P(o, 'cellY');
+      for (let d = 1; d <= 3; d++) {
+        const y = cy + d;
+        const k = this.inb(dx, y) ? comp[y * W + dx] : -1;
+        if (k >= 0) { comps[k].door = true; break; }
+      }
+    }
+    for (const w of this.warps) {
+      for (let y = Math.floor(w.y / T) - 1; y <= Math.floor((w.y + w.height) / T); y++) {
+        for (let x = Math.floor(w.x / T) - 1; x <= Math.floor((w.x + w.width) / T); x++) {
+          const k = this.inb(x, y) ? comp[y * W + x] : -1;
+          if (k >= 0) comps[k].edge = true;
+        }
+      }
+    }
+    let mainIdx = -1, mainLen = -1;
+    comps.forEach((c, idx) => { if (c.cells.length > mainLen) { mainLen = c.cells.length; mainIdx = idx; } });
+    comps.forEach((c, idx) => {
+      if (idx === mainIdx) return;
+      if (c.cells.length <= 3 || (!c.edge && !c.door)) {
+        for (const [x, y] of c.cells) terrain[y][x] = G;
+      }
+    });
+  }
+
   build() {
     if (!this.noTidy) this.tidyProps();   // 도시(전부 포장된 맵)는 가로등을 옮기지 않음
+    this.cleanPaths();
     const { W, H, terrain, blocked, bridge } = this;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (terrain[y][x] === Wt && !bridge[y * W + x]) blocked[y][x] = true;
     const collision = blocked.flat().map((b) => (b ? gid(ROW.MISC, MISC.COLLIDE) : 0));

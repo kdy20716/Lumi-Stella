@@ -19,14 +19,22 @@ export class Actor extends Character {
   }
   cell(): [number, number] { return [Math.floor(this.x / TILE), Math.floor((this.y - 3) / TILE)]; }
 
-  /** 칸까지 길찾기 이동 (막혀 있으면 순간이동) */
+  /** 칸까지 길찾기 이동 (막혀 있으면 가장 가까운 빈칸으로 이동, 타임아웃 안전장치 포함) */
   walkTo(cx: number, cy: number, run = false): Promise<void> {
     const [sx, sy] = this.cell();
-    const p = this.grid.findPath(sx, sy, cx, cy);
+    const [tx, ty] = this.grid.blocked(cx, cy) ? (this.grid.nearestOpen(cx, cy) ?? [cx, cy]) : [cx, cy];
+    const p = this.grid.findPath(sx, sy, tx, ty);
     this.running = run; this.speed = run ? 128 : 62;
     return new Promise((res) => {
-      if (!p || !p.length) { const c = cellCenter(cx, cy); this.setPosition(c.x, c.y); res(); return; }
-      this.path = p; this.done = res;
+      if (!p || !p.length) { const c = cellCenter(tx, ty); this.setPosition(c.x, c.y); res(); return; }
+      let finished = false;
+      const finish = () => { if (finished) return; finished = true; this.path = []; this.play('idle', this.dir); res(); };
+      this.path = p;
+      this.done = finish;
+      const maxMs = Math.max(2500, p.length * (run ? 260 : 450));
+      this.scene.time.delayedCall(maxMs, () => {
+        if (!finished) { const c = cellCenter(tx, ty); this.setPosition(c.x, c.y); finish(); }
+      });
     });
   }
   face(dir: Dir) { this.play('idle', dir); }

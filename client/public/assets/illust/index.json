@@ -94,7 +94,20 @@
     "nurse_bloom",
     "shop_bloom",
     "craft_bloom",
-    "cafe_bloom"
+    "cafe_bloom",
+    "nurse_mist",
+    "guide_bloom",
+    "shop_forge",
+    "craft_forge",
+    "cafe_forge",
+    "guide_forge",
+    "nurse_ember",
+    "shop_ember",
+    "craft_ember",
+    "cafe_ember",
+    "guide_ember",
+    "shop_mist",
+    "craft_mist"
   ],
   "files": {
     "mom": "mom.png",
@@ -191,8 +204,21 @@
     "nurse_bloom": "nurse_bloom.png",
     "shop_bloom": "shop_bloom.png",
     "craft_bloom": "craft_bloom.png",
-    "cafe_bloom": "cafe_bloom.png"
+    "cafe_bloom": "cafe_bloom.png",
+    "nurse_mist": "nurse_mist.png",
+    "guide_bloom": "guide_bloom.png",
+    "shop_forge": "shop_forge.png",
+    "craft_forge": "craft_forge.png",
+    "cafe_forge": "cafe_forge.png",
+    "guide_forge": "guide_forge.png",
+    "nurse_ember": "nurse_ember.png",
+    "shop_ember": "shop_ember.png",
+    "craft_ember": "craft_ember.png",
+    "cafe_ember": "cafe_ember.png",
+    "guide_ember": "guide_ember.png",
+    "shop_mist": "shop_mist.png",
+    "craft_mist": "craft_mist.png"
   },
   "model": "gemini-3.1-flash-image (Nano Banana)",
-  "updatedAt": "2026-11-11T16:27:02.628Z"
+  "updatedAt": "2026-11-12T07:05:30.380Z"
 }

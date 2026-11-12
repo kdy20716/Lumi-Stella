@@ -29,6 +29,7 @@ import { LEGEND, MYTH, STELLA, dexComplete } from '@shared/sim/FarmSimulation';
 import { playFlute } from '../ui/Flute';
 import { stormFx, questClear } from '../fx/Storm';
 import { World, type WorldObject } from '../world/World';
+import { Stage3D } from '../three/Stage3D';
 import ILLUST_SPEC from '@shared/data/illust.json';
 
 /** 제작법을 가르쳐 주는 공방 NPC: 새로 배우면 하는 말 */
@@ -121,6 +122,7 @@ export class FarmScene extends Phaser.Scene {
   private lastTabDown = 0;
   private story!: StoryDirector;
   private plot!: EventDirector;   // 본편 사건 (chapters.json)
+  private stage3d?: Stage3D;
   /** 손에 든 가방 칸 (핫바 대신 휴대폰 › 가방에서 고름) */
   private get slot() { return this.selected; }
 
@@ -238,6 +240,7 @@ export class FarmScene extends Phaser.Scene {
     this.spawnLegends();
     this.atmo = new Atmosphere(this, this.world);
     this.atmo.setWeather(this.auth.time.weather);
+    this.stage3d = new Stage3D(this, this.manifest, this.world, this.mapId);
 
     const cam = this.cameras.main;
     cam.setZoom(this.zoom).setRoundPixels(true).setBackgroundColor(this.world.interior || this.world.cave ? '#0d0a0c' : '#14201a');
@@ -247,7 +250,7 @@ export class FarmScene extends Phaser.Scene {
     const onHide = () => this.writeLast();
     window.addEventListener('pagehide', onHide);
     this.events.once('shutdown', () => window.removeEventListener('pagehide', onHide));
-    this.events.once('shutdown', () => { this.scale.off('resize', this.onResize, this); this.input.keyboard?.off('keydown'); this.input.off('pointerdown'); this.input.off('pointermove'); this.input.off('wheel'); });
+    this.events.once('shutdown', () => { this.stage3d?.destroy(); this.scale.off('resize', this.onResize, this); this.input.keyboard?.off('keydown'); this.input.off('pointerdown'); this.input.off('pointermove'); this.input.off('wheel'); });
 
     this.setupInput();
     const unsubscribe = this.auth.on((e) => this.onAuthority(e));
@@ -257,7 +260,7 @@ export class FarmScene extends Phaser.Scene {
     else this.titleScreen();
   }
 
-  private onResize(size: Phaser.Structs.Size) { this.zoom = pickZoom(size.height); this.cameras.main.setZoom(this.zoom); this.fitCamera(); }
+  private onResize(size: Phaser.Structs.Size) { this.zoom = pickZoom(size.height); this.cameras.main.setZoom(this.zoom); this.fitCamera(); this.stage3d?.resize(); }
   /** 바깥 맵은 가장자리까지, 작은 실내는 화면 가운데에 */
   private fitCamera() {
     const cam = this.cameras.main, W = this.world.widthPx, H = this.world.heightPx;
@@ -487,6 +490,11 @@ export class FarmScene extends Phaser.Scene {
       if (ui.menu.open) return;
       if (e.key === 'r' || e.key === 'R') { this.openPhone('home', true); return; }
       if (e.key === 'm' || e.key === 'M') { this.openPhone('map'); return; }
+      if (e.key === 'v' || e.key === 'V') {
+        const on = this.stage3d?.toggle();
+        ui.toast.push(on ? '포켓몬 5세대풍 2.5D 시점으로 전환했어요! (V 키)' : '클래식 2D 시점으로 전환했어요! (V 키)', 'heart');
+        return;
+      }
       if (ui.shop.open || ui.mailbox.open || ui.creator.open) return;
       if (this.fishing && [' ', 'e', 'E', 'c', 'C', 'x', 'X'].includes(e.key)) { this.reel(); return; }
       if (e.key === 'p' || e.key === 'P') { if (this.hasPhone()) phone.toggle('party'); else ui.party.toggle(this.auth.me, (i) => void this.auth.request({ kind: 'setPartner', index: i })); return; }
@@ -537,7 +545,8 @@ export class FarmScene extends Phaser.Scene {
   }
 
   private pointerCell(p: Phaser.Input.Pointer): [number, number] | undefined {
-    const w = this.cameras.main.getWorldPoint(p.x, p.y);
+    const w3d = this.stage3d?.screenToWorld(p.x, p.y, 0);
+    const w = w3d ?? this.cameras.main.getWorldPoint(p.x, p.y);
     const cx = Math.floor(w.x / TILE), cy = Math.floor(w.y / TILE);
     const [px, py] = this.player.cell();
     return Math.abs(cx - px) <= 1 && Math.abs(cy - py) <= 1 && !(cx === px && cy === py) ? [cx, cy] : undefined;
@@ -923,7 +932,7 @@ export class FarmScene extends Phaser.Scene {
     switch (e.type) {
       case 'sim': {
         const ev = e.event;
-        if (ev.type === 'tile') { if ((ev.map ?? 'farm') === this.mapId && ev.owner === this.auth.farmOwner) this.farm?.apply(ev.tile); }
+        if (ev.type === 'tile') { if ((ev.map ?? 'farm') === this.mapId && ev.owner === this.auth.farmOwner) { this.farm?.apply(ev.tile); this.stage3d?.markSoilDirty(); } }
         else if (ev.type === 'time') { ui.hud.time(ev.time); phone.tick(ev.time); if (ev.time.minutes === 18 * 60) ui.toast.push('해가 지고 있어요. 가로등이 켜집니다.', 'sun'); if (ev.time.minutes === 24 * 60) ui.toast.push('자정이 넘었어요! 곧 자러 가야 해요.', 'energy'); }
         else if (ev.type === 'gold') { if (ev.playerId === me.id) { ui.hud.gold(ev.gold); ui.shop.gold(ev.gold); phone.refresh(); if (ev.delta > 0) ui.toast.push(`+${ev.delta}G`, 'gold'); } }
         else if (ev.type === 'player' && ev.id === me.id) { ui.hud.energy(ev.energy, me.maxEnergy); this.ensureHeld(); ui.craft.refresh(); phone.refresh(); }
@@ -937,7 +946,7 @@ export class FarmScene extends Phaser.Scene {
         else if (ev.type === 'party' && ev.id === me.id) { this.syncPartner(); ui.craft.refresh(); phone.refresh(); if (ev.badges.length > this.badgeCount && this.badgeCount >= 0) { if (this.battling) this.badgeJingle = true; else music.jingle('jingle_badge'); } this.badgeCount = ev.badges.length; }
         else if (ev.type === 'help' && ev.playerId === me.id) { this.partner?.cheer(4); ui.toast.push(ev.text, 'lumi'); }
         else if (ev.type === 'toast' && (!ev.playerId || ev.playerId === me.id) && (!ev.room || ev.room === this.auth.room)) ui.toast.push(ev.text, ev.icon);
-        else if (ev.type === 'newDay') { ui.hud.time(ev.time); if (ev.time.weather === 'rain') ui.toast.push('비가 와요. 오늘은 물을 안 줘도 돼요!', 'rain'); }
+        else if (ev.type === 'newDay') { ui.hud.time(ev.time); this.stage3d?.markSoilDirty(); if (ev.time.weather === 'rain') ui.toast.push('비가 와요. 오늘은 물을 안 줘도 돼요!', 'rain'); }
         else if (ev.type === 'room' && ev.playerId === me.id) this.goRoom();
         else if (ev.type === 'look') {
           if (ev.id === me.id) { if (this.playing) this.goRoomSame(); }
@@ -1132,6 +1141,27 @@ export class FarmScene extends Phaser.Scene {
     this.atmo.follow(this.player.x, this.player.y);
     this.atmo.update(dt, minutes);
     this.updateCursor();
+    this.stage3d?.update(dt, {
+      player: this.player,
+      partner: this.partner,
+      npcs: this.npcs,
+      trainers: this.trainers,
+      storyActors: this.story.getActors(),
+      plotActors: this.plot.getActors(),
+      remotes: this.remotes.values(),
+      remotePartners: this.remotePartners.values(),
+      chickens: this.chickens,
+      ducks: this.ducks,
+      forage: this.forageSprites.values(),
+      crops: this.farm?.getCrops(),
+      tiles: this.farm?.getTiles(),
+      legend: this.legendSprite,
+      dish: this.dishSprite,
+      bobber: this.fishing?.bobber,
+      cursor: this.cursor,
+      minutes,
+      weather: this.auth.time.weather,
+    });
   }
 
   private updateCursor() {
@@ -1530,6 +1560,7 @@ export class FarmScene extends Phaser.Scene {
         auth: this.auth, update,
         onEnd: (ended) => {
           this.battling = false;
+          this.stage3d?.setBattleHidden(false);
           touch.setVisible(true);
           this.playMapMusic();
           if (this.badgeJingle) { this.badgeJingle = false; music.jingle('jingle_badge'); const b = this.auth.me.badges.at(-1); if (b && this.auth.me.mode === 'story') this.time.delayedCall(600, () => captureMemory(this, this.auth.me.id, b, `${ITEMS[b]?.name ?? '배지'} 획득`)); }
@@ -1543,6 +1574,7 @@ export class FarmScene extends Phaser.Scene {
           if (ended === 'caught') ui.toast.push('새 루미가 친구가 됐어요! (P: 나의 루미)', 'lumi');
         },
       };
+      this.stage3d?.setBattleHidden(true);
       this.scene.launch('Battle', data);
       this.scene.pause();
     });

@@ -163,7 +163,7 @@ export class FarmSimulation {
     give.forEach((it, i) => { inv[i].itemId = it; inv[i].quantity = qty[it] ?? 1; });
     const home = this.homeSpot();
     const p: PlayerState = {
-      id, name, look, map: 'farm', inst: id, x: home.x, y: home.y, dir: 'down', anim: 'idle', energy: 270, maxEnergy: 270, inventory: inv, gold: 500, bin: [], story: STORY.HOME, world, homeWorld: world,
+      id, name, look, map: 'farm', inst: id, x: home.x, y: home.y, dir: 'down', anim: 'idle', energy: 270, maxEnergy: 270, inventory: inv, gold: 500, bin: [], story: STORY.HOME, world, homeWorld: world, mode: 'story',
       party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [], visited: ['farm'], recipes: STARTER_RECIPES(), flags: [],
     };
     if (save) {
@@ -434,7 +434,7 @@ export class FarmSimulation {
     if (!this.maps[to]) return { ok: false, reason: 'no-map' };
     if (to === 'route1' && (!p.party.length || p.story < STORY.DONE)) return { ok: false, reason: 'need-partner' };
     if ((BADGE_GATES[to] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[to]}` };
-    const gw = p.mode === 'story' ? gateFor(p, to) : undefined; if (gw) return { ok: false, reason: `event:${gw.id}` };
+    const gw = gateFor(p, to); if (gw) return { ok: false, reason: `event:${gw.id}` };
     const qg = QUESTS.gates[to]; if (qg && !p.flags.includes(qg.flag)) return { ok: false, reason: `gate:${to}` };
     // 다른 맵에서 농장으로 가면 언제나 '내' 농장
     this.toSpawn(p, to, to === 'farm' ? p.id : '', w.spawn);
@@ -448,7 +448,7 @@ export class FarmSimulation {
     const target = o ? String(prop(o, 'interior', '') || INTERIOR_OF[o.type] || '') : '';
     if (!o || !target || !this.maps[target]) return { ok: false, reason: 'no-door' };
     if ((BADGE_GATES[target] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[target]}` };
-    const ge = p.mode === 'story' ? gateFor(p, target) : undefined; if (ge) return { ok: false, reason: `event:${ge.id}` };
+    const ge = gateFor(p, target); if (ge) return { ok: false, reason: `event:${ge.id}` };
     const qg = QUESTS.gates[target]; if (qg && !p.flags.includes(qg.flag)) return { ok: false, reason: `gate:${target}` };
     const T = m.tile;
     const cellX = Number(prop(o, 'cellX', 0)), cellY = Number(prop(o, 'cellY', 0)), cellW = Number(prop(o, 'cellW', 1));
@@ -527,9 +527,9 @@ export class FarmSimulation {
   private storyStep(p: PlayerState, step: number): ActionResult {
     const need: Record<number, (q: PlayerState) => boolean> = {
       [STORY.RACE]: (q) => q.story === STORY.HOME,
-      [STORY.PHONE]: (q) => q.story === STORY.RACE && q.map === 'town',
-      [STORY.MEET]: (q) => q.story === STORY.PHONE && q.map === 'town',
-      [STORY.HALL]: (q) => q.story === STORY.MEET && q.map === 'in_lab',
+      [STORY.PHONE]: (q) => (q.story === STORY.RACE || q.story === STORY.HOME) && q.map === 'town',
+      [STORY.MEET]: (q) => (q.story === STORY.PHONE || q.story === STORY.RACE) && q.map === 'town',
+      [STORY.HALL]: (q) => (q.story === STORY.MEET || q.story === STORY.PHONE || q.story === STORY.RACE) && q.map === 'in_lab',
     };
     if (!need[step]?.(p)) return { ok: false, reason: 'story' };
     this.setStory(p, step);
@@ -539,7 +539,6 @@ export class FarmSimulation {
   private storyEvent(p: PlayerState, id: string): ActionResult {
     const ev = EVENTS[id];
     if (!ev || p.flags.includes(id)) return { ok: false, reason: 'done' };
-    if (p.mode !== 'story') return { ok: false, reason: 'multi' };   // 본편 사건은 스토리 모드에서만
     if (nextEvent(p)?.id !== id) return { ok: false, reason: 'story' };
     if (!ev.battle) { this.finishEvent(p, id); return { ok: true }; }
     if (!this.canBattle(p)) return { ok: false, reason: 'no-lumi' };
@@ -557,7 +556,7 @@ export class FarmSimulation {
   }
   /** 엔딩 뒤 에필로그: 내 농장 집 문 바로 앞 (한 칸 아래)으로 */
   private epilogue(p: PlayerState): ActionResult {
-    if (p.mode !== 'story' || !p.flags.includes('ending')) return { ok: false, reason: 'story' };
+    if (!p.flags.includes('ending')) return { ok: false, reason: 'story' };
     const house = this.maps.farm.objects.find((o) => o.type === 'house');
     const dx = Number(prop(house ?? {} as never, 'doorCellX', 23)), cy = Number(prop(house ?? {} as never, 'cellY', 11));
     p.world = p.homeWorld;
@@ -650,8 +649,10 @@ export class FarmSimulation {
   private resetSave(p: PlayerState): ActionResult {
     const name = p.name;
     const world = p.homeWorld;
+    const mode = p.mode ?? 'story';
     this.removePlayer(p.id);
-    this.addPlayer(p.id, name, '', null, world);
+    const next = this.addPlayer(p.id, name, '', null, world);
+    next.mode = mode;
     return { ok: true };
   }
 

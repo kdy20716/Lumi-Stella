@@ -26,6 +26,7 @@ export function buildRoute1() {
 
   // 채석장 (북동쪽 흙바닥 + 광석)
   for (let y = 2; y <= 7; y++) for (let x = 49; x <= 59; x++) { m.setT(x, y, D); m.reserved[y][x] = true; }
+  m.path(46, 9, 53, 9, 2);
   m.path(52, 7, 52, 9, 2);
   const ores = [['ore_stone', 50, 3], ['ore_stone', 53, 3], ['ore_copper', 56, 3], ['ore_stone', 58, 4], ['ore_copper', 51, 5], ['ore_iron', 55, 5], ['ore_stone', 57, 6], ['ore_iron', 49, 6], ['ore_star', 54, 2], ['ore_copper', 59, 6], ['ore_stone', 50, 7], ['ore_stone', 56, 7]];
   for (const [t, x, y] of ores) m.place(t, x, y, { force: true, props: { mine: t.slice(4) } });

@@ -21,6 +21,7 @@ export class EventDirector {
   private busy = false;
   private actors: Actor[] = [];
   constructor(private h: StoryHost) {}
+  getActors() { return this.actors; }
 
   private get me() { return this.h.auth.me; }
   private fill(s: string) { return s.replaceAll('{me}', this.me.name).replaceAll('{rival}', rivalOf(this.me.look).name); }
@@ -46,7 +47,21 @@ export class EventDirector {
     this.actors.push(a);
     return a;
   }
-  private entrance() { const sp = this.h.world.info.spawns; const e = sp.get('player') ?? [...sp.values()][0]; return e ? [Math.floor(e.x / TILE), Math.floor(e.y / TILE)] as [number, number] : this.h.player.cell(); }
+  private entrance(): [number, number] {
+    const [px, py] = this.h.player.cell();
+    const grid = this.h.world.grid;
+    const candidates: [number, number][] = [
+      [px, py + 5], [px - 5, py], [px + 5, py], [px, py - 5],
+      [px, py + 4], [px - 4, py], [px + 4, py], [px, py - 4],
+      [px, py + 3], [px - 3, py], [px + 3, py],
+    ];
+    for (const [cx, cy] of candidates) {
+      if (!grid.blocked(cx, cy) && grid.findPath(cx, cy, px, py)) return [cx, cy];
+    }
+    const sp = this.h.world.info.spawns;
+    const e = sp.get('player') ?? [...sp.values()][0];
+    return e ? [Math.floor(e.x / TILE), Math.floor(e.y / TILE)] as [number, number] : [px, py + 2];
+  }
   /** 입구에서 걸어 들어와 주인공 앞에 섬 */
   private async walkIn(id: string) {
     const c = this.cast(id), meta = this.h.manifest.characters[c.sprite]; if (!meta) return null;
@@ -66,7 +81,7 @@ export class EventDirector {
 
   /** 맵에 들어왔을 때 · 사건이나 승부가 끝났을 때 */
   check() {
-    if (this.busy || this.me.mode !== 'story') return;   // 본편 사건은 스토리 모드에서만
+    if (this.busy) return;
     const ev = nextEvent({ ...this.me, map: this.h.mapId });
     if (ev) void this.run(ev);
   }

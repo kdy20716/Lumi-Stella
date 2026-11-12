@@ -416,7 +416,7 @@ export function buildRegion() {
     const kinds = tier >= 7 ? ['ore_iron', 'ore_star', 'ore_copper', 'ore_stone'] : tier >= 4 ? ['ore_copper', 'ore_iron', 'ore_stone', 'ore_stone'] : ['ore_stone', 'ore_stone', 'ore_copper'];
     for (let k = 0, tries = 0; k < n && tries < 2000; tries++) {
       const x = 3 + Math.floor(R() * (m.W - 6)), y = 4 + Math.floor(R() * (m.H - 8));
-      if (m.blocked[y][x] || m.reserved[y][x] || m.terrain[y][x] === Wt) continue;
+      if (m.blocked[y][x] || m.reserved[y][x] || m.terrain[y][x] !== G || m.cliff[y * m.W + x]) continue;
       const t = kinds[Math.floor(R() * kinds.length)];
       m.place(t, x, y, { force: true, props: { mine: t.slice(4) } }); k++;
     }
@@ -609,8 +609,8 @@ export function buildRegion() {
     {
       const R2 = rng(hashStr(n.id) ^ 0x7e11a), v = hashStr(`${n.id}:look`) % 4, tree = (TREES[n.biome] ?? TREES.meadow)[0];
       const avenue = () => { for (const ex of exits) { if (ex.side !== 'E' && ex.side !== 'W') continue; for (let x = 4; x < W - 4; x += 4) { if (Math.abs(x - cx) < 10) continue; for (const yy of [ex.p - 2, ex.p + 3]) if (tree) m.place(tree, x, yy, { props: { frameOffset: (x + yy) % 4 } }); } } };
-      if (!n.city && v === 0) { m.place('well', cx - 3, cy + 1, { force: true, props: { interact: 'sign', text: `${n.name}의 우물.\n두레박을 내리면 차가운 물이 찰랑인다.` } }); for (const [dx, dy] of [[-5, 2], [4, 2], [-5, -2], [4, -2]]) m.place('planter', cx + dx, cy + dy, { force: true }); }
-      else if (!n.city && v === 1) { m.place('statue', cx - 3, cy + 1, { force: true, props: { interact: 'sign', text: `${n.name}을(를) 처음 일군 사람과 그 곁을 지킨 루미의 석상.\n「땅을 아는 이가 길을 연다」` } }); avenue(); }
+      if (!n.city && !n.coastal && v === 0) { m.place('well', cx - 3, cy + 1, { force: true, props: { interact: 'sign', text: `${n.name}의 우물.\n두레박을 내리면 차가운 물이 찰랑인다.` } }); for (const [dx, dy] of [[-5, 2], [4, 2], [-5, -2], [4, -2]]) m.place('planter', cx + dx, cy + dy, { force: true }); }
+      else if (!n.city && (v === 1 || (n.coastal && v === 0))) { m.place('statue', cx - 3, cy + 1, { force: true, props: { interact: 'sign', text: `${n.name}을(를) 처음 일군 사람과 그 곁을 지킨 루미의 석상.\n「땅을 아는 이가 길을 연다」` } }); avenue(); }
       else if (v === 2) { const at = pondSpot(m, [cx + (R2() < 0.5 ? -13 : 13), cy + 4, 2.6, 1.7], 2); if (at) { m.ellipse(at[0], at[1], 2.6, 1.7, Wt, 0.05); m.reserve(Math.floor(at[0] - 4), Math.floor(at[1] - 3), Math.ceil(at[0] + 4), Math.ceil(at[1] + 3)); m.place('bench', Math.round(at[0]) - 1, Math.round(at[1]) + 3, { w: 2, force: true, props: { interact: 'bench' } }); } }
       else { const tier = n.tier ?? 2, mart = tier <= 2 ? 'windvale' : tier <= 4 ? 'mart2' : tier <= 6 ? 'mart3' : 'mart4'; m.place('stall', cx + 3, cy + 2, { w: 3, force: true, props: { interact: `shop:${mart}` } }); m.place('stall_b', cx - 6, cy + 2, { w: 3, force: true, props: { interact: 'shop:cafe' } }); avenue(); }
       farSpots(m, R2, 2, 4).forEach(([x, y]) => stash(m, n, R2, 'glint', x, y));

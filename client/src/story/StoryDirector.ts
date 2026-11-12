@@ -32,12 +32,14 @@ export class StoryDirector {
   private actors: Actor[] = [];
   private busy = false;
   constructor(private h: StoryHost) {}
+  getActors() { return this.actors; }
 
   private get me() { return this.h.auth.me; }
   private get rival() { const r = rivalOf(this.me.look); return { ...r, sprite: r.look, color: r.look === 'rival_f' ? '#3fb07a' : '#2f68c0' }; }
   private wait(ms: number) { return new Promise<void>((r) => this.h.scene.time.delayedCall(ms, r)); }
   private spawn(id: string, sheet: string, name: string, cx: number, cy: number, face: Dir = 'down') {
-    const c = cellCenter(cx, cy);
+    const [ox, oy] = this.h.world.grid.blocked(cx, cy) ? (this.h.world.grid.nearestOpen(cx, cy) ?? [cx, cy]) : [cx, cy];
+    const c = cellCenter(ox, oy);
     const a = new Actor(this.h.scene, id, sheet, c.x, c.y, this.h.manifest.characters[sheet], this.h.world.grid, name, this.h.zoom);
     a.face(face); this.actors.push(a);
     return a;
@@ -48,20 +50,35 @@ export class StoryDirector {
   /** 주인공을 칸까지 걷게 함 (컷신 중) */
   private walkPlayer(cx: number, cy: number): Promise<void> {
     const p = this.h.player, [sx, sy] = p.cell();
-    const path = this.h.world.grid.findPath(sx, sy, cx, cy) ?? [];
+    const [tx, ty] = this.h.world.grid.blocked(cx, cy) ? (this.h.world.grid.nearestOpen(cx, cy) ?? [cx, cy]) : [cx, cy];
+    const path = this.h.world.grid.findPath(sx, sy, tx, ty) ?? [[tx, ty]];
     return new Promise((res) => {
+      let done = false;
+      const finish = () => { if (done) return; done = true; this.h.scene.events.off('update', tick); p.play('idle', p.dir); res(); };
       const tick = (_t: number, dt: number) => {
         const n = path[0];
-        if (!n) { this.h.scene.events.off('update', tick); p.play('idle', p.dir); res(); return; }
+        if (!n) { finish(); return; }
         const t = cellCenter(n[0], n[1]), dx = t.x - p.x, dy = t.y - p.y, d = Math.hypot(dx, dy), s = (62 * dt) / 1000;
         if (d <= s) { p.setPosition(t.x, t.y); path.shift(); } else p.setPosition(p.x + (dx / d) * s, p.y + (dy / d) * s);
         p.play('walk', facingFromVector(dx, dy, p.dir)); p.update();
       };
       this.h.scene.events.on('update', tick);
+      this.h.scene.time.delayedCall(Math.max(2500, path.length * 450), () => {
+        if (!done) { const t = cellCenter(tx, ty); p.setPosition(t.x, t.y); p.update(); finish(); }
+      });
     });
   }
 
-  update(dt: number) { for (const a of this.actors) if (a.sprite.active) a.tick(dt); this.actors = this.actors.filter((a) => a.sprite.active); }
+  update(dt: number) {
+    for (const a of this.actors) if (a.sprite.active) a.tick(dt);
+    this.actors = this.actors.filter((a) => a.sprite.active);
+    if (!this.busy && this.h.mapId === 'town' && this.me.story === STORY.PHONE) {
+      const rv = this.actors.find((a) => a.id === 'rival' && a.sprite.active);
+      if (rv && (Math.hypot(this.h.player.x - rv.x, this.h.player.y - rv.y) < 44 || this.h.player.x >= rv.x - 8)) {
+        void this.meetAtLamp(rv);
+      }
+    }
+  }
 
   /** 씬이 시작될 때: 이 장소·단계에 맞는 장면 */
   begin() {
@@ -69,10 +86,10 @@ export class StoryDirector {
     if (st >= STORY.DONE || !this.me.look) return;
     if (map === 'home' && own && st === STORY.HOME) void this.rivalVisit();
     else if (map === 'farm' && own && st === STORY.RACE) void this.rivalRunsAhead();
-    else if (map === 'town' && st === STORY.RACE) void this.momScene();
+    else if (map === 'town' && (st === STORY.RACE || st === STORY.HOME)) void this.momScene();
     else if (map === 'town' && st === STORY.PHONE) this.rivalAtLamp();
     else if (map === 'town' && st === STORY.MEET) this.rivalAtHall();
-    else if (map === 'in_lab' && (st === STORY.MEET || st === STORY.HALL)) void this.hallScene();
+    else if (map === 'in_lab' && (st === STORY.MEET || st === STORY.HALL || st === STORY.PHONE || st === STORY.RACE)) void this.hallScene();
   }
 
   /** 배우에게 말 걸기 */
@@ -156,8 +173,8 @@ export class StoryDirector {
     await this.say(MOM, ['참, 그 애는 호수 왼쪽 가로등 밑에서 너를 기다리고 있더라. 어서 가 보렴!']);
     this.rivalAtLamp();   // 씬을 다시 불러오지 않아도 친구가 바로 가로등 아래에 보이도록
     this.busy = false; this.h.unlock();
-    await m.walkTo(px + 3, py - 4);
-    m.face('down');
+    await m.walkTo(Math.max(1, px - 1), py);
+    await m.vanish();
   }
 
   // ── 3. 호수 왼쪽 가로등 아래 친구 ──────────────────────
@@ -199,7 +216,7 @@ export class StoryDirector {
     await this.wait(500);
     await this.walkPlayer(mw[0], mw[1] + 1);
     this.h.player.play('idle', 'up');
-    if (this.me.story === STORY.MEET) {
+    if (this.me.story === STORY.MEET || this.me.story === STORY.PHONE || this.me.story === STORY.RACE) {
       rival.faceTo(this.h.player.x, this.h.player.y);
       await this.say(r, [`이장님! ${name}도 왔어요!`]);
       mayor.showEmote(5, 1200);

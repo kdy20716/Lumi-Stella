@@ -24,7 +24,7 @@ const loadImg = (src: string) => {
 };
 const texCache = new Map<string, THREE.Texture>();
 /** 픽셀 그림용 텍스처 (보간 없음) */
-function pixelTex(img: HTMLImageElement | HTMLCanvasElement, key?: string) {
+export function pixelTex(img: HTMLImageElement | HTMLCanvasElement, key?: string) {
   if (key && texCache.has(key)) return texCache.get(key)!;
   const t = new THREE.Texture(img);
   t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
@@ -35,7 +35,7 @@ function pixelTex(img: HTMLImageElement | HTMLCanvasElement, key?: string) {
 
 // ── 빌보드 (서 있는 2D 그림) ────────────────────────────
 //  카메라를 향해 똑바로 선 판. 카메라가 45° 로 내려다보면 2D 3/4 시점 그림과 같은 비율로 보임
-class Billboard {
+export class Billboard {
   readonly mesh: THREE.Mesh;
   private tex: THREE.Texture;
   constructor(base: THREE.Texture, readonly fw: number, readonly fh: number, readonly cols: number, readonly rows: number, originY: number, originX = 0.5) {
@@ -337,7 +337,7 @@ function sideWallTex(s: BldShape, widthPx: number, key: string) {
 /** 건물: 4세대처럼 벽 네 면이 다 막힌 상자 + 처마가 튀어나온 경사 지붕(앞 · 뒤 경사면 + 양옆 삼각 경사면)
  *  - 앞벽 · 앞 지붕 = 원래 2D 그림, 옆벽 · 뒷벽 = 앞벽 무늬로 만든 그림, 옆 지붕 = 지붕 그림 가운데를 늘려 씀
  *  - 해는 왼쪽 위: 왼쪽 면은 조금, 오른쪽 · 뒤쪽 면은 더 어둡게 */
-function makeBuilding(img: HTMLImageElement, tex: THREE.Texture, key: string, cellX: number, cellY: number, cellW: number, cellH: number, base: number, chimneyX?: number | null) {
+export function makeBuilding(img: HTMLImageElement, tex: THREE.Texture, key: string, cellX: number, cellY: number, cellW: number, cellH: number, base: number, chimneyX?: number | null) {
   const s = analyzeBuilding(img);
   const { w, h } = s;
   const grp = new THREE.Group();
@@ -436,9 +436,9 @@ function makeBuilding(img: HTMLImageElement, tex: THREE.Texture, key: string, ce
 
 /** 블록아웃 건물 (그림이 생기기 전 규모 확인용): 층마다 창문 띠가 있는 상자 + 옥상 난간 · 1층 입구 · 이름판
  *  한 층 = 0.75칸. 플레이어를 가리면 반투명해짐 (Tall.mats 로 투명도 조절) */
-interface Tall { mesh: THREE.Group; x0: number; x1: number; z0: number; z1: number; h: number; mats: THREE.MeshBasicMaterial[]; faded: boolean }
+export interface Tall { mesh: THREE.Group; x0: number; x1: number; z0: number; z1: number; h: number; mats: THREE.MeshBasicMaterial[]; faded: boolean }
 const FLOOR_H = 0.75;
-function blockoutTex(kind: string, color: string, wCells: number, floors: number, front: boolean, label: string, key: string, accent = '') {
+export function blockoutTex(kind: string, color: string, wCells: number, floors: number, front: boolean, label: string, key: string, accent = '') {
   const hit = texCache.get(key); if (hit) return hit;
   const fh = 12, lobby = 16, Wp = Math.max(16, Math.round(wCells * 16)), Hp = floors * fh + lobby - fh;
   // 2배 해상도로 그림: 무늬는 같고 이름판 글자만 또렷해짐
@@ -499,7 +499,7 @@ function blockoutTex(kind: string, color: string, wCells: number, floors: number
   } else for (let x = 3; x + 4 <= Wp - 3; x += 6) { cx.fillStyle = glass; cx.fillRect(x, ly + 5, 4, 6); }
   return pixelTex(cv, key);
 }
-function makeBlockout(o: TiledObject, kind: string, cellX: number, cellY: number, cellW: number, cellH: number, base: number): Tall {
+export function makeBlockout(o: TiledObject, kind: string, cellX: number, cellY: number, cellW: number, cellH: number, base: number): Tall {
   const floors = Math.max(1, Number(prop(o, 'floors', 3))), color = String(prop(o, 'color', '#c8c8c8')), label = String(prop(o, 'label', ''));
   const h = floors * FLOOR_H + 0.25;
   const grp = new THREE.Group();
@@ -542,7 +542,7 @@ function makeBlockout(o: TiledObject, kind: string, cellX: number, cellY: number
 }
 
 /** 도시 바닥 무늬 (칸 = 16px). a 차도 · h/v 가운데 점선 · z/y 횡단보도 · w 인도 · p 광장 · x 외벽 윗면. g(풀) · o(물)은 원래 그림 그대로 */
-function paintUrban(cx: CanvasRenderingContext2D, surf: string[]) {
+export function paintUrban(cx: CanvasRenderingContext2D, surf: string[]) {
   const H = surf.length, W = surf[0]?.length ?? 0;
   const road = (c: string | undefined) => !!c && 'ahvzy'.includes(c);
   const noise = (x: number, y: number, i: number) => ((x * 73856093) ^ (y * 19349663) ^ (i * 83492791)) >>> 0;
@@ -599,7 +599,7 @@ function paintUrban(cx: CanvasRenderingContext2D, surf: string[]) {
 }
 
 /** 도시 소품 (그림 전 블록아웃): 자판기 · 신호등 */
-function makeStreetProp(type: string, gx: number, gz: number, base: number) {
+export function makeStreetProp(type: string, gx: number, gz: number, base: number) {
   const g = new THREE.Group();
   const box = (w: number, h: number, d: number, col: number, x: number, y: number, z: number) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: col })); m.position.set(x, y, z); g.add(m); return m; };
   if (type === 'vend') {
@@ -620,7 +620,7 @@ function makeStreetProp(type: string, gx: number, gz: number, base: number) {
 
 /** 동굴 벽: 막힌 칸을 솟은 바위 덩어리로 (4세대 동굴처럼 벽이 높게 서 있음)
  *  윗면 = 그 칸의 바닥 그림, 앞면 · 옆면 = 같은 그림을 어둡게 */
-function makeCaveWalls(info: MapInfo, W: number, H: number, tex: THREE.Texture, hgt = 1.6, isWall?: (x: number, y: number) => boolean) {
+export function makeCaveWalls(info: MapInfo, W: number, H: number, tex: THREE.Texture, hgt = 1.6, isWall?: (x: number, y: number) => boolean) {
   const pos: number[] = [], uv: number[] = [], col: number[] = [];
   const quad = (p: number[][], q: number[][], c: number) => { for (const i of [0, 1, 2, 0, 2, 3]) { pos.push(...p[i]); uv.push(...q[i]); col.push(c, c, c); } };
   const open = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && (isWall ? !isWall(x, y) : !info.isBlocked(x, y));
