@@ -9,7 +9,7 @@ import {
   type ActionIntent, type ActionResult, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type MailGift, type MapId,
   type PlacedObject, type PlayerState, type SaveData, type TrainerDef, type WorldTime, type Weather, type BattleUpdate,
 } from '../types';
-import { BM_PRODUCT_MAP, LUMI_COORDS, UI_THEMES, isBmUnlocked, isValidPlayerLook } from '../bmShop';
+import { ADMIN_DEFAULT_CASH_KRW, BM_ALL_TOTAL_KRW, BM_LOOK_IDS, BM_PRODUCT_MAP, LUMI_COORDS, UI_THEMES, isBmUnlocked, isValidPlayerLook, remainingBmCostKrw } from '../bmShop';
 import { MapInfo, prop } from './MapInfo';
 import { RIVAL_PICK, STORY, rivalOf } from '../story';
 
@@ -55,7 +55,7 @@ export type SimEvent =
   | { type: 'story'; id: string; story: number }
   | { type: 'placed'; owner: string; obj: PlacedObject }
   | { type: 'unplaced'; owner: string; id: string }
-  | { type: 'bmState'; id: string; mailItems: MailGift[]; uiTheme: string; ownedThemes: string[]; ownedOutfits: string[]; lumiCoord: string; ownedLumiCoords: string[]; bmOrders: string[] };
+  | { type: 'bmState'; id: string; mailItems: MailGift[]; uiTheme: string; ownedThemes: string[]; ownedOutfits: string[]; lumiCoord: string; ownedLumiCoords: string[]; bmOrders: string[]; cash: number; isAdmin: boolean };
 
 type Listener = (e: SimEvent) => void;
 interface FarmState { owner: string; /** 마을 텃밭이면 그 마을 */ map?: MapId; tiles: Map<string, FarmTile>; removed: Set<number>; placed: Map<string, PlacedObject>; dish: Dish | null }
@@ -167,7 +167,8 @@ export class FarmSimulation {
     const p: PlayerState = {
       id, name, look, map: 'farm', inst: id, x: home.x, y: home.y, dir: 'down', anim: 'idle', energy: 270, maxEnergy: 270, inventory: inv, gold: 500, bin: [], story: STORY.HOME, world, homeWorld: world, mode: 'story',
       party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [], visited: ['farm'], recipes: STARTER_RECIPES(), flags: [],
-      mailItems: [], uiTheme: 'rural', ownedThemes: ['rural'], ownedOutfits: [], lumiCoord: '', ownedLumiCoords: [], bmOrders: [],
+      mailItems: [], uiTheme: 'rural', ownedThemes: ['rural'], ownedOutfits: [], lumiCoord: '', ownedLumiCoords: [], bmOrders: [], cashOrders: [],
+      isAdmin: false, cash: 0,
     };
     if (save) {
       Object.assign(p, {
@@ -185,6 +186,9 @@ export class FarmSimulation {
         lumiCoord: save.lumiCoord && LUMI_COORDS[save.lumiCoord] ? save.lumiCoord : '',
         ownedLumiCoords: [...new Set(save.ownedLumiCoords ?? [])],
         bmOrders: [...new Set(save.bmOrders ?? [])],
+        cashOrders: [...new Set(save.cashOrders ?? [])],
+        cash: typeof save.cash === 'number' && Number.isFinite(save.cash) ? Math.max(0, Math.round(save.cash)) : 0,
+        isAdmin: false,
       });
       migrateBag(p.bag);
       if (save.inventory?.length) p.inventory = Array.from({ length: INVENTORY_SIZE }, (_, i) => { const id = save.inventory[i]?.itemId ?? null; const ok = !!id && !!ITEMS[id]; return { slotIndex: i, itemId: ok ? id : null, quantity: ok ? save.inventory[i]?.quantity ?? 0 : 0 }; });
@@ -216,7 +220,8 @@ export class FarmSimulation {
       farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [], placed: f ? [...f.placed.values()] : [], ver: FARM_VER }, story: p.story, flags: p.flags, visited: p.visited, recipes: p.recipes,
       bonds: p.bonds, bondDay: p.bondDay, asks: p.asks, stock: p.stock, opened: p.opened,
       mailItems: p.mailItems, uiTheme: p.uiTheme, ownedThemes: p.ownedThemes, ownedOutfits: p.ownedOutfits,
-      lumiCoord: p.lumiCoord, ownedLumiCoords: p.ownedLumiCoords, bmOrders: p.bmOrders,
+      lumiCoord: p.lumiCoord, ownedLumiCoords: p.ownedLumiCoords, bmOrders: p.bmOrders, cashOrders: p.cashOrders,
+      cash: p.cash ?? 0,
       plots: Object.fromEntries([...this.plots.values()].filter((pl) => pl.owner === id && pl.tiles.size).map((pl) => [pl.map!, [...pl.tiles.values()]])),
       pos: { map: p.map, inst: p.inst, x: p.x, y: p.y, dir: p.dir, ret: p.ret }, savedAt: Date.now(),
     } satisfies SaveData)) as SaveData;
@@ -416,7 +421,7 @@ export class FarmSimulation {
       case 'rivalBattle': return this.rivalBattle(p);
       case 'craft': return this.craft(p, a.recipe, a.times ?? 1);
       case 'learn': return this.learn(p, a.npc);
-      case 'bmDeliver': return this.multiplayer ? { ok: false, reason: 'server-confirm' } : this.deliverBmOrder(p.id, a.productId, a.orderId, a.provider ?? 'web-card');
+      case 'bmDeliver': return this.multiplayer ? { ok: false, reason: 'server-confirm' } : this.deliverBmOrder(p.id, a.productId, a.orderId, a.provider ?? 'web-card', { admin: p.isAdmin, deductCash: !!a.useCash });
       case 'bmClaimMail': return this.bmClaimMail(p, a.giftId);
       case 'equipCosmetic': return this.equipCosmetic(p, a.category, a.itemId);
       case 'resetSave': return this.resetSave(p);
@@ -672,13 +677,20 @@ export class FarmSimulation {
     const name = p.name;
     const world = p.homeWorld;
     const mode = p.mode ?? 'story';
+    const wasAdmin = !!p.isAdmin;
+    const prevCash = p.cash ?? 0;
+    const prevCashOrders = [...(p.cashOrders ?? [])];
     this.removePlayer(p.id);
     const next = this.addPlayer(p.id, name, '', null, world);
     next.mode = mode;
+    next.cashOrders = prevCashOrders;
+    if (prevCash > 0) next.cash = prevCash;
+    if (wasAdmin) this.setAdminProfile(p.id, true);
+    else if (prevCash > 0) this.emitBm(next);
     return { ok: true };
   }
 
-  // ── 캐쉬 상점 · 공유 우편함 배송 · 외형/UI/루미 코디 ─────
+  // ── 캐쉬 상점 · PG 캐쉬 충전 · 공유 우편함 배송 ─────
   private emitBm(p: PlayerState) {
     this.emit({
       type: 'bmState', id: p.id,
@@ -689,11 +701,84 @@ export class FarmSimulation {
       lumiCoord: p.lumiCoord ?? '',
       ownedLumiCoords: [...(p.ownedLumiCoords ?? [])],
       bmOrders: [...(p.bmOrders ?? [])],
+      cash: p.cash ?? 0,
+      isAdmin: p.isAdmin === true,
     });
   }
 
-  /** 카드 결제 승인 후 호출: 해금 조건·중복 주문 검증 뒤 모든 마을 밭 우편함과 공유되는 보관함으로 배송 */
-  deliverBmOrder(playerId: string, productId: string, orderId: string, provider = 'web-card'): ActionResult {
+  /** 서버가 확인한 관리자 계정 부여 및 전체 상품 테스트 가능 캐쉬 지급 */
+  setAdminProfile(playerId: string, isAdmin: boolean) {
+    const p = this.players.get(playerId);
+    if (!p) return;
+    p.isAdmin = isAdmin;
+    if (isAdmin) this.ensureAdminCash(p, false);
+    this.emitBm(p);
+  }
+
+  /** 어드민이 남은 모든 캐쉬 상품을 사고도 남을 만큼의 테스트 캐쉬 확보 */
+  ensureAdminCash(p: PlayerState, emit = true) {
+    const minNeeded = Math.max(remainingBmCostKrw(p), BM_ALL_TOTAL_KRW);
+    if ((p.cash ?? 0) < minNeeded) {
+      p.cash = Math.max(ADMIN_DEFAULT_CASH_KRW, minNeeded);
+    }
+    if (emit) this.emitBm(p);
+  }
+
+  /** 어드민 캐쉬 증감 */
+  grantCash(p: PlayerState, delta: number) {
+    if (!Number.isFinite(delta) || delta === 0) return false;
+    p.cash = Math.max(0, Math.round((p.cash ?? 0) + delta));
+    this.emitBm(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `보유 캐쉬가 ${(p.cash ?? 0).toLocaleString('ko-KR')} 캐쉬가 되었어요.`, icon: 'heart' });
+    return true;
+  }
+
+  /** 외부 PG(토스/PortOne 등) 결제 완료 후 계정에 캐쉬 지급 (주문 ID 기준 중복 방지) */
+  creditCashOrder(playerId: string, orderId: string, cashAmount: number, provider = 'pg'): ActionResult {
+    const p = this.players.get(playerId);
+    const add = Math.max(0, Math.round(cashAmount));
+    if (!p || !add) return { ok: false, reason: 'invalid' };
+    const orders = (p.cashOrders ??= []);
+    if (orders.includes(orderId)) return { ok: true };
+    orders.push(orderId);
+    p.cash = Math.max(0, Math.round((p.cash ?? 0) + add));
+    this.emitBm(p);
+    this.emit({
+      type: 'toast',
+      playerId: p.id,
+      text: `${add.toLocaleString('ko-KR')} 캐쉬가 충전되었어요! (보유 ${p.cash.toLocaleString('ko-KR')} 캐쉬)`,
+      icon: 'heart',
+    });
+    void provider;
+    return { ok: true, data: { qty: add } };
+  }
+
+  /** 어드민 테스트용: 캐쉬 상점 보유·배송·적용 상태 초기화 */
+  resetBmState(p: PlayerState) {
+    p.mailItems = [];
+    p.ownedThemes = ['rural'];
+    p.ownedOutfits = [];
+    p.ownedLumiCoords = [];
+    p.bmOrders = [];
+    p.uiTheme = 'rural';
+    p.lumiCoord = '';
+    if (BM_LOOK_IDS.has(p.look)) {
+      p.look = 'm1';
+      this.emit({ type: 'look', id: p.id, look: p.look, name: p.name });
+    }
+    if (p.isAdmin) this.ensureAdminCash(p, false);
+    this.emitBm(p);
+    this.emit({ type: 'toast', playerId: p.id, text: '캐쉬 상점 구매 기록과 우편함을 초기화했어요.', icon: 'mail' });
+  }
+
+  /** 카드·캐쉬 결제 승인 후 호출: 해금 조건·중복 주문 검증 뒤 모든 마을 밭 우편함과 공유되는 보관함으로 배송 */
+  deliverBmOrder(
+    playerId: string,
+    productId: string,
+    orderId: string,
+    provider = 'web-card',
+    opts?: { admin?: boolean; deductCash?: boolean; silentToast?: boolean },
+  ): ActionResult {
     const p = this.players.get(playerId);
     const prod = BM_PRODUCT_MAP[productId];
     if (!p || !prod) return { ok: false, reason: 'no-item' };
@@ -705,8 +790,14 @@ export class FarmSimulation {
       (p.ownedLumiCoords?.includes(productId) ?? false) ||
       (p.mailItems?.some((g) => g.productId === productId) ?? false);
     if (alreadyOwned) return { ok: false, reason: 'already-owned' };
-    const u = isBmUnlocked(prod, p);
+    const allowBypass = !!(opts?.admin || p.isAdmin);
+    const u = isBmUnlocked(prod, p, allowBypass);
     if (!u.unlocked) return { ok: false, reason: 'locked' };
+    if (opts?.deductCash) {
+      const curCash = p.cash ?? 0;
+      if (curCash < prod.priceKrw) return { ok: false, reason: 'no-cash' };
+      p.cash = curCash - prod.priceKrw;
+    }
     orders.push(orderId);
     const list = (p.mailItems ??= []);
     list.unshift({
@@ -720,7 +811,10 @@ export class FarmSimulation {
       provider,
     });
     this.emitBm(p);
-    this.emit({ type: 'toast', playerId: p.id, text: `${prod.name} 결제 완료! 모든 마을 밭 우편함으로 배송되었어요.`, icon: 'mail' });
+    if (!opts?.silentToast) {
+      const methodLabel = opts?.deductCash ? '캐쉬 결제' : '카드 결제';
+      this.emit({ type: 'toast', playerId: p.id, text: `${prod.name} ${methodLabel} 완료! 모든 마을 밭 우편함으로 배송되었어요.`, icon: 'mail' });
+    }
     return { ok: true, data: { item: prod.id, qty: 1 } };
   }
 

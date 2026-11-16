@@ -3,6 +3,7 @@
 //  - 모든 입력값을 검사 (대상 uid · 아이템 id · 수량 범위), 실패하면 아무 것도 바꾸지 않음
 import type { AdminCmd, AdminUser, S2C } from '../shared/protocol';
 import type { FarmSimulation } from '../shared/sim/FarmSimulation';
+import { formatKrw } from '../shared/bmShop';
 import { ITEMS, REGION_MAPS, SPECIES } from '../shared/data';
 import type { Hub, Client } from './hub';
 import type { Storage } from './storage';
@@ -19,7 +20,7 @@ export async function handleAdmin(me: Client, cmd: AdminCmd, sim: FarmSimulation
     case 'users': {
       const users: AdminUser[] = [...hub.clients.keys()].map((uid) => {
         const p = sim.players.get(uid)!;
-        return { uid, name: p.name, look: p.look, map: p.map, mapName: REGION_MAPS[p.map]?.name ?? p.map, gold: p.gold, badges: p.badges.length, party: p.party.map((c) => `${SPECIES[c.species]?.name ?? c.species} Lv${c.level}`).join(', '), online: true, world: p.world ? '친구들만' : '모두' };
+        return { uid, name: p.name, look: p.look, map: p.map, mapName: REGION_MAPS[p.map]?.name ?? p.map, gold: p.gold, cash: p.cash ?? 0, badges: p.badges.length, party: p.party.map((c) => `${SPECIES[c.species]?.name ?? c.species} Lv${c.level}`).join(', '), online: true, world: p.world ? '친구들만' : '모두' };
       });
       const bans = await storage.bans();
       return { ok: true, users, bans: Object.entries(bans).map(([uid, b]) => ({ uid, name: b.name, reason: b.reason })) };
@@ -62,6 +63,30 @@ export async function handleAdmin(me: Client, cmd: AdminCmd, sim: FarmSimulation
       if (!sim.grantGold(t, Number(cmd.amount))) return { ok: false };
       log(`골드 ${cmd.uid} ${cmd.amount}`);
       return { ok: true, message: '골드를 바꿨어요' };
+    }
+    case 'grantCash': {
+      if (!uidOk(cmd.uid)) return { ok: false };
+      const t = target(cmd.uid); if (!t) return { ok: false, message: '접속 중이 아니에요' };
+      if (cmd.mode === 'ensureAll') {
+        sim.ensureAdminCash(t, true);
+      } else {
+        const delta = Math.round(Number(cmd.amount));
+        if (!Number.isFinite(delta) || delta === 0 || Math.abs(delta) > 100_000_000) return { ok: false, message: '캐쉬 금액이 올바르지 않아요' };
+        if (!sim.grantCash(t, delta)) return { ok: false };
+      }
+      const d = sim.exportSave(cmd.uid);
+      if (d) await storage.save(cmd.uid, d).catch(() => {});
+      log(`캐쉬 ${cmd.uid} ${cmd.mode === 'ensureAll' ? 'ensureAll' : cmd.amount}`);
+      return { ok: true, message: `${t.name} 님 보유 캐쉬: ${formatKrw(t.cash ?? 0)}` };
+    }
+    case 'resetBm': {
+      if (!uidOk(cmd.uid)) return { ok: false };
+      const t = target(cmd.uid); if (!t) return { ok: false, message: '접속 중이 아니에요' };
+      sim.resetBmState(t);
+      const d = sim.exportSave(cmd.uid);
+      if (d) await storage.save(cmd.uid, d).catch(() => {});
+      log(`상점초기화 ${cmd.uid}`);
+      return { ok: true, message: `${t.name} 님의 캐쉬 상점 구매 기록을 초기화했어요` };
     }
     default: return { ok: false, message: '모르는 명령' };
   }

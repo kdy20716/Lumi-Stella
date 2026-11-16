@@ -154,6 +154,12 @@ export interface PlayerState {
   ownedLumiCoords?: string[];
   /** 중복 지급 방지용 처리 완료 주문 id 목록 */
   bmOrders?: string[];
+  /** 중복 충전 방지용 처리 완료 캐쉬 충전 주문 id 목록 */
+  cashOrders?: string[];
+  /** 서버가 확인한 관리자 여부 (표시 및 해금 보조용 — 실제 권한 검사는 항상 서버가 수행) */
+  isAdmin?: boolean;
+  /** 캐쉬 상점 결제용 캐쉬 잔액 */
+  cash?: number;
 }
 /** 호감도 규칙 */
 export const BOND_MAX = 10, BOND_WATER = 4, BOND_ASK_AT = [0, 3, 6];
@@ -231,6 +237,8 @@ export interface SaveData {
   lumiCoord?: string;
   ownedLumiCoords?: string[];
   bmOrders?: string[];
+  cashOrders?: string[];
+  cash?: number;
   /** 마지막 위치 (다시 접속하면 그 자리에서 이어서). 실내면 나갈 곳(ret)도 */
   pos?: { map: MapId; inst: string; x: number; y: number; dir?: Dir; ret?: { map: MapId; inst: string; x: number; y: number } };
   savedAt: number;
@@ -287,7 +295,7 @@ export type ActionIntent =
   | { kind: 'rivalBattle' }                           // 마을회관에서 친구와 첫 대결
   | { kind: 'craft'; recipe: string; times?: number }  // 작업대에서 제작
   | { kind: 'learn'; npc: string }                  // 공방 NPC에게 제작법 배우기
-  | { kind: 'bmDeliver'; productId: string; orderId: string; provider?: string }
+  | { kind: 'bmDeliver'; productId: string; orderId: string; provider?: string; useCash?: boolean }
   | { kind: 'bmClaimMail'; giftId: string }
   | { kind: 'equipCosmetic'; category: 'theme' | 'outfit' | 'lumi'; itemId: string }
   | { kind: 'resetSave' }

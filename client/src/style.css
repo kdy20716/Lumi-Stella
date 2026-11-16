@@ -289,9 +289,9 @@ button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite;
 .ph-input { width: 100%; border: 2px solid #d8b67c; border-radius: 8px; background: #fffaf0; padding: 6px 8px; font: inherit; font-size: 14px; color: #3b2414; margin-top: 6px; }
 .ph-input.sm { width: auto; flex: 1; padding: 2px 6px; margin-top: 0; font-size: 12px; }
 .ph-tabs { display: flex; gap: 6px; margin-bottom: 6px; }
-.ph-tabs button { flex: 1; padding: 4px; border-radius: 8px; border: 2px solid #d8b67c; background: #fffaf0; font: inherit; font-size: 13px; }
+.ph-tabs button { flex: 1; padding: 4px 2px; border-radius: 8px; border: 2px solid #d8b67c; background: #fffaf0; font: inherit; font-size: 12px; white-space: nowrap; }
 .ph-tabs button.on { background: #3b2414; color: #fff8ec; border-color: #3b2414; }
-.ph-tabs button:last-child { flex: 0 0 34px; }
+.ph-tabs button[data-arefresh] { flex: 0 0 34px; }
 .ph-dim { opacity: .6; }
 .ph-badge { position: absolute; top: -4px; right: 4px; min-width: 18px; height: 18px; border-radius: 9px; background: #e0473b; color: #fff; font-style: normal; font-size: 11px; line-height: 18px; text-align: center; border: 2px solid #fff; }
 .ph-app { position: relative; }

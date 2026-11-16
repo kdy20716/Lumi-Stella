@@ -3,6 +3,19 @@ import { ALL_PLAYER_LOOKS } from './types';
 
 export type BmCategory = 'theme' | 'outfit' | 'lumi';
 
+/** 외부 결제 링크(PayPal 등)로 구매하는 유료 캐쉬 충전 상품 */
+export interface BmCashPack {
+  id: string;
+  name: string;
+  baseCash: number;
+  bonusCash: number;
+  totalCash: number;
+  priceKrw: number;
+  priceUsd: number;
+  badge?: string;
+  desc: string;
+}
+
 export type BmUnlockReq =
   | { kind: 'story'; step: number; label: string }
   | { kind: 'badge'; badge: string; label: string }
@@ -268,16 +281,82 @@ export const BM_PRODUCT_MAP: Record<string, BmProduct> = Object.fromEntries(
   BM_PRODUCTS.map((p) => [p.id, p]),
 );
 
+/** 외부 PayPal 결제로 판매하는 캐쉬 패키지 */
+export const BM_CASH_PACKS: BmCashPack[] = [
+  {
+    id: 'cash_1500', name: '별빛 캐쉬 1,500', baseCash: 1500, bonusCash: 0, totalCash: 1500, priceKrw: 1500, priceUsd: 1.19,
+    desc: '가볍게 시작하는 소액 캐쉬 충전 패키지.',
+  },
+  {
+    id: 'cash_5000', name: '별빛 캐쉬 5,000', baseCash: 5000, bonusCash: 250, totalCash: 5250, priceKrw: 5000, priceUsd: 3.99,
+    badge: '+5%', desc: 'UI 디자인·코디 1~2종을 구매할 수 있는 실속 패키지.',
+  },
+  {
+    id: 'cash_10000', name: '별빛 캐쉬 10,000', baseCash: 10000, bonusCash: 1000, totalCash: 11000, priceKrw: 10000, priceUsd: 7.99,
+    badge: '인기 +10%', desc: '가장 많이 찾는 패키지 (+1,000 보너스 캐쉬).',
+  },
+  {
+    id: 'cash_30000', name: '별빛 캐쉬 30,000', baseCash: 30000, bonusCash: 4500, totalCash: 34500, priceKrw: 30000, priceUsd: 22.99,
+    badge: '+15%', desc: '원하는 마을 세트(UI+의상+루미 코디)를 넉넉히 구매.',
+  },
+  {
+    id: 'cash_50000', name: '별빛 캐쉬 50,000', baseCash: 50000, bonusCash: 10000, totalCash: 60000, priceKrw: 50000, priceUsd: 38.99,
+    badge: '+20%', desc: '프리미엄 컬렉션을 폭넓게 수집하는 대용량 패키지.',
+  },
+  {
+    id: 'cash_100000', name: '별빛 캐쉬 100,000', baseCash: 100000, bonusCash: 25000, totalCash: 125000, priceKrw: 100000, priceUsd: 74.99,
+    badge: '최고 +25%', desc: '상점 전체 품목을 여유롭게 구매할 수 있는 스페셜 패키지.',
+  },
+];
+
+export const BM_CASH_PACK_MAP: Record<string, BmCashPack> = Object.fromEntries(
+  BM_CASH_PACKS.map((p) => [p.id, p]),
+);
+
+/** USD 가격 표시 ($7.99) */
+export function formatUsd(usd: number): string {
+  return `$${Math.max(0, usd).toFixed(2)}`;
+}
+
+/** 전체 캐쉬 상점 상품(UI·의상·루미 코디) 합계 금액 */
+export const BM_ALL_TOTAL_KRW = BM_PRODUCTS.reduce((sum, p) => sum + p.priceKrw, 0);
+
+/** 어드민 계정에 기본 지급되는 테스트 캐쉬(전체 품목 반복 테스트 가능 금액) */
+export const ADMIN_DEFAULT_CASH_KRW = Math.max(1_000_000, BM_ALL_TOTAL_KRW * 3);
+
+/** 미보유 캐쉬 상품 전부 구매 시 필요한 합계 계산 */
+export function remainingBmCostKrw(player: {
+  ownedThemes?: readonly string[];
+  ownedOutfits?: readonly string[];
+  ownedLumiCoords?: readonly string[];
+  mailItems?: readonly { productId: string }[];
+}): number {
+  const owned = new Set([
+    ...(player.ownedThemes ?? []),
+    ...(player.ownedOutfits ?? []),
+    ...(player.ownedLumiCoords ?? []),
+    ...(player.mailItems ?? []).map((g) => g.productId),
+  ]);
+  return BM_PRODUCTS.reduce((sum, p) => (owned.has(p.id) ? sum : sum + p.priceKrw), 0);
+}
+
 /** 원화 표시 (₩2,900) */
 export function formatKrw(krw: number): string {
   return `₩${Math.max(0, Math.round(krw)).toLocaleString('ko-KR')}`;
 }
 
-/** 플레이어의 스토리·관장 격파 진행도로 상점 품목 해금 여부 확인 */
+/** 게임 캐쉬 표시 (2,900 캐쉬) */
+export function formatCash(cash: number): string {
+  return `${Math.max(0, Math.round(cash)).toLocaleString('ko-KR')} 캐쉬`;
+}
+
+/** 플레이어의 스토리·관장 격파 진행도로 상점 품목 해금 여부 확인 (관리자는 전 품목 즉시 테스트 가능) */
 export function isBmUnlocked(
   prod: BmProduct,
-  player: { story: number; badges: readonly string[]; defeated: readonly string[] },
+  player: { story: number; badges: readonly string[]; defeated: readonly string[]; isAdmin?: boolean },
+  isAdmin = false,
 ): { unlocked: boolean; reason: string } {
+  if (isAdmin || player.isAdmin) return { unlocked: true, reason: '' };
   const u = prod.unlock;
   if (u.kind === 'story') {
     return player.story >= u.step ? { unlocked: true, reason: '' } : { unlocked: false, reason: u.label };

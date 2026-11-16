@@ -80,6 +80,7 @@ async function join(ws: Conn, m: Extract<C2S, { t: 'join' }>): Promise<Client | 
   const worldId = m.mode === 'friends' || m.mode === 'story' ? uid : '';
   const p = sim.addPlayer(uid, save?.name || gName, save?.look ?? '', save, worldId);
   p.mode = m.mode === 'story' ? 'story' : 'multi';
+  if (admin) sim.setAdminProfile(uid, true);
   const client: Client = { conn: ws, id: uid, lastMove: Date.now(), anim: 'idle', admin, lastReport: 0 };
   hub.clients.set(uid, client);
   hub.send(ws, { t: 'welcome', id: uid, you: p, snapshot: sim.snapshot(uid), roster: hub.roster(), storage: storage.kind, admin });
@@ -154,8 +155,9 @@ const http = createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Dev-User');
     res.writeHead(204); res.end(); return;
   }
-  if ((req.url ?? '').startsWith('/api/shop/')) {
-    void handleShopHttp(req, res, sim, storage);
+  const reqUrl = req.url ?? '';
+  if (reqUrl.startsWith('/api/shop/') || reqUrl.startsWith('/pg-')) {
+    void handleShopHttp(req, res, sim, storage, (uid) => !!hub.clients.get(uid)?.admin);
     return;
   }
   // Azure App Service 상태 확인 · 브라우저로 열어 봤을 때

@@ -23,7 +23,8 @@ import { sfx } from '../audio/Sfx';
 import { battleTrack, music, trackFor } from '../audio/Music';
 import { StoryDirector, clearStorySeen } from '../story/StoryDirector';
 import { applyUiTheme } from '../ui/Theme';
-import { cardCheckoutModal } from '../ui/CardCheckoutModal';
+import { pgCheckoutModal } from '../ui/PgCheckoutModal';
+import { purchaseAllWithAdminCash, purchaseBmItemWithCash, runPgSystemTest } from '../net/bmApi';
 import { EventDirector, VILLAIN_CAST } from '../story/EventDirector';
 import { captureMemory } from '../story/Memories';
 import { STORY } from '@shared/story';
@@ -330,7 +331,7 @@ export class FarmScene extends Phaser.Scene {
         }
       },
     });
-    if (dev) t.setUser(`${dev} (테스트)`);
+    if (dev) t.setUser(dev);
     // 이미 로그인된 브라우저: 이름만 보여 주고, '구글 계정으로 시작'을 눌러야 들어감 (팝업 없이 그 계정으로)
     else void loadFb().then((f) => f.currentUser()).then((u) => t.setUser(u ? (u.displayName ?? u.email ?? '트레이너') : null)).catch(() => t.setUser(null));
   }
@@ -426,7 +427,20 @@ export class FarmScene extends Phaser.Scene {
       report: (text) => this.auth.report(text, `${this.world.title || this.mapId} · ${this.auth.time.day}일 ${Math.floor(this.auth.time.minutes / 60)}시`),
       isAdmin: () => this.auth.isAdmin,
       admin: (cmd) => this.auth.admin(cmd),
-      buyBm: (product) => void cardCheckoutModal.show(this.auth, product, () => { phone.refresh(); }),
+      buyCashPack: (pack) => void pgCheckoutModal.openCashPack(this.auth, pack, () => { phone.refresh(); }),
+      buyBm: async (product) => {
+        const r = await purchaseBmItemWithCash(this.auth, product);
+        if (r.ok) {
+          sfx.play('confirm');
+          ui.toast.push(`${product.name} 구매 완료! 모든 마을 밭 우편함에서 수령하세요.`, 'mail');
+          phone.refresh();
+          return true;
+        }
+        sfx.play('error');
+        ui.toast.push(r.error ?? '구매에 실패했어요.', 'heart');
+        phone.refresh();
+        return false;
+      },
       equipBm: (category, itemId) => void this.auth.request({ kind: 'equipCosmetic', category, itemId }).then((r) => {
         if (r.ok) {
           if (category === 'theme') applyUiTheme(itemId);
@@ -434,6 +448,19 @@ export class FarmScene extends Phaser.Scene {
           phone.refresh();
         } else ui.toast.push('보유하지 않은 코디예요.', 'heart');
       }),
+      buyAllBmCash: async () => {
+        const r = await purchaseAllWithAdminCash(this.auth);
+        if (r.ok) {
+          sfx.play('confirm');
+          ui.toast.push(`전 상품 ${r.boughtCount ?? 0}종 캐쉬 구매 완료! 모든 마을 밭 우편함에서 수령하세요.`, 'mail');
+        } else {
+          sfx.play('error');
+          ui.toast.push(r.error ?? '일괄 구매 실패', 'heart');
+        }
+        phone.refresh();
+        return r;
+      },
+      testPgSystem: () => runPgSystemTest(this.auth),
     });
     phone.refresh();
   }
@@ -501,7 +528,7 @@ export class FarmScene extends Phaser.Scene {
       }
       if (ui.emoteWheel.open && /^(w|a|s|d|arrow)/i.test(e.key)) ui.emoteWheel.close();
       if (e.key === 'Escape') {
-        if (cardCheckoutModal.open) cardCheckoutModal.close(); else if (ui.menu.open) ui.menu.close(); else if (ui.craft.open) ui.craft.close(); else if (phone.open) phone.back(); else if (ui.emoteWheel.open) ui.emoteWheel.close(); else if (ui.mailbox.open) ui.mailbox.close(); else if (ui.shop.open) ui.shop.close(); else if (ui.party.open) ui.party.close(); else if (ui.dialogue.open) ui.dialogue.close(); else if (this.hasPhone()) phone.show('home'); else this.openMenu();
+        if (pgCheckoutModal.open) pgCheckoutModal.close(); else if (ui.menu.open) ui.menu.close(); else if (ui.craft.open) ui.craft.close(); else if (phone.open) phone.back(); else if (ui.emoteWheel.open) ui.emoteWheel.close(); else if (ui.mailbox.open) ui.mailbox.close(); else if (ui.shop.open) ui.shop.close(); else if (ui.party.open) ui.party.close(); else if (ui.dialogue.open) ui.dialogue.close(); else if (this.hasPhone()) phone.show('home'); else this.openMenu();
         return;
       }
       if (ui.menu.open) return;
@@ -513,7 +540,7 @@ export class FarmScene extends Phaser.Scene {
         ui.toast.push(on ? '2.5D 입체 시점으로 전환했어요! (V 키)' : '클래식 2D 시점으로 전환했어요! (V 키)', 'heart');
         return;
       }
-      if (cardCheckoutModal.open || ui.shop.open || ui.mailbox.open || ui.creator.open) return;
+      if (pgCheckoutModal.open || ui.shop.open || ui.mailbox.open || ui.creator.open) return;
       if (this.fishing && [' ', 'e', 'E', 'c', 'C', 'x', 'X'].includes(e.key)) { this.reel(); return; }
       if (e.key === 'p' || e.key === 'P') { if (this.hasPhone()) phone.toggle('party'); else ui.party.toggle(this.auth.me, (i) => void this.auth.request({ kind: 'setPartner', index: i })); return; }
       if (e.key === 'h' || e.key === 'H') { if (this.hasPhone()) phone.toggle('help'); else ui.help.toggle(); }
@@ -543,7 +570,7 @@ export class FarmScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (ui.emoteWheel.open) { ui.emoteWheel.close(); return; }
       if (ui.dialogue.open && !this.battling) { ui.dialogue.advance(); return; }
-      if (!this.playing || cardCheckoutModal.open || ui.shop.open || this.battling || ui.emoteWheel.open || ui.mailbox.open || ui.creator.open) return;
+      if (!this.playing || pgCheckoutModal.open || ui.shop.open || this.battling || ui.emoteWheel.open || ui.mailbox.open || ui.creator.open) return;
       if (this.fishing) { this.reel(); return; }
       if (ui.dialogue.open) { ui.dialogue.advance(); return; }
       if (p.rightButtonDown()) this.interact(this.pointerCell(p)); else this.useItem(this.pointerCell(p));

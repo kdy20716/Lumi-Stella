@@ -21,8 +21,10 @@ export type AdminCmd =
   | { op: 'goto'; uid: string }                       // 내가 그 사람 옆으로
   | { op: 'bring'; uid: string }                      // 그 사람을 내 옆으로
   | { op: 'give'; uid: string; itemId: string; qty: number }
-  | { op: 'gold'; uid: string; amount: number };
-export interface AdminUser { uid: string; name: string; look: string; map: MapId; mapName: string; gold: number; badges: number; party: string; online: boolean; world: string }
+  | { op: 'gold'; uid: string; amount: number }
+  | { op: 'grantCash'; uid: string; amount: number; mode?: 'add' | 'ensureAll' }
+  | { op: 'resetBm'; uid: string };
+export interface AdminUser { uid: string; name: string; look: string; map: MapId; mapName: string; gold: number; cash?: number; badges: number; party: string; online: boolean; world: string }
 export interface BugReport { id: string; uid: string; name: string; text: string; where: string; at: number; resolved?: boolean }
 
 export type C2S =

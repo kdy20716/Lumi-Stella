@@ -1,7 +1,7 @@
 // 휴대폰 (R · 지도는 M): 화면 오른쪽에 뜨는 루미폰. 지도 · 나의 루미 · 가방 · 도감 · 제작 노트 · 배지 · 친구 · 설정 · 도움말을 모두 여기서.
 //   - 폰이 열려 있어도 걸어 다닐 수 있음 (지도만 가로 화면으로 넓어짐)
 //   - Esc: 앱 → 홈 → 닫기 / M: 열기·닫기 / P: 나의 루미 / H: 도움말
-import { BM_PRODUCT_MAP, BM_PRODUCTS, UI_THEMES, formatKrw, isBmUnlocked, type BmCategory, type BmProduct } from '@shared/bmShop';
+import { BM_ALL_TOTAL_KRW, BM_CASH_PACK_MAP, BM_CASH_PACKS, BM_PRODUCT_MAP, BM_PRODUCTS, UI_THEMES, formatCash, formatKrw, formatUsd, isBmUnlocked, remainingBmCostKrw, type BmCashPack, type BmCategory, type BmProduct } from '@shared/bmShop';
 import { ITEMS, RECIPES, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
 import { MAP_META, type CreatureInst, type MapMeta, type PlayerState, type WorldTime } from '@shared/types';
 import { sfx } from '../audio/Sfx';
@@ -12,6 +12,7 @@ import { lookPortrait } from './Social';
 import { iconStyle, formatTime } from './UI';
 import type { AdminCmd } from '@shared/protocol';
 import type { AdminReply } from '../net/Authority';
+import type { PgSystemTestResult } from '../net/bmApi';
 
 export type PhoneApp = 'home' | 'map' | 'party' | 'bag' | 'dex' | 'shop' | 'recipes' | 'badges' | 'friends' | 'settings' | 'help' | 'bug' | 'admin';
 
@@ -37,9 +38,12 @@ export interface PhoneCtx {
   report(text: string): boolean;
   isAdmin(): boolean;
   admin(cmd: AdminCmd): Promise<AdminReply>;
-  /** 캐쉬 상점 결제 모달 열기 및 보유 코스메틱 적용/해제 */
-  buyBm?(product: BmProduct): void;
+  /** 캐쉬 충전 외부 PG 이동 · 캐쉬로 상점 상품 구매 · 코스메틱 적용 · 어드민 PG 점검 */
+  buyCashPack?(pack: BmCashPack): void;
+  buyBm?(product: BmProduct): Promise<boolean>;
   equipBm?(category: BmCategory, itemId: string): void;
+  buyAllBmCash?(): Promise<{ ok: boolean; error?: string; boughtCount?: number }>;
+  testPgSystem?(): Promise<PgSystemTestResult>;
 }
 
 const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: () => string }[] = [
@@ -78,7 +82,7 @@ export const phone = {
   ctx: null as PhoneCtx | null,
   confirmReset: false,
   bagPick: '' as string,
-  shopTab: 'theme' as BmCategory,
+  shopTab: 'cash' as 'cash' | BmCategory,
   unfold: false,
   unfoldTimer: 0,
   get open() { return !!this.node; },
@@ -152,7 +156,7 @@ export const phone = {
       case 'settings': return this.settingsApp();
       case 'help': return HELP_HTML;
       case 'bug': return this.bugApp();
-      case 'admin': return this.adminApp();
+      case 'admin': return this.adminApp(me);
     }
   },
 
@@ -166,26 +170,63 @@ export const phone = {
   bugSent: false,
   newReports: 0,
   // ── 관리자 ── (목록 · 버튼은 화면일 뿐, 모든 명령은 서버가 관리자 계정인지 확인한 뒤 처리)
-  adminTab: 'users' as 'users' | 'reports',
+  adminTab: 'users' as 'users' | 'reports' | 'bm',
   adminData: null as null | AdminReply,
   adminMsg: '',
   adminLoading: false,
-  adminApp() {
+  pgTestRes: null as null | PgSystemTestResult,
+  pgTestBusy: false,
+  adminApp(me: PlayerState) {
     if (!this.ctx!.isAdmin()) return '<div class="ph-empty">권한이 없어요.</div>';
     const d = this.adminData;
-    const tabs = `<div class="ph-tabs"><button data-atab="users" class="${this.adminTab === 'users' ? 'on' : ''}">접속 유저</button><button data-atab="reports" class="${this.adminTab === 'reports' ? 'on' : ''}">버그 신고${this.newReports ? ` (${this.newReports})` : ''}</button><button data-arefresh>↻</button></div>`;
+    const tabs = `<div class="ph-tabs">
+      <button data-atab="users" class="${this.adminTab === 'users' ? 'on' : ''}">접속 유저</button>
+      <button data-atab="reports" class="${this.adminTab === 'reports' ? 'on' : ''}">버그 신고${this.newReports ? ` (${this.newReports})` : ''}</button>
+      <button data-atab="bm" class="${this.adminTab === 'bm' ? 'on' : ''}">💎 캐쉬·PG</button>
+      <button data-arefresh>↻</button>
+    </div>`;
     const msg = this.adminMsg ? `<div class="ph-small" style="margin:4px 0">${esc(this.adminMsg)}</div>` : '';
+    if (this.adminTab === 'bm') {
+      const remCost = remainingBmCostKrw(me);
+      const stepsHtml = this.pgTestRes
+        ? `<div class="ph-col" style="margin-top:6px;gap:4px">
+            <div class="${this.pgTestRes.ok ? 'ph-ok' : 'ph-bad'}" style="font-weight:700">${this.pgTestRes.ok ? '✔ PayPal · 캐쉬 시스템 전체 점검 정상' : '✖ PayPal 설정/항목 확인 필요'} (모드: ${esc(this.pgTestRes.mode)})</div>
+            ${this.pgTestRes.steps.map((s) => `<div class="ph-small" style="line-height:1.35"><b class="${s.ok ? 'ph-ok' : 'ph-bad'}">${s.ok ? '✔' : '✖'} ${esc(s.name)}</b><br>${esc(s.detail)}</div>`).join('')}
+          </div>`
+        : '<div class="ph-small">아래 버튼을 눌러 PayPal 실결제 링크 연동, OAuth 인증, 캐쉬 충전 및 상점 배송을 점검할 수 있어요.</div>';
+
+      return `${tabs}${msg}
+        <div class="ph-card ph-col">
+          <b>💎 관리자 캐쉬 관리</b>
+          <div class="ph-small">현재 보유: <b>${formatCash(me.cash ?? 0)}</b> · 미보유 상품 전부 구매 필요: <b>${formatCash(remCost)}</b> (전체 ${BM_PRODUCTS.length}종 합계 ${formatCash(BM_ALL_TOTAL_KRW)})</div>
+          <div class="ph-acts" style="flex-wrap:wrap">
+            <button data-admact="addcash" class="ph-btn sm">+1,000,000 캐쉬</button>
+            <button data-admact="ensurecash" class="ph-btn sm">전 품목 캐쉬 채우기</button>
+            <button data-admact="buyall" class="ph-btn sm">전 품목 일괄 구매</button>
+            <button data-admact="resetbm" class="ph-btn sm ghost">상점·우편함 초기화</button>
+          </div>
+        </div>
+        <div class="ph-card ph-col">
+          <b>🅿️ PayPal 결제 연동 관리</b>
+          <div class="ph-small">캐쉬 상품을 누르면 실제 PayPal 결제 URL로 바로 이동하고, 승인 완료 시 계정에 캐쉬가 즉시 지급됩니다.</div>
+          <div class="ph-acts" style="flex-wrap:wrap">
+            <button data-admtopup="cash_10000" class="ph-btn sm">🅿️ PayPal 결제창 열기</button>
+            <button data-admpgtest class="ph-btn sm" ${this.pgTestBusy ? 'disabled' : ''}>${this.pgTestBusy ? '점검 중…' : '🛡️ PayPal 연동 점검 실행'}</button>
+          </div>
+          ${stepsHtml}
+        </div>`;
+    }
     if (!d) return `${tabs}${msg}<div class="ph-empty">불러오는 중…</div>`;
     if (this.adminTab === 'reports') {
       const list = (d.reports ?? []).map((r) => `<div class="ph-card ph-col ${r.resolved ? 'ph-dim' : ''}"><b>${esc(r.name)}</b> <span class="ph-small">${new Date(r.at).toLocaleString('ko-KR')}</span><div class="ph-small">${esc(r.where)}</div><div style="white-space:pre-wrap">${esc(r.text)}</div>${r.resolved ? '<span class="ph-small">✔ 처리됨</span>' : `<div class="ph-acts"><button data-resolve="${esc(r.id)}" class="ph-btn sm">처리 완료</button></div>`}</div>`).join('');
       return `${tabs}${msg}${list || '<div class="ph-empty">신고가 없어요</div>'}`;
     }
     const items = Object.values(ITEMS).map((it) => `<option value="${it.id}">${esc(it.name)}</option>`).join('');
-    const users = (d.users ?? []).map((u) => `<div class="ph-card ph-col"><b>${esc(u.name)}</b> <span class="ph-small">${esc(u.mapName)} · ${u.gold.toLocaleString()}G · 배지 ${u.badges} · ${esc(u.world)}</span>
+    const users = (d.users ?? []).map((u) => `<div class="ph-card ph-col"><b>${esc(u.name)}</b> <span class="ph-small">${esc(u.mapName)} · ${u.gold.toLocaleString()}G · ${formatCash(u.cash ?? 0)} · 배지 ${u.badges} · ${esc(u.world)}</span>
       <div class="ph-small">${esc(u.party || '루미 없음')}</div><div class="ph-small" style="opacity:.6">${esc(u.uid)}</div>
       <div class="ph-acts"><button data-aop="goto" data-uid="${esc(u.uid)}" class="ph-btn sm">가기</button><button data-aop="bring" data-uid="${esc(u.uid)}" class="ph-btn sm">데려오기</button><button data-aop="kick" data-uid="${esc(u.uid)}" class="ph-btn sm ghost">강퇴</button><button data-aop="ban" data-uid="${esc(u.uid)}" class="ph-btn sm ghost">밴</button></div>
       <div class="ph-acts"><select data-gi="${esc(u.uid)}" class="ph-input sm">${items}</select><input data-gq="${esc(u.uid)}" class="ph-input sm" type="number" min="1" max="999" value="1" style="width:60px"><button data-aop="give" data-uid="${esc(u.uid)}" class="ph-btn sm">지급</button></div>
-      <div class="ph-acts"><input data-gg="${esc(u.uid)}" class="ph-input sm" type="number" value="1000" style="width:90px"><button data-aop="gold" data-uid="${esc(u.uid)}" class="ph-btn sm">골드 ±</button></div></div>`).join('');
+      <div class="ph-acts"><input data-gg="${esc(u.uid)}" class="ph-input sm" type="number" value="1000" style="width:90px"><button data-aop="gold" data-uid="${esc(u.uid)}" class="ph-btn sm">골드 ±</button><button data-aop="grantCash" data-uid="${esc(u.uid)}" class="ph-btn sm">캐쉬 +100만</button></div></div>`).join('');
     const bans = (d.bans ?? []).map((b) => `<div class="ph-card ph-col ph-dim"><b>${esc(b.name)}</b> <span class="ph-small">${esc(b.reason)}</span><div class="ph-acts"><button data-aop="unban" data-uid="${esc(b.uid)}" class="ph-btn sm">밴 해제</button></div></div>`).join('');
     return `${tabs}${msg}${users || '<div class="ph-empty">접속한 유저가 없어요</div>'}${bans ? `<div class="ph-sec">정지된 계정</div>${bans}` : ''}`;
   },
@@ -383,15 +424,44 @@ export const phone = {
     <div class="ph-foot">배지 8개를 모으면 왕관 시티 루미 리그에 도전할 수 있어요</div>`;
   },
 
-  // ── 캐쉬 상점 (UI 디자인 · 의상 · 루미 코디 · 웹 카드 결제) ──
+  // ── 캐쉬 상점 (외부 토스/PG 캐쉬 충전 · 보유 캐쉬로 UI/의상/루미 코디 구매) ──
   shopApp(me: PlayerState) {
     const tabs = `<div class="ph-tabs" style="margin-bottom:4px">
-      <button data-bmtab="theme" class="${this.shopTab === 'theme' ? 'on' : ''}">UI 디자인</button>
+      <button data-bmtab="cash" class="${this.shopTab === 'cash' ? 'on' : ''}">💎 캐쉬</button>
+      <button data-bmtab="theme" class="${this.shopTab === 'theme' ? 'on' : ''}">UI</button>
       <button data-bmtab="outfit" class="${this.shopTab === 'outfit' ? 'on' : ''}">의상</button>
-      <button data-bmtab="lumi" class="${this.shopTab === 'lumi' ? 'on' : ''}">루미 코디</button>
+      <button data-bmtab="lumi" class="${this.shopTab === 'lumi' ? 'on' : ''}">루미</button>
     </div>`;
     const mailPending = (me.mailItems ?? []).filter((g) => !g.claimed).length;
-    const notice = `<div class="ph-small" style="line-height:1.4">이장 · 도장 관장을 깨면 품목이 해금됩니다. 카드 결제 시 <b>모든 마을 밭 우편함</b>으로 배송돼요.${mailPending ? ` <span class="ph-ok">(미수령 ${mailPending}개)</span>` : ''}</div>`;
+    const isAdmin = this.ctx!.isAdmin();
+    const remCost = remainingBmCostKrw(me);
+    const walletBar = `<div class="ph-card" style="margin-bottom:4px;padding:6px 8px">
+      <div class="flex-1 min-w-0">
+        <div class="ph-small"><b>💎 보유 캐쉬</b>: <span class="ph-ok">${formatCash(me.cash ?? 0)}</span>${isAdmin ? ' · 🛡️ 어드민 전품목 해금' : ''}</div>
+      </div>
+      ${this.shopTab !== 'cash' ? '<button data-bmtab="cash" class="ph-btn sm">+ 캐쉬 충전</button>' : ''}
+    </div>`;
+    const adminBanner = isAdmin && remCost > 0
+      ? `<div class="ph-card ph-col" style="margin-bottom:4px">
+          <div class="ph-small">관리자 전용 · 미보유 ${BM_PRODUCTS.length}종 합계 ${formatCash(remCost)}</div>
+          <div class="ph-acts"><button data-bmbuyall class="ph-btn sm">💎 미보유 전 상품 캐쉬 일괄 구매</button></div>
+        </div>`
+      : '';
+
+    if (this.shopTab === 'cash') {
+      const cashNotice = `<div class="ph-small" style="line-height:1.4">캐쉬 상품을 누르면 <b>실제 PayPal 결제 링크</b>로 바로 연결됩니다. 승인 완료 시 즉시 캐쉬가 지급돼요.${mailPending ? ` <span class="ph-ok">(미수령 우편 ${mailPending}개)</span>` : ''}</div>`;
+      const packCards = BM_CASH_PACKS.map((pk) => `<div class="ph-card">
+        <span class="bm-swatch" style="background:linear-gradient(135deg,#0070ba,#003087);color:#fff;font-size:18px">🅿️</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1 flex-wrap"><b class="text-xs">${esc(pk.name)}</b>${pk.badge ? `<span class="bm-lock">${esc(pk.badge)}</span>` : ''}</div>
+          <div class="ph-small" style="line-height:1.3">지급 <b>${formatCash(pk.totalCash)}</b> · ≈ ${formatKrw(pk.priceKrw)}</div>
+        </div>
+        <button data-bmpack="${pk.id}" class="bm-pay-pill">🅿️ ${formatUsd(pk.priceUsd)}</button>
+      </div>`).join('');
+      return `${tabs}${walletBar}${adminBanner}${cashNotice}<div class="ph-list">${packCards}</div>`;
+    }
+
+    const notice = `<div class="ph-small" style="line-height:1.4">이장 · 도장 관장을 깨면 품목이 해금됩니다. 캐쉬 구매 시 <b>모든 마을 밭 우편함</b>으로 배송돼요.${mailPending ? ` <span class="ph-ok">(미수령 ${mailPending}개)</span>` : ''}</div>`;
     const owned = new Set(
       this.shopTab === 'theme' ? (me.ownedThemes ?? ['rural']) :
       this.shopTab === 'outfit' ? (me.ownedOutfits ?? []) :
@@ -417,7 +487,7 @@ export const phone = {
     const cards = BM_PRODUCTS.filter((p) => p.category === this.shopTab).map((p) => {
       const isOwned = owned.has(p.id);
       const inMail = pendingIds.has(p.id);
-      const u = isBmUnlocked(p, me);
+      const u = isBmUnlocked(p, me, isAdmin);
       const isEq = (p.category === 'theme' && curTheme === p.id) || (p.category === 'outfit' && me.look === p.id) || (p.category === 'lumi' && curLumi === p.id);
       const thumb =
         p.category === 'outfit' ? `<span class="bm-swatch" style="background:#f3dfb4"><span style="${lookPortrait(p.id, 1)}"></span></span>` :
@@ -431,7 +501,7 @@ export const phone = {
             ? '<span class="bm-lock">📮 우편함 도착</span>'
             : !u.unlocked
               ? `<span class="bm-lock">🔒 ${esc(p.town)}</span>`
-              : `<button data-bmbuy="${p.id}" class="bm-pay-pill">💳 ${formatKrw(p.priceKrw)}</button>`;
+              : `<button data-bmbuy="${p.id}" class="bm-pay-pill">💎 ${p.priceKrw.toLocaleString('ko-KR')}</button>`;
       return `<div class="ph-card ${isEq ? 'lead' : !u.unlocked && !isOwned && !inMail ? 'locked' : ''}">
         ${thumb}
         <div class="flex-1 min-w-0">
@@ -441,7 +511,7 @@ export const phone = {
         ${action}
       </div>`;
     }).join('');
-    return `${tabs}${notice}<div class="ph-list">${extra}${cards}</div>`;
+    return `${tabs}${walletBar}${adminBanner}${notice}<div class="ph-list">${extra}${cards}</div>`;
   },
 
   // ── 친구 ──
@@ -479,8 +549,8 @@ export const phone = {
     n.querySelector<HTMLTextAreaElement>('[data-bug]')?.addEventListener('keydown', (e) => e.stopPropagation());
     // 관리자
     if (this.app === 'admin') {
-      if (!this.adminData && !this.adminLoading) { this.adminLoading = true; void this.adminLoad().finally(() => { this.adminLoading = false; }); }
-      n.querySelectorAll<HTMLButtonElement>('[data-atab]').forEach((b) => { b.onclick = () => { this.adminTab = b.dataset.atab as 'users' | 'reports'; this.adminData = null; this.render(); }; });
+      if (this.adminTab !== 'bm' && !this.adminData && !this.adminLoading) { this.adminLoading = true; void this.adminLoad().finally(() => { this.adminLoading = false; }); }
+      n.querySelectorAll<HTMLButtonElement>('[data-atab]').forEach((b) => { b.onclick = () => { this.adminTab = b.dataset.atab as 'users' | 'reports' | 'bm'; if (this.adminTab !== 'bm') this.adminData = null; this.render(); }; });
       n.querySelector<HTMLButtonElement>('[data-arefresh]')?.addEventListener('click', () => { this.adminMsg = ''; void this.adminLoad(); });
       n.querySelectorAll<HTMLButtonElement>('[data-resolve]').forEach((b) => { b.onclick = () => void this.adminRun({ op: 'resolve', id: b.dataset.resolve! }); });
       n.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.ph-input').forEach((el) => el.addEventListener('keydown', (e) => e.stopPropagation()));
@@ -490,14 +560,63 @@ export const phone = {
           if ((op === 'kick' || op === 'ban') && !window.confirm(`${op === 'ban' ? '이용 정지' : '강퇴'}할까요?`)) return;
           if (op === 'give') { const it = n.querySelector<HTMLSelectElement>(`[data-gi="${CSS.escape(uid)}"]`)?.value ?? ''; const q = Number(n.querySelector<HTMLInputElement>(`[data-gq="${CSS.escape(uid)}"]`)?.value ?? 1); void this.adminRun({ op: 'give', uid, itemId: it, qty: q }); return; }
           if (op === 'gold') { const a = Number(n.querySelector<HTMLInputElement>(`[data-gg="${CSS.escape(uid)}"]`)?.value ?? 0); void this.adminRun({ op: 'gold', uid, amount: a }); return; }
+          if (op === 'grantCash') { void this.adminRun({ op: 'grantCash', uid, amount: 1_000_000 }); return; }
           void this.adminRun({ op: op as 'goto' | 'bring' | 'kick' | 'ban' | 'unban', uid });
         };
       });
+      n.querySelectorAll<HTMLButtonElement>('[data-admact]').forEach((b) => {
+        b.onclick = () => {
+          const act = b.dataset.admact!;
+          if (act === 'addcash') { void this.adminRun({ op: 'grantCash', uid: me.id, amount: 1_000_000 }); return; }
+          if (act === 'ensurecash') { void this.adminRun({ op: 'grantCash', uid: me.id, amount: 0, mode: 'ensureAll' }); return; }
+          if (act === 'resetbm') { void this.adminRun({ op: 'resetBm', uid: me.id }); return; }
+          if (act === 'buyall') {
+            void this.ctx!.buyAllBmCash?.().then((r) => {
+              this.adminMsg = r.ok ? `전 상품(${r.boughtCount ?? 0}종) 캐쉬 구매 완료! 우편함을 확인하세요.` : r.error ?? '일괄 구매 실패';
+              this.render();
+            });
+          }
+        };
+      });
+      n.querySelector<HTMLButtonElement>('[data-admtopup]')?.addEventListener('click', (ev) => {
+        const packId = (ev.currentTarget as HTMLButtonElement).dataset.admtopup ?? 'cash_10000';
+        const pack = BM_CASH_PACK_MAP[packId] ?? BM_CASH_PACKS[2];
+        if (pack) { sfx.play('tap'); this.ctx?.buyCashPack?.(pack); }
+      });
+      n.querySelector<HTMLButtonElement>('[data-admpgtest]')?.addEventListener('click', () => {
+        if (!this.ctx?.testPgSystem) return;
+        this.pgTestBusy = true;
+        this.render();
+        void this.ctx.testPgSystem().then((res) => {
+          this.pgTestRes = res;
+          this.adminMsg = res.ok ? '외부 PG · 캐쉬 시스템 점검 완료!' : res.error ?? '점검 항목을 확인하세요.';
+        }).finally(() => {
+          this.pgTestBusy = false;
+          if (this.app === 'admin') this.render();
+        });
+      });
     }
     const c = this.ctx!;
-    n.querySelectorAll<HTMLButtonElement>('[data-bmtab]').forEach((b) => { b.onclick = () => { sfx.play('tap'); this.shopTab = b.dataset.bmtab as BmCategory; this.render(); }; });
+    n.querySelectorAll<HTMLButtonElement>('[data-bmbuyall]').forEach((b) => {
+      b.onclick = () => { sfx.play('tap'); void c.buyAllBmCash?.().then(() => this.render()); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-bmpack]').forEach((b) => {
+      b.onclick = () => { const pk = BM_CASH_PACK_MAP[b.dataset.bmpack!]; if (pk) { sfx.play('tap'); c.buyCashPack?.(pk); } };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-bmtab]').forEach((b) => { b.onclick = () => { sfx.play('tap'); this.shopTab = b.dataset.bmtab as 'cash' | BmCategory; this.render(); }; });
     n.querySelectorAll<HTMLButtonElement>('[data-bmbuy]').forEach((b) => {
-      b.onclick = () => { const prod = BM_PRODUCT_MAP[b.dataset.bmbuy!]; if (prod) { sfx.play('tap'); c.buyBm?.(prod); } };
+      b.onclick = () => {
+        const prod = BM_PRODUCT_MAP[b.dataset.bmbuy!];
+        if (!prod) return;
+        sfx.play('tap');
+        if ((me.cash ?? 0) < prod.priceKrw) {
+          this.shopTab = 'cash';
+          void c.buyBm?.(prod);
+          this.render();
+          return;
+        }
+        void c.buyBm?.(prod);
+      };
     });
     n.querySelectorAll<HTMLButtonElement>('[data-bmeq]').forEach((b) => {
       b.onclick = () => {

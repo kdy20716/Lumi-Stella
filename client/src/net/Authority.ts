@@ -89,6 +89,7 @@ export abstract class Authority {
         if (e.id === me.id) Object.assign(me, {
           mailItems: e.mailItems, uiTheme: e.uiTheme, ownedThemes: e.ownedThemes,
           ownedOutfits: e.ownedOutfits, lumiCoord: e.lumiCoord, ownedLumiCoords: e.ownedLumiCoords, bmOrders: e.bmOrders,
+          cash: e.cash, isAdmin: e.isAdmin,
         });
         break;
       case 'placed': if (me.map === 'farm' && e.owner === this.farmOwner) this.placed.set(e.obj.id, { ...e.obj }); break;
@@ -219,6 +220,7 @@ export class NetworkAuthority extends Authority {
           clearTimeout(timeout); clearTimeout(giveUp);
           const again = joined; joined = true;
           a.me = msg.you; a.storageKind = msg.storage; a.isAdmin = msg.admin === true;
+          a.me.isAdmin = a.isAdmin;
           a.applySnapshot(msg.snapshot);
           a.roster.clear();
           for (const p of msg.roster) if (p.id !== msg.id) a.roster.set(p.id, p);
@@ -280,7 +282,7 @@ export class NetworkAuthority extends Authority {
     const c = this.refreshCred ? await this.refreshCred().catch(() => this.credInfo) : this.credInfo;
     this.credInfo = { ...c, mode: this.credInfo.mode };
     if (c.token) return { Authorization: `Bearer ${c.token}` };
-    if (c.dev) return { 'X-Dev-User': c.dev };
+    if (c.dev) return { 'X-Dev-User': encodeURIComponent(c.dev) };
     return {};
   }
   chat(text: string) { this.send({ t: 'chat', text }); }
