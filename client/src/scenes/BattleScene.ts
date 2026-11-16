@@ -5,18 +5,20 @@ import type { Authority } from '../net/Authority';
 import { BattleUI } from '../ui/BattleUI';
 import { sfx } from '../audio/Sfx';
 import { music } from '../audio/Music';
+import { Stage3D } from '../three/Stage3D';
 
 export interface BattleData { auth: Authority; update: BattleUpdate; onEnd: (ended: NonNullable<BattleUpdate['ended']>) => void }
 
 const W = 240, H = 135;
 const FOE = { x: 172, y: 88 }, ME = { x: 62, y: 124 };
 
-/** 배틀 씬: 배경/루미 스프라이트 연출은 Phaser, 체력·메뉴·메시지는 DOM(BattleUI) */
+/** 배틀 씬: 배경/루미 스프라이트 연출은 2D Phaser, 체력·메뉴·메시지는 DOM(BattleUI) */
 export class BattleScene extends Phaser.Scene {
   private ui!: BattleUI;
   private data_!: BattleData;
   private foe!: Phaser.GameObjects.Sprite;
   private me!: Phaser.GameObjects.Sprite;
+  private trainerSprite?: Phaser.GameObjects.Sprite;
   private foeShadow!: Phaser.GameObjects.Ellipse;
   private meShadow!: Phaser.GameObjects.Ellipse;
   private busy = false;
@@ -38,16 +40,19 @@ export class BattleScene extends Phaser.Scene {
     this.me = this.add.sprite(ME.x - 140, ME.y, `lumi_${v.me.species}`, 4).setOrigin(0.5, 30 / 32).setScale(2);
     this.me.play(`lumi_${v.me.species}:up`);
 
-    let trainerSprite: Phaser.GameObjects.Sprite | undefined;
+    this.trainerSprite = undefined;
     if (v.trainer) {
-      trainerSprite = this.add.sprite(FOE.x + 30, FOE.y, v.trainer.sprite, 0).setOrigin(0.5, 39 / 48).setScale(1.4);
+      this.trainerSprite = this.add.sprite(FOE.x + 30, FOE.y, v.trainer.sprite, 0).setOrigin(0.5, 39 / 48).setScale(1.4);
       this.foe.setAlpha(0);
     }
 
     this.ui = new BattleUI();
     this.ui.setView(v);
     this.ui.hideSide('foe'); this.ui.hideSide('me');
-    this.input.keyboard?.on('keydown', (e: KeyboardEvent) => { if ([' ', 'Enter', 'e', 'E', 'z', 'Z'].includes(e.key)) this.ui.advance(); });
+    this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'v' || e.key === 'V') { Stage3D.enabled = !Stage3D.enabled; return; }
+      if ([' ', 'Enter', 'e', 'E', 'z', 'Z'].includes(e.key)) this.ui.advance();
+    });
     this.input.on('pointerdown', () => this.ui.advance());
     this.events.once('shutdown', () => { this.ui.destroy(); this.input.keyboard?.off('keydown'); this.input.off('pointerdown'); });
 
@@ -57,9 +62,9 @@ export class BattleScene extends Phaser.Scene {
     if (this.big) this.legendEntrance();
     this.tweens.add({ targets: this.me, x: ME.x, duration: 700, ease: 'Cubic.Out' });
     this.time.delayedCall(720, async () => {
-      if (trainerSprite) {
+      if (this.trainerSprite) {
         await this.ui.say(data.update.log[0] && data.update.log[0].t === 'text' ? data.update.log[0].text : '', 600);
-        this.tweens.add({ targets: trainerSprite, x: FOE.x + 140, alpha: 0, duration: 450 });
+        this.tweens.add({ targets: this.trainerSprite, x: FOE.x + 140, alpha: 0, duration: 450 });
         this.foe.setAlpha(1); this.popIn(this.foe);
         await this.run(data.update.log.slice(1));
       } else await this.run(data.update.log);
@@ -67,6 +72,8 @@ export class BattleScene extends Phaser.Scene {
       this.next(data.update);
     });
   }
+
+  update() {}
 
   /** 상대 그림: 전설 · 환상은 큰 그림(96px) + 후광 */
   private big = false;
@@ -184,7 +191,7 @@ export class BattleScene extends Phaser.Scene {
     sfx.play('send');
     s.setPosition(pos.x, pos.y).setAlpha(1);
     (side === 'me' ? this.meShadow : this.foeShadow).setAlpha(0.35);
-    if (side === 'foe') this.skinFoe(v.species);
+    if (side === 'foe') { this.skinFoe(v.species); }
     else { s.setTexture(`lumi_${v.species}`, 4); s.play(`lumi_${v.species}:up`); }
     this.popIn(s);
     this.ui.setSide(side, v);

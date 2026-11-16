@@ -8,19 +8,23 @@ export function buildInterior(id) {
   const s = ROOMS[id];
   const m = new MapBuilder(id, s.W, s.H, 7);
   m.noGround = true;
-  // 벽: 위 3줄, 양옆, 아래 (문 칸 제외)
+  // 벽: 위 3줄, 양옆, 아래 (문 칸 제외; noDoor 면 아래 벽 전체 막힘)
   for (let y = 0; y < s.H; y++) for (let x = 0; x < s.W; x++) {
-    const wall = y < 3 || x === 0 || x === s.W - 1 || (y === s.H - 1 && x !== s.door);
+    const wall = y < 3 || x === 0 || x === s.W - 1 || (y === s.H - 1 && (s.noDoor || x !== s.door));
     if (wall) m.blocked[y][x] = true;
   }
   for (const [type, cx, cy, props = {}] of s.furn) {
     const f = FURN[type] ?? EXTERNAL[type];
-    m.place(type, cx, cy, { w: f.w, h: f.h, force: true, props });
+    const passable = type === 'attic_stairs_up' || type === 'attic_stairs_down';
+    m.place(type, cx, cy, { w: f.w, h: f.h, block: !passable, force: true, props });
   }
   for (const [name, cx, cy, props] of s.spawns) m.spawn(name, cx, cy, props);
-  m.spawn('player', s.door, s.H - 2);
+  if (!s.noDoor) {
+    m.spawn('player', s.door, s.H - 2);
+    m.warp(s.door, s.H - 1, 1, 1, s.exitTo?.[0] ?? '@exit', s.exitTo?.[1] ?? '');
+  }
+  for (const [wx, wy, ww, wh, to, spawn] of s.warps ?? []) m.warp(wx, wy, ww, wh, to, spawn);
   for (const [cx, cy] of s.lights ?? []) m.spawn('light', cx, cy);
-  m.warp(s.door, s.H - 1, 1, 1, s.exitTo?.[0] ?? '@exit', s.exitTo?.[1] ?? '');
   // 창문 유리 위치 (픽셀): 게임에서 시간대(아침 · 낮 · 저녁 · 밤)에 맞춘 하늘을 덧그림
   const wins = (s.decor ?? []).filter(([k]) => k === 'window').map(([, dx]) => [dx * 16 + 4, 9, 24, 22]);
   m.props.push({ name: 'windows', type: 'string', value: JSON.stringify(wins) });

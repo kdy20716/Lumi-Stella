@@ -12,15 +12,29 @@ export class Grid {
   blocked(cx: number, cy: number) { return cx < 0 || cy < 0 || cx >= this.w || cy >= this.h || this.cells[cy * this.w + cx] === 1; }
   setBlocked(cx: number, cy: number, v: boolean) { if (cx >= 0 && cy >= 0 && cx < this.w && cy < this.h) this.cells[cy * this.w + cx] = v ? 1 : 0; }
 
-  /** 발 위치(px,py) 기준 AABB(가로 10 × 세로 5)가 막힌 칸과 겹치는지 */
+  /** 발 위치(px,py) 기준 AABB(가로 10 × 세로 5)가 막힌 칸이나 3D 절벽 경계와 겹치는지 */
   canStand(px: number, py: number, hw = 5, hh = 5) {
     const x0 = Math.floor((px - hw) / TILE), x1 = Math.floor((px + hw - 0.01) / TILE);
     const y0 = Math.floor((py - hh) / TILE), y1 = Math.floor((py - 0.01) / TILE);
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (this.blocked(x, y)) return false;
-    return true;
+    return !this.info.spansCliffWall(x0, y0, x1, y1);
   }
 
-  /** 8방향 A* (모서리 끼어가기 금지). 셀 좌표 경로 반환 */
+  /** 인접(상하좌우 · 대각선) 한 칸 이동이 충돌과 3D 절벽 벽에 막히지 않는지 */
+  canStep(cx: number, cy: number, nx: number, ny: number): boolean {
+    if (this.blocked(nx, ny)) return false;
+    const dx = nx - cx, dy = ny - cy;
+    if (!dx && !dy) return true;
+    if (Math.abs(dx) + Math.abs(dy) === 1) return this.info.canCrossEdge(cx, cy, nx, ny);
+    if (Math.abs(dx) === 1 && Math.abs(dy) === 1) {
+      return !this.blocked(cx + dx, cy) && !this.blocked(cx, cy + dy)
+        && this.info.canCrossEdge(cx, cy, cx + dx, cy) && this.info.canCrossEdge(cx + dx, cy, nx, ny)
+        && this.info.canCrossEdge(cx, cy, cx, cy + dy) && this.info.canCrossEdge(cx, cy + dy, nx, ny);
+    }
+    return false;
+  }
+
+  /** 8방향 A* (모서리 · 절벽 벽 끼어가기 금지). 셀 좌표 경로 반환 */
   findPath(sx: number, sy: number, tx: number, ty: number, maxNodes = 4000): [number, number][] | null {
     if (this.blocked(tx, ty)) {
       const alt = this.nearestOpen(tx, ty); if (!alt) return null; [tx, ty] = alt;
@@ -45,8 +59,7 @@ export class Grid {
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
         if (!dx && !dy) continue;
         const nx = cx + dx, ny = cy + dy;
-        if (this.blocked(nx, ny)) continue;
-        if (dx && dy && (this.blocked(cx + dx, cy) || this.blocked(cx, cy + dy))) continue;
+        if (!this.canStep(cx, cy, nx, ny)) continue;
         const nk = key(nx, ny), ng = g.get(k)! + (dx && dy ? 1.414 : 1);
         if (ng < (g.get(nk) ?? Infinity)) { g.set(nk, ng); from.set(nk, k); open.push({ k: nk, f: ng + h(nx, ny) }); }
       }
@@ -54,6 +67,11 @@ export class Grid {
     return null;
   }
   nearestOpen(cx: number, cy: number): [number, number] | null {
+    const h0 = this.info.heights.cellHeight(cx, cy);
+    for (let r = 1; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const nx = cx + dx, ny = cy + dy;
+      if (!this.blocked(nx, ny) && Math.abs(this.info.heights.cellHeight(nx, ny) - h0) <= 0.01) return [nx, ny];
+    }
     for (let r = 1; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (!this.blocked(cx + dx, cy + dy)) return [cx + dx, cy + dy];
     return null;
   }

@@ -770,9 +770,9 @@
       {
         "time": 1000,
         "map": "town",
-        "to": "wp_hall",
+        "to": "wp_bench_n",
         "idle": "stand",
-        "face": "up"
+        "face": "down"
       },
       {
         "time": 1100,

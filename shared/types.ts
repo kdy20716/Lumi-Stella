@@ -17,7 +17,19 @@ export const isInterior = (m: MapId) => INTERIOR_SET.has(m);
 /** 배지가 있어야 들어갈 수 있는 곳 */
 export const BADGE_GATES: Record<string, number> = { league: 8, origin: 8, distortion: 8 };
 /** 주인별로 따로 존재하는 공간 (초대받은 친구만 함께 보임) */
-export const isPrivateMap = (m: MapId) => m === 'farm' || m === 'home';
+export interface MailGift {
+  id: string;
+  orderId: string;
+  productId: string;
+  category: 'theme' | 'outfit' | 'lumi';
+  name: string;
+  boughtAt: number;
+  claimed: boolean;
+  provider?: string;
+}
+
+export const isHomeMap = (m: MapId) => m === 'home' || m === 'home_2f';
+export const isPrivateMap = (m: MapId) => m === 'farm' || isHomeMap(m);
 /** 같은 방(room)에 있는 플레이어끼리만 서로 보인다: 공개 맵은 맵 이름, 개인 공간은 맵@주인, 건물 실내는 맵@바깥맵:건물id */
 export const roomKey = (map: MapId, inst: string) => (inst ? `${map}@${inst}` : map);
 /** 세계(world)까지 포함한 방: '' = 모두가 함께하는 공개 세계, uid = 그 사람의 '친구들만' 세계. 농장/집은 주인 기준이라 세계와 무관 */
@@ -128,6 +140,20 @@ export interface PlayerState {
   stock?: Record<string, Record<string, number>>;
   /** 연 보물 상자 · 주운 반짝이 (`맵:오브젝트id`) — 한 번 열면 다시 생기지 않음 */
   opened?: string[];
+  /** 캐쉬 상점 구매 후 우편함 배송 대기·수령 목록 (모든 마을 밭 우편함 공유) */
+  mailItems?: MailGift[];
+  /** 현재 적용된 UI 디자인 테마 id (기본 'rural') */
+  uiTheme?: string;
+  /** 보유한 UI 디자인 id 목록 */
+  ownedThemes?: string[];
+  /** 보유한 캐쉬 의상 id 목록 */
+  ownedOutfits?: string[];
+  /** 현재 루미에게 착용한 코디 id */
+  lumiCoord?: string;
+  /** 보유한 루미 코디 id 목록 */
+  ownedLumiCoords?: string[];
+  /** 중복 지급 방지용 처리 완료 주문 id 목록 */
+  bmOrders?: string[];
 }
 /** 호감도 규칙 */
 export const BOND_MAX = 10, BOND_WATER = 4, BOND_ASK_AT = [0, 3, 6];
@@ -198,6 +224,13 @@ export interface SaveData {
   day?: number;
   visited?: string[];
   recipes?: string[];
+  mailItems?: MailGift[];
+  uiTheme?: string;
+  ownedThemes?: string[];
+  ownedOutfits?: string[];
+  lumiCoord?: string;
+  ownedLumiCoords?: string[];
+  bmOrders?: string[];
   /** 마지막 위치 (다시 접속하면 그 자리에서 이어서). 실내면 나갈 곳(ret)도 */
   pos?: { map: MapId; inst: string; x: number; y: number; dir?: Dir; ret?: { map: MapId; inst: string; x: number; y: number } };
   savedAt: number;
@@ -254,6 +287,9 @@ export type ActionIntent =
   | { kind: 'rivalBattle' }                           // 마을회관에서 친구와 첫 대결
   | { kind: 'craft'; recipe: string; times?: number }  // 작업대에서 제작
   | { kind: 'learn'; npc: string }                  // 공방 NPC에게 제작법 배우기
+  | { kind: 'bmDeliver'; productId: string; orderId: string; provider?: string }
+  | { kind: 'bmClaimMail'; giftId: string }
+  | { kind: 'equipCosmetic'; category: 'theme' | 'outfit' | 'lumi'; itemId: string }
   | { kind: 'resetSave' }
   | { kind: 'goHome' };                               // 친구 세계/농장에서 내 농장으로                            // 저장 초기화 (처음부터)
 

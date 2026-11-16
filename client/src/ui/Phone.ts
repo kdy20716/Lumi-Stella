@@ -1,15 +1,19 @@
 // 휴대폰 (R · 지도는 M): 화면 오른쪽에 뜨는 루미폰. 지도 · 나의 루미 · 가방 · 도감 · 제작 노트 · 배지 · 친구 · 설정 · 도움말을 모두 여기서.
 //   - 폰이 열려 있어도 걸어 다닐 수 있음 (지도만 가로 화면으로 넓어짐)
 //   - Esc: 앱 → 홈 → 닫기 / M: 열기·닫기 / P: 나의 루미 / H: 도움말
+import { BM_PRODUCT_MAP, BM_PRODUCTS, UI_THEMES, formatKrw, isBmUnlocked, type BmCategory, type BmProduct } from '@shared/bmShop';
 import { ITEMS, RECIPES, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
 import { MAP_META, type CreatureInst, type MapMeta, type PlayerState, type WorldTime } from '@shared/types';
 import { sfx } from '../audio/Sfx';
 import { music } from '../audio/Music';
+import { Stage3D } from '../three/Stage3D';
+import { lumiCoordBadgeHtml } from './LumiCoord';
+import { lookPortrait } from './Social';
 import { iconStyle, formatTime } from './UI';
 import type { AdminCmd } from '@shared/protocol';
 import type { AdminReply } from '../net/Authority';
 
-export type PhoneApp = 'home' | 'map' | 'party' | 'bag' | 'dex' | 'recipes' | 'badges' | 'friends' | 'settings' | 'help' | 'bug' | 'admin';
+export type PhoneApp = 'home' | 'map' | 'party' | 'bag' | 'dex' | 'shop' | 'recipes' | 'badges' | 'friends' | 'settings' | 'help' | 'bug' | 'admin';
 
 export interface PhoneCtx {
   me(): PlayerState;
@@ -33,6 +37,9 @@ export interface PhoneCtx {
   report(text: string): boolean;
   isAdmin(): boolean;
   admin(cmd: AdminCmd): Promise<AdminReply>;
+  /** 캐쉬 상점 결제 모달 열기 및 보유 코스메틱 적용/해제 */
+  buyBm?(product: BmProduct): void;
+  equipBm?(category: BmCategory, itemId: string): void;
 }
 
 const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: () => string }[] = [
@@ -40,6 +47,7 @@ const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: ()
   { id: 'party', name: '나의 루미', bg: 'linear-gradient(160deg,#ffd27a,#e8892e)', glyph: () => `<span class="px-icon" style="${iconStyle('lumi', 40)}"></span>` },
   { id: 'bag', name: '가방', bg: 'linear-gradient(160deg,#e8a86a,#a8683a)', glyph: () => `<span class="px-icon" style="${iconStyle('lumi_ball', 40)}"></span>` },
   { id: 'dex', name: '도감', bg: 'linear-gradient(160deg,#f2706a,#b83a3a)', glyph: () => '<span class="ph-emoji">📖</span>' },
+  { id: 'shop', name: '상점', bg: 'linear-gradient(160deg,#ffe066,#d4881c)', glyph: () => '<span class="ph-emoji">💳</span>' },
   { id: 'recipes', name: '제작 노트', bg: 'linear-gradient(160deg,#9ad27a,#3f8a3e)', glyph: () => `<span class="px-icon" style="${iconStyle('potion', 40)}"></span>` },
   { id: 'badges', name: '배지', bg: 'linear-gradient(160deg,#c8a8ff,#6a4ab8)', glyph: () => `<span class="px-icon" style="${iconStyle('badge_star', 40)}"></span>` },
   { id: 'friends', name: '친구', bg: 'linear-gradient(160deg,#ffb0c8,#d0547a)', glyph: () => `<span class="px-icon" style="${iconStyle('heart', 40)}"></span>` },
@@ -48,13 +56,15 @@ const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: ()
   { id: 'bug', name: '버그 신고', bg: 'linear-gradient(160deg,#ffb27a,#d8573a)', glyph: () => '<span class="ph-emoji">🐞</span>' },
 ];
 const ADMIN_APP = { id: 'admin' as const, name: '관리자', bg: 'linear-gradient(160deg,#4a4a5a,#14141c)', glyph: () => '<span class="ph-emoji">🛡️</span>' };
-const TITLE: Record<PhoneApp, string> = { home: '', map: '루미나 지방 지도', party: '나의 루미', bag: '가방', dex: '루미 도감', recipes: '제작 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말', bug: '버그 신고', admin: '관리자 (admin)' };
+const TITLE: Record<PhoneApp, string> = { home: '', map: '루미나 지방 지도', party: '나의 루미', bag: '가방', dex: '루미 도감', shop: '캐쉬 상점', recipes: '제작 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말', bug: '버그 신고', admin: '관리자 (admin)' };
 
-/** 도장 순서 (ROADMAP 2-2) */
+/** 도장 순서 */
 const BADGES: [string, string, string, string][] = [
   ['badge_wind', '바람골 마을', '세나', '바람'], ['badge_water', '물결항', '파도', '물'], ['badge_leaf', '단풍골', '단비', '풀'], ['badge_earth', '쇳불 도시', '무쇠', '땅'],
-  ['badge_flame', '잿빛 마을', '화련', '불'], ['badge_light', '빛누리 시티', '샛별', '빛'], ['badge_star', '별마루 마을', '천문', '혼합'], ['badge_normal', '서리 마을', '설아', '노말'],
+  ['badge_flame', '잿빛 마을', '화련', '불'], ['badge_light', '빛누리 시티', '샛별', '빛'], ['badge_normal', '서리 마을', '설아', '노말'], ['badge_star', '별마루 마을', '천문', '혼합'],
 ];
+const worldmapImg = new Image();
+worldmapImg.src = 'assets/ui/worldmap.png';
 const HELPS: Record<string, string> = { farm: '아침마다 밭 6칸 물주기', fish: '희귀 물고기 ↑ · 물뿌리개 무료', mine: '광석 +1 · 곡괭이 에너지 절약', forage: '채집물 2배', energy: '도구 에너지 −1', exp: '경험치 +25%' };
 const SEASON_KO: Record<string, string> = { spring: '봄', summer: '여름', fall: '가을', winter: '겨울' };
 const esc = (s: string) => s.replace(/[<&>"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]!);
@@ -68,6 +78,7 @@ export const phone = {
   ctx: null as PhoneCtx | null,
   confirmReset: false,
   bagPick: '' as string,
+  shopTab: 'theme' as BmCategory,
   unfold: false,
   unfoldTimer: 0,
   get open() { return !!this.node; },
@@ -134,6 +145,7 @@ export const phone = {
       case 'party': return this.partyApp(me);
       case 'bag': return this.bagApp(me);
       case 'dex': return this.dexApp(me);
+      case 'shop': return this.shopApp(me);
       case 'recipes': return this.recipeApp(me);
       case 'badges': return this.badgeApp(me);
       case 'friends': return this.friendApp();
@@ -226,8 +238,8 @@ export const phone = {
     };
     return `<div class="ph-map">
         <img src="assets/ui/worldmap.png" alt="">
-
-        <canvas width="360" height="240"></canvas>
+        <canvas class="ph-map-bg" width="720" height="480"></canvas>
+        <canvas class="ph-map-fog" width="360" height="240"></canvas>
         ${known.map(([id, m]) => pin(id, m)).join('')}
         <div class="ph-tip" hidden></div>
       </div>
@@ -235,7 +247,13 @@ export const phone = {
   },
   /** 안개: 구름 무늬(3단 + 디더 가장자리), 가 본 곳 주변만 걷힘 */
   drawFog(n: HTMLElement, me: PlayerState) {
-    const cv = n.querySelector<HTMLCanvasElement>('.ph-map canvas'); if (!cv) return;
+    const bg = n.querySelector<HTMLCanvasElement>('.ph-map canvas.ph-map-bg');
+    if (bg) {
+      const paintBg = () => { if (worldmapImg.complete && worldmapImg.naturalWidth > 0) bg.getContext('2d')?.drawImage(worldmapImg, 0, 0, 720, 480); };
+      if (worldmapImg.complete && worldmapImg.naturalWidth > 0) paintBg();
+      else worldmapImg.addEventListener('load', paintBg, { once: true });
+    }
+    const cv = n.querySelector<HTMLCanvasElement>('.ph-map canvas.ph-map-fog'); if (!cv) return;
     const g = cv.getContext('2d')!, W = 360, H = 240, img = g.createImageData(W, H);
     const { id: here } = this.ctx!.here();
     const seen = new Set([...(me.visited ?? []), here]);
@@ -365,6 +383,67 @@ export const phone = {
     <div class="ph-foot">배지 8개를 모으면 왕관 시티 루미 리그에 도전할 수 있어요</div>`;
   },
 
+  // ── 캐쉬 상점 (UI 디자인 · 의상 · 루미 코디 · 웹 카드 결제) ──
+  shopApp(me: PlayerState) {
+    const tabs = `<div class="ph-tabs" style="margin-bottom:4px">
+      <button data-bmtab="theme" class="${this.shopTab === 'theme' ? 'on' : ''}">UI 디자인</button>
+      <button data-bmtab="outfit" class="${this.shopTab === 'outfit' ? 'on' : ''}">의상</button>
+      <button data-bmtab="lumi" class="${this.shopTab === 'lumi' ? 'on' : ''}">루미 코디</button>
+    </div>`;
+    const mailPending = (me.mailItems ?? []).filter((g) => !g.claimed).length;
+    const notice = `<div class="ph-small" style="line-height:1.4">이장 · 도장 관장을 깨면 품목이 해금됩니다. 카드 결제 시 <b>모든 마을 밭 우편함</b>으로 배송돼요.${mailPending ? ` <span class="ph-ok">(미수령 ${mailPending}개)</span>` : ''}</div>`;
+    const owned = new Set(
+      this.shopTab === 'theme' ? (me.ownedThemes ?? ['rural']) :
+      this.shopTab === 'outfit' ? (me.ownedOutfits ?? []) :
+      (me.ownedLumiCoords ?? []),
+    );
+    const pendingIds = new Set((me.mailItems ?? []).filter((g) => !g.claimed).map((g) => g.productId));
+    const curTheme = me.uiTheme ?? 'rural';
+    const curLumi = me.lumiCoord ?? '';
+
+    let extra = '';
+    if (this.shopTab === 'theme') {
+      const r = UI_THEMES.rural;
+      const on = curTheme === 'rural';
+      extra = `<div class="ph-card ${on ? 'lead' : ''}">
+        <span class="bm-swatch" style="background:linear-gradient(135deg,${r.panel},${r.border})"></span>
+        <div class="flex-1 min-w-0"><b>${esc(r.name)}</b><div class="ph-small">${esc(r.desc)}</div></div>
+        ${on ? '<span class="ph-ok">✔ 적용 중</span>' : '<button data-bmeq="theme:rural" class="ph-btn sm">적용</button>'}
+      </div>`;
+    } else if (this.shopTab === 'lumi' && curLumi) {
+      extra = `<div class="ph-card"><div class="flex-1 text-xs">현재 루미 코디: <b>${esc(BM_PRODUCT_MAP[curLumi]?.name ?? curLumi)}</b></div><button data-bmeq="lumi:" class="ph-btn sm ghost">해제</button></div>`;
+    }
+
+    const cards = BM_PRODUCTS.filter((p) => p.category === this.shopTab).map((p) => {
+      const isOwned = owned.has(p.id);
+      const inMail = pendingIds.has(p.id);
+      const u = isBmUnlocked(p, me);
+      const isEq = (p.category === 'theme' && curTheme === p.id) || (p.category === 'outfit' && me.look === p.id) || (p.category === 'lumi' && curLumi === p.id);
+      const thumb =
+        p.category === 'outfit' ? `<span class="bm-swatch" style="background:#f3dfb4"><span style="${lookPortrait(p.id, 1)}"></span></span>` :
+        p.category === 'lumi' ? `<span class="bm-swatch" style="background:#eef5ea">${lumiCoordBadgeHtml(p.id, 30)}</span>` :
+        `<span class="bm-swatch" style="background:linear-gradient(135deg,${p.previewColor},${p.accentColor})"></span>`;
+      const action = isEq
+        ? '<span class="ph-ok">✔ 적용 중</span>'
+        : isOwned
+          ? `<button data-bmeq="${p.category}:${p.id}" class="ph-btn sm">적용하기</button>`
+          : inMail
+            ? '<span class="bm-lock">📮 우편함 도착</span>'
+            : !u.unlocked
+              ? `<span class="bm-lock">🔒 ${esc(p.town)}</span>`
+              : `<button data-bmbuy="${p.id}" class="bm-pay-pill">💳 ${formatKrw(p.priceKrw)}</button>`;
+      return `<div class="ph-card ${isEq ? 'lead' : !u.unlocked && !isOwned && !inMail ? 'locked' : ''}">
+        ${thumb}
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1 flex-wrap"><b class="text-xs">${esc(p.name)}</b><span class="ph-small">· ${esc(p.town)}</span></div>
+          <div class="ph-small" style="line-height:1.3">${esc(u.unlocked || isOwned || inMail ? p.desc : u.reason)}</div>
+        </div>
+        ${action}
+      </div>`;
+    }).join('');
+    return `${tabs}${notice}<div class="ph-list">${extra}${cards}</div>`;
+  },
+
   // ── 친구 ──
   friendApp() {
     const list = this.ctx!.roster();
@@ -380,7 +459,7 @@ export const phone = {
       <div class="ph-stack"><button data-set="yes" class="ph-btn danger">네, 초기화할게요</button><button data-set="no" class="ph-btn">아니요</button></div>`;
     const sw = (k: string, label: string, on: boolean) => `<button data-set="${k}" class="ph-switch ${on ? 'on' : ''}"><span>${label}</span><i></i></button>`;
     return `<div class="ph-stack">
-        ${sw('sound', '효과음', !sfx.muted)}${sw('steps', '발소리', sfx.stepsOn)}${sw('music', '배경음악', music.on)}
+        ${sw('sound', '효과음', !sfx.muted)}${sw('steps', '발소리', sfx.stepsOn)}${sw('music', '배경음악', music.on)}${sw('view25d', '2.5D 입체 시점 (V)', Stage3D.enabled)}
       </div>
       <div class="ph-sec">저장 <span>${esc(c.storage())}</span></div>
       <div class="ph-stack">
@@ -416,6 +495,17 @@ export const phone = {
       });
     }
     const c = this.ctx!;
+    n.querySelectorAll<HTMLButtonElement>('[data-bmtab]').forEach((b) => { b.onclick = () => { sfx.play('tap'); this.shopTab = b.dataset.bmtab as BmCategory; this.render(); }; });
+    n.querySelectorAll<HTMLButtonElement>('[data-bmbuy]').forEach((b) => {
+      b.onclick = () => { const prod = BM_PRODUCT_MAP[b.dataset.bmbuy!]; if (prod) { sfx.play('tap'); c.buyBm?.(prod); } };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-bmeq]').forEach((b) => {
+      b.onclick = () => {
+        const [cat, id] = b.dataset.bmeq!.split(':');
+        sfx.play('confirm');
+        c.equipBm?.(cat as BmCategory, id ?? '');
+      };
+    });
     n.querySelectorAll<HTMLButtonElement>('[data-partner]').forEach((b) => { b.onclick = () => { sfx.play('confirm'); c.setPartner(Number(b.dataset.partner)); }; });
     n.querySelectorAll<HTMLButtonElement>('[data-item]').forEach((b) => { b.onclick = () => { sfx.play('tap'); this.bagPick = this.bagPick === b.dataset.item ? '' : b.dataset.item!; this.render(); }; });
     n.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) => {
@@ -432,6 +522,7 @@ export const phone = {
         if (k === 'sound') sfx.setMuted(!sfx.muted);
         else if (k === 'steps') sfx.setSteps(!sfx.stepsOn);
         else if (k === 'music') music.setOn(!music.on);
+        else if (k === 'view25d') { Stage3D.enabled = !Stage3D.enabled; this.refresh(); }
         else if (k === 'save') c.save();
         else if (k === 'reset') this.confirmReset = true;
         else if (k === 'no') this.confirmReset = false;

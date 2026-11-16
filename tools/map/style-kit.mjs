@@ -9,7 +9,7 @@
 //   grass: 풀밭 비율 최대 (공원)
 
 const COTTAGE = ['house', 'house_a', 'house_b', 'house_c', 'store', 'cafe', 'smithy', 'windmill', 'hall'];
-const FARM = ['plot', 'hay', 'well', 'shipping_bin', 'mailbox', 'stall', 'stall_b', 'log', 'bush_berry'];
+const FARM = ['plot', 'hay', 'well', 'shipping_bin', 'stall', 'stall_b', 'log', 'bush_berry'];
 const CITY = ['tower', 'dept', 'apart', 'factory', 'tlight', 'vend'];
 
 export const DISTRICTS = {

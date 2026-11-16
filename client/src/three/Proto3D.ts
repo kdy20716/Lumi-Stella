@@ -7,6 +7,7 @@ import { MapInfo, prop, type TiledMap, type TiledObject } from '@shared/sim/MapI
 import { INTERIOR_OF } from '@shared/types';
 import { RUN_SPEED, WALK_SPEED, type CharacterMeta, type Manifest } from '../config';
 import { touch } from '../ui/Touch';
+import { buildInteriorRoom3D, hasInteriorProp3D, makeInteriorProp3D } from './Interior3D';
 import { buildTerrainMesh, computeHeights, type Heights } from './Terrain';
 import region from '@shared/data/region.json';
 import { NPCS } from '@shared/data';
@@ -92,7 +93,8 @@ async function buildMap(id: string, man: Manifest, maps: Record<string, MapWithP
   const cv = document.createElement('canvas'); cv.width = W * T; cv.height = H * T;
   const cx = cv.getContext('2d')!;
   const bg = String(prop(raw, 'bg', ''));
-  if (bg && man.images[bg]) cx.drawImage(await loadImg(man.images[bg].path), 0, 0);
+  const bgImg = bg && man.images[bg] ? await loadImg(man.images[bg].path) : null;
+  if (bgImg) cx.drawImage(bgImg, 0, 0);
   const off = Number(prop(raw, 'groundOffset', 8));
   const drawLayer = (name: string, o: number, oy = o) => {
     const l = raw.layers.find((x) => x.name === name); if (!l?.data) return;
@@ -115,21 +117,10 @@ async function buildMap(id: string, man: Manifest, maps: Record<string, MapWithP
   const spawn = info.spawns.get('player') ?? info.spawns.get('entry');
   let hts: Heights;
   if (interior) {
-    // 맨 위의 완전히 막힌 줄 = 뒷벽 → 세로로 세움
     let k = 0; while (k < H && Array.from({ length: W }, (_, x) => info.isBlocked(x, k)).every(Boolean)) k++;
     k = Math.min(k, 4);
     hts = computeHeights({ ...raw, layers: raw.layers.filter((l) => l.name !== 'Cliff') }, undefined);
-    const floor = new THREE.PlaneGeometry(W, H - k);
-    const fuv = floor.attributes.uv as THREE.BufferAttribute;
-    for (let i = 0; i < fuv.count; i++) fuv.setY(i, fuv.getY(i) * ((H - k) / H));
-    const fm = new THREE.Mesh(floor, new THREE.MeshBasicMaterial({ map: groundTex, alphaTest: 0.5 }));
-    fm.rotation.x = -Math.PI / 2; fm.position.set(W / 2, 0, k + (H - k) / 2);
-    const wall = new THREE.PlaneGeometry(W, k);
-    const wuv = wall.attributes.uv as THREE.BufferAttribute;
-    for (let i = 0; i < wuv.count; i++) wuv.setY(i, 1 - (1 - wuv.getY(i)) * (k / H));
-    const wm = new THREE.Mesh(wall, new THREE.MeshBasicMaterial({ map: groundTex, color: 0xf2f2f2 }));
-    wm.position.set(W / 2, k / 2, k);
-    group.add(fm, wm);
+    group.add(buildInteriorRoom3D(info, groundTex, bgImg, k, T));
   } else {
     hts = computeHeights(raw, spawn ? { x: spawn.x / T, y: spawn.y / T } : undefined);
     // 일반 절벽 무늬: 타일셋 11번째 줄의 절벽 앞면 타일
@@ -193,20 +184,14 @@ async function buildMap(id: string, man: Manifest, maps: Record<string, MapWithP
     // 동서남북의 탑: 납작한 그림 대신 진짜 돌탑 (팔각 기둥 + 톱니 난간 + 빛받이 수정)
     if (type === 'spire') {
       const cx = cellX + cellW / 2, cz = cellY + 1 - cellH / 2, y0 = hts.sample(cx, Math.min(H - 0.01, cellY + 0.5));
-      const g = new THREE.Group();
-      const cv = document.createElement('canvas'); cv.width = 64; cv.height = 96; const c2 = cv.getContext('2d')!;
-      c2.fillStyle = '#8e94aa'; c2.fillRect(0, 0, 64, 96);
-      for (let r = 0; r < 16; r++) for (let k = 0; k < 9; k++) { c2.fillStyle = (r * 7 + k * 3) % 5 === 0 ? '#6a6e84' : (r + k) % 3 === 0 ? '#a6acc0' : '#8e94aa'; c2.fillRect(k * 8 - (r % 2 ? 4 : 0), r * 6, 7, 5); }
-      c2.fillStyle = '#3a3c4c'; for (const yy of [30, 62]) c2.fillRect(0, yy, 64, 3);
-      const st = new THREE.CanvasTexture(cv); st.magFilter = THREE.NearestFilter; st.minFilter = THREE.NearestFilter; st.colorSpace = THREE.SRGBColorSpace;
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.5, 6.4, 8), new THREE.MeshBasicMaterial({ map: st })); body.position.y = 3.2; g.add(body);
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.2, 0.5, 8), new THREE.MeshBasicMaterial({ color: 0x6a6e84 })); rim.position.y = 6.6; g.add(rim);
-      for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2 + Math.PI / 8; const m2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), new THREE.MeshBasicMaterial({ color: 0xa6acc0 })); m2.position.set(Math.cos(a) * 1.15, 7.05, Math.sin(a) * 1.15); g.add(m2); }
-      const gem = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1, 4), new THREE.MeshBasicMaterial({ color: 0x8aecff })); gem.position.y = 7.5; g.add(gem);
-      const door = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.3), new THREE.MeshBasicMaterial({ color: 0x1c1826 })); door.position.set(0, 0.66, 1.44); door.rotation.x = -0.07; g.add(door);
-      const ao = new THREE.Mesh(new THREE.CircleGeometry(2, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false })); ao.rotation.x = -Math.PI / 2; ao.position.y = 0.03; g.add(ao);
-      g.position.set(cx, y0, cz); group.add(g);
+      group.add(makeSpire(cx, y0, cz));
       continue;
+    }
+    if (interior && hasInteriorProp3D(type) && im) {
+      const pimg = await loadImg(im.path);
+      const ptex = pixelTex(pimg, `img:${type}`);
+      const prop3d = makeInteriorProp3D(type, o, ptex, im.w, im.h, W, shadowTex, T);
+      if (prop3d) { group.add(prop3d); continue; }
     }
     let bb: Billboard | null = null;
     if (sh) {
@@ -337,7 +322,7 @@ function sideWallTex(s: BldShape, widthPx: number, key: string) {
 /** 건물: 4세대처럼 벽 네 면이 다 막힌 상자 + 처마가 튀어나온 경사 지붕(앞 · 뒤 경사면 + 양옆 삼각 경사면)
  *  - 앞벽 · 앞 지붕 = 원래 2D 그림, 옆벽 · 뒷벽 = 앞벽 무늬로 만든 그림, 옆 지붕 = 지붕 그림 가운데를 늘려 씀
  *  - 해는 왼쪽 위: 왼쪽 면은 조금, 오른쪽 · 뒤쪽 면은 더 어둡게 */
-export function makeBuilding(img: HTMLImageElement, tex: THREE.Texture, key: string, cellX: number, cellY: number, cellW: number, cellH: number, base: number, chimneyX?: number | null) {
+export function makeBuilding(img: HTMLImageElement, tex: THREE.Texture, key: string, cellX: number, cellY: number, cellW: number, cellH: number, base: number, chimneyX?: number | null, glowTex?: THREE.Texture | null) {
   const s = analyzeBuilding(img);
   const { w, h } = s;
   const grp = new THREE.Group();
@@ -395,7 +380,7 @@ export function makeBuilding(img: HTMLImageElement, tex: THREE.Texture, key: str
     tri(roof, [[ex0, y1, zb], [ex0, y1, zf], [rx0, yr, zc]], [[um - du, vB], [um + du, vB], [um, vT]], 0.8);
     tri(roof, [[ex1, y1, zf], [ex1, y1, zb], [rx1, yr, zc]], [[um - du, vB], [um + du, vB], [um, vT]], 0.64);
     // 처마 밑 그늘 (아래에서 보이는 판 - 벽과 지붕 사이 틈 막기)
-    quad(roof, [[ex0, y1, zb], [ex0, y1, zf], [ex1, y1, zf], [ex1, y1, zb]], [[um - du, vB], [um - du, vB], [um + du, vB], [um + du, vB]], 0.35);
+    quad(roof, [[ex0, y1 - 0.008, zb], [ex0, y1 - 0.008, zf], [ex1, y1 - 0.008, zf], [ex1, y1 - 0.008, zb]], [[um - du, vB], [um - du, vB], [um + du, vB], [um + du, vB]], 0.35);
     // 굴뚝: 그림의 굴뚝 위치에 작은 상자
     if (chimneyX != null) {
       const cxw = X(chimneyX), cz = zc + 0.35, cw = 0.42, ch = R * 0.75 + 0.7;
@@ -411,12 +396,13 @@ export function makeBuilding(img: HTMLImageElement, tex: THREE.Texture, key: str
       };
       box(cxw - cw / 2, cxw + cw / 2, cz - cw / 2, cz + cw / 2, cy0, cy0 + ch);
       grp.add(toMesh(c, tex, false));
+      grp.userData.chimney = { x: cxw, y: cy0 + ch + 0.08, z: cz };
     }
   } else {
     // ── 평지붕 + 앞면 장식판 (체육관 · 풍차처럼 경사 지붕이 아닌 그림) ──
     const topC = rowMode(s, s.roofBottom + 1, s.wallL, s.wallR) || '#888888';
-    const flat = new THREE.Mesh(new THREE.PlaneGeometry(wx1 - wx0, D), new THREE.MeshBasicMaterial({ color: new THREE.Color(topC).multiplyScalar(0.85) }));
-    flat.rotation.x = -Math.PI / 2; flat.position.set((wx0 + wx1) / 2, y1 + 0.001, (z0 + z1) / 2);
+    const flat = new THREE.Mesh(new THREE.PlaneGeometry(wx1 - wx0, D), new THREE.MeshBasicMaterial({ color: new THREE.Color(topC).multiplyScalar(0.85), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+    flat.rotation.x = -Math.PI / 2; flat.position.set((wx0 + wx1) / 2, y1 + 0.02, (z0 + z1) / 2);
     grp.add(flat);
     // 벽 위로 솟은 부분(탑 · 돔 · 깃발)은 앞벽 위에 서 있는 판으로
     if (s.roofBottom > 0) {
@@ -425,12 +411,27 @@ export function makeBuilding(img: HTMLImageElement, tex: THREE.Texture, key: str
       quad(roof, [[X(0), y1 + top, z1], [X(0), y1, z1], [X(w), y1, z1], [X(w), y1 + top, z1]], [[0, V(ty)], [0, V(s.roofBottom)], [1, V(s.roofBottom)], [1, V(ty)]], 1);
     }
   }
-  grp.add(toMesh(front, tex), toMesh(roof, tex));
+  const frontMesh = toMesh(front, tex), roofMesh = toMesh(roof, tex);
+  grp.add(frontMesh, roofMesh);
+
+  if (glowTex) {
+    const gm = new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    gm.userData = { noTint: true, isWindowGlow: true };
+    const gw = toMesh(front, glowTex);
+    gw.material = gm;
+    gw.position.z = 0.025;
+    grp.add(gw);
+    grp.userData.glowMat = gm;
+  }
 
   // 바닥 그늘: 건물 둘레가 땅에 붙어 보이게
   const ao = new THREE.Mesh(new THREE.PlaneGeometry(wx1 - wx0 + 0.5, D + 0.45), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
   ao.rotation.x = -Math.PI / 2; ao.position.set((wx0 + wx1) / 2 + 0.12, y0 + 0.015, (z0 + z1) / 2 + 0.1);
   grp.add(ao);
+
+  const fadeMats: THREE.MeshBasicMaterial[] = [];
+  grp.traverse((obj) => { if (obj instanceof THREE.Mesh && obj !== ao && obj.material instanceof THREE.MeshBasicMaterial && !obj.material.userData?.isWindowGlow) fadeMats.push(obj.material); });
+  grp.userData.tall = { mesh: grp, x0: wx0, x1: wx1, z0: z1, z1, h: Math.max(3.5, h / T), mats: fadeMats, faded: false } satisfies Tall;
   return grp;
 }
 
@@ -518,10 +519,11 @@ export function makeBlockout(o: TiledObject, kind: string, cellX: number, cellY:
   grp.add(box);
   // 옥상 난간 · 기계실 · (방송국) 안테나
   const rim = mk(null, 0.8, color);
-  const parapet = (w: number, d: number, x: number, z: number) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.25, d), rim); m.position.set(x, base + h + 0.12, z); grp.add(m); };
+  const parapet = (w: number, d: number, x: number, z: number) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.25, d), rim); m.position.set(x, base + h + 0.135, z); grp.add(m); };
   const cx = cellX + cellW / 2, cz = cellY + 1 - cellH / 2;
-  parapet(cellW, 0.15, cx, cellY + 1 - 0.075); parapet(cellW, 0.15, cx, cellY + 1 - cellH + 0.075);
-  parapet(0.15, cellH, cellX + 0.075, cz); parapet(0.15, cellH, cellX + cellW - 0.075, cz);
+  const sideD = Math.max(0.1, cellH - 0.304);
+  parapet(cellW - 0.01, 0.15, cx, cellY + 1 - 0.08); parapet(cellW - 0.01, 0.15, cx, cellY + 1 - cellH + 0.08);
+  parapet(0.15, sideD, cellX + 0.08, cz); parapet(0.15, sideD, cellX + cellW - 0.08, cz);
   const mats2 = [rim];
   if (floors >= 8) { const room = new THREE.Mesh(new THREE.BoxGeometry(Math.min(3, cellW * 0.35), 0.8, Math.min(2, cellH * 0.4)), mk(null, 0.7, color)); room.position.set(cx + cellW * 0.15, base + h + 0.4, cz - cellH * 0.1); grp.add(room); mats2.push(room.material as THREE.MeshBasicMaterial); }
   // 공장 굴뚝: 지붕 뒤쪽에 줄지어 선 원기둥 (위쪽 빨강 · 흰 띠)
@@ -536,9 +538,46 @@ export function makeBlockout(o: TiledObject, kind: string, cellX: number, cellY:
     const a = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4, 0.18), am); a.position.set(cx - cellW * 0.2, base + h + 2, cz); grp.add(a); mats2.push(am);
   }
   // 바닥 그늘
-  const ao = new THREE.Mesh(new THREE.PlaneGeometry(cellW + 0.6, cellH + 0.5), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false }));
-  ao.rotation.x = -Math.PI / 2; ao.position.set(cx + 0.15, base + 0.015, cz + 0.1); grp.add(ao);
+  const ao = new THREE.Mesh(new THREE.PlaneGeometry(cellW + 0.6, cellH + 0.5), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+  ao.rotation.x = -Math.PI / 2; ao.position.set(cx + 0.15, base + 0.025, cz + 0.1); grp.add(ao);
   return { mesh: grp, x0: cellX, x1: cellX + cellW, z0: cellY + 1 - cellH, z1: cellY + 1, h, mats: [...mats, ...mats2], faded: false };
+}
+
+/** 동서남북의 탑: 팔각 돌기둥 + 톱니 난간 + 빛받이 수정 + 입구 + 바닥 그늘 */
+export function makeSpire(cx: number, y0: number, cz: number): THREE.Group {
+  const g = new THREE.Group();
+  const cv = document.createElement('canvas'); cv.width = 64; cv.height = 96;
+  const c2 = cv.getContext('2d')!;
+  c2.fillStyle = '#8e94aa'; c2.fillRect(0, 0, 64, 96);
+  for (let r = 0; r < 16; r++) for (let k = 0; k < 9; k++) {
+    c2.fillStyle = (r * 7 + k * 3) % 5 === 0 ? '#6a6e84' : (r + k) % 3 === 0 ? '#a6acc0' : '#8e94aa';
+    c2.fillRect(k * 8 - (r % 2 ? 4 : 0), r * 6, 7, 5);
+  }
+  c2.fillStyle = '#3a3c4c';
+  for (const yy of [30, 62]) c2.fillRect(0, yy, 64, 3);
+  const st = pixelTex(cv, 'spire:wall');
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.5, 6.4, 8), new THREE.MeshBasicMaterial({ map: st }));
+  body.position.y = 3.2; g.add(body);
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.2, 0.5, 8), new THREE.MeshBasicMaterial({ color: 0x6a6e84 }));
+  rim.position.y = 6.6; g.add(rim);
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2 + Math.PI / 8;
+    const m2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), new THREE.MeshBasicMaterial({ color: 0xa6acc0 }));
+    m2.position.set(Math.cos(a) * 1.15, 7.05, Math.sin(a) * 1.15); g.add(m2);
+  }
+  const gemMat = new THREE.MeshBasicMaterial({ color: 0x8aecff });
+  gemMat.userData = { noTint: true };
+  const gem = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1, 4), gemMat);
+  gem.position.y = 7.5; g.add(gem);
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.3), new THREE.MeshBasicMaterial({ color: 0x1c1826 }));
+  door.position.set(0, 0.66, 1.44); door.rotation.x = -0.07; g.add(door);
+  const aoMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false });
+  aoMat.userData = { noTint: true };
+  const ao = new THREE.Mesh(new THREE.CircleGeometry(2, 16), aoMat);
+  ao.rotation.x = -Math.PI / 2; ao.position.y = 0.03; g.add(ao);
+  g.position.set(cx, y0, cz);
+  g.userData.gem = gem;
+  return g;
 }
 
 /** 도시 바닥 무늬 (칸 = 16px). a 차도 · h/v 가운데 점선 · z/y 횡단보도 · w 인도 · p 광장 · x 외벽 윗면. g(풀) · o(물)은 원래 그림 그대로 */

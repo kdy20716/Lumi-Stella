@@ -169,6 +169,7 @@ export class MapBuilder {
       this.plot('town_plot', x0 + 1, y0 + 1, w, h, '*', 0);
       this.reserve(x0, y0, x0 + w + 1, y0 + h + 1);
       this.place('sign', x0, y0, { force: true, props: { interact: 'sign', text: `${label}\n괭이로 갈고 씨앗을 심어 보세요. 내 밭은 나에게만 보여요.\n마을 사람과 친해지면 밭일을 도와준대요.` } });
+      this.place('mailbox', x0 + 1, y0, { force: true, props: { interact: 'mail' } });
       this.place('scarecrow', x0 + w + 1, y0, { force: true });
       this.spawn('wp_hand', x0 + w + 1, y0 + 2);
       this.spawn('wp_plot', x0 + Math.floor(w / 2) + 1, y0 + h + 1);

@@ -379,7 +379,7 @@ export function trackFor(p: PlaceInfo): string {
   if (id === 'league') return 'league';
   if (id.startsWith('gym') || id === 'in_gym' || id === 'tower') return 'gym';
   if (id === 'origin' || id === 'chateau' || id === 'altar' || id === 'distortion') return 'legend';
-  if (id === 'home' || id.startsWith('in_house')) return 'inn';
+  if (id === 'home' || id === 'home_2f' || id.startsWith('in_house')) return 'inn';
   if (p.interior || p.kind === 'room') return 'lab';
   if (id.startsWith('victory')) return 'challenge';
   if (p.kind === 'cave') return 'cave';

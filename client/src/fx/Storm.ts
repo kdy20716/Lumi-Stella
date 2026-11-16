@@ -10,6 +10,7 @@ export function stormFx() {
     <div data-bolt style="position:absolute;inset:0;background:#f4f0ff;opacity:0"></div>
     <div data-sun style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%, rgba(255,244,190,.95) 0%, rgba(255,226,150,.45) 35%, transparent 70%);opacity:0;transition:opacity 3s"></div>`;
   // 게임 화면 위 · 대화창(UI) 아래에 깔림
+  el.style.zIndex = '15';
   const uiRoot = document.getElementById('ui');
   if (uiRoot?.parentElement) uiRoot.parentElement.insertBefore(el, uiRoot); else document.body.appendChild(el);
   const q = (k: string) => el.querySelector(`[data-${k}]`) as HTMLElement;

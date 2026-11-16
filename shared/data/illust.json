@@ -1127,28 +1127,28 @@
     "face": "grin"
   },
   "prof_geol": {
-    "name": "지질 박사",
+    "name": "브론 박사",
     "role": "잿빛 화산 지질 연구원",
     "persona": "rugged field geologist examining magma rocks",
     "pose": "think",
     "face": "serious"
   },
   "prof_botany": {
-    "name": "식물 박사",
+    "name": "실비아 박사",
     "role": "꽃구름 식물원 원장",
     "persona": "gentle botanist cultivating rare berries and crops",
     "pose": "clasp",
     "face": "gentle"
   },
   "prof_archae": {
-    "name": "고고학 박사",
+    "name": "로렌 박사",
     "role": "서리 고대유적 발굴단장",
     "persona": "scholarly archaeologist deciphering ancient glyphs",
     "pose": "think",
     "face": "serious"
   },
   "prof_tech": {
-    "name": "사이버 박사",
+    "name": "키안 박사",
     "role": "빛누리 디지털 루미 연구소장",
     "persona": "trendy young scientist pioneering AI creature interfaces",
     "pose": "point",
@@ -1190,49 +1190,49 @@
     "face": "serious"
   },
   "city_concierge": {
-    "name": "호텔 컨시어지",
+    "name": "컨시어지 찰스",
     "role": "특급 호텔 지배인",
     "persona": "immaculately polite luxury hotel receptionist",
     "pose": "clasp",
     "face": "gentle"
   },
   "city_chef": {
-    "name": "수석 셰프",
+    "name": "셰프 앙투안",
     "role": "고급 레스토랑 주방장",
     "persona": "passionate master chef creating five-star monster delicacies",
     "pose": "hips",
     "face": "grin"
   },
   "city_stylist": {
-    "name": "부티크 스타일리스트",
+    "name": "스타일리스트 클로에",
     "role": "백화점 의상 디자이너",
     "persona": "flamboyant trendsetting fashion stylist advising on outfits",
     "pose": "point",
     "face": "smug"
   },
   "city_clerk": {
-    "name": "백화점 안내원",
+    "name": "안내원 소피아",
     "role": "백화점 1층 인포메이션",
     "persona": "cheerful courteous receptionist directing shoppers",
     "pose": "wave",
     "face": "smile"
   },
   "city_gamer": {
-    "name": "게임센터 마스터",
+    "name": "게이머 제트",
     "role": "오락실 챔피언",
     "persona": "hyperactive teen gamer surrounded by arcade cabinets",
     "pose": "cheer",
     "face": "grin"
   },
   "city_busker": {
-    "name": "거리 버스커",
+    "name": "버스커 리오",
     "role": "도심 인디 뮤지션",
     "persona": "bohemian acoustic guitarist singing in public plazas",
     "pose": "wave",
     "face": "grin"
   },
   "city_courier": {
-    "name": "퀵 배달원",
+    "name": "라이더 대쉬",
     "role": "도시 특송 바이커",
     "persona": "fast energetic courier delivering packages across high-rises",
     "pose": "point",
@@ -1267,7 +1267,7 @@
     "face": "smile"
   },
   "tr_collector": {
-    "name": "포켓몬 수집가",
+    "name": "콜렉터 바인",
     "role": "희귀종 수집 트레이너",
     "persona": "avid collector proud of rare elemental variants",
     "pose": "think",
@@ -1295,14 +1295,14 @@
     "face": "smug"
   },
   "tr_ranger_m": {
-    "name": "레인저 (남)",
+    "name": "레인저 포레",
     "role": "환경 보호 레인저",
     "persona": "vigilant forest guardian preserving wild monster sanctuaries",
     "pose": "point",
     "face": "serious"
   },
   "tr_ranger_f": {
-    "name": "레인저 (여)",
+    "name": "레인저 로렐",
     "role": "환경 보호 레인저",
     "persona": "swift observant ranger patrolling dangerous mountain ridges",
     "pose": "hips",
@@ -1316,35 +1316,35 @@
     "face": "grin"
   },
   "tr_veteran_m": {
-    "name": "베테랑 트레이너 (남)",
+    "name": "베테랑 크루거",
     "role": "숙련 배틀러",
     "persona": "seasoned tournament fighter with battle-tested tactical wisdom",
     "pose": "cross",
     "face": "serious"
   },
   "tr_veteran_f": {
-    "name": "베테랑 트레이너 (여)",
+    "name": "베테랑 힐다",
     "role": "숙련 배틀러",
     "persona": "poised master strategist anticipating every move",
     "pose": "behind",
     "face": "smug"
   },
   "tr_ruin_maniac": {
-    "name": "유적 매니아",
+    "name": "유적광 체스터",
     "role": "지하 탐사 트레이너",
     "persona": "eccentric digger searching deep subterranean chambers",
     "pose": "think",
     "face": "grin"
   },
   "tr_artist": {
-    "name": "풍경 화가",
+    "name": "화가 모네",
     "role": "예술가 트레이너",
     "persona": "bohemian painter capturing the beauty of monster moves",
     "pose": "wave",
     "face": "gentle"
   },
   "tr_ninja": {
-    "name": "닌자보이",
+    "name": "닌자 하야테",
     "role": "위장 암습 트레이너",
     "persona": "sneaky stealth apprentice ambushing from trees and rocks",
     "pose": "point",
@@ -1379,84 +1379,84 @@
     "face": "smile"
   },
   "extra_miner_chief": {
-    "name": "광산 십장",
+    "name": "광산 십장 반석",
     "role": "지하 갱도 감독관",
     "persona": "gruff seasoned miner organizing subterranean excavation",
     "pose": "cross",
     "face": "serious"
   },
   "extra_diver": {
-    "name": "해녀 / 스쿠버",
+    "name": "스쿠버 마리",
     "role": "해저 산호 잠수사",
     "persona": "fit cheerful diver exploring sunken treasures and reef caves",
     "pose": "hips",
     "face": "grin"
   },
   "extra_astronomer": {
-    "name": "천문 연구원",
+    "name": "천문학도 오리온",
     "role": "별자리 관측원",
     "persona": "stargazer tracking shooting stars and planetary orbits",
     "pose": "think",
     "face": "calm"
   },
   "extra_librarian": {
-    "name": "도서관 사서",
+    "name": "사서 로즈마리",
     "role": "대도서관 고서 관리자",
     "persona": "quiet studious intellectual organizing historical scrolls",
     "pose": "behind",
     "face": "calm"
   },
   "extra_innkeeper": {
-    "name": "여관 주인",
+    "name": "여관주인 바바라",
     "role": "온천 여관 매니저",
     "persona": "welcoming hospitable host pampering weary travelers",
     "pose": "clasp",
     "face": "gentle"
   },
   "extra_mechanic": {
-    "name": "정비공",
+    "name": "정비사 렌치",
     "role": "차량·기차 기술자",
     "persona": "oil-stained genius mechanic tuning up engines and railway cars",
     "pose": "hips",
     "face": "grin"
   },
   "extra_student_m": {
-    "name": "트레이너 스쿨 학생 (남)",
+    "name": "스쿨보이 태민",
     "role": "배틀 아카데미 우등생",
     "persona": "eager notebook-carrying student studying type matchups",
     "pose": "think",
     "face": "smile"
   },
   "extra_student_f": {
-    "name": "트레이너 스쿨 학생 (여)",
+    "name": "스쿨걸 다솜",
     "role": "배틀 아카데미 반장",
     "persona": "bright ambitious student testing tactical formations",
     "pose": "point",
     "face": "smile"
   },
   "extra_musician": {
-    "name": "거리 악사",
+    "name": "거리악사 멜로디",
     "role": "마을 축제 연주자",
     "persona": "cheerful wandering flutist playing melodies that calm wild beasts",
     "pose": "wave",
     "face": "smile"
   },
   "extra_monk": {
-    "name": "산사 수도승",
+    "name": "수도승 혜원",
     "role": "고산 사원 지킴이",
     "persona": "peaceful ascetic meditating in snowy mountain peaks",
     "pose": "behind",
     "face": "calm"
   },
   "extra_reporter": {
-    "name": "방송국 리포터",
+    "name": "리포터 채린",
     "role": "특종 현장 기자",
     "persona": "inquisitive energetic journalist interviewing gym challengers",
     "pose": "point",
     "face": "grin"
   },
   "extra_cameraman": {
-    "name": "촬영 감독",
+    "name": "감독 본승",
     "role": "방송 중계 스태프",
     "persona": "sweating hard-working cameraman carrying broadcast rig",
     "pose": "cheer",

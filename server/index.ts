@@ -27,6 +27,7 @@ import { createStorage } from './storage';
 import { CLIENT_ORIGINS, DEV_AUTH, MAX_SPEED, PORT, REPORT_COOLDOWN_MS, REPORT_MAX_LEN, isAdminEmail } from './config';
 import { Hub, type Client, type Conn } from './hub';
 import { handleAdmin } from './admin';
+import { handleShopHttp } from './payment';
 
 // ── 준비: 맵 · 시뮬레이션 · 저장소 ────────────────────
 const loadMap = (id: MapId) => new MapInfo(JSON.parse(readFileSync(fileURLToPath(new URL(`../client/public/assets/maps/${id}.json`, import.meta.url)), 'utf8')) as TiledMap);
@@ -150,8 +151,12 @@ const http = createServer((req, res) => {
   }
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Dev-User');
     res.writeHead(204); res.end(); return;
+  }
+  if ((req.url ?? '').startsWith('/api/shop/')) {
+    void handleShopHttp(req, res, sim, storage);
+    return;
   }
   // Azure App Service 상태 확인 · 브라우저로 열어 봤을 때
   if (req.url === '/' || req.url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(`lumi-stella server ok · ${hub.clients.size} online`); return; }

@@ -9,6 +9,7 @@ export class FarmRenderer {
   private tiles = new Map<string, FarmTile>();
   private crops = new Map<string, Phaser.GameObjects.Sprite>();
   private rowDry: number; private rowWet: number; private cols: number;
+  onFx?: (kind: 'dirt' | 'splash', tx: number, ty: number) => void;
 
   constructor(private scene: Phaser.Scene, private world: World, manifest: Manifest) {
     this.rowDry = manifest.tileset.ROW.TILLED; this.rowWet = manifest.tileset.ROW.TILLED_WET; this.cols = manifest.tileset.columns;
@@ -26,8 +27,8 @@ export class FarmRenderer {
     else this.tiles.set(k, { ...t, crop: t.crop ? { ...t.crop } : null });
     for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) this.paintSoil(t.x + dx, t.y + dy);
     this.paintCrop(t, prev, fx);
-    if (fx && prev && prev.soil !== SoilState.Watered && t.soil === SoilState.Watered) this.splash(t.x, t.y);
-    if (fx && !prev && t.soil !== SoilState.Unplowed) this.dirtPuff(t.x, t.y);
+    if (fx && prev && prev.soil !== SoilState.Watered && t.soil === SoilState.Watered) { this.splash(t.x, t.y); this.onFx?.('splash', t.x, t.y); }
+    if (fx && !prev && t.soil !== SoilState.Unplowed) { this.dirtPuff(t.x, t.y); this.onFx?.('dirt', t.x, t.y); }
   }
 
   private paintSoil(x: number, y: number) {

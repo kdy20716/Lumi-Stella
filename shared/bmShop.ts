@@ -1,0 +1,295 @@
+import { STORY } from './story';
+import { ALL_PLAYER_LOOKS } from './types';
+
+export type BmCategory = 'theme' | 'outfit' | 'lumi';
+
+export type BmUnlockReq =
+  | { kind: 'story'; step: number; label: string }
+  | { kind: 'badge'; badge: string; label: string }
+  | { kind: 'champion'; label: string };
+
+export interface BmProduct {
+  id: string;
+  category: BmCategory;
+  name: string;
+  desc: string;
+  /** 현금 결제 가격 (KRW, 웹 카드 결제 전용) */
+  priceKrw: number;
+  town: string;
+  unlock: BmUnlockReq;
+  previewColor: string;
+  accentColor: string;
+}
+
+export interface UiThemeDef {
+  id: string;
+  name: string;
+  desc: string;
+  bg: string;
+  panel: string;
+  panelAlt: string;
+  border: string;
+  borderBright: string;
+  accent: string;
+  text: string;
+  textDim: string;
+}
+
+/** 기본 UI 디자인(시골 나무 감성) + 캐쉬 상점 해금 UI 테마 정의 */
+export const UI_THEMES: Record<string, UiThemeDef> = {
+  rural: {
+    id: 'rural', name: '별빛 시골 원목 (기본)', desc: '따뜻한 농장 감성의 기본 나무 UI입니다.',
+    bg: '#3b2416', panel: '#5c3a24', panelAlt: '#f2e0be', border: '#8c5a37', borderBright: '#f5b942',
+    accent: '#4e8c3e', text: '#fff7e6', textDim: '#d8c29d',
+  },
+  ui_starlight: {
+    id: 'ui_starlight', name: '별빛 야경 테마', desc: '밤하늘과 은하수 별빛이 담긴 감성 UI.',
+    bg: '#161b33', panel: '#232c52', panelAlt: '#e8ecf8', border: '#5468b8', borderBright: '#ffe066',
+    accent: '#7d8cff', text: '#f4f7ff', textDim: '#b4c0ea',
+  },
+  ui_breeze: {
+    id: 'ui_breeze', name: '바람골 민트 파스텔', desc: '산들바람처럼 산뜻한 민트·클라우드 UI.',
+    bg: '#1c3b36', panel: '#2b5951', panelAlt: '#eefaf7', border: '#66b8aa', borderBright: '#a8f5e6',
+    accent: '#39b59a', text: '#f0fffc', textDim: '#b3e0d7',
+  },
+  ui_ocean: {
+    id: 'ui_ocean', name: '물결항 딥 마린', desc: '항구의 푸른 파도와 진주 테두리 UI.',
+    bg: '#102942', panel: '#1a4269', panelAlt: '#ebf5ff', border: '#3e88c2', borderBright: '#72e6ff',
+    accent: '#1e9ce0', text: '#eef8ff', textDim: '#9bc9e8',
+  },
+  ui_autumn: {
+    id: 'ui_autumn', name: '단풍골 메이플 클래식', desc: '가을 단풍과 따스한 테라코타 UI.',
+    bg: '#421c14', panel: '#692d20', panelAlt: '#fff1e6', border: '#c45b3b', borderBright: '#ffb347',
+    accent: '#d9532f', text: '#fff5ee', textDim: '#e8b9a5',
+  },
+  ui_forge: {
+    id: 'ui_forge', name: '쇳불 스틸 브라스', desc: '정밀한 강철 리벳과 황동빛 인더스트리얼 UI.',
+    bg: '#23272e', panel: '#373e4a', panelAlt: '#edf0f5', border: '#8793a8', borderBright: '#e8ba56',
+    accent: '#d49a35', text: '#f4f6fa', textDim: '#aeb7c4',
+  },
+  ui_ember: {
+    id: 'ui_ember', name: '잿빛 볼케이노 글로우', desc: '용암의 붉은 불씨가 반짝이는 강렬한 다크 UI.',
+    bg: '#291212', panel: '#471d1a', panelAlt: '#fff0eb', border: '#b83728', borderBright: '#ff7b33',
+    accent: '#ef4444', text: '#fff2ee', textDim: '#e2a89f',
+  },
+  ui_cyber: {
+    id: 'ui_cyber', name: '빛누리 네온 다크', desc: '시티 팝 스타일의 네온 마젠타·시안 UI.',
+    bg: '#130e24', panel: '#21183d', panelAlt: '#f2ecff', border: '#8c3dff', borderBright: '#00f0ff',
+    accent: '#e639b6', text: '#fbf7ff', textDim: '#c2a8eb',
+  },
+  ui_frost: {
+    id: 'ui_frost', name: '서리 눈꽃 크리스탈', desc: '투명한 얼음 결정과 은빛 글래스 UI.',
+    bg: '#1c2f45', panel: '#2c4869', panelAlt: '#f4faff', border: '#80bfff', borderBright: '#ffffff',
+    accent: '#56aef5', text: '#f7fbff', textDim: '#bdd9f5',
+  },
+  ui_royal: {
+    id: 'ui_royal', name: '별마루 로열 골드', desc: '챔피언의 품격이 담긴 로열 벨벳 & 순금 UI.',
+    bg: '#24142b', panel: '#3b2147', panelAlt: '#fff9ea', border: '#b38632', borderBright: '#ffe375',
+    accent: '#f0b83a', text: '#fffaf0', textDim: '#dfc590',
+  },
+};
+
+export interface LumiCoordDef {
+  id: string;
+  name: string;
+  kind: 'ribbon' | 'scarf' | 'goggles' | 'flower' | 'helmet' | 'cape' | 'shades' | 'earmuff' | 'crown';
+  primary: string;
+  secondary: string;
+}
+
+/** 파트너 루미 전용 코디 액세서리 정의 */
+export const LUMI_COORDS: Record<string, LumiCoordDef> = {
+  lumi_ribbon: { id: 'lumi_ribbon', name: '별빛 실크 리본', kind: 'ribbon', primary: '#ff5c8a', secondary: '#ffe066' },
+  lumi_scarf: { id: 'lumi_scarf', name: '바람골 하늘 머플러', kind: 'scarf', primary: '#56c2ff', secondary: '#ffffff' },
+  lumi_goggles: { id: 'lumi_goggles', name: '물결 탐험 물안경', kind: 'goggles', primary: '#2d8cff', secondary: '#a8f0ff' },
+  lumi_flower: { id: 'lumi_flower', name: '단풍 꽃잎 화관', kind: 'flower', primary: '#ff7058', secondary: '#77dd66' },
+  lumi_helmet: { id: 'lumi_helmet', name: '쇳불 황동 고글모', kind: 'helmet', primary: '#d49a35', secondary: '#4d5563' },
+  lumi_cape: { id: 'lumi_cape', name: '잿빛 불꽃 망토', kind: 'cape', primary: '#e63928', secondary: '#ffb703' },
+  lumi_shades: { id: 'lumi_shades', name: '네온 스타 선글라스', kind: 'shades', primary: '#1f1638', secondary: '#00f0ff' },
+  lumi_earmuff: { id: 'lumi_earmuff', name: '서리 눈꽃 귀마개', kind: 'earmuff', primary: '#e8f6ff', secondary: '#7cc6fe' },
+  lumi_crown: { id: 'lumi_crown', name: '챔피언 미니 왕관', kind: 'crown', primary: '#ffd23f', secondary: '#ff4d6d' },
+};
+
+export const BM_OUTFITS = [
+  'bm_starlight', 'bm_wind', 'bm_sailor', 'bm_maple', 'bm_smith',
+  'bm_ember', 'bm_idol', 'bm_winter', 'bm_royal',
+] as const;
+export const BM_LOOK_IDS = new Set<string>(BM_OUTFITS);
+
+const U_MAYOR: BmUnlockReq = { kind: 'story', step: STORY.DONE, label: '별빛 마을 이장(프롤로그) 완료 시 해금' };
+const uBadge = (badge: string, who: string): BmUnlockReq => ({ kind: 'badge', badge, label: `${who} 격파 시 해금` });
+const U_CHAMP: BmUnlockReq = { kind: 'champion', label: '루미 리그 챔피언 격파 시 해금' };
+
+/** 캐쉬 상점 전체 카탈로그 (마을 이장 / 관장 진행에 따라 해금 · 현금 카드 결제 전용) */
+export const BM_PRODUCTS: readonly BmProduct[] = [
+  // ── UI 디자인 (9종) ─────────────────────────────────
+  {
+    id: 'ui_starlight', category: 'theme', name: '별빛 야경 UI',
+    desc: '시골 나무 UI를 반짝이는 밤하늘과 별빛 인디고 테마로 바꿉니다.',
+    priceKrw: 2900, town: '별빛 마을', unlock: U_MAYOR, previewColor: '#232c52', accentColor: '#ffe066',
+  },
+  {
+    id: 'ui_breeze', category: 'theme', name: '바람골 민트 UI',
+    desc: '바람골의 상쾌한 민트와 구름빛 파스텔 인터페이스로 바꿉니다.',
+    priceKrw: 2900, town: '바람골 마을', unlock: uBadge('badge_wind', '바람골 관장 세나'), previewColor: '#2b5951', accentColor: '#a8f5e6',
+  },
+  {
+    id: 'ui_ocean', category: 'theme', name: '물결항 딥 마린 UI',
+    desc: '푸른 바다와 아쿠아 진주 테두리로 꾸민 항구 감성 UI.',
+    priceKrw: 3500, town: '물결항', unlock: uBadge('badge_water', '물결항 관장 파도'), previewColor: '#1a4269', accentColor: '#72e6ff',
+  },
+  {
+    id: 'ui_autumn', category: 'theme', name: '단풍골 메이플 UI',
+    desc: '가을 단풍잎이 연상되는 따뜻한 테라코타 & 앰버 UI.',
+    priceKrw: 3500, town: '단풍골', unlock: uBadge('badge_leaf', '단풍골 관장 단비'), previewColor: '#692d20', accentColor: '#ffb347',
+  },
+  {
+    id: 'ui_forge', category: 'theme', name: '쇳불 스틸 브라스 UI',
+    desc: '강철 프레임과 황동 포인트가 돋보이는 모던 UI.',
+    priceKrw: 3900, town: '쇳불 도시', unlock: uBadge('badge_earth', '쇳불 관장 무쇠'), previewColor: '#373e4a', accentColor: '#e8ba56',
+  },
+  {
+    id: 'ui_ember', category: 'theme', name: '잿빛 볼케이노 UI',
+    desc: '활화산 불꽃이 타오르는 붉은빛 다크 UI.',
+    priceKrw: 3900, town: '잿빛 마을', unlock: uBadge('badge_flame', '잿빛 관장 화련'), previewColor: '#471d1a', accentColor: '#ff7b33',
+  },
+  {
+    id: 'ui_cyber', category: 'theme', name: '빛누리 네온 다크 UI',
+    desc: '대도시 네온사인을 옮겨 놓은 사이버펑크 UI.',
+    priceKrw: 4500, town: '빛누리 시티', unlock: uBadge('badge_light', '빛누리 관장 샛별'), previewColor: '#21183d', accentColor: '#00f0ff',
+  },
+  {
+    id: 'ui_frost', category: 'theme', name: '서리 눈꽃 크리스탈 UI',
+    desc: '설원의 맑은 얼음빛을 담은 화이트·블루 크리스탈 UI.',
+    priceKrw: 4500, town: '서리 마을', unlock: uBadge('badge_normal', '서리 관장 설아'), previewColor: '#2c4869', accentColor: '#80bfff',
+  },
+  {
+    id: 'ui_royal', category: 'theme', name: '별마루 로열 골드 UI',
+    desc: '별마루 성좌와 황금 왕관 문양의 최고급 프리미엄 UI.',
+    priceKrw: 5900, town: '별마루 마을', unlock: uBadge('badge_star', '별마루 관장 천문'), previewColor: '#3b2147', accentColor: '#ffe375',
+  },
+
+  // ── 트레이너 의상 (9종) ─────────────────────────────
+  {
+    id: 'bm_starlight', category: 'outfit', name: '별빛 스웨터 & 베레모',
+    desc: '별빛 마을 기념 특별 에디션 코디. 2D/2.5D/멀티에서 모두 반영됩니다.',
+    priceKrw: 2900, town: '별빛 마을', unlock: U_MAYOR, previewColor: '#3b4a8c', accentColor: '#ffd966',
+  },
+  {
+    id: 'bm_wind', category: 'outfit', name: '바람골 스카이 코디',
+    desc: '바람골의 맑은 하늘을 닮은 가벼운 모험가 셋업.',
+    priceKrw: 3500, town: '바람골 마을', unlock: uBadge('badge_wind', '바람골 관장 세나'), previewColor: '#56b5d6', accentColor: '#f5f0e0',
+  },
+  {
+    id: 'bm_sailor', category: 'outfit', name: '물결항 마린 세일러',
+    desc: '바다 내음이 물씬 풍기는 화이트 & 네이비 세일러 복장.',
+    priceKrw: 3500, town: '물결항', unlock: uBadge('badge_water', '물결항 관장 파도'), previewColor: '#1d4d8c', accentColor: '#e6f5ff',
+  },
+  {
+    id: 'bm_maple', category: 'outfit', name: '단풍골 숲지킴이 망토',
+    desc: '단풍잎 브로치가 달린 포근한 에메랄드 숲 코디.',
+    priceKrw: 3900, town: '단풍골', unlock: uBadge('badge_leaf', '단풍골 관장 단비'), previewColor: '#3d6e47', accentColor: '#e0663e',
+  },
+  {
+    id: 'bm_smith', category: 'outfit', name: '쇳불 장인 레더 에이프런',
+    desc: '고글 헤드밴드와 가죽 앞치마가 멋스러운 장인 의상.',
+    priceKrw: 3900, town: '쇳불 도시', unlock: uBadge('badge_earth', '쇳불 관장 무쇠'), previewColor: '#7a4928', accentColor: '#e0a93a',
+  },
+  {
+    id: 'bm_ember', category: 'outfit', name: '잿빛 불꽃 스파이크 재킷',
+    desc: '뜨거운 열정처럼 빛나는 크림슨 레드 라이더 재킷.',
+    priceKrw: 4500, town: '잿빛 마을', unlock: uBadge('badge_flame', '잿빛 관장 화련'), previewColor: '#a82820', accentColor: '#ffaa33',
+  },
+  {
+    id: 'bm_idol', category: 'outfit', name: '빛누리 네온 무대 의상',
+    desc: '빛누리 스타처럼 화려한 퍼플 & 네온 시안 스페셜 슈트.',
+    priceKrw: 4900, town: '빛누리 시티', unlock: uBadge('badge_light', '빛누리 관장 샛별'), previewColor: '#6b36b8', accentColor: '#5cf2ff',
+  },
+  {
+    id: 'bm_winter', category: 'outfit', name: '서리 스노우 파카',
+    desc: '눈 오는 날에도 끄떡없는 폭신한 아크틱 파카 코디.',
+    priceKrw: 4900, town: '서리 마을', unlock: uBadge('badge_normal', '서리 관장 설아'), previewColor: '#e3f0ff', accentColor: '#569cd6',
+  },
+  {
+    id: 'bm_royal', category: 'outfit', name: '챔피언 황금 왕관 정장',
+    desc: '루미 리그 정복자만 입을 수 있는 전설의 금빛 왕관 의상.',
+    priceKrw: 5900, town: '왕관 시티', unlock: U_CHAMP, previewColor: '#3a224a', accentColor: '#ffd23f',
+  },
+
+  // ── 루미 코디 (9종) ─────────────────────────────────
+  {
+    id: 'lumi_ribbon', category: 'lumi', name: '별빛 실크 리본',
+    desc: '파트너 루미 머리 위에 예쁜 핑크 골드 리본을 달아 줍니다.',
+    priceKrw: 1900, town: '별빛 마을', unlock: U_MAYOR, previewColor: '#ff5c8a', accentColor: '#ffe066',
+  },
+  {
+    id: 'lumi_scarf', category: 'lumi', name: '바람골 하늘 머플러',
+    desc: '산들바람에 나부끼는 폭신한 하늘색 머플러를 둘러 줍니다.',
+    priceKrw: 1900, town: '바람골 마을', unlock: uBadge('badge_wind', '바람골 관장 세나'), previewColor: '#56c2ff', accentColor: '#ffffff',
+  },
+  {
+    id: 'lumi_goggles', category: 'lumi', name: '물결 탐험 물안경',
+    desc: '파트너 루미 이마에 시원한 블루 탐험가 물안경을 씌워 줍니다.',
+    priceKrw: 2500, town: '물결항', unlock: uBadge('badge_water', '물결항 관장 파도'), previewColor: '#2d8cff', accentColor: '#a8f0ff',
+  },
+  {
+    id: 'lumi_flower', category: 'lumi', name: '단풍 꽃잎 화관',
+    desc: '단풍골 야생화로 엮은 싱그러운 꽃화관 액세서리.',
+    priceKrw: 2500, town: '단풍골', unlock: uBadge('badge_leaf', '단풍골 관장 단비'), previewColor: '#ff7058', accentColor: '#77dd66',
+  },
+  {
+    id: 'lumi_helmet', category: 'lumi', name: '쇳불 황동 고글모',
+    desc: '광산 탐험도 거뜬한 번쩍이는 브라스 안전 고글 모자.',
+    priceKrw: 2900, town: '쇳불 도시', unlock: uBadge('badge_earth', '쇳불 관장 무쇠'), previewColor: '#d49a35', accentColor: '#4d5563',
+  },
+  {
+    id: 'lumi_cape', category: 'lumi', name: '잿빛 불꽃 히어로 망토',
+    desc: '파트너 루미 어깨에 펄럭이는 붉은 영웅 망토를 둘러 줍니다.',
+    priceKrw: 3500, town: '잿빛 마을', unlock: uBadge('badge_flame', '잿빛 관장 화련'), previewColor: '#e63928', accentColor: '#ffb703',
+  },
+  {
+    id: 'lumi_shades', category: 'lumi', name: '네온 스타 선글라스',
+    desc: '빛누리 아이돌처럼 시크한 네온 테 선글라스를 씌워 줍니다.',
+    priceKrw: 3500, town: '빛누리 시티', unlock: uBadge('badge_light', '빛누리 관장 샛별'), previewColor: '#1f1638', accentColor: '#00f0ff',
+  },
+  {
+    id: 'lumi_earmuff', category: 'lumi', name: '서리 눈꽃 귀마개',
+    desc: '추운 설원에서도 따뜻한 포근한 흰색 눈꽃 귀마개.',
+    priceKrw: 3500, town: '서리 마을', unlock: uBadge('badge_normal', '서리 관장 설아'), previewColor: '#e8f6ff', accentColor: '#7cc6fe',
+  },
+  {
+    id: 'lumi_crown', category: 'lumi', name: '챔피언 미니 왕관',
+    desc: '별마루의 빛으로 만든 황금 보석 왕관. 루미가 빛납니다.',
+    priceKrw: 4900, town: '별마루 마을', unlock: uBadge('badge_star', '별마루 관장 천문'), previewColor: '#ffd23f', accentColor: '#ff4d6d',
+  },
+];
+
+export const BM_PRODUCT_MAP: Record<string, BmProduct> = Object.fromEntries(
+  BM_PRODUCTS.map((p) => [p.id, p]),
+);
+
+/** 원화 표시 (₩2,900) */
+export function formatKrw(krw: number): string {
+  return `₩${Math.max(0, Math.round(krw)).toLocaleString('ko-KR')}`;
+}
+
+/** 플레이어의 스토리·관장 격파 진행도로 상점 품목 해금 여부 확인 */
+export function isBmUnlocked(
+  prod: BmProduct,
+  player: { story: number; badges: readonly string[]; defeated: readonly string[] },
+): { unlocked: boolean; reason: string } {
+  const u = prod.unlock;
+  if (u.kind === 'story') {
+    return player.story >= u.step ? { unlocked: true, reason: '' } : { unlocked: false, reason: u.label };
+  }
+  if (u.kind === 'badge') {
+    return player.badges.includes(u.badge) ? { unlocked: true, reason: '' } : { unlocked: false, reason: u.label };
+  }
+  return player.defeated.includes('champion') ? { unlocked: true, reason: '' } : { unlocked: false, reason: u.label };
+}
+
+/** 기본 외형 + 구매·해금한 캐쉬 의상 착용 가능 여부 */
+export function isValidPlayerLook(look: string, ownedOutfits?: readonly string[]): boolean {
+  if (look === 'player' || ALL_PLAYER_LOOKS.includes(look)) return true;
+  return BM_LOOK_IDS.has(look) && (ownedOutfits?.includes(look) ?? false);
+}

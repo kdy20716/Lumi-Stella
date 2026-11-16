@@ -1,6 +1,7 @@
 // 소셜 UI: 캐릭터 만들기(남/여 4종) · Tab 감정표현 휠 · 우편함 초대 · 받은 초대 알림
 import { uiScale } from './Scale';
-import { EMOTES, PLAYER_LOOKS } from '@shared/types';
+import { BM_PRODUCT_MAP } from '@shared/bmShop';
+import { EMOTES, PLAYER_LOOKS, type MailGift } from '@shared/types';
 
 const root = () => document.getElementById('ui')!;
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = '') => { const e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; };
@@ -18,10 +19,11 @@ const LOOK_NAMES: Record<string, string> = { m1: '갈색 머리 · 멜빵', m2: 
 export const creator = {
   node: null as HTMLDivElement | null,
   get open() { return !!this.node; },
-  show(o: { title: string; sub: string; name: string; look?: string; askName: boolean; onDone: (look: string, name: string) => void; onCancel?: () => void }) {
+  show(o: { title: string; sub: string; name: string; look?: string; askName: boolean; ownedOutfits?: readonly string[]; onDone: (look: string, name: string) => void; onCancel?: () => void }) {
     this.close();
-    let gender: 'male' | 'female' = o.look?.startsWith('f') ? 'female' : 'male';
-    let look = o.look && /^[mf][1-4]$/.test(o.look) ? o.look : gender === 'male' ? 'm1' : 'f1';
+    const bmOwned = (o.ownedOutfits ?? []).filter((id) => BM_PRODUCT_MAP[id]);
+    let gender: 'male' | 'female' | 'bm' = o.look && bmOwned.includes(o.look) ? 'bm' : o.look?.startsWith('f') ? 'female' : 'male';
+    let look = o.look && (/^[mf][1-4]$/.test(o.look) || bmOwned.includes(o.look)) ? o.look : gender === 'male' ? 'm1' : gender === 'female' ? 'f1' : bmOwned[0];
     const n = el('div', 'fixed inset-0 z-40 flex items-center justify-center bg-[#0b0d18]/70 pointer-events-auto toast-in');
     n.innerHTML = `<div class="px-panel w-[min(760px,96cqw)]">
       <div class="text-center text-2xl text-[#8a5a32]">${o.title}</div>
@@ -30,6 +32,7 @@ export const creator = {
       <div class="flex justify-center gap-2 mb-3">
         <button data-g="male" class="px-btn text-base !py-1.5">👦 남자</button>
         <button data-g="female" class="px-btn text-base !py-1.5">👧 여자</button>
+        ${bmOwned.length ? '<button data-g="bm" class="px-btn text-base !py-1.5">✨ 상점 의상</button>' : ''}
       </div>
       <div data-c="grid" class="grid grid-cols-4 gap-3"></div>
       <div class="flex justify-center gap-3 mt-4">
@@ -39,14 +42,21 @@ export const creator = {
     const grid = n.querySelector<HTMLDivElement>('[data-c=grid]')!;
     const render = () => {
       n.querySelectorAll<HTMLButtonElement>('[data-g]').forEach((b) => { b.classList.toggle('green', b.dataset.g === gender); });
-      grid.innerHTML = PLAYER_LOOKS[gender].map((id) => `
+      const list = gender === 'bm' ? bmOwned : PLAYER_LOOKS[gender];
+      grid.innerHTML = list.map((id) => `
         <button data-look="${id}" class="flex flex-col items-center gap-1 p-2 bg-[#fff8ec] border-4 ${id === look ? 'border-[#e0a43a] -translate-y-1' : 'border-[#d8b67c]'} hover:border-[#e0a43a] transition-all">
           <span class="${id === look ? 'lumi-bounce' : ''}" style="${lookPortrait(id)}"></span>
-          <span class="text-xs text-[#8a5a32]">${LOOK_NAMES[id]}</span>
+          <span class="text-xs text-[#8a5a32]">${LOOK_NAMES[id] ?? BM_PRODUCT_MAP[id]?.name ?? id}</span>
         </button>`).join('');
       grid.querySelectorAll<HTMLButtonElement>('[data-look]').forEach((b) => { b.onclick = () => { look = b.dataset.look!; render(); }; });
     };
-    n.querySelectorAll<HTMLButtonElement>('[data-g]').forEach((b) => { b.onclick = () => { gender = b.dataset.g as 'male' | 'female'; look = PLAYER_LOOKS[gender][0]; render(); }; });
+    n.querySelectorAll<HTMLButtonElement>('[data-g]').forEach((b) => {
+      b.onclick = () => {
+        gender = b.dataset.g as 'male' | 'female' | 'bm';
+        look = gender === 'bm' ? bmOwned[0] : PLAYER_LOOKS[gender][0];
+        render();
+      };
+    });
     n.querySelector<HTMLButtonElement>('[data-c=ok]')!.onclick = () => {
       const name = o.askName ? (n.querySelector<HTMLInputElement>('[data-c=name]')!.value.trim() || o.name) : o.name;
       this.close(); o.onDone(look, name);
@@ -118,9 +128,25 @@ export const mailbox = {
   node: null as HTMLDivElement | null,
   get open() { return !!this.node; },
   show(o: { online: boolean; isOwner: boolean; story?: boolean; players: MailPlayer[]; invites: { from: string; name: string; where: 'farm' | 'home' }[];
+    bmMail?: MailGift[]; onClaimBm?: (giftId: string) => void;
     onLetter: () => void; onInvite: (id: string, where: 'farm' | 'home') => void; onAccept: (from: string) => void; onGoHome?: () => void }) {
     this.close();
     const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(640px,94cqw)] pointer-events-auto toast-in');
+    const mailList = o.bmMail ?? [];
+    const unclaimed = mailList.filter((g) => !g.claimed);
+    const catName: Record<string, string> = { theme: 'UI 디자인', outfit: '의상', lumi: '루미 코디' };
+    const bmHtml = `<div class="mb-3 p-2 rounded-lg bg-[#fff8ec]/90 border-2 border-[#d8b67c]">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-base font-bold text-[#8a5a32]">📦 상점 배송함 <span class="text-xs font-normal">(모든 마을 밭 우편함 공유)</span></span>
+        ${unclaimed.length > 1 ? '<button data-bmclaim="all" class="px-btn green text-xs !px-2.5 !py-1">모두 수령</button>' : ''}
+      </div>
+      ${mailList.length === 0 ? '<div class="text-xs text-[#8a5a32] py-1">휴대폰 › 상점에서 구매한 상품이 여기에 도착해요.</div>'
+        : `<div class="flex flex-col gap-1 max-h-[24cqh] overflow-y-auto">${mailList.map((g) => `<div class="flex items-center gap-2 bg-white/75 border border-[#d8b67c] px-2 py-1 rounded">
+            <span class="text-xs px-1.5 py-0.5 rounded bg-[#f3dfb4] text-[#5e3620]">${catName[g.category] ?? g.category}</span>
+            <span class="flex-1 text-sm">${esc(g.name)}</span>
+            ${g.claimed ? '<span class="text-xs text-[#2f7a3a]">✔ 수령 완료</span>' : `<button data-bmclaim="${esc(g.id)}" class="px-btn green text-xs !px-2.5 !py-0.5">수령하기</button>`}
+          </div>`).join('')}</div>`}
+    </div>`;
     const inv = o.story ? "" : o.invites.map((i) => `<div class="flex items-center gap-2 bg-[#fff0d0] border-2 border-[#e0a43a] px-2 py-1"><span class="flex-1">💌 <b>${esc(i.name)}</b>님의 ${i.where === 'farm' ? '농장' : '집'} 초대장</span><button data-acc="${i.from}" class="px-btn green text-sm !px-3 !py-1">놀러 가기</button></div>`).join('');
     const list = o.story ? '<div class="text-center py-4 text-[#8a5a32]">스토리 모드에서는 친구를 초대할 수 없어요.<br>메시지(Enter 채팅)는 그대로 주고받을 수 있어요. 함께 놀려면 타이틀에서 <b>멀티 플레이</b>로 접속해 주세요!</div>'
       : !o.online ? '<div class="text-center py-4 text-[#8a5a32]">혼자 연습하기 중에는 친구를 초대할 수 없어요.<br>타이틀에서 <b>구글 로그인</b>으로 접속하면 함께 놀 수 있어요!</div>'
@@ -133,10 +159,12 @@ export const mailbox = {
           <button data-inv="${p.id}" data-w="home" class="px-btn green text-sm !px-3 !py-1">🏠 집 초대</button></div>`).join('');
     n.innerHTML = `<div class="px-panel">
       <div class="flex items-center justify-between mb-2"><span class="text-2xl text-[#8a5a32]">📮 우편함</span><button data-c="letter" class="px-btn text-sm !py-1">이장님의 편지 읽기</button></div>
+      ${bmHtml}
       ${inv ? `<div class="flex flex-col gap-1.5 mb-3">${inv}</div>` : ''}
       <div class="text-base mb-1">친구에게 초대장 보내기</div>
-      <div class="flex flex-col gap-1.5 max-h-[40cqh] overflow-y-auto">${list}</div>
+      <div class="flex flex-col gap-1.5 max-h-[30cqh] overflow-y-auto">${list}</div>
       <div class="text-right mt-3"><button data-c="close" class="px-btn text-base !py-1">닫기 (Esc)</button></div></div>`;
+    n.querySelectorAll<HTMLButtonElement>('[data-bmclaim]').forEach((b) => { b.onclick = () => { o.onClaimBm?.(b.dataset.bmclaim!); }; });
     n.querySelectorAll<HTMLButtonElement>('[data-inv]').forEach((b) => { b.onclick = () => { o.onInvite(b.dataset.inv!, b.dataset.w as 'farm' | 'home'); b.disabled = true; b.textContent = '보냄 ✓'; }; });
     n.querySelectorAll<HTMLButtonElement>('[data-acc]').forEach((b) => { b.onclick = () => { this.close(); o.onAccept(b.dataset.acc!); }; });
     n.querySelector<HTMLButtonElement>('[data-c=letter]')!.onclick = () => { this.close(); o.onLetter(); };

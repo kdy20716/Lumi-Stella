@@ -190,3 +190,53 @@ Object.assign(LOOKS, RESIDENT_LOOKS);
 // 마을마다 다른 루미 센터 간호사 (tools/art/staff.mjs)
 import { STAFF_LOOKS, VILLAIN_LOOKS } from './staff.mjs';
 Object.assign(LOOKS, STAFF_LOOKS, VILLAIN_LOOKS);
+
+// 캐쉬 상점 전용 프리미엄 의상 (각 마을 관장/이장 클리어 후 해금)
+export const BM_LOOKS = {
+  bm_starlight: { // 별빛 마을 이장 클리어: 별빛 여행자 코트
+    skin: SKINS.light, hair: tone('#3a2448', '#5a3a72', '#8a68a8'), hairStyle: 'short', hat: 'beret',
+    shirt: tone('#283868', '#3c5498', '#6884c8'), pants: tone('#1f2238', '#2e3454', '#4e5682'),
+    shoes: shoesDark, outfit: 'vest', sleeves: 'long', accent: tone('#c99a2a', '#f0c84a', '#ffe88a'),
+  },
+  bm_wind: { // 바람골 세나 클리어: 바람의 제피르 슈트
+    skin: SKINS.light, hair: tone('#1f5a58', '#2f827c', '#60b8ae'), hairStyle: 'spiky', hat: 'headband',
+    shirt: tone('#e6f2ef', '#ffffff', '#ffffff'), pants: tone('#1f5a58', '#2f827c', '#58b0a4'),
+    shoes: tone('#c8c8cc', '#f4f4f8', '#ffffff'), outfit: 'vest', sleeves: 'long', accent: tone('#2a9a8a', '#44c8b4', '#8ef0dc'),
+  },
+  bm_sailor: { // 물결항 마린 클리어: 항해사 마린룩
+    skin: SKINS.tan, hair: tone('#1a2a4a', '#264272', '#4a70a8'), hairStyle: 'short', hat: 'cap',
+    shirt: tone('#d8e8f8', '#ffffff', '#ffffff'), pants: tone('#1a3868', '#265294', '#4a7ec8'),
+    shoes: shoesDark, outfit: 'shirt', sleeves: 'short', accent: tone('#1f60a8', '#2f84d8', '#68b4ff'),
+  },
+  bm_maple: { // 단풍골 단풍 클리어: 단풍숲 보타닉 드레스
+    skin: SKINS.pale, hair: tone('#9a341a', '#d05226', '#f28246'), hairStyle: 'long', hat: 'straw',
+    shirt: tone('#a83c24', '#d85c34', '#ff8e58'), pants: tone('#4a2e1f', '#6b452e', '#8f6246'),
+    shoes: shoesBrown, outfit: 'dress', sleeves: 'long', accent: tone('#c9862a', '#f0aa46', '#ffd27a'),
+  },
+  bm_smith: { // 쇳불 공방장 클리어: 명장 작업복
+    skin: SKINS.tan, hair: tone('#2a1d18', '#422c24', '#66483a'), hairStyle: 'spiky',
+    shirt: tone('#6a4838', '#8e624c', '#b68468'), pants: tone('#22242c', '#343642', '#525464'),
+    shoes: shoesDark, outfit: 'apron', sleeves: 'short', accent: tone('#b8782a', '#e8a244', '#ffd07a'),
+  },
+  bm_ember: { // 잿빛 화염 클리어: 홍련 스트라이커 재킷
+    skin: SKINS.light, hair: tone('#8a1f1a', '#c83428', '#ff6a4a'), hairStyle: 'ponytail', glasses: true,
+    shirt: tone('#2a1a22', '#3e2632', '#5a3a4a'), pants: tone('#22161c', '#322028', '#4e3440'),
+    shoes: tone('#8a2018', '#c83428', '#ff644a'), outfit: 'vest', sleeves: 'long', accent: tone('#c8341e', '#f8542e', '#ff9248'),
+  },
+  bm_idol: { // 빛누리 샛별 클리어: 네온 스포트라이트
+    skin: SKINS.pale, hair: tone('#5a2a8a', '#8848c4', '#b87cf4'), hairStyle: 'bob', hat: 'headband',
+    shirt: tone('#d04a8c', '#ff70b4', '#ffa4d2'), pants: tone('#2a2248', '#40346c', '#66549a'),
+    shoes: tone('#e0e0e8', '#ffffff', '#ffffff'), outfit: 'dress', sleeves: 'short', accent: tone('#e0c028', '#ffe848', '#fff8a0'),
+  },
+  bm_winter: { // 서리 설원 클리어: 오로라 윈터 파카
+    skin: SKINS.pale, hair: tone('#8cb8d8', '#b8dcf4', '#e8f6ff'), hairStyle: 'long', hat: 'beanie',
+    shirt: tone('#4a7aa8', '#6aa2d4', '#9ecaf0'), pants: tone('#283c58', '#3c587c', '#6484aa'),
+    shoes: tone('#d8e4ee', '#f4f8ff', '#ffffff'), outfit: 'dress', sleeves: 'long', accent: tone('#b0e0f8', '#e0f4ff', '#ffffff'),
+  },
+  bm_royal: { // 챔피언/별마루 클리어: 챔피언 별빛 로열 예복
+    skin: SKINS.light, hair: tone('#c89a28', '#f0c448', '#ffe88a'), hairStyle: 'long', hat: 'crown',
+    shirt: tone('#3a2660', '#54388c', '#7e5cc0'), pants: tone('#24183c', '#38265c', '#5a428a'),
+    shoes: shoesDark, outfit: 'vest', sleeves: 'long', accent: tone('#c99a2a', '#f2c848', '#fff09a'),
+  },
+};
+Object.assign(LOOKS, BM_LOOKS);

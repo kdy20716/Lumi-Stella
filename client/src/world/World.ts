@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MapInfo, prop, type TiledMap } from '@shared/sim/MapInfo';
-import type { MapId } from '@shared/types';
+import { isHomeMap, type MapId } from '@shared/types';
 import { DEPTH, TILE, type Manifest } from '../config';
 import { Grid } from './Grid';
 import type { Surface } from '../audio/Sfx';
@@ -19,6 +19,7 @@ export interface WorldObject {
   text?: string;
   /** 이 건물이 이어지는 실내 맵 (없으면 건물 종류로) */
   interior?: string;
+  label?: string;
   tall: boolean;
   blocks: boolean;
 }
@@ -137,7 +138,7 @@ export class World {
     //  실제로 빛을 내는 물건(벽난로 · 스탠드 · 화로) 근처에만 — 빈 벽에 가로등 같은 빛이 생기지 않게
     const glowing = this.info.objects.filter((o) => LIGHT_OBJECTS.has(String(o.type)));
     for (const l of this.info.spawnList.filter((o) => o.name === 'light')) {
-      const ok = this.mapId === 'home' ? true : glowing.some((o) => Math.hypot(o.x - l.x, o.y - l.y) < 48);
+      const ok = isHomeMap(this.mapId) ? true : glowing.some((o) => Math.hypot(o.x - l.x, o.y - l.y) < 48);
       if (ok) this.lights.push({ x: l.x, y: l.y, scale: 1.3, tint: 0xffc070, base: 0.55 });
     }
 
@@ -240,6 +241,7 @@ export class World {
       const wo: WorldObject = {
         id: o.id, type, cellX, cellY, cellW, cellH, sprite, shadow, tall: TALL.has(type) || !!building || blockoutFacility, blocks: !NON_BLOCKING.has(type),
         interact: prop<string | undefined>(o, 'interact', undefined), text: prop<string | undefined>(o, 'text', undefined), interior: prop<string | undefined>(o, 'interior', undefined),
+        label: prop<string | undefined>(o, 'label', undefined),
       };
       this.objects.push(wo);
       if (type === 'tuft') this.tufts.push(sprite as Phaser.GameObjects.Sprite);

@@ -80,7 +80,7 @@ export class Npc extends Character {
 
   private show() {
     this.state = 'idle';
-    this.sprite.setVisible(true).setAlpha(1); this.shadow.setVisible(true).setAlpha(1);
+    this.sprite.setVisible(true).setAlpha(1); this.shadow.setVisible(true).setAlpha(1); this.label?.setVisible(true);
   }
 
   private goTo(cx: number, cy: number) {
@@ -103,7 +103,7 @@ export class Npc extends Character {
   private vanish(fade: boolean) {
     this.state = 'gone';
     this.vanishAt = { x: this.x, y: this.y };
-    const done = () => { this.sprite.setVisible(false); this.shadow.setVisible(false); this.label?.setAlpha(0); this.hideEmote(); };
+    const done = () => { this.sprite.setVisible(false); this.shadow.setVisible(false); this.label?.setVisible(false).setAlpha(0); this.hideEmote(); };
     if (fade) this.scene.tweens.add({ targets: [this.sprite, this.shadow], alpha: 0, duration: 600, onComplete: done }); else done();
   }
 
@@ -197,9 +197,10 @@ export class Npc extends Character {
     const hc = { cx: Math.floor(this.home.x / TILE), cy: Math.floor(this.home.y / TILE) };
     if (e.idle === 'wander') {
       const r = e.radius ?? 2;
+      const h0 = this.grid.info.heights.cellHeight(hc.cx, hc.cy);
       for (let i = 0; i < 8; i++) {
         const cx = hc.cx + Phaser.Math.Between(-r, r), cy = hc.cy + Phaser.Math.Between(-r, r);
-        if (!this.grid.blocked(cx, cy)) { this.goTo(cx, cy); break; }
+        if (!this.grid.blocked(cx, cy) && Math.abs(this.grid.info.heights.cellHeight(cx, cy) - h0) <= 0.01) { this.goTo(cx, cy); break; }
       }
       this.timer = 1800 + Math.random() * 3000;
     } else if (e.idle === 'work') {

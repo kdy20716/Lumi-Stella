@@ -24,14 +24,14 @@ export class Hub {
   title(id: string) { return this.clients.get(id)?.admin ? 'admin' : undefined; }
   netPlayer(id: string): NetPlayer {
     const p = this.sim.players.get(id)!;
-    return { id, name: p.name, look: p.look, map: p.map, inst: p.inst, world: p.world, x: p.x, y: p.y, dir: p.dir, anim: this.clients.get(id)?.anim ?? 'idle', partner: p.party[0]?.species, battling: this.sim.inBattle(id), title: this.title(id) };
+    return { id, name: p.name, look: p.look, map: p.map, inst: p.inst, world: p.world, x: p.x, y: p.y, dir: p.dir, anim: this.clients.get(id)?.anim ?? 'idle', partner: p.party[0]?.species, lumiCoord: p.lumiCoord, battling: this.sim.inBattle(id), title: this.title(id) };
   }
   roster(): RosterEntry[] { return [...this.clients.keys()].map((id) => { const p = this.sim.players.get(id)!; return { id, name: p.name, look: p.look, map: p.map, inst: p.inst, title: this.title(id) }; }); }
 
   private route(event: SimEvent) {
     const m: S2C = { t: 'sim', event };
     switch (event.type) {
-      case 'player': case 'party': case 'story': return this.sendTo(event.id, m);
+      case 'player': case 'party': case 'story': case 'bmState': return this.sendTo(event.id, m);
       case 'help': case 'gold': case 'cleared': case 'opened': return this.sendTo(event.playerId, m);
       case 'room': this.rosterDirty = true; return this.sendTo(event.playerId, m);
       case 'invite': return this.sendTo(event.to, m);

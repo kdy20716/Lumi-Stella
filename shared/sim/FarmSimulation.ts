@@ -5,10 +5,11 @@
 import { dexComplete, SKILLS, skillFor, CHAPTERS, CROPS, ENCOUNTERS, EVENTS, HANDS, ITEMS, NPCS, QUESTS, RECIPES, REGION_MAPS, SHOPS, SPECIES, TRAINERS, gateFor, hhmmToMinutes, nextEvent } from '../data';
 import { BattleEngine, healAll, makeCreature, type BattleState } from './Battle';
 import {
-  SoilState, INTERIOR_OF, ALL_PLAYER_LOOKS, isInterior, roomOf, BADGE_GATES, BOND_MAX, BOND_WATER, BOND_ASK_AT,
-  type ActionIntent, type ActionResult, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type MapId,
+  SoilState, INTERIOR_OF, isHomeMap, isInterior, roomOf, BADGE_GATES, BOND_MAX, BOND_WATER, BOND_ASK_AT,
+  type ActionIntent, type ActionResult, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type MailGift, type MapId,
   type PlacedObject, type PlayerState, type SaveData, type TrainerDef, type WorldTime, type Weather, type BattleUpdate,
 } from '../types';
+import { BM_PRODUCT_MAP, LUMI_COORDS, UI_THEMES, isBmUnlocked, isValidPlayerLook } from '../bmShop';
 import { MapInfo, prop } from './MapInfo';
 import { RIVAL_PICK, STORY, rivalOf } from '../story';
 
@@ -53,7 +54,8 @@ export type SimEvent =
   | { type: 'sleep'; ready: number; total: number }
   | { type: 'story'; id: string; story: number }
   | { type: 'placed'; owner: string; obj: PlacedObject }
-  | { type: 'unplaced'; owner: string; id: string };
+  | { type: 'unplaced'; owner: string; id: string }
+  | { type: 'bmState'; id: string; mailItems: MailGift[]; uiTheme: string; ownedThemes: string[]; ownedOutfits: string[]; lumiCoord: string; ownedLumiCoords: string[]; bmOrders: string[] };
 
 type Listener = (e: SimEvent) => void;
 interface FarmState { owner: string; /** 마을 텃밭이면 그 마을 */ map?: MapId; tiles: Map<string, FarmTile>; removed: Set<number>; placed: Map<string, PlacedObject>; dish: Dish | null }
@@ -132,7 +134,7 @@ export class FarmSimulation {
     return f;
   }
   /** 플레이어가 지금 서 있는 농장 (자기 농장 또는 초대받은 친구 농장) */
-  private farmOf(p: PlayerState) { return this.ensureFarm(p.map === 'farm' || p.map === 'home' ? p.inst || p.id : p.id); }
+  private farmOf(p: PlayerState) { return this.ensureFarm(p.map === 'farm' || isHomeMap(p.map) ? p.inst || p.id : p.id); }
   private plotOf(owner: string, map: MapId): FarmState {
     const k = `${owner}|${map}`; let f = this.plots.get(k);
     if (!f) { f = { owner, map, tiles: new Map(), removed: new Set(), placed: new Map(), dish: null }; this.plots.set(k, f); }
@@ -165,6 +167,7 @@ export class FarmSimulation {
     const p: PlayerState = {
       id, name, look, map: 'farm', inst: id, x: home.x, y: home.y, dir: 'down', anim: 'idle', energy: 270, maxEnergy: 270, inventory: inv, gold: 500, bin: [], story: STORY.HOME, world, homeWorld: world, mode: 'story',
       party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [], visited: ['farm'], recipes: STARTER_RECIPES(), flags: [],
+      mailItems: [], uiTheme: 'rural', ownedThemes: ['rural'], ownedOutfits: [], lumiCoord: '', ownedLumiCoords: [], bmOrders: [],
     };
     if (save) {
       Object.assign(p, {
@@ -175,6 +178,13 @@ export class FarmSimulation {
         recipes: [...new Set([...STARTER_RECIPES(), ...(save.recipes ?? [])])],
         flags: save.flags ?? [],
         bonds: save.bonds ?? {}, bondDay: save.bondDay ?? {}, asks: save.asks ?? {}, stock: save.stock ?? {}, opened: save.opened ?? [],
+        mailItems: save.mailItems ?? [],
+        uiTheme: save.uiTheme && UI_THEMES[save.uiTheme] ? save.uiTheme : 'rural',
+        ownedThemes: [...new Set(['rural', ...(save.ownedThemes ?? [])])],
+        ownedOutfits: [...new Set(save.ownedOutfits ?? [])],
+        lumiCoord: save.lumiCoord && LUMI_COORDS[save.lumiCoord] ? save.lumiCoord : '',
+        ownedLumiCoords: [...new Set(save.ownedLumiCoords ?? [])],
+        bmOrders: [...new Set(save.bmOrders ?? [])],
       });
       migrateBag(p.bag);
       if (save.inventory?.length) p.inventory = Array.from({ length: INVENTORY_SIZE }, (_, i) => { const id = save.inventory[i]?.itemId ?? null; const ok = !!id && !!ITEMS[id]; return { slotIndex: i, itemId: ok ? id : null, quantity: ok ? save.inventory[i]?.quantity ?? 0 : 0 }; });
@@ -185,14 +195,14 @@ export class FarmSimulation {
     // 마지막 위치에서 이어서: 내 농장 · 집이거나 공용 장소일 때만 (친구 농장 등은 그 친구가 없을 수 있어 내 농장으로)
     const at = save?.pos;
     if (at && p.story !== STORY.HOME && this.maps[at.map]) {
-      const own = at.map === 'farm' || at.map === 'home' ? at.inst === id : !(at.inst && this.players.has(at.inst));
-      const next = { ...p, map: at.map, inst: own && (at.map === 'farm' || at.map === 'home') ? id : at.inst };
+      const own = at.map === 'farm' || isHomeMap(at.map) ? at.inst === id : !(at.inst && this.players.has(at.inst));
+      const next = { ...p, map: at.map, inst: own && (at.map === 'farm' || isHomeMap(at.map)) ? id : at.inst };
       if (own && Number.isFinite(at.x) && Number.isFinite(at.y) && this.canStand(next, at.x, at.y)) {
         Object.assign(p, { map: next.map, inst: next.inst, x: at.x, y: at.y, dir: at.dir ?? p.dir, ret: at.ret });
       }
     }
-    // 아직 프롤로그 첫 장면이면 내 방에서 눈을 뜸
-    if (p.story === STORY.HOME) { const w = this.maps.home.spawns.get('wake') ?? this.maps.home.spawns.get('entry')!; Object.assign(p, { map: 'home', inst: id, x: w.x, y: w.y + 5 }); }
+    // 아직 프롤로그 첫 장면이면 2층 다락방 내 방에서 눈을 뜸
+    if (p.story === STORY.HOME) { const w = this.maps.home_2f.spawns.get('wake') ?? this.maps.home_2f.spawns.get('entry')!; Object.assign(p, { map: 'home_2f', inst: id, x: w.x, y: w.y + 5 }); }
     return p;
   }
 
@@ -205,6 +215,8 @@ export class FarmSimulation {
       party: p.party, box: p.box, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, bin: p.bin,
       farm: { tiles: f ? [...f.tiles.values()] : [], removed: f ? [...f.removed] : [], placed: f ? [...f.placed.values()] : [], ver: FARM_VER }, story: p.story, flags: p.flags, visited: p.visited, recipes: p.recipes,
       bonds: p.bonds, bondDay: p.bondDay, asks: p.asks, stock: p.stock, opened: p.opened,
+      mailItems: p.mailItems, uiTheme: p.uiTheme, ownedThemes: p.ownedThemes, ownedOutfits: p.ownedOutfits,
+      lumiCoord: p.lumiCoord, ownedLumiCoords: p.ownedLumiCoords, bmOrders: p.bmOrders,
       plots: Object.fromEntries([...this.plots.values()].filter((pl) => pl.owner === id && pl.tiles.size).map((pl) => [pl.map!, [...pl.tiles.values()]])),
       pos: { map: p.map, inst: p.inst, x: p.x, y: p.y, dir: p.dir, ret: p.ret }, savedAt: Date.now(),
     } satisfies SaveData)) as SaveData;
@@ -216,8 +228,8 @@ export class FarmSimulation {
     this.players.delete(id); this.battles.delete(id); this.invites.delete(id);
     for (const inv of this.invites.values()) inv.delete(id);
     for (const g of this.players.values()) {
-      if (g.world === id && g.homeWorld !== id) { g.world = g.homeWorld; if (!((g.map === 'farm' || g.map === 'home') && g.inst === id)) this.relocate(g, g.map, g.inst, g.x, g.y); }
-      if ((g.map === 'farm' || g.map === 'home') && g.inst === id) {
+      if (g.world === id && g.homeWorld !== id) { g.world = g.homeWorld; if (!((g.map === 'farm' || isHomeMap(g.map)) && g.inst === id)) this.relocate(g, g.map, g.inst, g.x, g.y); }
+      if ((g.map === 'farm' || isHomeMap(g.map)) && g.inst === id) {
         this.emit({ type: 'toast', playerId: g.id, text: '농장 주인이 떠나서 마을로 돌아왔어요.', icon: 'heart' });
         this.toSpawn(g, 'town', '', 'from_farm');
       }
@@ -234,7 +246,7 @@ export class FarmSimulation {
   private relocate(p: PlayerState, map: MapId, inst: string, x: number, y: number) {
     p.map = map; p.inst = inst; p.x = x; p.y = y; p.sleeping = false;
     p.cleared = [];   // 비전 기술로 치운 장애물은 맵을 떠나면 다시 생김
-    if (map !== 'home' && !isInterior(map)) p.ret = undefined;
+    if (!isHomeMap(map) && !isInterior(map)) p.ret = undefined;
     if (!isInterior(map) && !p.visited.includes(map)) { p.visited.push(map); this.emitParty(p); }
     this.emit({ type: 'room', playerId: p.id, map, inst, world: p.world, x, y, snapshot: this.snapshot(p.id) });
   }
@@ -246,10 +258,10 @@ export class FarmSimulation {
   /** 지금 있는 방 기준 상태 (경작지는 그 농장 주인 것) */
   snapshot(playerId: string): FarmSnapshot {
     const p = this.players.get(playerId);
-    const farm = p && (p.map === 'farm' || p.map === 'home') ? this.farmOf(p) : null;
+    const farm = p && (p.map === 'farm' || isHomeMap(p.map)) ? this.farmOf(p) : null;
     return {
       time: { ...this.time }, gold: p?.gold ?? 0,
-      tiles: farm && p?.map === 'farm' ? [...farm.tiles.values()].map(cloneTile) : p && p.map !== 'home' && this.isField(p.map) ? [...this.plotOf(p.id, p.map).tiles.values()].map(cloneTile) : [],
+      tiles: farm && p?.map === 'farm' ? [...farm.tiles.values()].map(cloneTile) : p && !isHomeMap(p.map) && this.isField(p.map) ? [...this.plotOf(p.id, p.map).tiles.values()].map(cloneTile) : [],
       removedObjects: [...this.removed, ...(farm ? [...farm.removed].map((id) => `farm:${id}`) : [])],
       forage: [...this.forage], dish: farm && p?.map === 'home' ? farm.dish : null,
       placed: farm && p?.map === 'farm' ? [...farm.placed.values()].map((o) => ({ ...o })) : [],
@@ -404,6 +416,9 @@ export class FarmSimulation {
       case 'rivalBattle': return this.rivalBattle(p);
       case 'craft': return this.craft(p, a.recipe, a.times ?? 1);
       case 'learn': return this.learn(p, a.npc);
+      case 'bmDeliver': return this.multiplayer ? { ok: false, reason: 'server-confirm' } : this.deliverBmOrder(p.id, a.productId, a.orderId, a.provider ?? 'web-card');
+      case 'bmClaimMail': return this.bmClaimMail(p, a.giftId);
+      case 'equipCosmetic': return this.equipCosmetic(p, a.category, a.itemId);
       case 'resetSave': return this.resetSave(p);
       case 'goHome': { p.world = p.homeWorld; const h = this.homeSpot(); this.relocate(p, 'farm', p.id, h.x, h.y); return { ok: true }; }
     }
@@ -436,6 +451,13 @@ export class FarmSimulation {
     if ((BADGE_GATES[to] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[to]}` };
     const gw = gateFor(p, to); if (gw) return { ok: false, reason: `event:${gw.id}` };
     const qg = QUESTS.gates[to]; if (qg && !p.flags.includes(qg.flag)) return { ok: false, reason: `gate:${to}` };
+    // 집 1층 <-> 2층 다락방 계단 이동 시 집 주인과 귀환 좌표를 그대로 유지
+    if ((p.map === 'home' && to === 'home_2f') || (p.map === 'home_2f' && to === 'home')) {
+      const savedRet = p.ret;
+      this.toSpawn(p, to, p.inst || p.id, w.spawn);
+      p.ret = savedRet;
+      return { ok: true };
+    }
     // 다른 맵에서 농장으로 가면 언제나 '내' 농장
     this.toSpawn(p, to, to === 'farm' ? p.id : '', w.spawn);
     return { ok: true };
@@ -503,9 +525,9 @@ export class FarmSimulation {
   }
 
   private setLook(p: PlayerState, look: string, name?: string): ActionResult {
-    if (!ALL_PLAYER_LOOKS.includes(look) && look !== 'player') return { ok: false, reason: 'bad-look' };
+    if (!isValidPlayerLook(look, p.ownedOutfits)) return { ok: false, reason: 'bad-look' };
     const first = !p.look;
-    if (!first && !(p.map === 'home' && p.inst === p.id)) return { ok: false, reason: 'not-home' };
+    if (!first && !(isHomeMap(p.map) && p.inst === p.id)) return { ok: false, reason: 'not-home' };
     p.look = look;
     if (name !== undefined) { const n = String(name).replace(/[<>]/g, '').trim().slice(0, 10); if (n) p.name = n; }
     this.emit({ type: 'look', id: p.id, look: p.look, name: p.name });
@@ -653,6 +675,95 @@ export class FarmSimulation {
     this.removePlayer(p.id);
     const next = this.addPlayer(p.id, name, '', null, world);
     next.mode = mode;
+    return { ok: true };
+  }
+
+  // ── 캐쉬 상점 · 공유 우편함 배송 · 외형/UI/루미 코디 ─────
+  private emitBm(p: PlayerState) {
+    this.emit({
+      type: 'bmState', id: p.id,
+      mailItems: (p.mailItems ?? []).map((g) => ({ ...g })),
+      uiTheme: p.uiTheme ?? 'rural',
+      ownedThemes: [...(p.ownedThemes ?? ['rural'])],
+      ownedOutfits: [...(p.ownedOutfits ?? [])],
+      lumiCoord: p.lumiCoord ?? '',
+      ownedLumiCoords: [...(p.ownedLumiCoords ?? [])],
+      bmOrders: [...(p.bmOrders ?? [])],
+    });
+  }
+
+  /** 카드 결제 승인 후 호출: 해금 조건·중복 주문 검증 뒤 모든 마을 밭 우편함과 공유되는 보관함으로 배송 */
+  deliverBmOrder(playerId: string, productId: string, orderId: string, provider = 'web-card'): ActionResult {
+    const p = this.players.get(playerId);
+    const prod = BM_PRODUCT_MAP[productId];
+    if (!p || !prod) return { ok: false, reason: 'no-item' };
+    const orders = (p.bmOrders ??= []);
+    if (orders.includes(orderId)) return { ok: true };
+    const alreadyOwned =
+      (p.ownedThemes?.includes(productId) ?? false) ||
+      (p.ownedOutfits?.includes(productId) ?? false) ||
+      (p.ownedLumiCoords?.includes(productId) ?? false) ||
+      (p.mailItems?.some((g) => g.productId === productId) ?? false);
+    if (alreadyOwned) return { ok: false, reason: 'already-owned' };
+    const u = isBmUnlocked(prod, p);
+    if (!u.unlocked) return { ok: false, reason: 'locked' };
+    orders.push(orderId);
+    const list = (p.mailItems ??= []);
+    list.unshift({
+      id: `gift_${orderId}`,
+      orderId,
+      productId: prod.id,
+      category: prod.category,
+      name: prod.name,
+      boughtAt: Date.now(),
+      claimed: false,
+      provider,
+    });
+    this.emitBm(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${prod.name} 결제 완료! 모든 마을 밭 우편함으로 배송되었어요.`, icon: 'mail' });
+    return { ok: true, data: { item: prod.id, qty: 1 } };
+  }
+
+  /** 우편함 수령: 시작 농장 또는 아무 마을 텃밭의 우편함에서 동일 목록을 수령해 계정 외형/UI/루미 코디로 지급 */
+  private bmClaimMail(p: PlayerState, giftId: string): ActionResult {
+    const list = (p.mailItems ??= []);
+    const targets = giftId === 'all' ? list.filter((g) => !g.claimed) : list.filter((g) => g.id === giftId && !g.claimed);
+    if (!targets.length) return { ok: false, reason: 'empty' };
+    const themes = (p.ownedThemes ??= ['rural']);
+    const outfits = (p.ownedOutfits ??= []);
+    const coords = (p.ownedLumiCoords ??= []);
+    for (const g of targets) {
+      g.claimed = true;
+      if (g.category === 'theme' && !themes.includes(g.productId)) themes.push(g.productId);
+      else if (g.category === 'outfit' && !outfits.includes(g.productId)) outfits.push(g.productId);
+      else if (g.category === 'lumi' && !coords.includes(g.productId)) coords.push(g.productId);
+    }
+    this.emitBm(p);
+    const msg = targets.length === 1 ? `우편함에서 [${targets[0].name}]을(를) 수령했어요!` : `우편함에서 상점 상품 ${targets.length}개를 모두 수령했어요!`;
+    this.emit({ type: 'toast', playerId: p.id, text: msg, icon: 'mail' });
+    return { ok: true, data: { qty: targets.length } };
+  }
+
+  /** 보유한 UI 디자인 · 캐쉬 의상 · 루미 코디 장착 또는 해제 */
+  private equipCosmetic(p: PlayerState, category: 'theme' | 'outfit' | 'lumi', itemId: string): ActionResult {
+    if (category === 'theme') {
+      const owned = p.ownedThemes ?? ['rural'];
+      if (!UI_THEMES[itemId] || (itemId !== 'rural' && !owned.includes(itemId))) return { ok: false, reason: 'not-owned' };
+      p.uiTheme = itemId;
+      this.emitBm(p);
+      this.emit({ type: 'toast', playerId: p.id, text: `${UI_THEMES[itemId].name}이(가) 적용되었어요!`, icon: 'heart' });
+      return { ok: true };
+    }
+    if (category === 'outfit') {
+      if (!isValidPlayerLook(itemId, p.ownedOutfits)) return { ok: false, reason: 'not-owned' };
+      p.look = itemId;
+      this.emit({ type: 'look', id: p.id, look: p.look, name: p.name });
+      return { ok: true };
+    }
+    if (itemId && (!LUMI_COORDS[itemId] || !(p.ownedLumiCoords ?? []).includes(itemId))) return { ok: false, reason: 'not-owned' };
+    p.lumiCoord = itemId;
+    this.emitBm(p);
+    this.emit({ type: 'toast', playerId: p.id, text: itemId ? `${LUMI_COORDS[itemId].name}을(를) 파트너 루미에게 입혔어요!` : '파트너 루미 코디를 해제했어요.', icon: 'lumi' });
     return { ok: true };
   }
 
@@ -867,14 +978,16 @@ export class FarmSimulation {
     if (t === '2' || t === '1' || this.blockedAt(id, f.map ? null : f, x, y) || (!f.map && this.weedAt(f, x, y))) return false;
     return info.farmZones.some((z) => x >= z.x && y >= z.y && x < z.x + z.w && y < z.y + z.h);
   }
-  /** 서버 이동 검증용: 치운 나무 · 바위 자리는 지나갈 수 있고 설치물은 못 지나감 */
+  /** 서버 이동 검증용: 치운 나무 · 바위 자리는 지나갈 수 있고 설치물 · 3D 절벽 벽은 못 지나감 */
   canStand(p: PlayerState, px: number, py: number, hw = 5, hh = 5) {
     const info = this.maps[p.map]; if (!info) return false;
     const f = p.map === 'farm' ? this.farmOf(p) : null;
     const T = info.tile;
-    for (let cy = Math.floor((py - hh) / T); cy <= Math.floor((py - 0.01) / T); cy++)
-      for (let cx = Math.floor((px - hw) / T); cx <= Math.floor((px + hw - 0.01) / T); cx++) if (this.blockedAt(p.map, f, cx, cy, p)) return false;
-    return true;
+    const x0 = Math.floor((px - hw) / T), x1 = Math.floor((px + hw - 0.01) / T);
+    const y0 = Math.floor((py - hh) / T), y1 = Math.floor((py - 0.01) / T);
+    for (let cy = y0; cy <= y1; cy++)
+      for (let cx = x0; cx <= x1; cx++) if (this.blockedAt(p.map, f, cx, cy, p)) return false;
+    return !info.spansCliffWall(x0, y0, x1, y1);
   }
 
   private buy(p: PlayerState, shopId: string, itemId: string, qty: number): ActionResult {
@@ -943,7 +1056,7 @@ export class FarmSimulation {
     const cx = Math.floor(p.x / T), cy = Math.floor((p.y - 3) / T);
     const cave = m.props.cave === 'true';
     if (!cave && !m.objects.some((o) => o.type === 'tallgrass' && Math.floor(o.x / T) === cx && Math.floor(o.y / T) - 1 === cy)) return { ok: false, reason: 'not-grass' };
-    const now = Date.now(); if (now - (this.lastEncounter.get(p.id) ?? 0) < 2500) return { ok: false, reason: 'cooldown' };
+    const now = Date.now(); if (now - (this.lastEncounter.get(p.id) ?? 0) < 5000) return { ok: false, reason: 'cooldown' };
     this.lastEncounter.set(p.id, now);
     const night = this.time.minutes >= 19 * 60 || this.time.minutes < 6 * 60 + 30;
     const [sp, lo, hi] = this.pick(night ? table.night : table.day, (r) => r[3]);

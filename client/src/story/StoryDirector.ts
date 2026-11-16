@@ -28,6 +28,17 @@ const seen = (key: string) => { try { return localStorage.getItem(`sf:seen:${key
 const markSeen = (key: string) => { try { localStorage.setItem(`sf:seen:${key}`, '1'); } catch { /* 저장 불가 */ } };
 const seenNow = new Set<string>();
 
+/** 저장 초기화 시 이미 본 컷신 플래그(`sf:seen:*`, 메모리 캐시)도 깨끗이 비움 */
+export function clearStorySeen() {
+  seenNow.clear();
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k?.startsWith('sf:seen:')) localStorage.removeItem(k);
+    }
+  } catch { /* 무시 */ }
+}
+
 export class StoryDirector {
   private actors: Actor[] = [];
   private busy = false;
@@ -84,6 +95,14 @@ export class StoryDirector {
   begin() {
     const st = this.me.story, map = this.h.mapId, own = this.me.inst === this.me.id;
     if (st >= STORY.DONE || !this.me.look) return;
+    if (map === 'home_2f' && own && st === STORY.HOME) {
+      const key = `wake2f:${this.me.id}`;
+      if (!seenNow.has(key) && !seen(key)) {
+        seenNow.add(key); markSeen(key);
+        ui.toast.push('다락방 내 방에서 눈을 떴다! 오른쪽 계단으로 1층에 내려가 보자.', 'sun');
+      }
+      return;
+    }
     if (map === 'home' && own && st === STORY.HOME) void this.rivalVisit();
     else if (map === 'farm' && own && st === STORY.RACE) void this.rivalRunsAhead();
     else if (map === 'town' && (st === STORY.RACE || st === STORY.HOME)) void this.momScene();

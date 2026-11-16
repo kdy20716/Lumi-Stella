@@ -128,6 +128,15 @@ export function buildPortrait(look) {
   } else if (look.hat === 'beanie') {
     for (let y = 5; y <= 22; y++) { const hw = Math.min(20, 8 + (y - 5) * 1.5); for (let x = CX - hw; x <= CX + hw; x++) t.set(Math.round(x), y, y > 17 ? ((x % 3 === 0) ? acc.d : acc.l) : x > CX + hw - 4 ? acc.d : acc.b); }
     t.circle(CX, 4, 4, '#f4ead4'); t.circle(CX - 1, 3, 2, '#ffffff');
+  } else if (look.hat === 'crown') {
+    const g = P.gold;
+    t.rect(CX - 14, 10, 28, 7, g.base); t.rect(CX - 14, 15, 28, 2, g.d1);
+    for (const px of [CX - 14, CX - 4, CX + 7]) t.rect(px, 4, 6, 7, g.l1);
+    t.circle(CX, 13, 2, acc.b); t.set(CX - 1, 12, '#ffffff');
+  } else if (look.hat === 'beret') {
+    t.ellipse(CX + 2, 13, 20, 6, acc.b); t.ellipse(CX, 11, 14, 4, acc.l); t.rect(CX - 15, 17, 30, 2, acc.d); t.rect(CX - 1, 4, 2, 4, acc.d);
+  } else if (look.hat === 'headband') {
+    t.rect(CX - 17, 15, 34, 4, acc.b); t.hline(CX - 16, 15, 32, acc.l); t.circle(CX, 17, 2.5, '#fff4c0');
   }
 
   // ── 안경 ──

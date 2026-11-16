@@ -53,7 +53,12 @@ export class Chicken {
     this.shadow.setPosition(s.x, s.y - 1);
   }
   private playIdle() { this.sprite.play(`${this.key}:idle-${this.view}`, true); }
-  private flap() { this.scene.tweens.add({ targets: this.sprite, y: this.sprite.y - 4, duration: 120, yoyo: true }); }
+  private flap() {
+    const st = { t: 0 }, y0 = this.sprite.y;
+    this.scene.tweens.add({ targets: st, t: 1, duration: 120, yoyo: true,
+      onUpdate: () => { const lift = st.t * 4; this.sprite.setData('groundY', y0); this.sprite.setData('lift', lift); this.sprite.y = y0 - lift; },
+      onComplete: () => { this.sprite.setData('groundY', undefined); this.sprite.setData('lift', 0); this.sprite.y = y0; } });
+  }
 }
 
 /** 낮에 날아다니는 나비 / 밤에 반짝이는 반딧불 */

@@ -4,7 +4,8 @@
 import { Img, mix, darken, lighten, rgba, hash2 } from './lib/img.mjs';
 import { sfbm } from './worldmap.mjs';
 import { buildGraph, CHAINS } from '../map/region-graph.mjs';
-import { WORLD_W, WORLD_H, ROUTES } from '../map/region-spec.mjs';
+import { WORLD_W, WORLD_H, ROUTES, ROUTES_V2 } from '../map/region-spec.mjs';
+const ALL_ROUTES = [...ROUTES, ...ROUTES_V2];
 
 const S = 2;
 /** 바이옴 지면: [어두움, 기본, 밝음] */
@@ -41,8 +42,8 @@ export function buildRegionMap() {
   const segs = [];
   // 도로 하나 = 구간 맵 여러 개를 잇는 꺾은선
   const routeLine = (n) => { const ids = CHAINS[n]; return [g[g[ids[0]].ends[0]], ...ids.map((id) => g[id]), g[g[ids[ids.length - 1]].ends[1]]].filter(Boolean); };
-  for (const [n] of ROUTES) { const L = routeLine(n); for (let i = 0; i < L.length - 1; i++) segs.push([L[i], L[i + 1]]); }
-  for (const n of nodes) for (const l of n.links) if (g[l.to] && g[l.to].kind !== 'room' && (l.type === 'edge' || l.type === 'mouth' || l.type === 'stairsUp')) segs.push([n, g[l.to]]);
+  for (const [n] of ALL_ROUTES) { const L = routeLine(n); for (let i = 0; i < L.length - 1; i++) segs.push([L[i], L[i + 1]]); }
+  for (const n of nodes) for (const l of n.links) if (g[l.to] && g[l.to].kind !== 'room' && (l.type === 'edge' || l.type === 'mouth' || l.type === 'stairsUp' || (n.outdoor && l.type === 'stairsDown'))) segs.push([n, g[l.to]]);
   segs.push([farm, g.town]);
   // 섬은 따로: 본토 계산에서 빼고 섬마다 둥글게 (경계가 끊기지 않도록 min 으로 합침)
   const isIsle = (n) => ISLANDS.has(n.id) || (n.attach && ISLANDS.has(n.attach[0]));
@@ -259,7 +260,7 @@ export function buildRegionMap() {
     return out;
   };
   const roads = [], trails = [], lanes = [];
-  for (const [n] of ROUTES) roads.push(curve(routeLine(n), n));
+  for (const [n] of ALL_ROUTES) roads.push(curve(routeLine(n), n));
   roads.push(curve([farm, g.town], 99));
   const routeIds = new Set(Object.values(CHAINS).flat());
   const seen = new Set();
@@ -269,7 +270,7 @@ export function buildRegionMap() {
     if (l.type === 'dock') { lanes.push(curve([n, m], seen.size)); continue; }
     if (routeIds.has(n.id) && (m.kind === 'town' || routeIds.has(m.id))) continue;
     if (routeIds.has(m.id) && (n.kind === 'town')) continue;
-    if (l.type === 'edge' || l.type === 'mouth' || l.type === 'stairsUp') trails.push(curve([n, m], seen.size));
+    if (l.type === 'edge' || l.type === 'mouth' || l.type === 'stairsUp' || (n.outdoor && l.type === 'stairsDown')) trails.push(curve([n, m], seen.size));
   }
   const dot = (x, y, r, c) => { const cc = rgba(c); for (let j = -Math.ceil(r); j <= r; j++) for (let i = -Math.ceil(r); i <= r; i++) if (i * i + j * j <= r * r + 0.3) t.put(Math.round(x + i), Math.round(y + j), cc); };
   const onWater = (x, y) => { const i = Math.round(y) * W + Math.round(x); return land[i] > 0.4; };
@@ -293,6 +294,7 @@ export function buildRegionMap() {
     }
   }
   for (const n of nodes) if (n.kind === 'cave' && n.floor === 1) marks.push(['cave', Math.round(n.x * S), Math.round(n.y * S)]);
+  for (const n of nodes) if (n.kind === 'cave' && n.outdoor) marks.push(['pillar', Math.round(n.x * S), Math.round(n.y * S)]);
   if (g.stark_1f) marks.push(['volcano', Math.round(g.stark_1f.x * S), Math.round((g.stark_1f.y + 2) * S)]);
   if (g.altar) for (const [dx, dy] of [[-4, 0], [4, 0], [-2, -3], [2, -3]]) marks.push(['pillar', Math.round((g.altar.x + dx) * S), Math.round((g.altar.y + dy) * S)]);
   marks.sort((a, b) => (a[0] === 'plaza' ? -1 : 0) - (b[0] === 'plaza' ? -1 : 0) || a[2] - b[2]);

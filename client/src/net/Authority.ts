@@ -4,7 +4,7 @@ import type { AdminCmd, BugReport, S2C as _S2C } from '@shared/protocol';
 import type { NetPlayer, RosterEntry, S2C, C2S } from '@shared/protocol';
 import { FarmSimulation, MS_PER_10_MIN, type SimEvent } from '@shared/sim/FarmSimulation';
 import type { MapInfo } from '@shared/sim/MapInfo';
-import { SoilState, roomOf, type ForageSpot, type ActionIntent, type ActionResult, type Dir, type Dish, type FarmSnapshot, type FarmTile, type MapId, type PlacedObject, type PlayerState, type SaveData, type WorldTime } from '@shared/types';
+import { SoilState, isHomeMap, roomOf, type ForageSpot, type ActionIntent, type ActionResult, type Dir, type Dish, type FarmSnapshot, type FarmTile, type MapId, type PlacedObject, type PlayerState, type SaveData, type WorldTime } from '@shared/types';
 
 export type AuthorityEvent =
   | { type: 'sim'; event: SimEvent }
@@ -51,7 +51,7 @@ export abstract class Authority {
 
   get room() { return roomOf(this.me.map, this.me.inst, this.me.world); }
   /** 지금 보고 있는 농장의 주인 id */
-  get farmOwner() { return this.me.map === 'farm' || this.me.map === 'home' ? this.me.inst || this.me.id : this.me.id; }
+  get farmOwner() { return this.me.map === 'farm' || isHomeMap(this.me.map) ? this.me.inst || this.me.id : this.me.id; }
 
   protected applySnapshot(s: FarmSnapshot) {
     this.tiles.clear(); this.removed.clear();
@@ -85,6 +85,12 @@ export abstract class Authority {
       case 'dish': if (e.room === this.room) this.dish = e.dish; break;
       case 'invite': if (e.to === me.id) this.invites.set(e.from, { from: e.from, name: e.fromName, where: e.where, t: Date.now() }); break;
       case 'story': if (e.id === me.id) me.story = e.story; break;
+      case 'bmState':
+        if (e.id === me.id) Object.assign(me, {
+          mailItems: e.mailItems, uiTheme: e.uiTheme, ownedThemes: e.ownedThemes,
+          ownedOutfits: e.ownedOutfits, lumiCoord: e.lumiCoord, ownedLumiCoords: e.ownedLumiCoords, bmOrders: e.bmOrders,
+        });
+        break;
       case 'placed': if (me.map === 'farm' && e.owner === this.farmOwner) this.placed.set(e.obj.id, { ...e.obj }); break;
       case 'unplaced': if (me.map === 'farm' && e.owner === this.farmOwner) this.placed.delete(e.id); break;
     }
@@ -98,6 +104,8 @@ export abstract class Authority {
   admin(_cmd: AdminCmd): Promise<AdminReply> { void _cmd; return Promise.resolve({ ok: false, message: '멀티플레이에서만 쓸 수 있어요' }); }
   /** 버그 신고 → 관리자 휴대폰으로 */
   report(_text: string, _where: string): boolean { void _text; void _where; return false; }
+  shopServerUrl(): string | null { return null; }
+  shopHeaders(): Promise<Record<string, string>> { return Promise.resolve({}); }
   abstract sendMove(x: number, y: number, dir: Dir, anim: string): void;
   abstract sendAnim(anim: string, dir: Dir): void;
   abstract chat(text: string): void;
@@ -126,7 +134,7 @@ export class LocalAuthority extends Authority {
     this.storageKind = '이 브라우저 (혼자하기)';
     this.sim.on((event) => {
       this.emit({ type: 'sim', event });
-      if (event.type === 'room' || event.type === 'newDay' || event.type === 'story' || event.type === 'look') this.save();
+      if (event.type === 'room' || event.type === 'newDay' || event.type === 'story' || event.type === 'look' || event.type === 'bmState') this.save();
     });
     this.saveTimer = window.setInterval(() => this.save(), 30_000);
     window.addEventListener('beforeunload', () => this.save());
@@ -168,8 +176,15 @@ export class NetworkAuthority extends Authority {
   /** 끊긴 뒤 이 시간 안에 다시 붙지 못하면 포기하고 타이틀로 */
   static readonly GIVE_UP_MS = 3 * 60_000;
 
+  private credInfo!: Cred;
+  private refreshCred?: () => Promise<Cred>;
+  private httpUrl = '';
+
   static connect(url: string, cred: Cred, refresh?: () => Promise<Cred>): Promise<NetworkAuthority> {
     const a = new NetworkAuthority();
+    a.httpUrl = url;
+    a.credInfo = cred;
+    a.refreshCred = refresh;
     return new Promise((resolve, reject) => {
       if (mixedContentProblem(url)) { reject(new Error('https 페이지에서는 https 서버 주소가 필요해요 (VITE_SERVER_URL 확인)')); return; }
       // 웹소켓을 먼저 쓰고, 막혀 있으면 HTTP 롱폴링으로 자동 대체.
@@ -260,6 +275,14 @@ export class NetworkAuthority extends Authority {
     return new Promise((res) => { this.adminPending.set(reqId, res); setTimeout(() => { if (this.adminPending.delete(reqId)) res({ ok: false, message: '응답 없음' }); }, 8000); });
   }
   report(text: string, where: string) { this.send({ t: 'report', text, where }); return true; }
+  override shopServerUrl() { return this.httpUrl; }
+  override async shopHeaders(): Promise<Record<string, string>> {
+    const c = this.refreshCred ? await this.refreshCred().catch(() => this.credInfo) : this.credInfo;
+    this.credInfo = { ...c, mode: this.credInfo.mode };
+    if (c.token) return { Authorization: `Bearer ${c.token}` };
+    if (c.dev) return { 'X-Dev-User': c.dev };
+    return {};
+  }
   chat(text: string) { this.send({ t: 'chat', text }); }
   override close() { this.closedByUser = true; this.socket?.disconnect(); }
 }

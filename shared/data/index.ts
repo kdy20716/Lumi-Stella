@@ -67,6 +67,8 @@ export interface StoryEvent {
   id: string; chapter: number; map: MapId; needs: string[]; ending?: boolean;
   /** 이 사건 전까지 막히는 곳 */
   gate?: { map: MapId; msg: string };
+  /** 맵 안에서 특정 위치(칸 단위 중심·반경)에 다다랐을 때 발동 */
+  spot?: { x: number; y: number; r: number };
   /** [말하는 사람(cast id · 'rival'), 대사…] */
   scene: string[][]; after?: string[][];
   battle?: { cast: string; rival?: boolean; team: [string, number][]; reward: number };
@@ -85,9 +87,9 @@ export const EVENTS: Record<string, StoryEvent> = Object.fromEntries(CHAPTERS.ev
 export const dexComplete = (p: { caught?: string[] }) => Object.values(SPECIES).filter((sp) => sp.legend !== 'myth').every((sp) => !!p.caught?.includes(sp.id));
 export const hasDone = (p: { flags?: string[]; defeated: string[]; badges: string[]; caught?: string[] }, k: string): boolean =>
   k === 'dex' ? dexComplete(p) : k.startsWith('!') ? !hasDone(p, k.slice(1)) : k.startsWith('caught:') ? !!p.caught?.includes(k.slice(7)) : !!p.flags?.includes(k) || p.defeated.includes(k) || p.badges.includes(k);
-/** 지금 이 맵에서 일어날 수 있는 다음 사건 */
-export const nextEvent = (p: { map: string; flags?: string[]; defeated: string[]; badges: string[]; caught?: string[]; story: number }, map = p.map) =>
-  p.story >= 5 ? CHAPTERS.events.find((e) => e.map === map && !p.flags?.includes(e.id) && e.needs.every((k) => hasDone(p, k))) : undefined;
+/** 지금 이 맵에서 일어날 수 있는 다음 사건 (pos 를 주면 spot 거리도 검사) */
+export const nextEvent = (p: { map: string; flags?: string[]; defeated: string[]; badges: string[]; caught?: string[]; story: number }, map = p.map, pos?: { x: number; y: number }) =>
+  p.story >= 5 ? CHAPTERS.events.find((e) => e.map === map && !p.flags?.includes(e.id) && e.needs.every((k) => hasDone(p, k)) && (!e.spot || !pos || Math.hypot(pos.x - e.spot.x, pos.y - e.spot.y) <= e.spot.r)) : undefined;
 /** 아직 일어나지 않은 사건 때문에 막힌 곳 */
 export const gateFor = (p: { flags?: string[] }, to: string) => CHAPTERS.events.find((e) => e.gate?.map === to && !p.flags?.includes(e.id));
 

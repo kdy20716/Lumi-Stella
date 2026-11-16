@@ -41,7 +41,10 @@ export class Actor extends Character {
   faceTo(x: number, y: number) { this.play('idle', facingFromVector(x - this.x, y - this.y, this.dir)); }
   /** 신나서 방방 */
   hop(times = 3): Promise<void> {
-    return new Promise((res) => this.scene.tweens.add({ targets: this.sprite, y: this.sprite.y - 7, duration: 130, yoyo: true, repeat: times - 1, ease: 'Quad.Out', onComplete: () => res() }));
+    const st = { t: 0 }, y0 = this.sprite.y;
+    return new Promise((res) => this.scene.tweens.add({ targets: st, t: 1, duration: 130, yoyo: true, repeat: times - 1, ease: 'Quad.Out',
+      onUpdate: () => { const lift = st.t * 7; this.sprite.setData('groundY', y0); this.sprite.setData('lift', lift); this.sprite.y = y0 - lift; },
+      onComplete: () => { this.sprite.setData('groundY', undefined); this.sprite.setData('lift', 0); this.sprite.y = y0; res(); } }));
   }
   vanish(): Promise<void> {
     return new Promise((res) => this.scene.tweens.add({ targets: [this.sprite, this.shadow, this.label].filter(Boolean), alpha: 0, duration: 350, onComplete: () => { this.destroy(); res(); } }));

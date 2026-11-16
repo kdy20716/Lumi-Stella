@@ -123,14 +123,16 @@ export function buildRoom(spec) {
   beam(0, 0, T, H * T); beam((W - 1) * T, 0, T, H * T);
   t.vline(T - 1, 3, H * T - 3 - T, topL); t.vline((W - 1) * T, 3, H * T - 3 - T, topL);
   beam(0, (H - 1) * T, W * T, T); t.hline(T - 1, (H - 1) * T, (W - 2) * T + 2, topL);
-  // 문: 아래 벽에 1칸 틈 + 문지방 + 발매트
-  const d = spec.door;
-  drawFloor(t, d * T, (H - 1) * T, T, T, { ...spec.floor, color: darken(spec.floor.color, 0.25) });
-  for (let y = (H - 1) * T + 6; y < H * T; y++) for (let x = d * T; x < (d + 1) * T; x++) t.set(x, y, mix(t.get(x, y), '#120d10', Math.min(1, (y - (H - 1) * T - 6) / 9)));
-  t.vline(d * T, (H - 1) * T, T, topL); t.vline((d + 1) * T - 1, (H - 1) * T, T, topL);
-  const mat = ramp('#a8523a');
-  t.rect(d * T + 1, (H - 2) * T + 6, 14, 9, mat.base); t.rect(d * T + 1, (H - 2) * T + 6, 14, 1, mat.l1);
-  for (let x = d * T + 2; x < d * T + 15; x += 3) t.vline(x, (H - 2) * T + 8, 6, mat.d1);
+  // 문: 아래 벽에 1칸 틈 + 문지방 + 발매트 (다락방 등 문 없는 실내는 벽 그대로 유지)
+  if (!spec.noDoor) {
+    const d = spec.door;
+    drawFloor(t, d * T, (H - 1) * T, T, T, { ...spec.floor, color: darken(spec.floor.color, 0.25) });
+    for (let y = (H - 1) * T + 6; y < H * T; y++) for (let x = d * T; x < (d + 1) * T; x++) t.set(x, y, mix(t.get(x, y), '#120d10', Math.min(1, (y - (H - 1) * T - 6) / 9)));
+    t.vline(d * T, (H - 1) * T, T, topL); t.vline((d + 1) * T - 1, (H - 1) * T, T, topL);
+    const mat = ramp('#a8523a');
+    t.rect(d * T + 1, (H - 2) * T + 6, 14, 9, mat.base); t.rect(d * T + 1, (H - 2) * T + 6, 14, 1, mat.l1);
+    for (let x = d * T + 2; x < d * T + 15; x += 3) t.vline(x, (H - 2) * T + 8, 6, mat.d1);
+  }
   return t;
 }
 
@@ -302,6 +304,46 @@ function workbench() {
   t.rect(6, 20, 6, 4, '#c9a070'); t.rect(19, 20, 6, 4, '#c9a070');
   return sheen(t);
 }
+function atticStairsUp() {
+  // 1층 → 2층 다락방 올라가는 원목 계단
+  const t = new Img(16, 34);
+  t.rect(1, 2, 14, 32, '#2a1810');
+  t.rect(1, 2, 2, 32, W_.d1); t.vline(2, 2, 32, W_.l1);
+  t.rect(13, 2, 2, 32, W_.d1); t.vline(13, 2, 32, W_.l1);
+  for (let s = 0; s < 5; s++) {
+    const sy = 5 + s * 6;
+    t.rect(3, sy, 10, 4, W_.l1); t.hline(3, sy, 10, W_.l2);
+    t.rect(3, sy + 4, 10, 2, W_.d1);
+  }
+  t.rect(1, 1, 14, 2, W_.base);
+  return sheen(t);
+}
+function atticStairsDown() {
+  // 2층 다락방 → 1층 내려가는 계단 입구 (난간 포함)
+  const t = new Img(16, 26);
+  t.rect(1, 4, 14, 22, '#26160e');
+  t.rect(1, 2, 14, 3, W_.base); t.hline(1, 2, 14, W_.l2);
+  t.rect(1, 4, 2, 22, W_.d1); t.rect(13, 4, 2, 22, W_.d1);
+  for (let s = 0; s < 4; s++) {
+    const sy = 7 + s * 4;
+    t.rect(3, sy, 10, 3, s === 0 ? W_.d1 : W_.base);
+    t.hline(3, sy, 10, s === 0 ? W_.base : W_.l1);
+  }
+  t.rect(2, 23, 12, 3, '#1a0e08');
+  return sheen(t);
+}
+function studyDesk() {
+  // 2층 다락방 책상: 스탠드 조명 · 펼쳐진 일기장 · 머그컵
+  const t = new Img(32, 28);
+  t.rect(1, 8, 30, 8, W_.base); t.rect(1, 8, 30, 2, W_.l2); t.rect(1, 16, 30, 3, W_.d1);
+  t.rect(2, 19, 3, 9, W_.d1); t.rect(27, 19, 3, 9, W_.d1);
+  t.rect(20, 19, 7, 7, W_.base); t.rect(21, 20, 5, 2, W_.l1); t.set(23, 21, P.gold.l1);
+  // 책상 스탠드 & 일기장
+  t.rect(4, 2, 6, 4, '#ffd65a'); t.hline(5, 2, 4, '#fff4c0'); t.rect(6, 6, 2, 3, W_.d2);
+  t.rect(12, 6, 9, 5, '#fff8ec'); t.vline(16, 6, 5, '#c8a880'); t.hline(13, 8, 2, '#5a6273'); t.hline(17, 9, 3, '#5a6273');
+  t.rect(24, 5, 4, 4, '#e07a8a'); t.hline(25, 5, 2, '#fff8ec');
+  return sheen(t);
+}
 
 /** 가구 정의: w × h(막는 칸 수) */
 export const FURN = {
@@ -316,31 +358,49 @@ export const FURN = {
   forge: { w: 2, h: 1, build: forge }, lab_machine: { w: 2, h: 1, build: labMachine }, starter_table: { w: 3, h: 1, build: starterTable },
   millstone: { w: 2, h: 2, build: millstone }, sacks: { w: 1, h: 1, build: sacks }, piano: { w: 2, h: 1, build: piano },
   pillar: { w: 1, h: 1, build: pillar }, crystal: { w: 1, h: 1, build: () => crystal() }, crystal_red: { w: 1, h: 1, build: () => crystal('#ff8a6a') }, pedestal: { w: 2, h: 1, build: pedestal }, candle: { w: 1, h: 1, build: candle }, statue: { w: 1, h: 1, build: () => statue() }, table_small: { w: 2, h: 1, build: tableSmall }, heal_pad: { w: 2, h: 1, build: healPad }, workbench: { w: 2, h: 1, build: workbench },
+  attic_stairs_up: { w: 1, h: 1, build: atticStairsUp }, attic_stairs_down: { w: 1, h: 1, build: atticStairsDown }, desk: { w: 2, h: 1, build: studyDesk },
 };
 
 // ── 방 레이아웃 (아트 + 맵 생성기 공용) ─────────────────
 // furn: [type, cx, cy(맨 아래 칸), props]  /  spawns: [name, cx, cy, props]  /  lights: [cx, cy]
 const WOOD = { kind: 'wood', color: '#b07a48' };
 export const ROOMS = {
-  home: { // 내 집: 침대·옷장·부엌·식탁 (친구 초대 공간)
-    name: '나의 집', W: 15, H: 11, door: 7, wall: { color: '#ecd2a8', pattern: 'stripe', accent: '#e0b888', wainscot: '#b07a48' }, floor: WOOD,
-    decor: [['window', 3], ['fireplace', 6], ['clock', 8], ['window', 10], ['painting', 13]],
-    rugs: [[5, 6, 5, 3, '#a83c34']],
-    furn: [['bed', 1, 4, { interact: 'bed' }], ['wardrobe', 4, 3, { interact: 'wardrobe' }], ['kitchen', 11, 3, { interact: 'kitchen' }],
+  home: { // 내 집 1층: 거실 · 부엌 · 식탁 · 작업대 · 2층 다락방 계단 (창문/벽난로 겹침 없이 깔끔 배치)
+    name: '나의 집 (1층)', W: 15, H: 11, door: 7, wall: { color: '#ecd2a8', pattern: 'stripe', accent: '#e0b888', wainscot: '#b07a48' }, floor: WOOD,
+    decor: [['window', 3], ['clock', 5], ['fireplace', 6], ['window', 9]],
+    rugs: [[4, 5, 4, 3, '#a83c34']],
+    furn: [
+      ['attic_stairs_up', 1, 3], ['bookshelf', 1, 6], ['plant', 1, 9], ['sofa', 4, 9],
+      ['kitchen', 11, 3, { interact: 'kitchen' }],
       ['dtable', 10, 7, { interact: 'dtable' }], ['chair_l', 9, 7, { interact: 'dtable' }], ['chair_r', 13, 7, { interact: 'dtable' }],
-      ['sofa', 3, 9], ['plant', 1, 9], ['lamp_floor', 13, 9], ['bookshelf', 1, 6], ['workbench', 7, 3, { interact: 'workbench' }]],
-    spawns: [['entry', 7, 9], ['wake', 3, 5]], lights: [[7, 2], [13, 8]],
+      ['workbench', 10, 9, { interact: 'workbench' }], ['lamp_floor', 13, 9],
+    ],
+    warps: [[1, 3, 1, 1, 'home_2f', 'from_1f']],
+    spawns: [['entry', 7, 9], ['from_2f', 2, 4]], lights: [[7, 2], [13, 8]],
+  },
+  home_2f: { // 내 집 2층 다락방: 침실 · 옷장 · 책상 · 1층 계단
+    name: '나의 집 (2층 다락방)', W: 12, H: 9, door: 6, noDoor: true,
+    wall: { color: '#dfc092', pattern: 'plank', accent: '#c9a26d', wainscot: '#8c5a33' }, floor: WOOD,
+    decor: [['window', 4], ['clock', 6], ['poster', 9]],
+    rugs: [[4, 4, 4, 3, '#5878a8']],
+    furn: [
+      ['bed', 1, 4, { interact: 'bed' }], ['lamp_floor', 3, 3], ['wardrobe', 7, 3, { interact: 'wardrobe' }], ['plant_b', 10, 3],
+      ['bookshelf', 1, 7], ['desk', 4, 7, { interact: 'sign', text: '다락방 책상.\n여행 일기장과 루미나 지방 지도가 정갈히 펼쳐져 있다.' }],
+      ['attic_stairs_down', 9, 7], ['plant', 10, 7],
+    ],
+    warps: [[9, 7, 1, 1, 'home', 'from_2f']],
+    spawns: [['wake', 3, 5], ['from_1f', 8, 7], ['entry', 8, 7]], lights: [[5, 2], [9, 6]],
   },
   in_store: {
     name: '소라네 루미 마트', W: 14, H: 10, door: 7, wall: { color: '#d8e8d0', pattern: 'dots', accent: '#a8c89a', wainscot: '#8c5a33' }, floor: { kind: 'tile', color: '#c9b08a', color2: '#e0caa0' },
-    decor: [['window', 9], ['shelf', 11], ['poster', 1], ['clock', 2]],
+    decor: [['window', 8], ['clock', 10], ['poster', 12]],
     rugs: [[5, 6, 4, 2, '#3f8fb5']],
     furn: [['shelf_goods', 1, 3], ['shelf_goods_b', 3, 3], ['shelf_goods', 5, 3], ['counter', 8, 5, { interact: 'shop:general' }], ['sacks', 12, 8], ['plant_b', 1, 8], ['sacks', 12, 7]],
     spawns: [['wp_clerk', 10, 4], ['wp_gate', 7, 8], ['entry', 7, 8]], lights: [[10, 2]],
   },
   in_cafe: {
     name: '루나 카페', W: 14, H: 10, door: 7, wall: { color: '#6a4a3a', pattern: 'plank' }, floor: { kind: 'woodDark', color: '#8a5a3a' },
-    decor: [['menu', 2], ['window', 6], ['painting2', 10], ['shelf', 12]],
+    decor: [['menu', 2], ['window', 6], ['painting', 8], ['clock', 9]],
     rugs: [],
     furn: [['counter_cafe', 1, 5, { interact: 'shop:cafe' }], ['table_small', 7, 6], ['table_small', 10, 6], ['table_small', 9, 8],
       ['stool', 6, 6], ['stool', 12, 6], ['stool', 8, 8], ['stool', 11, 8], ['plant', 12, 8], ['plant_b', 1, 8], ['piano', 11, 3, { interact: 'piano' }]],
@@ -348,38 +408,39 @@ export const ROOMS = {
   },
   in_lab: { // 마을회관 = 한별 박사의 루미 연구실
     name: '마을회관 · 한별 연구소', W: 16, H: 11, door: 8, wall: { color: '#e4ecf2', pattern: 'tile' }, floor: { kind: 'tile', color: '#c8d8e4', color2: '#e8f0f6' },
-    decor: [['chart', 1], ['window', 4], ['window', 10], ['chart', 13]],
+    decor: [['window', 3], ['chart', 7], ['window', 11]],
     rugs: [[6, 5, 5, 3, '#3a8ab0']],
-    furn: [['lab_machine', 1, 3, { interact: 'labcraft' }], ['bookshelf', 3, 3], ['starter_table', 7, 4, { interact: 'starter_table' }], ['bookshelf', 11, 3], ['lab_machine', 13, 3],
+    furn: [['lab_machine', 1, 3, { interact: 'labcraft' }], ['bookshelf', 5, 3], ['starter_table', 7, 5, { interact: 'starter_table' }], ['bookshelf', 9, 3], ['lab_machine', 13, 3],
       ['counter_lab', 1, 7], ['plant', 14, 9], ['plant_b', 1, 9], ['table_small', 12, 7]],
     spawns: [['wp_prof', 12, 5], ['wp_mayor', 8, 6], ['wp_rival', 6, 7], ['wp_gate', 8, 9], ['entry', 8, 9]], lights: [[8, 2]],
   },
   in_smithy: {
     name: '민수의 볼 공방', W: 12, H: 9, door: 6, wall: { color: '#7a6a6a', pattern: 'stone' }, floor: { kind: 'stone', color: '#7a7480' },
-    decor: [['toolrack', 5], ['toolrack', 8], ['window', 1]],
+    decor: [['window', 1], ['toolrack', 3], ['toolrack', 7], ['poster', 9]],
     rugs: [],
-    furn: [['forge', 1, 4, { interact: 'smithy' }], ['anvil', 4, 5, { interact: 'smithy' }], ['barrel', 10, 3], ['crate', 9, 3], ['barrel', 10, 7], ['table_small', 7, 5]],
-    spawns: [['wp_forge', 4, 6], ['wp_gate', 6, 7], ['entry', 6, 7]], lights: [[2, 3]],
+    furn: [['crate', 1, 3], ['barrel', 2, 3], ['forge', 5, 3, { interact: 'smithy' }], ['barrel', 9, 3], ['crate', 10, 3],
+      ['anvil', 3, 5, { interact: 'smithy' }], ['table_small', 8, 6], ['sacks', 1, 7], ['barrel', 10, 7]],
+    spawns: [['wp_forge', 5, 6], ['wp_gate', 6, 7], ['entry', 6, 7]], lights: [[5, 3], [8, 5]],
   },
   in_house_a: {
     name: '이웃집', W: 12, H: 9, door: 6, wall: { color: '#e8d8c0', pattern: 'diamond', accent: '#d8b890', wainscot: '#8c5a33' }, floor: WOOD,
-    decor: [['window', 2], ['painting', 5], ['clock', 6], ['window', 8]],
-    rugs: [[4, 5, 4, 2, '#7d5aa8']],
-    furn: [['bed_pink', 1, 4, { interact: 'nbed' }], ['bookshelf', 9, 3], ['table_small', 5, 6], ['chair_l', 4, 6], ['plant', 10, 7], ['lamp_floor', 1, 7]],
+    decor: [['window', 3], ['painting', 5], ['clock', 6], ['window', 7]],
+    rugs: [[4, 4, 4, 2, '#7d5aa8']],
+    furn: [['bed_pink', 1, 4, { interact: 'nbed' }], ['bookshelf', 9, 3], ['table_small', 5, 5], ['chair_l', 4, 5], ['plant', 10, 7], ['lamp_floor', 1, 7]],
     spawns: [['entry', 6, 7]], lights: [[1, 6]],
   },
   in_house_b: {
     name: '이웃집', W: 12, H: 9, door: 6, wall: { color: '#c8dce8', pattern: 'stripe', accent: '#a8c4d8', wainscot: '#6b4024' }, floor: { kind: 'wood', color: '#a07050' },
-    decor: [['window', 1], ['shelf', 4], ['window', 8], ['poster', 10]],
+    decor: [['window', 4], ['painting', 6], ['window', 7], ['clock', 10]],
     rugs: [[3, 5, 6, 2, '#3f8a3e']],
     furn: [['bed_green', 9, 4, { interact: 'nbed' }], ['kitchen', 1, 3], ['sofa_red', 2, 7], ['plant_b', 10, 7], ['stool', 1, 6]],
     spawns: [['entry', 6, 7]], lights: [[5, 6]],
   },
   in_house_c: {
     name: '이웃집', W: 12, H: 9, door: 6, wall: { color: '#f0d8d8', pattern: 'dots', accent: '#e0b0b0', wainscot: '#8c5a33' }, floor: WOOD,
-    decor: [['painting2', 1], ['window', 5], ['clock', 9], ['painting', 10]],
+    decor: [['painting2', 1], ['window', 3], ['window', 7], ['clock', 10]],
     rugs: [[3, 5, 5, 2, '#e0a43a']],
-    furn: [['bed', 9, 4, { interact: 'nbed' }], ['piano', 1, 3, { interact: 'piano' }], ['bookshelf', 4, 3], ['table_small', 4, 6], ['plant', 1, 7], ['lamp_floor', 10, 7]],
+    furn: [['bed', 9, 4, { interact: 'nbed' }], ['piano', 1, 3, { interact: 'piano' }], ['bookshelf', 5, 3], ['table_small', 4, 6], ['plant', 1, 7], ['lamp_floor', 10, 7]],
     spawns: [['entry', 6, 7]], lights: [[10, 6]],
   },
   in_center: { // 루미 센터 (회복)
@@ -391,7 +452,7 @@ export const ROOMS = {
   },
   in_shop_w: {
     name: '바람골 상점', W: 12, H: 9, door: 6, wall: { color: '#e0d0a8', pattern: 'plank' }, floor: { kind: 'wood', color: '#b8885a' },
-    decor: [['window', 7], ['shelf', 9], ['poster', 1]],
+    decor: [['window', 6], ['shelf', 8], ['poster', 10]],
     rugs: [[4, 6, 4, 1, '#3f8fb5']],
     furn: [['shelf_goods_b', 1, 3], ['shelf_goods', 3, 3], ['counter', 6, 5, { interact: 'shop:windvale' }], ['sacks', 10, 7], ['plant', 1, 7]],
     spawns: [['wp_clerk', 8, 4], ['wp_gate', 6, 7], ['entry', 6, 7]], lights: [[8, 2]],
@@ -449,7 +510,7 @@ Object.assign(ROOMS, {
   },
   chateau: {
     name: '숲속 폐저택', W: 18, H: 12, door: 9, wall: { color: '#4a3a40', pattern: 'stripe', accent: '#3a2a30', wainscot: '#3a2418' }, floor: { kind: 'woodDark', color: '#5a3a2a' }, trim: '#140c0e',
-    decor: [['ghostframe', 1], ['window', 4], ['ghostframe', 7], ['clock', 10], ['window', 12], ['ghostframe', 15]],
+    decor: [['window', 4], ['ghostframe', 7], ['clock', 10], ['window', 12]],
     rugs: [[6, 5, 6, 4, '#5a2030']],
     furn: [['bookshelf', 1, 3], ['piano', 15, 3, { interact: 'sign', text: '먼지 쌓인 피아노.\n건반 하나가 저절로 눌렸다… 띵.' }], ['dtable', 7, 6, { interact: 'sign', text: '식탁 위에 식은 차가 놓여 있다.\n방금 누군가 마신 것처럼 김이 오른다…' }], ['candle', 6, 6], ['candle', 10, 6],
       ['sofa_red', 1, 9], ['lamp_floor', 16, 9], ['bed', 15, 7, { interact: 'sign', text: '아무도 자지 않은 침대인데 이불이 따뜻하다.' }], ['plant_b', 1, 6]],

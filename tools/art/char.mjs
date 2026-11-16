@@ -257,6 +257,21 @@ function drawHat(p, look, dir) {
     p.rect(x0 + 1, 5, w - 2, 2, c.b); p.rect(x0, 7, w, 3, c.b); p.rect(x0, 9, w, 2, c.l);
     for (let x = x0; x < x0 + w; x += 2) p.px(x, 10, c.d);
     p.px(x0 + Math.floor(w / 2), 4, '#f4ead4'); p.px(x0 + Math.floor(w / 2) - 1, 4, '#f4ead4');
+  } else if (look.hat === 'crown') {
+    const g = P.gold, gem = look.accent?.b ?? '#e0475b';
+    const x0 = dir === 'side' ? 11 : 11, w = dir === 'side' ? 9 : 10;
+    p.rect(x0, 6, w, 2, g.base); p.rect(x0, 7, w, 1, g.d1);
+    for (let x = x0; x < x0 + w; x += 3) p.rect(x, 4, 2, 2, g.l1);
+    p.px(x0 + Math.floor(w / 2), 6, gem);
+  } else if (look.hat === 'beret') {
+    const c = look.accent;
+    if (dir === 'side') { p.rect(12, 5, 10, 3, c.b); p.rect(13, 4, 7, 1, c.l); p.rect(11, 8, 9, 1, c.d); p.px(16, 3, c.d); }
+    else { p.rect(10, 5, 12, 3, c.b); p.rect(12, 4, 8, 1, c.l); p.rect(11, 8, 10, 1, c.d); p.px(15, 3, c.d); }
+  } else if (look.hat === 'headband') {
+    const c = look.accent;
+    const x0 = dir === 'side' ? 11 : 11, w = dir === 'side' ? 10 : 10;
+    p.rect(x0, 7, w, 2, c.b); p.rect(x0 + 1, 7, w - 2, 1, c.l);
+    p.px(dir === 'side' ? 13 : 15, 7, '#fff4c0');
   }
 }
 

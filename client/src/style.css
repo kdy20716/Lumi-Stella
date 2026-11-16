@@ -13,7 +13,7 @@
 
 html, body { height: 100%; }
 /* DOM UI 레이어: 안쪽 크기 단위(cqw/cqh)는 이 상자 기준 → 모바일에서 축소해도 PC 비율 그대로 (ui/Scale.ts) */
-#ui { container-type: size; }
+#ui { container-type: size; z-index: 20; }
 body { font-family: var(--font-pixel); color: var(--color-ink); -webkit-font-smoothing: none; }
 canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
 
@@ -212,6 +212,8 @@ button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite;
 /* 지도 앱 */
 .ph-map { position: relative; width: 100%; aspect-ratio: 3 / 2; border-radius: 10px; overflow: hidden; border: 3px solid #14202a; background: #275e94; }
 .ph-map img, .ph-map canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.ph-map img, .ph-map canvas.ph-map-bg { z-index: 0; pointer-events: none; }
+.ph-map canvas.ph-map-fog { z-index: 1; pointer-events: none; }
 .ph-pin { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; pointer-events: auto; z-index: 2; }
 .ph-pin .dot { display: block; }
 .ph-pin.town .dot { width: 13px; height: 13px; border-radius: 4px; background: #fff8ec; border: 2px solid #20303a; box-shadow: 0 0 0 2px var(--ring), 0 2px 0 2px rgba(0,0,0,.35); }
@@ -321,6 +323,8 @@ button:hover > .lumi-icon.xl { animation: lumi-bounce 0.8s ease-in-out infinite;
 /*  UI 는 PC 크기로 그린 뒤 축소(--uis)되므로, 손가락 버튼(실제 화면 약 190px)을 피할 만큼만 비켜 둠 */
 .tc-on .dlg-in { width: min(980px, calc(100cqw - 400px / var(--uis, 1))) !important; bottom: 6px !important; }
 /*  손에 든 것: 왼쪽 아래는 조이스틱 자리 → 화면 위 가운데 */
+.stage3d-badge { position: fixed; right: 14px; bottom: 14px; z-index: 19; padding: 5px 10px; background: rgba(24, 20, 30, 0.88); color: #ffe58a; border: 2px solid #c89a5a; border-radius: 8px; font-family: Galmuri9, Galmuri11, sans-serif; font-size: 11px; cursor: pointer; pointer-events: auto; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
+.tc-on .stage3d-badge { display: none !important; }
 .tc-on .held-badge { bottom: auto !important; top: 10px; left: 50% !important; transform: translateX(-50%); }
 /*  알림: 조이스틱 위로 */
 .tc-on [data-ui=toast] { left: calc(220px / var(--uis, 1)) !important; bottom: calc(40px / var(--uis, 1)) !important; }
@@ -360,3 +364,119 @@ body[data-illbg="room"] { background: linear-gradient(#f2d8c8, #e8c8a0 60%, #a87
 .illt-tag.ai { background: #2f8a5a; }
 .illt-sub { font-size: 12px; opacity: .75; }
 .illt-card small { opacity: .5; }
+
+
+/* ── BM 캐쉬 상점 · 웹 카드 결제 모달 · 공유 우편함 · 라이브 UI 디자인 테마 ── */
+.bm-pay-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; background: #fff8ec; border: 2px solid #d8b67c; border-radius: 10px; }
+.bm-lock { display: inline-block; padding: 1px 6px; border-radius: 5px; background: #e8dcc4; border: 1px solid #b89a68; font-size: 10px; color: #7a5232; }
+.bm-swatch { width: 34px; height: 34px; border-radius: 8px; border: 2px solid #3b2414; flex-shrink: 0; display: grid; place-items: center; overflow: hidden; }
+.bm-pay-pill { font-family: var(--font-pixel-sm); padding: 4px 10px; border-radius: 8px; background: linear-gradient(#ffd66b, #e89b2c); border: 2px solid #6e4024; color: #3b2414; font-weight: 700; font-size: 12px; box-shadow: 0 2px 0 #5e3620; }
+.bm-pay-pill:hover { filter: brightness(1.06); }
+
+/* 적용된 UI 디자인 테마(rural 이외) 시 전역 HUD · 패널 · 휴대폰 색상 전환 */
+html[data-ui-theme]:not([data-ui-theme="rural"]) .px-panel {
+  border-image: none !important;
+  background: var(--ui-panel-alt, #f3dfb4);
+  color: #202438;
+  border: 4px solid var(--ui-border, #8c5a37);
+  box-shadow: inset 0 0 0 3px var(--ui-bg, #3b2414), 0 4px 0 rgba(8, 8, 18, 0.55);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .px-panel > div:has([data-h="gold"]) {
+  background: color-mix(in srgb, var(--ui-border) 22%, var(--ui-panel-alt));
+  border-color: var(--ui-border);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) [data-ui="toast"] > div {
+  background: var(--ui-panel-alt);
+  color: #202438;
+  border-color: var(--ui-border);
+  box-shadow: inset 0 0 0 2px var(--ui-bg), 0 4px 0 rgba(8, 8, 18, 0.45);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .px-btn {
+  background: linear-gradient(var(--ui-panel), var(--ui-bg));
+  color: var(--ui-text);
+  border-color: var(--ui-border-bright);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.22), 0 4px 0 rgba(8,8,18,.6);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .px-btn.green {
+  background: linear-gradient(var(--ui-accent), var(--ui-panel));
+  color: #ffffff;
+  border-color: var(--ui-border-bright);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.3), 0 4px 0 rgba(8,8,18,.6);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-body {
+  background: linear-gradient(145deg, var(--ui-panel), var(--ui-bg));
+  border-color: var(--ui-border-bright);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-screen:not(.ph-wall) {
+  background: var(--ui-panel-alt);
+  color: #202438;
+  border-color: var(--ui-bg);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-screen.ph-wall {
+  background:
+    radial-gradient(1.5px 1.5px at 20% 12%, #fff 60%, transparent),
+    radial-gradient(1.5px 1.5px at 72% 8%, #fff 60%, transparent),
+    radial-gradient(1px 1px at 45% 22%, #fff 60%, transparent),
+    radial-gradient(1px 1px at 88% 30%, #ffe 60%, transparent),
+    radial-gradient(1.5px 1.5px at 10% 40%, #fff 60%, transparent),
+    radial-gradient(1px 1px at 60% 44%, #fff 60%, transparent),
+    linear-gradient(170deg, var(--ui-bg) 0%, var(--ui-panel) 58%, color-mix(in srgb, var(--ui-accent) 70%, var(--ui-bg)) 100%);
+  color: var(--ui-text);
+  border-color: var(--ui-bg);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-status {
+  background: color-mix(in srgb, var(--ui-bg) 78%, #000000);
+  color: var(--ui-text);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-gold { color: var(--ui-border-bright); }
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-head { background: var(--ui-bg); color: var(--ui-border-bright); }
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-back { background: var(--ui-panel); border-color: var(--ui-border); color: var(--ui-text); }
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-card,
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-switch,
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-cell,
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-dexcell {
+  background: color-mix(in srgb, var(--ui-panel-alt) 55%, #ffffff);
+  color: #202438;
+  border-color: var(--ui-border);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--ui-bg) 28%, transparent);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-card.lead {
+  border-color: var(--ui-border-bright);
+  background: color-mix(in srgb, var(--ui-border-bright) 14%, #ffffff);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-sec {
+  color: color-mix(in srgb, var(--ui-bg) 75%, var(--ui-panel));
+  border-bottom-color: var(--ui-border);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-small {
+  color: color-mix(in srgb, var(--ui-bg) 68%, #4b5563);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-detail {
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  box-shadow: 0 -6px 10px var(--ui-panel-alt);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-detail .ph-small { color: var(--ui-text-dim); }
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-tabs button {
+  background: #ffffff;
+  color: #202438;
+  border-color: var(--ui-border);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .ph-tabs button.on {
+  background: var(--ui-bg);
+  color: var(--ui-border-bright);
+  border-color: var(--ui-border-bright);
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .bm-pay-summary {
+  background: color-mix(in srgb, var(--ui-panel-alt) 55%, #ffffff);
+  border-color: var(--ui-border);
+  color: #202438;
+}
+html[data-ui-theme]:not([data-ui-theme="rural"]) .held-badge,
+html[data-ui-theme]:not([data-ui-theme="rural"]) .stage3d-badge {
+  background: var(--ui-bg);
+  border-color: var(--ui-border-bright);
+  color: var(--ui-text);
+}

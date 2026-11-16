@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { Dir } from '@shared/types';
 import { DEPTH } from '../config';
+import { ensureLumiCoordTexture } from '../ui/LumiCoord';
 
 /** 플레이어 뒤를 졸졸 따라다니는 파트너 루미 (발자취 큐를 따라감) */
 /** 플레이어(약 26px) 대비 루미 그림(약 29px)을 절반 키로 */
@@ -13,18 +14,35 @@ export class Partner {
   private dir: Dir = 'down';
   private hopT = 0;
   species: string;
+  coordId = '';
+  coordSprite?: Phaser.GameObjects.Image;
   emote?: Phaser.GameObjects.Sprite;
 
-  constructor(private scene: Phaser.Scene, species: string, x: number, y: number) {
+  constructor(private scene: Phaser.Scene, species: string, x: number, y: number, coordId = '') {
     this.species = species;
     this.shadow = scene.add.image(x, y, 'shadow').setScale(0.3, 0.32).setDepth(DEPTH.cursor - 1).setAlpha(0.85);
     // 필드에서는 플레이어 키의 절반 정도 (배틀 · 휴대폰 그림은 원래 크기)
     this.sprite = scene.add.sprite(x, y, `lumi_${species}`, 0).setOrigin(0.5, 30 / 32).setScale(PARTNER_SCALE);
     this.sprite.play(`lumi_${species}:down`);
     for (let i = 0; i < 12; i++) this.trail.push({ x, y });
+    this.setCoord(coordId);
   }
   get x() { return this.sprite.x; }
   get y() { return this.sprite.y; }
+
+  setCoord(coordId = '') {
+    if (coordId === this.coordId && (this.coordSprite || !coordId)) return;
+    this.coordId = coordId;
+    this.coordSprite?.destroy();
+    this.coordSprite = undefined;
+    const key = ensureLumiCoordTexture(this.scene, coordId);
+    if (key) {
+      this.coordSprite = this.scene.add.image(this.x, this.y, key)
+        .setOrigin(0.5, 30 / 32)
+        .setScale(PARTNER_SCALE)
+        .setDepth(this.sprite.depth + 0.1);
+    }
+  }
 
   setSpecies(species: string) {
     if (species === this.species) return;
@@ -43,7 +61,16 @@ export class Partner {
 
   /** 기쁨 점프 + 감정 말풍선 (도움을 줄 때) */
   cheer(emote = 4) {
-    this.scene.tweens.add({ targets: this.sprite, y: this.sprite.y - 4, duration: 140, yoyo: true, repeat: 1, ease: 'Quad.Out' });
+    const st = { t: 0 };
+    const y0 = this.sprite.y;
+    this.scene.tweens.add({ targets: st, t: 1, duration: 140, yoyo: true, repeat: 1, ease: 'Quad.Out',
+      onUpdate: () => {
+        const lift = st.t * 4;
+        this.sprite.setData('groundY', y0);
+        this.sprite.setData('lift', lift);
+        this.sprite.y = y0 - lift;
+      },
+      onComplete: () => { this.sprite.setData('groundY', undefined); this.sprite.setData('lift', 0); this.sprite.y = y0; } });
     this.emote?.destroy();
     const e = this.scene.add.sprite(this.x, this.y - 15, 'emotes', emote).setOrigin(0.5, 1).setDepth(DEPTH.overlay - 1).setScale(0);
     this.emote = e;
@@ -82,8 +109,15 @@ export class Partner {
       if (nd !== this.dir && Math.hypot(fx, fy) > 4) { this.dir = nd; this.play(); }
     }
     this.sprite.setDepth(this.sprite.y - 0.5);
+    if (this.coordSprite) {
+      const gy = this.sprite.getData('groundY') as number | undefined;
+      const lift = (this.sprite.getData('lift') as number | undefined) ?? 0;
+      this.coordSprite.setPosition(this.x, this.sprite.y).setFlipX(this.dir === 'right').setDepth(this.sprite.depth + 0.1);
+      this.coordSprite.setData('groundY', gy);
+      this.coordSprite.setData('lift', lift);
+    }
     this.shadow.setPosition(this.x, this.y - 1);
     this.emote?.setPosition(this.x, this.y - 15);
   }
-  destroy() { this.sprite.destroy(); this.shadow.destroy(); this.emote?.destroy(); }
+  destroy() { this.sprite.destroy(); this.coordSprite?.destroy(); this.shadow.destroy(); this.emote?.destroy(); }
 }

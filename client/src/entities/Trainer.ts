@@ -30,10 +30,12 @@ export class Trainer extends Character {
     const [cx, cy] = this.cell();
     const pcx = Math.floor(px / TILE), pcy = Math.floor((py - 3) / TILE);
     const [dx, dy] = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] }[this.dir];
+    let sx = cx, sy = cy;
     for (let i = 1; i <= this.def.sight; i++) {
       const x = cx + dx * i, y = cy + dy * i;
-      if (x === pcx && y === pcy) return true;
-      if (this.grid.blocked(x, y)) return false;
+      if (x === pcx && y === pcy) return this.grid.info.canCrossEdge(sx, sy, x, y);
+      if (!this.grid.canStep(sx, sy, x, y)) return false;
+      sx = x; sy = y;
     }
     return false;
   }

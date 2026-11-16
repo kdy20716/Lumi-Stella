@@ -377,10 +377,6 @@
       "needs": [
         "ch3_route4"
       ],
-      "gate": {
-        "map": "gym_forge",
-        "msg": "도장 문에 쪽지가 붙어 있다. '관장 무쇠는 광산 사고 수습 중'"
-      },
       "scene": [
         [
           "miner",
@@ -397,6 +393,10 @@
       "needs": [
         "ch4_forge"
       ],
+      "gate": {
+        "map": "gym_forge",
+        "msg": "도장 문에 쪽지가 붙어 있다. '관장 무쇠는 광산 사고 수습 중 — 광산 마당 굴을 살펴봐 주세요'"
+      },
       "scene": [
         [
           "sci1",
@@ -488,10 +488,6 @@
       "needs": [
         "badge_flame"
       ],
-      "gate": {
-        "map": "gym_lumina",
-        "msg": "도장이 잠겨 있다. '관장 샛별 — 방송국에 붙잡혀 있음'이라는 소문이 돈다…"
-      },
       "scene": [
         [
           "villager",
@@ -505,6 +501,11 @@
       "id": "ch6_station",
       "chapter": 6,
       "map": "lumina",
+      "spot": {
+        "x": 23,
+        "y": 17,
+        "r": 6
+      },
       "needs": [
         "ch6_lumina"
       ],
@@ -546,6 +547,10 @@
       "needs": [
         "ch6_station"
       ],
+      "gate": {
+        "map": "gym_lumina",
+        "msg": "도장이 잠겨 있다. '관장 샛별 — 방송국에 붙잡혀 있음'이라는 소문이 돈다…"
+      },
       "scene": [
         [
           "c4",
@@ -635,10 +640,6 @@
       "needs": [
         "badge_normal"
       ],
-      "gate": {
-        "map": "gym_summit",
-        "msg": "도장 문이 닫혀 있다. 관장 천문은 별마루산 쪽으로 올라갔다고 한다."
-      },
       "scene": [
         [
           "cheonmun",
@@ -724,6 +725,10 @@
       "needs": [
         "ch7_solaris"
       ],
+      "gate": {
+        "map": "gym_summit",
+        "msg": "도장이 비어 있다. 관장 천문은 산 위 별의 제단 쪽 길을 지키고 있다고 한다…"
+      },
       "scene": [
         [
           "boss",

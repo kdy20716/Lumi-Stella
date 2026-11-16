@@ -59,7 +59,7 @@ export class Player extends Character {
     const horizontal = ax > 0.01 && ay > 0.01 ? (wasH ? ax >= ay * 0.6 : ax > ay * 1.6) : ax >= ay;
     const dir: Dir = horizontal ? (vx > 0 ? 'right' : 'left') : (vy > 0 ? 'down' : 'up');
 
-    const dist = ((input.run ? RUN_SPEED : WALK_SPEED) * dt) / 1000;
+    const totalDist = ((input.run ? RUN_SPEED : WALK_SPEED) * dt) / 1000;
     const solid = (nx: number, ny: number) => {
       if (!this.grid.canStand(nx, ny)) return true;
       // 다른 사람과 겹치지 않기 (이미 겹쳐 있으면 멀어지는 쪽으로는 이동 허용)
@@ -68,30 +68,62 @@ export class Player extends Character {
         return dx < 9 && dy < 7 && (dx < Math.abs(o.x - this.x) || dy < Math.abs(o.y - this.y));
       });
     };
-    const onLedge = this.overlapsLedge(this.x, this.y);
+
+    // 한 프레임 이동량이 커도 3D 절벽 경계를 뛰어넘지 않도록 <= 4px 단위로 나눠서 검사
+    const steps = Math.max(1, Math.ceil(totalDist / 4));
+    const subDist = totalDist / steps;
     let moved = false;
 
-    const stepX = vx * dist;
-    if (stepX) {
-      const nx = this.x + stepX;
-      if (!solid(nx, this.y) && (onLedge || !this.overlapsLedge(nx, this.y))) { this.setPosition(nx, this.y); moved = true; }
-    }
-    const stepY = vy * dist;
-    if (stepY) {
-      const ny = this.y + stepY;
-      const ledgeAhead = !onLedge && this.overlapsLedge(this.x, ny);
-      if (ledgeAhead) {
-        // 위에서 아래로 곧장 걸어가면 뛰어내림 (착지 칸이 비어 있을 때만)
-        const cx = Math.floor(this.x / TILE), row = Math.floor((ny - 0.01) / TILE);
-        if (stepY > 0 && dir === 'down' && this.grid.info.isLedge(cx, row) && this.grid.canStand(cx * TILE + 8, (row + 1) * TILE + 13)) { this.hop(row, cx); return; }
-      } else if (!solid(this.x, ny)) { this.setPosition(this.x, ny); moved = true; }
+    for (let s = 0; s < steps; s++) {
+      const onLedge = this.overlapsLedge(this.x, this.y);
+      const stepX = vx * subDist;
+      if (stepX) {
+        const nx = this.x + stepX;
+        if (!solid(nx, this.y) && (onLedge || !this.overlapsLedge(nx, this.y))) {
+          this.setPosition(nx, this.y); moved = true;
+        } else if (!vy && !this.grid.canStand(nx, this.y) && (onLedge || !this.overlapsLedge(nx, this.y))) {
+          // 1칸 폭 계단·문으로 걸어들어갈 때 몸 중심이 해당 칸에 걸쳐 있으면 모서리 살짝 비켜줌
+          const cx = Math.floor(this.x / TILE), cy = Math.floor((this.y - 2.5) / TILE);
+          const tcx = Math.floor((nx + (stepX > 0 ? 5 - 0.01 : -5)) / TILE);
+          const ty = cy * TILE + 10.5;
+          if ((tcx === cx || this.grid.canStep(cx, cy, tcx, cy)) && this.grid.canStand(nx, ty) && (onLedge || !this.overlapsLedge(nx, ty))) {
+            const dy = ty - this.y;
+            const nudge = Math.sign(dy) * Math.min(Math.abs(stepX), Math.abs(dy));
+            if (nudge && !solid(this.x, this.y + nudge) && (onLedge || !this.overlapsLedge(this.x, this.y + nudge))) { this.setPosition(this.x, this.y + nudge); moved = true; }
+          }
+        }
+      }
+
+      const curOnLedge = this.overlapsLedge(this.x, this.y);
+      const stepY = vy * subDist;
+      if (stepY) {
+        const ny = this.y + stepY;
+        const ledgeAhead = !curOnLedge && this.overlapsLedge(this.x, ny);
+        if (ledgeAhead) {
+          // 위에서 아래로 곧장 걸어가면 뛰어내림 (착지 칸이 비어 있을 때만)
+          const cx = Math.floor(this.x / TILE), row = Math.floor((ny - 0.01) / TILE);
+          if (stepY > 0 && dir === 'down' && this.grid.info.isLedge(cx, row) && this.grid.canStand(cx * TILE + 8, (row + 1) * TILE + 13)) { this.hop(row, cx); return; }
+        } else if (!solid(this.x, ny)) {
+          this.setPosition(this.x, ny); moved = true;
+        } else if (!vx && !this.grid.canStand(this.x, ny)) {
+          // 세로 이동 시 1칸 폭 계단·다리에 살짝 걸치면 가운데로 부드럽게 비켜줌
+          const cx = Math.floor(this.x / TILE), cy = Math.floor((this.y - 2.5) / TILE);
+          const tcy = Math.floor((ny + (stepY > 0 ? -0.01 : -5)) / TILE);
+          const tx = cx * TILE + TILE / 2;
+          if ((tcy === cy || this.grid.canStep(cx, cy, cx, tcy)) && this.grid.canStand(tx, ny) && (curOnLedge || !this.overlapsLedge(tx, ny))) {
+            const dx = tx - this.x;
+            const nudge = Math.sign(dx) * Math.min(Math.abs(stepY), Math.abs(dx));
+            if (nudge && !solid(this.x + nudge, this.y) && (curOnLedge || !this.overlapsLedge(this.x + nudge, this.y))) { this.setPosition(this.x + nudge, this.y); moved = true; }
+          }
+        }
+      }
     }
 
     this.moving = moved;
     if (moved) {
       this.play(input.run ? 'run' : 'walk', dir);
       this.dust += dt;
-      if (input.run && this.dust > 160) { this.dust = 0; this.kickDust(); }
+      if (input.run && this.dust > 135) { this.dust = 0; this.kickDust(); }
     } else this.play('idle', dir);
   }
   /** 순간이동 직후 등: 이동 상태 초기화 */
@@ -100,6 +132,7 @@ export class Player extends Character {
   /** 턱 넘어 뛰어내리기: 턱 칸을 지나 그 아래 칸 가운데에 착지 (포물선) */
   hopping = false;
   onHop?: () => void;
+  onDust?: (x: number, y: number) => void;
   private hop(ledgeRow: number, cx: number) {
     this.busy = true; this.hopping = true; this.moving = true;
     const x0 = this.x, x1 = cx * TILE + 8, y0 = this.y, y1 = (ledgeRow + 1) * TILE + 13;
@@ -107,12 +140,26 @@ export class Player extends Character {
     this.onHop?.();
     const st = { t: 0 };
     this.scene.tweens.add({ targets: st, t: 1, duration: 380, ease: 'Linear',
-      onUpdate: () => { const x = x0 + (x1 - x0) * st.t, y = y0 + (y1 - y0) * st.t; this.setPosition(x, y - Math.sin(Math.PI * st.t) * 9); this.shadow.setPosition(x, y); },
-      onComplete: () => { this.setPosition(x1, y1); this.busy = false; this.hopping = false; this.kickDust(); this.kickDust(); } });
+      onUpdate: () => {
+        const x = x0 + (x1 - x0) * st.t, y = y0 + (y1 - y0) * st.t;
+        const lift = Math.sin(Math.PI * st.t) * 9;
+        this.sprite.setData('groundY', y);
+        this.sprite.setData('lift', lift);
+        this.setPosition(x, y - lift);
+        this.shadow.setPosition(x, y);
+      },
+      onComplete: () => {
+        this.sprite.setData('groundY', undefined);
+        this.sprite.setData('lift', 0);
+        this.setPosition(x1, y1);
+        this.busy = false; this.hopping = false; this.kickDust(); this.kickDust();
+      } });
   }
 
   private kickDust() {
-    const p = this.scene.add.circle(this.x + Phaser.Math.Between(-3, 3), this.y - 1, Phaser.Math.Between(2, 3), 0xe8d0a0, 0.7).setDepth(this.y - 1);
-    this.scene.tweens.add({ targets: p, y: p.y - 5, alpha: 0, scale: 1.8, duration: 380, onComplete: () => p.destroy() });
+    const [vx, vy] = DIR_VEC[this.dir];
+    this.onDust?.(this.x - vx * 5, this.y - vy * 3);
+    const p = this.scene.add.circle(this.x - vx * 5 + Phaser.Math.Between(-3, 3), this.y - 1, Phaser.Math.Between(1, 2), 0xe8d0a0, 0.55).setDepth(this.y - 1);
+    this.scene.tweens.add({ targets: p, y: p.y - 4, alpha: 0, scale: 1.5, duration: 320, onComplete: () => p.destroy() });
   }
 }

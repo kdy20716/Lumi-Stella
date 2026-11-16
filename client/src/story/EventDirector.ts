@@ -19,6 +19,7 @@ export class EventDirector {
   /** 엔딩 크레딧 뒤 내 집 앞으로 옮겨진 다음, 새 장면에서 에필로그를 이어서 */
   static pendingEpilogue = false;
   private busy = false;
+  private spotTick = 0;
   private actors: Actor[] = [];
   constructor(private h: StoryHost) {}
   getActors() { return this.actors; }
@@ -77,12 +78,20 @@ export class EventDirector {
   }
   /** 돌아서서 입구로 걸어 나감 */
   private async walkOut(a: Actor) { const [ex, ey] = this.entrance(); await a.walkTo(ex, ey); await a.vanish(); }
-  update(dt: number) { for (const a of this.actors) if (a.sprite.active) a.tick(dt); this.actors = this.actors.filter((a) => a.sprite.active); }
+  update(dt: number) {
+    for (const a of this.actors) if (a.sprite.active) a.tick(dt);
+    this.actors = this.actors.filter((a) => a.sprite.active);
+    if (!this.busy && !ui.dialogue.open && !ui.shop.open && !this.h.player.busy && CHAPTERS.events.some((e) => e.map === this.h.mapId && e.spot && !this.me.flags?.includes(e.id))) {
+      this.spotTick += dt;
+      if (this.spotTick >= 220) { this.spotTick = 0; this.check(); }
+    }
+  }
 
   /** 맵에 들어왔을 때 · 사건이나 승부가 끝났을 때 */
   check() {
     if (this.busy) return;
-    const ev = nextEvent({ ...this.me, map: this.h.mapId });
+    const [x, y] = this.h.player.cell();
+    const ev = nextEvent({ ...this.me, map: this.h.mapId }, this.h.mapId, { x, y });
     if (ev) void this.run(ev);
   }
 
