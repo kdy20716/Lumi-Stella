@@ -32,7 +32,7 @@ export class RemotePlayer extends Character {
       this.setPosition(this.x + (a.x - this.x) * 0.2, this.y + (a.y - this.y) * 0.2);
     }
     const cur = b ?? a;
-    if (cur && !this.busy) this.play(['walk', 'run', 'idle'].includes(cur.anim) ? cur.anim : 'idle', cur.dir);
+    if (cur && !this.busy) this.play(['walk', 'run', 'idle', 'bike', 'bike_idle'].includes(cur.anim) ? cur.anim : 'idle', cur.dir);
     this.update();
   }
 }

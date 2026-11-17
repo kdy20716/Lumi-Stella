@@ -24,7 +24,7 @@ import { MAP_IDS, MAP_NAMES, type MapId, type SaveData } from '../shared/types';
 import { firebaseConfig } from '../shared/firebaseConfig';
 import { verifyIdToken } from './auth';
 import { createStorage } from './storage';
-import { CLIENT_ORIGINS, DEV_AUTH, MAX_SPEED, PORT, REPORT_COOLDOWN_MS, REPORT_MAX_LEN, isAdminEmail } from './config';
+import { BIKE_MAX_SPEED, CLIENT_ORIGINS, DEV_AUTH, MAX_SPEED, PORT, REPORT_COOLDOWN_MS, REPORT_MAX_LEN, isAdminEmail } from './config';
 import { Hub, type Client, type Conn } from './hub';
 import { handleAdmin } from './admin';
 import { handleShopHttp } from './payment';
@@ -105,7 +105,8 @@ async function onMessage(client: Client, m: C2S) {
       const now = Date.now(), dt = Math.max(16, now - client.lastMove) / 1000;
       client.lastMove = now;
       const dist = Math.hypot(m.x - p.x, m.y - p.y);
-      if (dist > MAX_SPEED * dt + 6 || !sim.canStand(p, m.x, m.y)) { hub.send(ws, { t: 'correct', x: p.x, y: p.y }); break; } // 서버 보정
+      const speedCap = p.riding ? BIKE_MAX_SPEED : MAX_SPEED;
+      if (dist > speedCap * dt + 8 || !sim.canStand(p, m.x, m.y)) { hub.send(ws, { t: 'correct', x: p.x, y: p.y }); break; } // 서버 보정
       if (dist > 2) p.sleeping = false;
       p.x = m.x; p.y = m.y; p.dir = m.dir; client.anim = String(m.anim).slice(0, 16);
       break;

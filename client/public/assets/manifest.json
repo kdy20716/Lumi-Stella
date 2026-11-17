@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T03:46:29.999Z",
+  "generatedAt": "2026-11-17T06:58:42.813Z",
   "tileSize": 16,
   "images": {
     "water0": {
@@ -995,7 +995,7 @@
     "room_gym_frost": {
       "path": "assets/interiors/gym_frost.png",
       "w": 288,
-      "h": 352,
+      "h": 384,
       "originY": 1
     },
     "room_gym_summit": {
@@ -1393,7 +1393,7 @@
       "path": "assets/ui/icons.png",
       "frameWidth": 16,
       "frameHeight": 16,
-      "frames": 93,
+      "frames": 94,
       "originY": 0.9375,
       "ids": [
         "hoe",
@@ -1474,6 +1474,7 @@
         "heavy_ball",
         "star_candy",
         "name_ticket",
+        "bicycle",
         "hoe_copper",
         "hoe_iron",
         "hoe_star",
@@ -2801,6 +2802,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -3027,6 +3076,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -3253,6 +3350,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -3479,6 +3624,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -3705,6 +3898,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -3931,6 +4172,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -4157,6 +4446,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -4383,6 +4720,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -4609,6 +4994,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -4835,6 +5268,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -5061,6 +5542,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -5287,6 +5816,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -5513,6 +6090,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -5739,6 +6364,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -5965,6 +6638,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -6191,6 +6912,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -6417,6 +7186,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -6643,6 +7460,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -6869,6 +7734,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -7095,6 +8008,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -7321,6 +8282,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -7547,6 +8556,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -7773,6 +8830,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -7999,6 +9104,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -8225,6 +9378,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -8451,6 +9652,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -8677,6 +9926,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -8903,6 +10200,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -9129,6 +10474,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -9355,6 +10748,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -9581,6 +11022,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -9807,6 +11296,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -10033,6 +11570,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -10259,6 +11844,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -10485,6 +12118,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -10711,6 +12392,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -10937,6 +12666,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -11163,6 +12940,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -11389,6 +13214,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -11615,6 +13488,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -11841,6 +13762,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -12067,6 +14036,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -12293,6 +14310,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -12519,6 +14584,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -12745,6 +14858,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -12971,6 +15132,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -13197,6 +15406,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -13423,6 +15680,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -13649,6 +15954,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -13875,6 +16228,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -14101,6 +16502,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -14327,6 +16776,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -14553,6 +17050,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -14779,6 +17324,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -15005,6 +17598,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -15231,6 +17872,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -15457,6 +18146,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -15683,6 +18420,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -15909,6 +18694,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -16135,6 +18968,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -16361,6 +19242,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -16587,6 +19516,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -16813,6 +19790,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -17039,6 +20064,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -17265,6 +20338,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -17491,6 +20612,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -17717,6 +20886,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -17943,6 +21160,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -18169,6 +21434,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -18395,6 +21708,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -18621,6 +21982,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -18847,6 +22256,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -19073,6 +22530,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -19299,6 +22804,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -19525,6 +23078,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -19751,6 +23352,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -19977,6 +23626,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -20203,6 +23900,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -20429,6 +24174,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -20655,6 +24448,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -20881,6 +24722,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -21107,6 +24996,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -21333,6 +25270,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -21559,6 +25544,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -21785,6 +25818,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -22011,6 +26092,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -22237,6 +26366,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -22463,6 +26640,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -22689,6 +26914,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -22915,6 +27188,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -23141,6 +27462,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -23367,6 +27736,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -23593,6 +28010,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -23819,6 +28284,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -24045,6 +28558,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -24271,6 +28832,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -24497,6 +29106,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -24723,6 +29380,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -24949,6 +29654,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -25175,6 +29928,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -25401,6 +30202,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -25627,6 +30476,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -25853,6 +30750,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -26079,6 +31024,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -26305,6 +31298,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -26531,6 +31572,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -26757,6 +31846,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -26983,6 +32120,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -27209,6 +32394,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -27435,6 +32668,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -27661,6 +32942,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -27887,6 +33216,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -28113,6 +33490,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -28339,6 +33764,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -28565,6 +34038,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -28791,6 +34312,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -29017,6 +34586,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -29243,6 +34860,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -29469,6 +35134,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -29695,6 +35408,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -29921,6 +35682,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -30147,6 +35956,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     },
@@ -30373,6 +36230,54 @@
           "end": 283,
           "fps": 6,
           "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
         }
       }
     }

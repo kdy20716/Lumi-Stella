@@ -24,7 +24,7 @@ export class Hub {
   title(id: string) { return this.clients.get(id)?.admin ? 'admin' : undefined; }
   netPlayer(id: string): NetPlayer {
     const p = this.sim.players.get(id)!;
-    return { id, name: p.name, look: p.look, map: p.map, inst: p.inst, world: p.world, x: p.x, y: p.y, dir: p.dir, anim: this.clients.get(id)?.anim ?? 'idle', partner: p.party[0]?.species, lumiCoord: p.lumiCoord, chatBubble: p.chatBubble, battling: this.sim.inBattle(id), title: this.title(id) };
+    return { id, name: p.name, look: p.look, map: p.map, inst: p.inst, world: p.world, x: p.x, y: p.y, dir: p.dir, anim: this.clients.get(id)?.anim ?? 'idle', riding: !!p.riding, partner: p.party[0]?.species, lumiCoord: p.lumiCoord, chatBubble: p.chatBubble, battling: this.sim.inBattle(id), title: this.title(id) };
   }
   roster(): RosterEntry[] { return [...this.clients.keys()].map((id) => { const p = this.sim.players.get(id)!; return { id, name: p.name, look: p.look, map: p.map, inst: p.inst, title: this.title(id) }; }); }
 
@@ -32,6 +32,7 @@ export class Hub {
     const m: S2C = { t: 'sim', event };
     switch (event.type) {
       case 'player': case 'party': case 'story': case 'bmState': return this.sendTo(event.id, m);
+      case 'bike': { const p = this.sim.players.get(event.id); return p ? this.toRoom(this.sim.room(p), m) : this.sendTo(event.id, m); }
       case 'help': case 'gold': case 'cleared': case 'opened': return this.sendTo(event.playerId, m);
       case 'room': this.rosterDirty = true; return this.sendTo(event.playerId, m);
       case 'invite': return this.sendTo(event.to, m);
@@ -40,6 +41,7 @@ export class Hub {
       case 'tile': if (event.map && event.map !== 'farm') return this.sendTo(event.owner, m); return this.toRoom(roomKey('farm', event.owner), m);   // 마을 텃밭은 주인에게만
       case 'placed': case 'unplaced': return this.toRoom(roomKey('farm', event.owner), m);
       case 'objectRemoved': if (event.owner) { this.toRoom(roomKey('farm', event.owner), m); return this.toRoom(roomKey('home', event.owner), m); } return this.broadcast(m);
+      case 'objectRestored': if (event.playerId) return this.sendTo(event.playerId, m); return this.broadcast(m);
       case 'look': this.rosterDirty = true; return this.broadcast(m);
       case 'newDay': this.broadcast(m); this.onNewDay(); return;
       default: return this.broadcast(m);

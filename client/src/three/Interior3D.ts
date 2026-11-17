@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import type { MapInfo, TiledObject } from '@shared/sim/MapInfo';
 import { prop } from '@shared/sim/MapInfo';
+import type { Heights } from '@shared/sim/Heights';
 
 type GeoBuf = { pos: number[]; uv: number[]; col: number[] };
 
@@ -243,6 +244,7 @@ export function buildInteriorRoom3D(
   bgImg: HTMLImageElement | HTMLCanvasElement | null,
   kRows: number,
   tileSize = 16,
+  hts?: Heights,
 ): THREE.Group {
   const W = info.width, H = info.height;
   const k = Math.max(1, Math.min(4, kRows));
@@ -253,16 +255,60 @@ export function buildInteriorRoom3D(
   const innerW = x1 - x0, innerD = z1 - z0;
   const doorCols = Array.from({ length: W }, (_, x) => x).filter((x) => x > 0 && x < W - 1 && !info.isBlocked(x, H - 1));
 
-  // 1) 안쪽 바닥 + 문턱 바닥
+  // 1) 안쪽 바닥(단차·경사로 지원) + 문턱 바닥
   const floorBuf = newBuf();
+  const sideStepBuf = newBuf();
   const u = (x: number) => x / W;
   const v = (z: number) => 1 - z / H;
-  pushQuadCol(
-    floorBuf,
-    [[x0, 0, z0], [x0, 0, z1], [x1, 0, z1], [x1, 0, z0]],
-    [[u(x0), v(z0)], [u(x0), v(z1)], [u(x1), v(z1)], [u(x1), v(z0)]],
-    [1, 1, 1],
-  );
+  let hasElev = false;
+  if (hts) {
+    for (let z = z0; z < z1 && !hasElev; z++) for (let x = x0; x < x1; x++) {
+      const c = hts.at(x, z);
+      if (Math.abs(c.nw) > 0.01 || Math.abs(c.ne) > 0.01 || Math.abs(c.sw) > 0.01 || Math.abs(c.se) > 0.01) { hasElev = true; break; }
+    }
+  }
+  if (!hasElev || !hts) {
+    pushQuadCol(
+      floorBuf,
+      [[x0, 0, z0], [x0, 0, z1], [x1, 0, z1], [x1, 0, z0]],
+      [[u(x0), v(z0)], [u(x0), v(z1)], [u(x1), v(z1)], [u(x1), v(z0)]],
+      [1, 1, 1],
+    );
+  } else {
+    const EPS = 0.01;
+    const zUv: [number, number][] = [[0, 1], [0, 0], [1, 0], [1, 1]];
+    const wallRgb = mulRgb(hexRgb(trimHex), 1.35);
+    const stepCol = (f: number) => mulRgb(wallRgb, f);
+    for (let z = z0; z < z1; z++) for (let x = x0; x < x1; x++) {
+      const c = hts.at(x, z);
+      pushQuadCol(
+        floorBuf,
+        [[x, c.nw, z], [x, c.sw, z + 1], [x + 1, c.se, z + 1], [x + 1, c.ne, z]],
+        [[u(x), v(z)], [u(x), v(z + 1)], [u(x + 1), v(z + 1)], [u(x + 1), v(z)]],
+        [1, 1, 1],
+      );
+      const nbS = z + 1 < z1 ? hts.at(x, z + 1) : { nw: 0, ne: 0, sw: 0, se: 0 };
+      const nbN = z - 1 >= z0 ? hts.at(x, z - 1) : { nw: 0, ne: 0, sw: 0, se: 0 };
+      const nbE = x + 1 < x1 ? hts.at(x + 1, z) : { nw: 0, ne: 0, sw: 0, se: 0 };
+      const nbW = x - 1 >= x0 ? hts.at(x - 1, z) : { nw: 0, ne: 0, sw: 0, se: 0 };
+      if (c.sw > nbS.nw + EPS || c.se > nbS.ne + EPS) {
+        const lo1 = Math.min(nbS.nw, c.sw), lo2 = Math.min(nbS.ne, c.se);
+        pushQuadCol(sideStepBuf, [[x, c.sw, z + 1], [x, lo1, z + 1], [x + 1, lo2, z + 1], [x + 1, c.se, z + 1]], zUv, stepCol(0.95));
+      }
+      if (c.ne > nbN.se + EPS || c.nw > nbN.sw + EPS) {
+        const lo1 = Math.min(nbN.se, c.ne), lo2 = Math.min(nbN.sw, c.nw);
+        pushQuadCol(sideStepBuf, [[x + 1, c.ne, z], [x + 1, lo1, z], [x, lo2, z], [x, c.nw, z]], zUv, stepCol(0.65));
+      }
+      if (c.se > nbE.sw + EPS || c.ne > nbE.nw + EPS) {
+        const lo1 = Math.min(nbE.sw, c.se), lo2 = Math.min(nbE.nw, c.ne);
+        pushQuadCol(sideStepBuf, [[x + 1, c.se, z + 1], [x + 1, lo1, z + 1], [x + 1, lo2, z], [x + 1, c.ne, z]], zUv, stepCol(0.76));
+      }
+      if (c.nw > nbW.ne + EPS || c.sw > nbW.se + EPS) {
+        const lo1 = Math.min(nbW.ne, c.nw), lo2 = Math.min(nbW.se, c.sw);
+        pushQuadCol(sideStepBuf, [[x, c.nw, z], [x, lo1, z], [x, lo2, z + 1], [x, c.sw, z + 1]], zUv, stepCol(0.84));
+      }
+    }
+  }
   for (const dx of doorCols) {
     pushQuadCol(
       floorBuf,
@@ -273,6 +319,8 @@ export function buildInteriorRoom3D(
   }
   const fMesh = bufToMesh(floorBuf, new THREE.MeshBasicMaterial({ map: groundTex, vertexColors: true, alphaTest: 0.45 }));
   if (fMesh) grp.add(fMesh);
+  const stMesh = bufToMesh(sideStepBuf, new THREE.MeshBasicMaterial({ vertexColors: true }));
+  if (stMesh) grp.add(stMesh);
 
   // 2) 북쪽(뒷) 벽
   const backBuf = newBuf();

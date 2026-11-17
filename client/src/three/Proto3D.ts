@@ -120,7 +120,7 @@ async function buildMap(id: string, man: Manifest, maps: Record<string, MapWithP
     let k = 0; while (k < H && Array.from({ length: W }, (_, x) => info.isBlocked(x, k)).every(Boolean)) k++;
     k = Math.min(k, 4);
     hts = computeHeights({ ...raw, layers: raw.layers.filter((l) => l.name !== 'Cliff') }, undefined);
-    group.add(buildInteriorRoom3D(info, groundTex, bgImg, k, T));
+    group.add(buildInteriorRoom3D(info, groundTex, bgImg, k, T, hts));
   } else {
     hts = computeHeights(raw, spawn ? { x: spawn.x / T, y: spawn.y / T } : undefined);
     // 일반 절벽 무늬: 타일셋 11번째 줄의 절벽 앞면 타일

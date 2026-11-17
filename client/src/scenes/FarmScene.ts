@@ -117,6 +117,7 @@ export class FarmScene extends Phaser.Scene {
   private lastTick = 0;
   private titleStart?: { map: string; x: number; y: number };
   private badgeCount = -1;
+  private bikeZoneEntered = false;
   private badgeJingle = false;
   private fishing?: { phase: 'cast' | 'wait' | 'bite'; t: number; tx: number; ty: number; bobber: Phaser.GameObjects.Arc; window: number };
   private blades?: Phaser.GameObjects.Image;
@@ -127,6 +128,19 @@ export class FarmScene extends Phaser.Scene {
   private plot!: EventDirector;   // 본편 사건 (chapters.json)
   private stage3d?: Stage3D;
   private openGates = new Set<string>();
+  private flippedRails = new Set<string>();
+  private revealedCards = new Set<number>();
+  private matchedCards = new Set<number>();
+  private pickedCards: { id: number; gateId: string; key: string }[] = [];
+  private cardFlipLockUntil = 0;
+  private prismRots = new Map<number, number>();
+  private litLaserDests = new Set<number>();
+  private laserSegments: [number, number, number, number][] = [];
+  private runeStep = 0;
+  private litRune: number | null = null;
+  private runeDemoPlaying = false;
+  private quizWrongUntil = 0;
+  private stepGimmickLock = '';
   private padLock = '';
   private arrowLock = '';
   private switchLock = '';
@@ -141,6 +155,9 @@ export class FarmScene extends Phaser.Scene {
     this.npcs = []; this.chickens = []; this.ducks = []; this.remotes.clear(); this.playing = false; this.warping = false;
     this.trainers = []; this.remotePartners.clear(); this.forageSprites.clear(); this.partner = undefined; this.fishing = undefined; this.battling = false; this.lastCell = '';
     this.openGates.clear(); this.padLock = ''; this.arrowLock = ''; this.switchLock = '';
+    this.flippedRails.clear(); this.revealedCards.clear(); this.matchedCards.clear(); this.pickedCards = [];
+    this.cardFlipLockUntil = 0; this.prismRots.clear(); this.litLaserDests.clear(); this.laserSegments = [];
+    this.runeStep = 0; this.litRune = null; this.runeDemoPlaying = false; this.quizWrongUntil = 0; this.stepGimmickLock = '';
     this.zoom = pickZoom(this.scale.height);
 
     this.dishSprite = undefined; this.pendingRoom = false;
@@ -200,9 +217,10 @@ export class FarmScene extends Phaser.Scene {
       : { x: (info.spawns.get('player') ?? farmSpawn).x, y: (info.spawns.get('player') ?? farmSpawn).y + 5 });
     const look = this.manifest.characters[this.auth.me.look] ? this.auth.me.look : 'm1';
     this.player = new Player(this, look, start.x, start.y, this.manifest.characters[look], this.world.grid);
+    this.player.riding = !!this.auth.me.riding && !this.world.interior && !this.world.cave;
     this.player.bubbleSkin = this.auth.me.chatBubble ?? 'default';
     this.syncPlayerLabel();
-    this.player.onStep = (run) => { if (this.playing) sfx.step(this.world.surfaceAt(this.player.x, this.player.y), run); };
+    this.player.onStep = (run) => { if (this.playing && !this.player.riding) sfx.step(this.world.surfaceAt(this.player.x, this.player.y), run); };
     this.player.onHop = () => sfx.play('hop');
     this.player.onDust = (x, y) => this.stage3d?.burst('dust', x, y);
     if (data?.fromRoom) this.player.play('idle', this.world.interior ? 'up' : 'down');
@@ -251,6 +269,7 @@ export class FarmScene extends Phaser.Scene {
     this.atmo.setWeather(this.auth.time.weather);
     this.stage3d = new Stage3D(this, this.manifest, this.world, this.mapId);
     if (this.farm) this.farm.onFx = (k, tx, ty) => this.stage3d?.burst(k, tx * TILE + 8, ty * TILE + 8);
+    this.initGymPuzzleState();
 
     const cam = this.cameras.main;
     cam.setZoom(this.zoom).setRoundPixels(true).setBackgroundColor(this.world.interior || this.world.cave ? '#0d0a0c' : '#14201a');
@@ -410,7 +429,7 @@ export class FarmScene extends Phaser.Scene {
   }
 
   // ── 휴대폰 지도 / 일시정지 메뉴 ─────────────────────
-  private hasPhone() { return this.auth.me.story >= STORY.PHONE; }
+  private hasPhone() { return this.auth.me.story >= STORY.PHONE || this.auth.isAdmin; }
   /** 휴대폰: 이 씬(맵)이 바뀔 때마다 새 문맥으로 연결 */
   private setupPhone() {
     phone.setCtx({
@@ -599,6 +618,7 @@ export class FarmScene extends Phaser.Scene {
       if (e.key === 'm' || e.key === 'M') { this.openPhone('map'); return; }
       if (pgCheckoutModal.open || ui.shop.open || ui.mailbox.open || ui.creator.open) return;
       if (this.fishing && [' ', 'e', 'E', 'c', 'C', 'x', 'X'].includes(e.key)) { this.reel(); return; }
+      if (e.key === 'b' || e.key === 'B') { if (this.playing && !this.battling) void this.toggleBike(); return; }
       if (e.key === 'p' || e.key === 'P') { if (this.hasPhone()) phone.toggle('party'); else ui.party.toggle(this.auth.me, (i) => void this.auth.request({ kind: 'setPartner', index: i })); return; }
       if (e.key === 'h' || e.key === 'H') { if (this.hasPhone()) phone.toggle('help'); else ui.help.toggle(); }
       if (e.key === 'l' || e.key === 'L') ui.roster.toggle();
@@ -787,6 +807,7 @@ export class FarmScene extends Phaser.Scene {
     }
     if (item.id === 'name_ticket') out.push({ label: '닉네임 변경하기', run: () => { phone.shopTab = 'item'; phone.show('shop'); }, primary: true });
     if (item.id === 'ocarina') out.push({ label: '불기', run: () => this.fluteAnywhere(), primary: true });
+    if (item.id === 'bicycle') out.push({ label: this.player.riding ? '내리기' : '타기 (B)', run: () => { phone.close(); void this.toggleBike(); }, primary: true });
     if (nearTable && (item.type === 'food' || item.type === 'crop')) out.push({ label: '식탁에 차리기 (4인분)', run: () => { this.auth.sendAnim('interact', this.player.dir); this.player.playOnce('interact', this.player.dir, () => void this.auth.request({ kind: 'serve', slot }), 1); } });
     if (nearBin && item.sellPrice > 0 && item.type !== 'tool') out.push({ label: `출하하기 (${item.sellPrice * s!.quantity}G)`, run: () => this.shipSlot(slot), primary: true });
     if (item.type !== 'food' && item.type !== 'key') out.push(hold);
@@ -808,14 +829,17 @@ export class FarmScene extends Phaser.Scene {
     if (npc) return { label: label(`${npc.def.name}와(과) 대화하기`), run: () => this.talk(npc) };
     const tile = this.farm?.get(tx, ty);
     if (tile?.crop && tile.crop.stage >= 4) return { label: label('수확하기'), run: () => this.harvest(tx, ty) };
-    const o = this.world.objectAt(tx, ty);
-    if (o) return this.objectInteraction(o);
+    const [px, py] = this.player.cell();
+    const o = this.world.objectAt(tx, ty) ?? this.world.objectAt(px, py)
+      ?? this.world.interactAt(tx, ty) ?? this.world.interactAt(px, py);
+    if (o) return this.gymObjectInteraction(o) ?? this.objectInteraction(o);
     const placed = this.mapId === 'farm' ? this.world.placedAt(tx, ty) : undefined;
     if (placed) { const po = this.auth.placed.get(placed); const it = po ? ITEMS[po.item] : null; return { label: label(`${it?.name ?? '설치물'} 살펴보기`), run: () => this.say([`${it?.name ?? '설치물'}${po && po.by !== this.auth.me.id ? ` (${this.auth.roster.get(po.by)?.name ?? '친구'}님이 설치)` : ''}.`, '망치를 들고 치면 부숴서 가방에 돌려받을 수 있다.']) }; }
     const weed = this.mapId === 'farm' ? this.world.weedAt(tx, ty) : undefined;
     if (weed) return { label: label('잡초 뽑기'), run: () => { this.auth.sendAnim('interact', this.player.dir); this.player.playOnce('interact', this.player.dir, () => void this.auth.request({ kind: 'pull', objectId: weed.id }).then((r) => r.ok && sfx.play('forage')), 1); } };
     // 물가: 낚싯대가 있으면 바로 낚시, 없으면 사 오라고 안내
-    if (this.world.info.terrainAt(tx, ty) === '2') {
+    if (this.world.info.terrainAt(tx, ty) === '2' && this.world.info.isBlocked(tx, ty)
+      && Math.abs(this.world.info.heights.sample(this.player.x / TILE, this.player.y / TILE) - this.world.info.heights.sample(tx + 0.5, ty + 0.5)) < 0.8) {
       const rodSlot = this.auth.me.inventory.findIndex((s) => s.itemId && ITEMS[s.itemId]?.tool === 'rod');
       if (rodSlot < 0) return { label: label('물 살펴보기'), run: () => { sfx.play('error'); ui.toast.push('낚싯대가 없어요. 마을 상점에서 낚싯대를 구매해 주세요!', 'rod'); } };
       return { label: label('낚시하기'), run: () => { this.select(rodSlot); this.castLine(tx, ty); } };
@@ -1024,6 +1048,363 @@ export class FarmScene extends Phaser.Scene {
     });
   }
 
+  // ── 8개 체육관 고유 기믹 로직 ───────────────────────────
+  private objProp(id: number, key: string): unknown {
+    return this.world.info.objects.find((ob) => ob.id === id)?.properties?.find((p) => p.name === key)?.value;
+  }
+
+  private parseSeq(raw: unknown): number[] {
+    if (Array.isArray(raw)) return raw.map(Number);
+    if (typeof raw === 'string' && raw.trim()) {
+      try {
+        const a = JSON.parse(raw);
+        if (Array.isArray(a)) return a.map(Number);
+      } catch {
+        return raw.split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n));
+      }
+    }
+    return [1, 3, 0, 2];
+  }
+
+  private initGymPuzzleState() {
+    if (this.player) {
+      this.player.onSlideBlocked = (px, py, dx, dy, distPx) => this.handleIceSlideBlocked(px, py, dx, dy, distPx);
+    }
+    const prefix = `${this.mapId}:`;
+    for (const k of this.auth.me.cleared ?? []) {
+      if (!k.startsWith(prefix)) continue;
+      const id = k.slice(prefix.length);
+      if (/^\d+$/.test(id)) this.world.removeObject(Number(id), false);
+      else {
+        this.openGates.add(id);
+        this.world.openGate(id);
+      }
+    }
+    for (const wo of this.world.objects) {
+      if (wo.type === 'pair_card' && wo.gateId && this.openGates.has(wo.gateId)) {
+        this.matchedCards.add(wo.id);
+        this.revealedCards.add(wo.id);
+        this.world.setCardVisual2D(wo.id, true, 0xff80b0);
+      }
+      if (wo.type === 'prism') {
+        const r = Number(this.objProp(wo.id, 'rot') ?? 0);
+        this.prismRots.set(wo.id, r);
+      }
+    }
+    if (this.world.info.laserSources.length > 0) this.recomputeLasers(false);
+  }
+
+  private gymObjectInteraction(o: { id: number; type: string; interact?: string; gateId?: string }): { label: string; run: () => void } | null {
+    if (o.type === 'sign' || o.interact === 'sign') {
+      const txt = String(this.objProp(o.id, 'text') ?? this.objProp(o.id, 'msg') ?? '').trim();
+      if (!txt) return null;
+      return { label: label('안내 석판 읽기'), run: () => this.say(txt.split('\n')) };
+    }
+    if (o.type === 'snowball') {
+      return {
+        label: label('거대 눈덩이 살펴보기'),
+        run: () => ui.toast.push('얼음판 위에서 2칸 이상 미끄러져 부딪히면 산산조각낼 수 있어요!', 'ice'),
+      };
+    }
+    if (o.type === 'snow_reset') {
+      return { label: label('눈덩이 초기화 패드 밟기'), run: () => this.resetSnowballs() };
+    }
+    if (o.type === 'pair_card') {
+      return { label: label('단풍꽃 카드 뒤집기'), run: () => this.flipPairCard(o.id) };
+    }
+    if (o.type === 'rail_switch') {
+      const rg = String(this.objProp(o.id, 'railGroup') ?? 'fg1');
+      const gid = String(this.objProp(o.id, 'gateId') ?? rg);
+      return { label: label(`레일 레버 전환 (${rg === 'fg2' || rg === 'r2' ? '청록' : '황금'})`), run: () => this.toggleRailSwitch(rg, gid) };
+    }
+    if (o.type === 'quiz_pad') {
+      const lbl = String(this.objProp(o.id, 'num') ?? '?');
+      const q = String(this.objProp(o.id, 'q') ?? '');
+      return {
+        label: label(`${lbl}번 답안 패드 (${q ? q.split('\n')[0].slice(0, 14) + '…' : '불꽃 퀴즈'})`),
+        run: () => this.answerQuizPad(o.id),
+      };
+    }
+    if (o.type === 'prism') {
+      return { label: label('광학 프리즘 회전하기'), run: () => this.rotatePrism(o.id) };
+    }
+    if (o.type === 'laser_src') {
+      return { label: label('광선 발사기 확인'), run: () => ui.toast.push('광학 프리즘(E)을 회전시켜 초록 수신기에 광선을 연결하세요!', 'sparkle') };
+    }
+    if (o.type === 'laser_dst') {
+      return { label: label('광선 수신기 확인'), run: () => ui.toast.push('광선이 이 수신기에 닿으면 잠긴 게이트가 열립니다!', 'sparkle') };
+    }
+    if (o.type === 'rune_demo') {
+      return { label: label('별빛 룬 시범 선율 듣기'), run: () => this.playRuneDemo(o.id) };
+    }
+    if (o.type === 'rune_pad') {
+      const idx = Number(this.objProp(o.id, 'runeIdx') ?? 0);
+      return { label: label(`별빛 룬 [${idx + 1}] 울리기`), run: () => this.stepRunePad(o.id) };
+    }
+    return null;
+  }
+
+  private checkFloorGymPuzzle(cx: number, cy: number, cellKey: string) {
+    if (this.player && !this.player.onSlideBlocked) {
+      this.player.onSlideBlocked = (px, py, dx, dy, distPx) => this.handleIceSlideBlocked(px, py, dx, dy, distPx);
+    }
+    const info = this.world.info;
+    const pc = info.pairCardAt(cx, cy);
+    const qp = info.quizPadAt(cx, cy);
+    const pr = info.prismAt(cx, cy);
+    const rp = info.runePadAt(cx, cy);
+    const rd = info.runeDemoAt(cx, cy);
+    const sr = info.snowResetAt(cx, cy);
+    if (!pc && !qp && !pr && !rp && !rd && !sr) {
+      if (this.stepGimmickLock) this.stepGimmickLock = '';
+      return;
+    }
+    if (this.stepGimmickLock === cellKey) return;
+    if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) >= 11.5) return;
+    this.stepGimmickLock = cellKey;
+    if (pc) this.flipPairCard(pc.id);
+    else if (qp) this.answerQuizPad(qp.id);
+    else if (pr) this.rotatePrism(pr.id);
+    else if (rd) this.playRuneDemo(rd.id);
+    else if (rp) this.stepRunePad(rp.id);
+    else if (sr) this.resetSnowballs();
+  }
+
+  private handleIceSlideBlocked(px: number, py: number, dx: number, dy: number, distPx: number) {
+    const info = this.world.info;
+    let sb = info.snowballAt(Math.floor((px + dx * 10) / TILE), Math.floor((py - 3 + dy * 10) / TILE));
+    let hx = Math.floor((px + dx * 10) / TILE), hy = Math.floor((py - 3 + dy * 10) / TILE);
+    if (!sb) {
+      hx = Math.floor((px + dx * 13) / TILE);
+      hy = Math.floor((py - 3 + dy * 13) / TILE);
+      sb = info.snowballAt(hx, hy);
+    }
+    if (!sb) return;
+    if (distPx < 22) {
+      sfx.play('puzzle_ng');
+      const wo = this.world.objects.find((ob) => ob.id === sb!.id);
+      if (wo) this.world.shake(wo, 2);
+      ui.toast.push('힘이 부족해요! 얼음 위에서 2칸 이상 미끄러져 부딪혀야 눈덩이가 부서집니다.', 'ice');
+      return;
+    }
+    sfx.play('snow_smash');
+    this.world.removeObject(sb.id, true);
+    this.stage3d?.burstSnow3D(hx * TILE + 8, hy * TILE + 8);
+    void this.auth.request({ kind: 'gymClear', objectId: sb.id });
+    ui.toast.push('콰광! 거대 눈덩이를 산산조각냈어요!', 'ice');
+  }
+
+  private resetSnowballs() {
+    sfx.play('heal_machine');
+    ui.toast.push('눈덩이 초기화! 모든 눈덩이를 처음 위치로 되돌렸어요.', 'ice');
+    void this.auth.request({ kind: 'gymReset' });
+  }
+
+  private flipPairCard(id: number) {
+    if (this.matchedCards.has(id) || this.revealedCards.has(id)) return;
+    if (performance.now() < this.cardFlipLockUntil) return;
+    const gateId = String(this.objProp(id, 'gateId') ?? 'mp1');
+    if (this.openGates.has(gateId)) return;
+    const sym = String(this.objProp(id, 'pairKey') ?? 'leaf_red');
+    const SYM_HEX: Record<string, number> = {
+      leaf_red: 0xe8524a, sun_gold: 0xffd448, sakura: 0xff88b8, violet: 0xa870ff, bellflower: 0x48b8ff,
+    };
+    this.revealedCards.add(id);
+    this.world.setCardVisual2D(id, true, SYM_HEX[sym] ?? 0xff6b9d);
+    sfx.play('card_flip');
+    this.pickedCards.push({ id, gateId, key: `${gateId}:${sym}` });
+    if (this.pickedCards.length < 2) return;
+    const [a, b] = this.pickedCards;
+    this.pickedCards = [];
+    if (a.key === b.key) {
+      this.matchedCards.add(a.id);
+      this.matchedCards.add(b.id);
+      sfx.play('puzzle_ok');
+      const gateCards = this.world.info.objects.filter(
+        (ob) => ob.type === 'pair_card' && String(ob.properties?.find((pr) => pr.name === 'gateId')?.value ?? 'mp1') === a.gateId,
+      );
+      if (gateCards.length > 0 && gateCards.every((ob) => this.matchedCards.has(ob.id))) {
+        this.openGates.add(a.gateId);
+        this.world.openGate(a.gateId);
+        ui.toast.push('단풍꽃 짝을 모두 맞췄어요! 덩굴 문이 열립니다!', 'flower');
+        void this.auth.request({ kind: 'gymClear', gateId: a.gateId });
+      } else {
+        const done = Math.floor(gateCards.filter((ob) => this.matchedCards.has(ob.id)).length / 2);
+        const tot = Math.floor(gateCards.length / 2);
+        ui.toast.push(`단풍꽃 짝 매칭 성공! (${done}/${tot}쌍)`, 'flower');
+      }
+    } else {
+      sfx.play('puzzle_ng');
+      this.cardFlipLockUntil = performance.now() + 720;
+      ui.toast.push('모양이 달라요! 곧 다시 뒤집힙니다.', 'flower');
+      this.time.delayedCall(700, () => {
+        if (!this.scene.isActive()) return;
+        this.revealedCards.delete(a.id);
+        this.revealedCards.delete(b.id);
+        this.world.setCardVisual2D(a.id, false);
+        this.world.setCardVisual2D(b.id, false);
+      });
+    }
+  }
+
+  private toggleRailSwitch(rg: string, gateId?: string) {
+    if (this.flippedRails.has(rg)) this.flippedRails.delete(rg);
+    else {
+      this.flippedRails.add(rg);
+      const gid = gateId || rg;
+      if (gid && !this.openGates.has(gid)) {
+        this.openGates.add(gid);
+        this.world.openGate(gid);
+        void this.auth.request({ kind: 'gymClear', gateId: gid });
+      }
+    }
+    sfx.play('lever');
+    this.world.updateArrowFlip2D(this.flippedRails);
+    ui.toast.push(`${rg === 'fg2' || rg === 'r2' ? '청록' : '황금'} 레일 방향 전환! 화살표 발판 방향과 관문이 열렸어요.`, 'sparkle');
+  }
+
+  private answerQuizPad(id: number) {
+    const gateId = String(this.objProp(id, 'gateId') ?? 'eq1');
+    if (this.openGates.has(gateId)) {
+      ui.toast.push('이미 불꽃 결계가 열린 관문이에요!', 'fire');
+      return;
+    }
+    const corr = this.objProp(id, 'correct');
+    const ok = corr === true || String(corr) === 'true';
+    if (ok) {
+      sfx.play('puzzle_ok');
+      this.openGates.add(gateId);
+      this.world.openGate(gateId);
+      ui.toast.push('정답! 불꽃 관문이 해제되었습니다!', 'fire');
+      void this.auth.request({ kind: 'gymClear', gateId });
+    } else {
+      sfx.play('puzzle_ng');
+      this.quizWrongUntil = performance.now() + 650;
+      const q = String(this.objProp(id, 'q') ?? '');
+      ui.toast.push(q ? `오답! [${q.split('\n')[0]}] 다시 생각해 보세요!` : '오답입니다! 석판을 읽고 올바른 번호를 밟아 주세요.', 'fire');
+      if (this.world.info.canStand(this.player.x, this.player.y + 12)) {
+        this.player.setPosition(this.player.x, this.player.y + 12);
+      }
+    }
+  }
+
+  private rotatePrism(id: number) {
+    const cur = this.prismRots.get(id) ?? Number(this.objProp(id, 'rot') ?? 0);
+    const next = (cur + 1) % 4;
+    this.prismRots.set(id, next);
+    sfx.play('lever');
+    this.recomputeLasers(true);
+  }
+
+  private recomputeLasers(notify: boolean) {
+    const info = this.world.info;
+    const W = info.width;
+    this.litLaserDests.clear();
+    this.laserSegments = [];
+    const DIRS: Record<string, [number, number]> = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] };
+
+    for (const src of info.laserSources) {
+      let x = src.x, y = src.y;
+      let [dx, dy] = DIRS[src.dir] ?? [1, 0];
+      let segStartX = x + 0.5, segStartY = y + 0.5;
+      for (let step = 0; step < 64; step++) {
+        const nx = x + dx, ny = y + dy;
+        if (!info.inBounds(nx, ny)) {
+          this.laserSegments.push([segStartX, segStartY, x + 0.5 + dx * 0.45, y + 0.5 + dy * 0.45]);
+          break;
+        }
+        const dst = info.laserTargets.get(ny * W + nx);
+        if (dst) {
+          this.laserSegments.push([segStartX, segStartY, nx + 0.5, ny + 0.5]);
+          this.litLaserDests.add(dst.id);
+          break;
+        }
+        const pr = info.prismAt(nx, ny);
+        if (pr) {
+          this.laserSegments.push([segStartX, segStartY, nx + 0.5, ny + 0.5]);
+          const rot = this.prismRots.get(pr.id) ?? pr.rot;
+          [dx, dy] = rot % 2 === 0 ? [dy, dx] : [-dy, -dx];
+          x = nx; y = ny;
+          segStartX = nx + 0.5; segStartY = ny + 0.5;
+          continue;
+        }
+        if (info.isBlocked(nx, ny)) {
+          this.laserSegments.push([segStartX, segStartY, x + 0.5 + dx * 0.45, y + 0.5 + dy * 0.45]);
+          break;
+        }
+        x = nx; y = ny;
+        if (step === 63) this.laserSegments.push([segStartX, segStartY, x + 0.5, y + 0.5]);
+      }
+    }
+
+    if (!notify) return;
+    const byGate = new Map<string, number[]>();
+    for (const dst of info.laserTargets.values()) {
+      const list = byGate.get(dst.gateId) ?? [];
+      list.push(dst.id);
+      byGate.set(dst.gateId, list);
+    }
+    for (const [gateId, ids] of byGate) {
+      if (!this.openGates.has(gateId) && ids.length > 0 && ids.every((id) => this.litLaserDests.has(id))) {
+        sfx.play('laser_hit');
+        this.openGates.add(gateId);
+        this.world.openGate(gateId);
+        ui.toast.push('빛의 회로 완성! 네온 레이저 장벽이 열렸어요!', 'sparkle');
+        void this.auth.request({ kind: 'gymClear', gateId });
+      }
+    }
+  }
+
+  private playRuneDemo(id: number) {
+    if (this.runeDemoPlaying) return;
+    const seq = this.parseSeq(this.objProp(id, 'seq'));
+    this.runeDemoPlaying = true;
+    ui.toast.push(`별빛 룬 선율을 기억하세요! (${seq.map((n) => n + 1).join(' → ')})`, 'star');
+    seq.forEach((n, i) => {
+      this.time.delayedCall(i * 420, () => {
+        if (!this.scene.isActive()) return;
+        this.litRune = n;
+        sfx.play(`note${n % 4}`);
+      });
+    });
+    this.time.delayedCall(seq.length * 420 + 180, () => {
+      if (!this.scene.isActive()) return;
+      this.litRune = null;
+      this.runeDemoPlaying = false;
+    });
+  }
+
+  private stepRunePad(id: number) {
+    const gateId = String(this.objProp(id, 'gateId') ?? 'sm_rune');
+    const idx = Number(this.objProp(id, 'runeIdx') ?? 0);
+    const seq = this.parseSeq(this.objProp(id, 'seq'));
+    if (this.openGates.has(gateId)) {
+      sfx.play(`note${idx % 4}`);
+      return;
+    }
+    sfx.play(`note${idx % 4}`);
+    this.litRune = idx;
+    this.time.delayedCall(260, () => {
+      if (this.scene.isActive() && !this.runeDemoPlaying && this.litRune === idx) this.litRune = null;
+    });
+    if (idx === seq[this.runeStep]) {
+      this.runeStep++;
+      if (this.runeStep >= seq.length) {
+        this.openGates.add(gateId);
+        this.world.openGate(gateId);
+        this.time.delayedCall(120, () => sfx.play('puzzle_ok'));
+        ui.toast.push('천공의 4음 선율 완성! 별빛 결계가 열렸습니다!', 'star');
+        void this.auth.request({ kind: 'gymClear', gateId });
+      } else {
+        ui.toast.push(`별빛 룬 공명 (${this.runeStep}/${seq.length})`, 'star');
+      }
+    } else {
+      this.runeStep = 0;
+      this.time.delayedCall(140, () => sfx.play('puzzle_ng'));
+      ui.toast.push('음정이 어긋났어요! 노란 시범 제단에서 순서를 확인하고 처음부터 밟아 보세요.', 'star');
+    }
+  }
+
   // ── 맵 이동 (워프) + 포켓몬식 바닥 기믹 ─────────────
   private checkWarp() {
     if (this.warping || !this.playing) return;
@@ -1035,6 +1416,7 @@ export class FarmScene extends Phaser.Scene {
     const info = this.world.info;
     const cx = Math.floor(this.player.x / TILE), cy = Math.floor((this.player.y - 3) / TILE);
     const cellKey = `${cx},${cy}`;
+    this.checkFloorGymPuzzle(cx, cy, cellKey);
     if (this.padLock && this.padLock !== cellKey) this.padLock = '';
     if (this.switchLock && this.switchLock !== cellKey) this.switchLock = '';
     if (this.arrowLock && this.arrowLock !== cellKey && !this.player.isSliding) this.arrowLock = '';
@@ -1046,7 +1428,7 @@ export class FarmScene extends Phaser.Scene {
 
     const wp = info.warpPadAt(cx, cy);
     if (wp && this.padLock !== cellKey && !this.player.isSliding) {
-      if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) < 7) {
+      if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) < 10.5) {
         void this.triggerWarpPad(wp);
         return;
       }
@@ -1054,10 +1436,10 @@ export class FarmScene extends Phaser.Scene {
 
     const sw = info.switchAt(cx, cy);
     if (sw && this.switchLock !== cellKey && !this.openGates.has(sw.gateId)) {
-      if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) < 7) {
+      if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) < 10.5) {
         this.switchLock = cellKey;
         this.openGates.add(sw.gateId);
-        this.world.pressSwitch(sw.gateId);
+        this.world.openGate(sw.gateId);
         sfx.play('tap');
         void this.auth.request({ kind: 'switch', gateId: sw.gateId }).then((r) => {
           if (r.ok && r.data?.item) ui.toast.push('장치가 작동해 통로가 열렸다!', 'sun');
@@ -1067,9 +1449,10 @@ export class FarmScene extends Phaser.Scene {
 
     const ap = info.arrowAt(cx, cy);
     if (ap && !this.player.isSliding && this.arrowLock !== cellKey) {
-      if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) < 7) {
+      if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) < 10.5) {
         this.arrowLock = cellKey;
-        const dv = ap.dir === 'right' ? [1, 0] : ap.dir === 'down' ? [0, 1] : ap.dir === 'left' ? [-1, 0] : [0, -1];
+        const apDir = (ap.railGroup && ap.altDir && this.flippedRails.has(ap.railGroup)) ? ap.altDir : ap.dir;
+        const dv = apDir === 'right' ? [1, 0] : apDir === 'down' ? [0, 1] : apDir === 'left' ? [-1, 0] : [0, -1];
         sfx.play('dash');
         this.player.startSlide(dv[0], dv[1], 'arrow', ap.steps * TILE);
         return;
@@ -1187,13 +1570,21 @@ export class FarmScene extends Phaser.Scene {
         else if (ev.type === 'cleared' && ev.playerId === me.id) {
           const [m, id] = ev.key.split(':');
           if (m === this.mapId) {
-            const numId = Number(id);
-            const wo = this.world.objects.find((o) => o.id === numId);
-            if (wo?.gateId) this.openGates.add(wo.gateId);
-            this.world.removeObject(numId);
+            if (/^\d+$/.test(id)) {
+              const numId = Number(id);
+              const wo = this.world.objects.find((o) => o.id === numId);
+              if (wo?.gateId) {
+                this.openGates.add(wo.gateId);
+                this.world.openGate(wo.gateId);
+              }
+              this.world.removeObject(numId);
+            } else {
+              this.openGates.add(id);
+              this.world.openGate(id);
+            }
           }
         }
-        else if (ev.type === 'objectRestored') { for (const k of ev.keys) { const [m, id] = k.split(':'); if (m === this.mapId) this.world.restoreObject(Number(id)); } }
+        else if (ev.type === 'objectRestored' && (!ev.playerId || ev.playerId === me.id)) { for (const k of ev.keys) { const [m, id] = k.split(':'); if (m === this.mapId) this.world.restoreObject(Number(id)); } }
         else if (ev.type === 'forage') this.renderForage();
         else if (ev.type === 'placed') { if (this.mapId === 'farm' && ev.owner === this.auth.farmOwner) this.world.addPlaced(ev.obj.id, ev.obj.type, ev.obj.x, ev.obj.y); }
         else if (ev.type === 'unplaced') { if (this.mapId === 'farm' && ev.owner === this.auth.farmOwner) this.world.removePlaced(ev.id); }
@@ -1439,6 +1830,14 @@ export class FarmScene extends Phaser.Scene {
     const clamp1 = (n: number) => Math.max(-1, Math.min(1, n));
     const vx = canMove ? clamp1((k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0) + touch.vx) : 0;
     const vy = canMove ? clamp1((k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0) + touch.vy) : 0;
+    const inCycle = this.world.info.inCycleZone(this.player.x, this.player.y);
+    if (inCycle && !this.bikeZoneEntered) {
+      this.bikeZoneEntered = true;
+      if (!this.player.riding && this.auth.me.inventory.some((s) => s.itemId === 'bicycle')) void this.toggleBike(true);
+    } else if (!inCycle) {
+      this.bikeZoneEntered = false;
+    }
+    this.player.riding = !!this.auth.me.riding && !this.world.interior && !this.world.cave;
     const run = k.SHIFT.isDown || touch.run;
     this.player.move(dt, { vx, vy, run }, this.npcs.filter((n) => n.state !== 'gone' && n.sprite.visible));
     this.player.update();
@@ -1470,6 +1869,17 @@ export class FarmScene extends Phaser.Scene {
     this.atmo.update(dt, minutes);
     this.updateCursor();
     const followCam = (this.cameras.main as unknown as { _follow?: object | null })._follow != null && !this.cameras.main.panEffect.isRunning;
+    this.stage3d?.setGymPuzzleState({
+      flippedRails: this.flippedRails,
+      revealedCards: this.revealedCards,
+      prismRots: this.prismRots,
+      litLaserDests: this.litLaserDests,
+      laserSegments: this.laserSegments,
+      litRune: this.litRune,
+      matchedRunes: this.runeStep,
+      demoActive: this.runeDemoPlaying,
+      quizWrongUntil: this.quizWrongUntil,
+    }, this.openGates);
     this.stage3d?.update(dt, {
       player: this.player,
       partner: this.partner,
@@ -1684,6 +2094,14 @@ export class FarmScene extends Phaser.Scene {
     const glow = this.add.rectangle(x, y, 26, 400, col, 0.22).setOrigin(0.5, 1).setDepth(DEPTH.glow).setBlendMode(Phaser.BlendModes.ADD);
     if (burst) { beam.setScale(0.1, 0); glow.setScale(0.1, 0); this.tweens.add({ targets: [beam, glow], scaleX: 1, scaleY: 1, duration: 900, ease: 'Cubic.Out' }); }
     this.tweens.add({ targets: [beam, glow], alpha: { from: 0.75, to: 0.35 }, duration: 1100, yoyo: true, repeat: -1 });
+  }
+  private async toggleBike(force?: boolean) {
+    const r = await this.auth.request({ kind: 'toggleBike', force });
+    if (!r.ok) return;
+    const riding = !!r.data?.qty;
+    this.player.riding = riding;
+    this.player.play(riding ? (this.player.moving ? 'bike' : 'bike_idle') : (this.player.moving ? 'walk' : 'idle'), this.player.dir);
+    if (riding) sfx.play('bike_bell');
   }
   private hasFlute() { return this.auth.me.inventory.some((s) => s.itemId === 'ocarina'); }
   /** 가방에서 오카리나를 꺼내 불었을 때: 있는 곳에 맞는 연주 */

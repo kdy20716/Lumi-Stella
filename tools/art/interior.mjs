@@ -99,6 +99,29 @@ export function buildRoom(spec) {
   t.rect(0, 0, W * T, H * T, '#120d10');
   const fx0 = T, fy0 = 3 * T, fw = (W - 2) * T, fh = (H - 4) * T;
   drawFloor(t, fx0, fy0, fw, fh + T, spec.floor);
+  // 수조 · 용암 · 빙판 특수 구역 ([x, y, w, h, kind])
+  for (const [px, py, pw, ph, kind = 'water'] of spec.pools ?? []) {
+    const colA = kind === 'lava' ? '#d84e24' : kind === 'ice' ? '#9ed8f2' : '#3278b8';
+    const colB = kind === 'lava' ? '#f08234' : kind === 'ice' ? '#c8eeff' : '#4a96d6';
+    const rim = kind === 'lava' ? '#6a2414' : kind === 'ice' ? '#669ec2' : '#244e7a';
+    for (let y = py * T; y < (py + ph) * T; y++) for (let x = px * T; x < (px + pw) * T; x++) {
+      const edge = x === px * T || y === py * T || x === (px + pw) * T - 1 || y === (py + ph) * T - 1;
+      const wave = ((x + Math.floor(y / 2) * 3) % 10 < 3) && hash2(x >> 2, y >> 2, 13) < 0.45;
+      t.set(x, y, edge ? rim : wave ? colB : colA);
+    }
+  }
+  // 계단 / 경사로 발판 (2D·3D 공용 시인성)
+  for (const [rx0, ry0, rx1, ry1, dir] of spec.ramps ?? []) {
+    const stepCol = darken(spec.floor.color, 0.28), hiCol = lighten(spec.floor.color, 0.25);
+    const xA = rx0 * T, xB = (rx1 + 1) * T, yA = ry0 * T, yB = (ry1 + 1) * T;
+    if (dir === 'N' || dir === 'S') {
+      for (let y = yA; y < yB; y += 5) { t.hline(xA + 1, y, xB - xA - 2, stepCol); t.hline(xA + 1, y + 1, xB - xA - 2, hiCol); }
+      t.vline(xA, yA, yB - yA, stepCol); t.vline(xB - 1, yA, yB - yA, stepCol);
+    } else {
+      for (let x = xA; x < xB; x += 5) { t.vline(x, yA + 1, yB - yA - 2, stepCol); t.vline(x + 1, yA + 1, yB - yA - 2, hiCol); }
+      t.hline(xA, yA, xB - xA, stepCol); t.hline(xA, yB - 1, xB - xA, stepCol);
+    }
+  }
   // 러그
   for (const [rx, ry, rw, rh, col] of spec.rugs ?? []) {
     const c = ramp(col);
@@ -501,19 +524,23 @@ export const ROOMS = {
     furn: [['shelf_goods_b', 1, 3], ['shelf_goods', 3, 3], ['counter', 6, 5, { interact: 'shop:windvale' }], ['sacks', 10, 7], ['plant', 1, 7]],
     spawns: [['wp_clerk', 8, 4], ['wp_gate', 6, 7], ['entry', 6, 7]], lights: [[8, 2]],
   },
-  in_gym: { // 바람골 도장 (입문 스위치 + 바람길 가속)
+  in_gym: { // 바람골 도장 (듀얼 풍차 팬 스위치 + Y축 상승 돌풍 다리)
     name: '바람골 도장', W: 16, H: 18, door: 8, wall: { color: '#c8d8e0', pattern: 'stone' }, floor: { kind: 'stone', color: '#9aa8b4' },
     decor: [['banner', 2], ['banner', 7], ['banner', 12]],
-    walls: [[1, 10, 6, 1], [9, 10, 6, 1]],
-    rugs: [[5, 4, 6, 5, '#2a8a8a']],
-    furn: [['pillar', 2, 5], ['pillar', 13, 5], ['pillar', 2, 14], ['pillar', 13, 14], ['plant', 1, 16], ['plant', 14, 16]],
+    elevs: [[4, 3, 11, 6, 0.9]],
+    ramps: [[6, 7, 9, 8, 'N', 0, 0.9]],
+    walls: [[1, 10, 6, 1], [9, 10, 6, 1], [3, 3, 1, 4], [12, 3, 1, 4], [4, 7, 2, 1], [10, 7, 2, 1]],
+    rugs: [[5, 3, 6, 4, '#2a8a8a']],
+    furn: [['pillar', 2, 5], ['pillar', 13, 5], ['pillar', 2, 14], ['pillar', 13, 14], ['plant', 1, 16], ['plant', 14, 16], ['sign', 5, 15, { text: '바람골 도장 시험!\n좌·우 바람개비 스위치를 모두 밟아 돌풍 다리를 여세요.' }]],
     gimmicks: [
-      ['switch_btn', 3, 13, { gateId: 'wg1', color: '#38d0a8' }],
+      ['switch_btn', 3, 14, { gateId: 'wg1', color: '#38d0a8' }],
+      ['switch_btn', 12, 14, { gateId: 'wg2', color: '#ffd452' }],
       ['gate_bar', 7, 10, { w: 2, h: 1, gateId: 'wg1', color: '#38d0a8' }],
-      ['arrow_pad', 7, 9, { dir: 'up', steps: 2 }],
-      ['arrow_pad', 8, 9, { dir: 'up', steps: 2 }],
+      ['gate_bar', 7, 9, { w: 2, h: 1, gateId: 'wg2', color: '#ffd452' }],
+      ['arrow_pad', 7, 8, { dir: 'up', steps: 2 }],
+      ['arrow_pad', 8, 8, { dir: 'up', steps: 2 }],
     ],
-    spawns: [['trainer:sena', 8, 4, { face: 'down' }], ['wp_gate', 8, 16], ['entry', 8, 16]], lights: [[8, 6], [8, 13]],
+    spawns: [['trainer:sena', 8, 4, { face: 'down' }], ['wp_gate', 8, 16], ['entry', 8, 16]], lights: [[8, 5], [8, 13]],
   },
   in_windmill: {
     name: '풍차 안', W: 10, H: 10, door: 5, wall: { color: '#c8a070', pattern: 'plank' }, floor: { kind: 'wood', color: '#9a6a40' },
@@ -524,111 +551,186 @@ export const ROOMS = {
   },
 };
 
-// ── 루미나 지방 확장: 크기·수직성·고유 기믹을 갖춘 도장 7 ──
+// ── 루미나 지방 7대 도장: 각각 고유 퍼즐 · 미니게임 + Y축 입체 단상 ──
 const GYM_LAYOUTS = {
-  harbor: {
+  harbor: { // 3단계 수문 밸브 & 물 위 부교(Pontoon)
     name: '물결항 도장', col: '#3f8fc8', W: 18, H: 22, door: 9,
     floor: { kind: 'tile', color: '#9cc8e0', color2: '#c4e2f0' }, wall: { color: '#c8e4f2', pattern: 'tile' },
-    walls: [[1, 14, 11, 1], [15, 14, 2, 1], [1, 8, 7, 1], [10, 8, 7, 1]],
-    rugs: [[6, 3, 6, 4, '#3f8fc8'], [4, 9, 10, 4, '#2b74a8']],
-    furn: [['pillar', 3, 5], ['pillar', 14, 5], ['statue', 6, 19], ['statue', 11, 19], ['plant', 1, 20], ['plant', 16, 20]],
-    gimmicks: [
-      ['arrow_pad', 13, 18, { dir: 'up', steps: 5 }],
-      ['arrow_pad', 14, 18, { dir: 'up', steps: 5 }],
-      ['switch_btn', 15, 11, { gateId: 'hb1', color: '#38d8ff' }],
-      ['arrow_pad', 10, 11, { dir: 'left', steps: 5 }],
-      ['gate_bar', 8, 8, { w: 2, h: 1, gateId: 'hb1', color: '#38d8ff' }],
+    elevs: [[6, 3, 11, 5, 0.85]],
+    ramps: [[8, 6, 9, 6, 'N', 0, 0.85]],
+    pools: [[1, 7, 16, 10, 'water']],
+    walls: [
+      [1, 16, 2, 1], [6, 16, 11, 1], [1, 14, 2, 2], [6, 14, 11, 2],
+      [1, 13, 2, 1], [5, 13, 12, 1], [1, 11, 2, 2], [16, 11, 1, 2],
+      [1, 10, 13, 1], [16, 10, 1, 1], [1, 8, 7, 2], [16, 8, 1, 2],
+      [1, 7, 7, 1], [10, 7, 7, 1], [5, 3, 1, 4], [12, 3, 1, 4], [6, 6, 2, 1], [10, 6, 2, 1],
     ],
-    spawns: [['trainer:leader_harbor', 9, 4, { face: 'down' }], ['trainer:gym_harbor_t1', 5, 17, { face: 'right' }], ['trainer:gym_harbor_t2', 12, 11, { face: 'left' }]],
-    lights: [[9, 6], [9, 12], [9, 18]],
-  },
-  maple: {
-    name: '단풍골 도장', col: '#5fae4a', W: 20, H: 20, door: 10,
-    floor: { kind: 'wood', color: '#a07848' }, wall: { color: '#d8e8c0', pattern: 'plank' },
-    walls: [[7, 4, 1, 10], [12, 4, 1, 10], [1, 11, 3, 1], [5, 11, 2, 1], [13, 11, 2, 1], [17, 11, 2, 1], [8, 8, 1, 1], [11, 8, 1, 1]],
-    rugs: [[8, 3, 4, 5, '#5fae4a'], [8, 12, 4, 6, '#3e8438']],
-    furn: [['pillar', 2, 4], ['pillar', 17, 4], ['plant_b', 1, 18], ['plant_b', 18, 18], ['plant', 6, 5], ['plant', 13, 5]],
+    rugs: [[3, 13, 3, 4, '#a67444'], [3, 11, 13, 2, '#b8844e'], [14, 9, 2, 2, '#a67444'], [8, 7, 8, 3, '#b8844e'], [6, 3, 6, 3, '#3f8fc8']],
+    furn: [['pillar', 2, 5], ['pillar', 15, 5], ['statue', 6, 19], ['statue', 11, 19], ['plant', 1, 20], ['plant', 16, 20], ['sign', 12, 18, { text: '수문 퍼즐!\n부교 위의 수문 스위치를 차례로 열어 관장 단상으로 건너가세요.' }]],
     gimmicks: [
-      ['switch_btn', 3, 5, { gateId: 'mp1', color: '#6ee060' }],
-      ['gate_bar', 15, 11, { w: 2, h: 1, gateId: 'mp1', color: '#6ee060' }],
-      ['switch_btn', 16, 5, { gateId: 'mp2', color: '#ffd452' }],
-      ['gate_bar', 9, 8, { w: 2, h: 1, gateId: 'mp2', color: '#ffd452' }],
+      ['switch_btn', 4, 15, { gateId: 'hb1', color: '#38d8ff', style: 'valve' }],
+      ['gate_bar', 3, 13, { w: 2, h: 1, gateId: 'hb1', color: '#38d8ff' }],
+      ['switch_btn', 15, 11, { gateId: 'hb2', color: '#48e8a8', style: 'valve' }],
+      ['gate_bar', 14, 10, { w: 2, h: 1, gateId: 'hb2', color: '#48e8a8' }],
+      ['switch_btn', 12, 8, { gateId: 'hb3', color: '#ffd452', style: 'valve' }],
+      ['gate_bar', 8, 7, { w: 2, h: 1, gateId: 'hb3', color: '#ffd452' }],
     ],
-    spawns: [['trainer:leader_maple', 10, 4, { face: 'down' }], ['trainer:gym_maple_t1', 4, 8, { face: 'right' }], ['trainer:gym_maple_t2', 15, 8, { face: 'left' }]],
-    lights: [[10, 6], [4, 7], [15, 7]],
-  },
-  forge: {
-    name: '쇳불 도장', col: '#b8864a', W: 16, H: 26, door: 8,
-    floor: { kind: 'stone', color: '#8a7a6a' }, wall: { color: '#8a7a70', pattern: 'stone' },
-    walls: [[1, 18, 11, 1], [4, 11, 11, 1]],
-    rugs: [[5, 3, 6, 4, '#c86e34']],
-    furn: [['anvil', 4, 21], ['forge', 1, 20], ['forge', 13, 13], ['anvil', 11, 6], ['pillar', 3, 5], ['pillar', 12, 5], ['statue', 5, 24], ['statue', 10, 24]],
-    gimmicks: [
-      ['arrow_pad', 13, 22, { dir: 'up', steps: 5 }],
-      ['arrow_pad', 14, 22, { dir: 'up', steps: 5 }],
-      ['arrow_pad', 10, 15, { dir: 'left', steps: 5 }],
-      ['arrow_pad', 2, 14, { dir: 'up', steps: 4 }],
-      ['arrow_pad', 5, 7, { dir: 'right', steps: 3 }],
-    ],
-    spawns: [['trainer:leader_forge', 8, 4, { face: 'down' }], ['trainer:gym_forge_t1', 10, 21, { face: 'left' }], ['trainer:gym_forge_t2', 7, 13, { face: 'right' }]],
-    lights: [[8, 5], [8, 14], [8, 22]],
-  },
-  ember: {
-    name: '잿빛 도장', col: '#e8642e', W: 20, H: 22, door: 10,
-    floor: { kind: 'stone', color: '#7a5a50' }, wall: { color: '#a87060', pattern: 'stone' },
-    walls: [[6, 3, 1, 18], [13, 3, 1, 18], [1, 12, 18, 1]],
-    rugs: [[7, 3, 6, 8, '#e8642e'], [7, 14, 6, 6, '#9c3e24']],
-    furn: [['pillar', 7, 4], ['pillar', 12, 4], ['statue', 1, 14], ['statue', 18, 14], ['candle', 7, 19], ['candle', 12, 19]],
-    gimmicks: [
-      ['warp_pad', 8, 15, { toX: 3, toY: 19, color: '#ff7040' }],
-      ['warp_pad', 11, 15, { toX: 16, toY: 19, color: '#48c8ff' }],
-      ['warp_pad', 17, 19, { toX: 11, toY: 19, color: '#48c8ff' }],
-      ['warp_pad', 2, 19, { toX: 8, toY: 19, color: '#ff7040' }],
-      ['warp_pad', 3, 15, { toX: 3, toY: 10, color: '#b478ff' }],
-      ['warp_pad', 2, 10, { toX: 3, toY: 16, color: '#b478ff' }],
-      ['warp_pad', 3, 5, { toX: 16, toY: 10, color: '#ffd448' }],
-      ['warp_pad', 16, 4, { toX: 10, toY: 10, color: '#ff5088' }],
-      ['warp_pad', 10, 11, { toX: 10, toY: 14, color: '#ff5088' }],
-    ],
-    spawns: [['trainer:leader_ember', 10, 4, { face: 'down' }], ['trainer:gym_ember_t1', 16, 16, { face: 'left' }], ['trainer:gym_ember_t2', 16, 7, { face: 'left' }]],
-    lights: [[10, 6], [3, 8], [16, 8], [10, 17]],
-  },
-  lumina: {
-    name: '빛누리 도장', col: '#e0b830', W: 18, H: 24, door: 9,
-    floor: { kind: 'tile', color: '#e8dcb0', color2: '#fff4d0' }, wall: { color: '#f4ecd0', pattern: 'diamond', accent: '#e0c870' },
-    walls: [[1, 15, 7, 1], [10, 15, 7, 1], [5, 8, 8, 1], [5, 3, 1, 5], [12, 3, 1, 5], [13, 11, 1, 1], [16, 11, 1, 1]],
-    rugs: [[6, 3, 6, 5, '#e0b830'], [6, 17, 6, 5, '#c89e24']],
-    furn: [['crystal', 1, 4], ['crystal_red', 16, 4], ['pillar', 6, 4], ['pillar', 11, 4], ['candle', 2, 21], ['candle', 15, 21]],
-    gimmicks: [
-      ['switch_btn', 3, 19, { gateId: 'lm1', color: '#ffd65a' }],
-      ['gate_bar', 8, 15, { w: 2, h: 1, gateId: 'lm1', color: '#ffd65a' }],
-      ['switch_btn', 3, 5, { gateId: 'lm2', color: '#b478ff' }],
-      ['gate_bar', 14, 11, { w: 2, h: 1, gateId: 'lm2', color: '#b478ff' }],
-      ['warp_pad', 15, 5, { toX: 9, toY: 7, color: '#ffd65a' }],
-      ['warp_pad', 7, 7, { toX: 9, toY: 13, color: '#48c8ff' }],
-    ],
-    spawns: [['trainer:leader_lumina', 9, 4, { face: 'down' }], ['trainer:gym_lumina_t1', 4, 12, { face: 'right' }], ['trainer:gym_lumina_t2', 14, 8, { face: 'left' }]],
-    lights: [[9, 5], [4, 9], [14, 9], [9, 19]],
-  },
-  frost: {
-    name: '서리 도장', col: '#58b4e8', W: 18, H: 22, door: 9,
-    floor: { kind: 'tile', color: '#d8e4ee', color2: '#f4f8ff' }, wall: { color: '#e4eef6', pattern: 'tile' },
-    walls: [[1, 8, 1, 11], [16, 8, 1, 11], [2, 7, 6, 1], [10, 7, 6, 1], [2, 18, 6, 1], [10, 18, 6, 1]],
-    rugs: [[6, 3, 6, 4, '#58b4e8']],
-    furn: [['pillar', 8, 12], ['pillar', 2, 8], ['pillar', 12, 9], ['pillar', 11, 16], ['pillar', 15, 9], ['pillar', 8, 10], ['statue', 4, 5], ['statue', 13, 5]],
-    gimmicks: [
-      ['ice_tile', 2, 17, { w: 14, h: 10 }],
-    ],
-    spawns: [['trainer:leader_frost', 9, 4, { face: 'down' }], ['trainer:gym_frost_t1', 5, 19, { face: 'right' }], ['trainer:gym_frost_t2', 6, 5, { face: 'right' }]],
+    spawns: [['trainer:leader_harbor', 9, 4, { face: 'down' }], ['trainer:gym_harbor_t1', 5, 18, { face: 'right' }], ['trainer:gym_harbor_t2', 11, 11, { face: 'right' }]],
     lights: [[9, 5], [9, 12], [9, 19]],
   },
-  summit: {
+  maple: { // 숲의 꽃봉오리 짝 맞추기(Memory Cards) 2스테이지
+    name: '단풍골 도장', col: '#5fae4a', W: 20, H: 20, door: 10,
+    floor: { kind: 'wood', color: '#a07848' }, wall: { color: '#d8e8c0', pattern: 'plank' },
+    elevs: [[7, 3, 12, 5, 0.85]],
+    ramps: [[9, 5, 10, 5, 'N', 0, 0.85]],
+    walls: [[1, 11, 8, 1], [11, 11, 8, 1], [1, 6, 8, 1], [11, 6, 8, 1], [6, 3, 1, 3], [13, 3, 1, 3]],
+    rugs: [[7, 3, 6, 3, '#5fae4a'], [6, 12, 8, 6, '#3e8438']],
+    furn: [['pillar', 2, 4], ['pillar', 17, 4], ['plant_b', 1, 18], ['plant_b', 18, 18], ['plant', 5, 5], ['plant', 14, 5], ['sign', 14, 17, { text: '꽃봉오리 짝 맞추기!\n같은 꽃 카드 2장을 연달아 뒤집어 덩굴 관문을 여세요.' }]],
+    gimmicks: [
+      ['pair_card', 7, 15, { gateId: 'mp1', pairKey: 'leaf_red', color: '#e8524a' }],
+      ['pair_card', 12, 15, { gateId: 'mp1', pairKey: 'sun_gold', color: '#ffd448' }],
+      ['pair_card', 7, 13, { gateId: 'mp1', pairKey: 'sun_gold', color: '#ffd448' }],
+      ['pair_card', 12, 13, { gateId: 'mp1', pairKey: 'leaf_red', color: '#e8524a' }],
+      ['gate_bar', 9, 11, { w: 2, h: 1, gateId: 'mp1', color: '#6ee060' }],
+      ['pair_card', 4, 9, { gateId: 'mp2', pairKey: 'sakura', color: '#ff88b8' }],
+      ['pair_card', 6, 9, { gateId: 'mp2', pairKey: 'violet', color: '#a870ff' }],
+      ['pair_card', 8, 9, { gateId: 'mp2', pairKey: 'bellflower', color: '#48b8ff' }],
+      ['pair_card', 11, 9, { gateId: 'mp2', pairKey: 'sakura', color: '#ff88b8' }],
+      ['pair_card', 13, 9, { gateId: 'mp2', pairKey: 'bellflower', color: '#48b8ff' }],
+      ['pair_card', 15, 9, { gateId: 'mp2', pairKey: 'violet', color: '#a870ff' }],
+      ['gate_bar', 9, 6, { w: 2, h: 1, gateId: 'mp2', color: '#ffd452' }],
+    ],
+    spawns: [['trainer:leader_maple', 10, 4, { face: 'down' }], ['trainer:gym_maple_t1', 4, 15, { face: 'right' }], ['trainer:gym_maple_t2', 17, 8, { face: 'left' }]],
+    lights: [[10, 5], [10, 9], [10, 15]],
+  },
+  forge: { // 용광로 컨베이어 벨트 방향 전환 레버 퍼즐
+    name: '쇳불 도장', col: '#b8864a', W: 16, H: 26, door: 8,
+    floor: { kind: 'stone', color: '#8a7a6a' }, wall: { color: '#8a7a70', pattern: 'stone' },
+    elevs: [[4, 3, 11, 5, 0.9]],
+    ramps: [[7, 6, 8, 7, 'N', 0, 0.9]],
+    pools: [[12, 19, 3, 2, 'lava']],
+    walls: [[1, 18, 11, 1], [4, 11, 11, 1], [3, 3, 1, 4], [12, 3, 1, 4], [4, 6, 3, 1], [9, 6, 3, 1]],
+    rugs: [[5, 3, 6, 3, '#c86e34']],
+    furn: [['anvil', 3, 20], ['forge', 1, 20], ['forge', 13, 13], ['anvil', 10, 8], ['pillar', 2, 5], ['pillar', 13, 5], ['statue', 5, 24], ['statue', 10, 24], ['sign', 6, 23, { text: '선로 전환 레버!\n왼쪽 노란 레버를 작동시켜 컨베이어 방향을 위로 전환하세요!' }]],
+    gimmicks: [
+      ['rail_switch', 3, 22, { railGroup: 'fg1', gateId: 'fg1', color: '#ffaa33' }],
+      ['arrow_pad', 13, 22, { dir: 'left', altDir: 'up', steps: 5, railGroup: 'fg1' }],
+      ['arrow_pad', 14, 22, { dir: 'left', altDir: 'up', steps: 5, railGroup: 'fg1' }],
+      ['gate_bar', 12, 18, { w: 3, h: 1, gateId: 'fg1', color: '#ffaa33' }],
+      ['rail_switch', 12, 13, { railGroup: 'fg2', gateId: 'fg2', color: '#48d0ff' }],
+      ['arrow_pad', 10, 15, { dir: 'down', altDir: 'left', steps: 7, railGroup: 'fg2' }],
+      ['arrow_pad', 2, 14, { dir: 'up', steps: 4 }],
+      ['gate_bar', 1, 11, { w: 3, h: 1, gateId: 'fg2', color: '#48d0ff' }],
+    ],
+    spawns: [['trainer:leader_forge', 8, 4, { face: 'down' }], ['trainer:gym_forge_t1', 9, 21, { face: 'left' }], ['trainer:gym_forge_t2', 7, 13, { face: 'right' }]],
+    lights: [[8, 5], [8, 14], [8, 22]],
+  },
+  ember: { // 홍련섬 스타일 3단계 불꽃 퀴즈 관문
+    name: '잿빛 도장', col: '#e8642e', W: 20, H: 22, door: 10,
+    floor: { kind: 'stone', color: '#7a5a50' }, wall: { color: '#a87060', pattern: 'stone' },
+    elevs: [[6, 3, 13, 4, 0.85]],
+    ramps: [[9, 5, 10, 5, 'N', 0, 0.85]],
+    pools: [[1, 16, 2, 4, 'lava'], [17, 16, 2, 4, 'lava'], [1, 11, 2, 3, 'lava'], [17, 11, 2, 3, 'lava']],
+    walls: [[1, 15, 8, 1], [11, 15, 8, 1], [1, 10, 8, 1], [11, 10, 8, 1], [1, 6, 8, 1], [11, 6, 8, 1], [5, 3, 1, 3], [14, 3, 1, 3]],
+    rugs: [[6, 3, 8, 2, '#e8642e'], [7, 16, 6, 4, '#9c3e24']],
+    furn: [
+      ['pillar', 4, 4], ['pillar', 15, 4], ['candle', 6, 19], ['candle', 13, 19],
+      ['sign', 12, 18, { text: '[1관문 퀴즈]\n물 타입에 약하고 풀 타입에 강한 속성은?\n① 얼음   ② 불꽃   ③ 바위' }],
+      ['sign', 7, 13, { text: '[2관문 퀴즈]\n14번 도로에서 자전거가 없을 때 대신 건너는 길은?\n① 구름길   ② 아래 자연 산책로   ③ 해저 동굴' }],
+      ['sign', 12, 9, { text: '[3관문 퀴즈]\n빙판 체육관에서 거대 눈덩이를 부수는 방법은?\n① 맨손으로 민다   ② 점프한다   ③ 2칸+ 미끄러져 부딪힌다' }],
+    ],
+    gimmicks: [
+      ['quiz_pad', 7, 17, { gateId: 'eq1', num: 1, correct: false, q: '물 타입에 약하고 풀 타입에 강한 속성은?\n① 얼음 ② 불꽃 ③ 바위', color: '#ff8a48' }],
+      ['quiz_pad', 10, 17, { gateId: 'eq1', num: 2, correct: true, q: '물 타입에 약하고 풀 타입에 강한 속성은?\n① 얼음 ② 불꽃 ③ 바위', color: '#ff8a48' }],
+      ['quiz_pad', 13, 17, { gateId: 'eq1', num: 3, correct: false, q: '물 타입에 약하고 풀 타입에 강한 속성은?\n① 얼음 ② 불꽃 ③ 바위', color: '#ff8a48' }],
+      ['gate_bar', 9, 15, { w: 2, h: 1, gateId: 'eq1', color: '#ff7040' }],
+      ['quiz_pad', 7, 12, { gateId: 'eq2', num: 1, correct: false, q: '14번 도로에서 자전거 없이 건너가는 길은?\n① 구름길 ② 아래 자연 산책로 ③ 해저 동굴', color: '#ff8a48' }],
+      ['quiz_pad', 10, 12, { gateId: 'eq2', num: 2, correct: true, q: '14번 도로에서 자전거 없이 건너가는 길은?\n① 구름길 ② 아래 자연 산책로 ③ 해저 동굴', color: '#ff8a48' }],
+      ['quiz_pad', 13, 12, { gateId: 'eq2', num: 3, correct: false, q: '14번 도로에서 자전거 없이 건너가는 길은?\n① 구름길 ② 아래 자연 산책로 ③ 해저 동굴', color: '#ff8a48' }],
+      ['gate_bar', 9, 10, { w: 2, h: 1, gateId: 'eq2', color: '#ffaa40' }],
+      ['quiz_pad', 7, 8, { gateId: 'eq3', num: 1, correct: false, q: '빙판 눈덩이를 부수는 방법은?\n① 맨손 ② 점프 ③ 2칸+ 미끄러져 충돌', color: '#ff8a48' }],
+      ['quiz_pad', 10, 8, { gateId: 'eq3', num: 2, correct: false, q: '빙판 눈덩이를 부수는 방법은?\n① 맨손 ② 점프 ③ 2칸+ 미끄러져 충돌', color: '#ff8a48' }],
+      ['quiz_pad', 13, 8, { gateId: 'eq3', num: 3, correct: true, q: '빙판 눈덩이를 부수는 방법은?\n① 맨손 ② 점프 ③ 2칸+ 미끄러져 충돌', color: '#ff8a48' }],
+      ['gate_bar', 9, 6, { w: 2, h: 1, gateId: 'eq3', color: '#ffd448' }],
+    ],
+    spawns: [['trainer:leader_ember', 10, 3, { face: 'down' }], ['trainer:gym_ember_t1', 4, 17, { face: 'right' }], ['trainer:gym_ember_t2', 16, 12, { face: 'left' }]],
+    lights: [[10, 4], [10, 8], [10, 13], [10, 18]],
+  },
+  lumina: { // 네온 레이저 광학 프리즘 퍼즐
+    name: '빛누리 도장', col: '#e0b830', W: 18, H: 24, door: 9,
+    floor: { kind: 'tile', color: '#242b3d', color2: '#2e3850' }, wall: { color: '#394662', pattern: 'diamond', accent: '#62d0ff' },
+    elevs: [[5, 3, 12, 5, 1.0]],
+    ramps: [[8, 6, 9, 6, 'N', 0, 1.0]],
+    walls: [[1, 14, 7, 1], [10, 14, 7, 1], [1, 7, 7, 1], [10, 7, 7, 1], [4, 3, 1, 4], [13, 3, 1, 4], [5, 6, 3, 1], [10, 6, 3, 1]],
+    rugs: [[6, 3, 6, 3, '#e0b830'], [6, 16, 6, 5, '#1d324c']],
+    furn: [['crystal', 1, 4], ['crystal_red', 16, 4], ['pillar', 2, 5], ['pillar', 15, 5], ['candle', 2, 22], ['candle', 15, 22], ['sign', 13, 21, { text: '빛누리 광학 회로!\n바닥 프리즘을 밟아 방향을 돌려 수신 크리스탈에 레이저를 연결하세요.' }]],
+    gimmicks: [
+      ['laser_src', 3, 19, { gateId: 'lm1', dir: 'right', color: '#48f0ff' }],
+      ['prism', 8, 19, { gateId: 'lm1', rot: 2, color: '#48f0ff' }],
+      ['prism', 8, 16, { gateId: 'lm1', rot: 3, color: '#48f0ff' }],
+      ['laser_dst', 14, 16, { gateId: 'lm1', color: '#48f0ff' }],
+      ['gate_bar', 8, 14, { w: 2, h: 1, gateId: 'lm1', color: '#48f0ff' }],
+      ['laser_src', 15, 12, { gateId: 'lm2', dir: 'left', color: '#ffd84d' }],
+      ['prism', 9, 12, { gateId: 'lm2', rot: 2, color: '#ffd84d' }],
+      ['prism', 9, 9, { gateId: 'lm2', rot: 1, color: '#ffd84d' }],
+      ['laser_dst', 3, 9, { gateId: 'lm2', color: '#ffd84d' }],
+      ['gate_bar', 8, 7, { w: 2, h: 1, gateId: 'lm2', color: '#ffd84d' }],
+    ],
+    spawns: [['trainer:leader_lumina', 9, 4, { face: 'down' }], ['trainer:gym_lumina_t1', 4, 11, { face: 'right' }], ['trainer:gym_lumina_t2', 14, 10, { face: 'left' }]],
+    lights: [[9, 5], [4, 9], [14, 9], [9, 19]],
+  },
+  frost: { // ★선단시티 오마주: 3단 입체 빙판 + 거대 눈덩이 파괴 퍼즐
+    name: '서리 도장', col: '#58b4e8', W: 18, H: 24, door: 9,
+    floor: { kind: 'tile', color: '#cde8f6', color2: '#ecf8ff' }, wall: { color: '#d8eefc', pattern: 'tile' },
+    elevs: [[1, 7, 2, 18, 0.8], [15, 7, 16, 18, 0.8], [6, 3, 11, 5, 1.2]],
+    ramps: [
+      [1, 19, 2, 20, 'N', 0, 0.8], [15, 19, 16, 20, 'N', 0, 0.8],
+      [3, 8, 4, 8, 'W', 0, 0.8], [13, 8, 14, 8, 'E', 0, 0.8],
+      [8, 6, 9, 6, 'N', 0, 1.2],
+    ],
+    walls: [
+      [3, 9, 1, 10], [14, 9, 1, 10],
+      [4, 7, 3, 1], [11, 7, 3, 1],
+      [6, 6, 2, 1], [10, 6, 2, 1],
+      [5, 3, 1, 3], [12, 3, 1, 3],
+    ],
+    rugs: [[6, 3, 6, 3, '#58b4e8'], [7, 20, 4, 3, '#88c8ea']],
+    furn: [
+      ['pillar', 6, 16], ['pillar', 11, 16], ['pillar', 12, 13],
+      ['pillar', 5, 10], ['pillar', 12, 10], ['pillar', 7, 8], ['pillar', 10, 8],
+      ['statue', 6, 4], ['statue', 11, 4],
+      ['sign', 6, 21, { text: '선단식 빙판 & 눈덩이 퍼즐!\n2칸 이상 떨어진 빙판에서 미끄러져 거대 눈덩이에 부딪히면 부술 수 있어요! (우측 파란 버튼으로 초기화)' }],
+    ],
+    gimmicks: [
+      ['ice_tile', 4, 19, { w: 10, h: 11 }],
+      ['ice_tile', 1, 17, { w: 2, h: 9 }],
+      ['ice_tile', 15, 17, { w: 2, h: 9 }],
+      ['snowball', 8, 16, {}],
+      ['snowball', 8, 12, {}],
+      ['snowball', 6, 14, {}],
+      ['snowball', 10, 11, {}],
+      ['snowball', 8, 8, {}],
+      ['snowball', 9, 8, {}],
+      ['snow_reset', 12, 21, { color: '#58d8ff' }],
+    ],
+    spawns: [['trainer:leader_frost', 9, 4, { face: 'down' }], ['trainer:gym_frost_t1', 2, 8, { face: 'right' }], ['trainer:gym_frost_t2', 15, 8, { face: 'left' }]],
+    lights: [[9, 5], [9, 13], [9, 20]],
+  },
+  summit: { // 별빛 리듬 시퀀스(Simon Says) + 시공간 워프 최종 전당
     name: '별마루 도장', col: '#7d5aa8', W: 20, H: 26, door: 10,
     floor: { kind: 'carpet', color: '#3a3058' }, wall: { color: '#4a4070', pattern: 'dots', accent: '#e0c870' },
-    walls: [[1, 17, 8, 1], [11, 17, 8, 1], [6, 9, 1, 8], [13, 9, 1, 8], [1, 8, 18, 1]],
-    rugs: [[7, 3, 6, 5, '#7d5aa8'], [7, 19, 6, 5, '#4c3872']],
-    furn: [['crystal', 7, 4], ['crystal', 12, 4], ['pillar', 9, 11], ['pillar', 12, 14], ['candle', 2, 23], ['candle', 17, 23]],
+    elevs: [[6, 3, 13, 6, 1.1]],
+    ramps: [[9, 7, 10, 7, 'N', 0, 1.1]],
+    walls: [[1, 17, 8, 1], [11, 17, 8, 1], [6, 9, 1, 8], [13, 9, 1, 8], [1, 8, 8, 1], [11, 8, 8, 1], [5, 3, 1, 4], [14, 3, 1, 4]],
+    rugs: [[7, 3, 6, 4, '#7d5aa8'], [7, 19, 6, 5, '#4c3872']],
+    furn: [['crystal', 7, 4], ['crystal', 12, 4], ['pillar', 9, 11], ['pillar', 12, 14], ['candle', 2, 23], ['candle', 17, 23], ['sign', 14, 23, { text: '별빛 선율의 시험!\n중앙 별 제단(E)으로 빛 순서를 듣고 4색 룬 발판을 순서대로 밟으세요!' }]],
     gimmicks: [
+      ['rune_demo', 10, 22, { gateId: 'sm_rune', seq: '1,3,0,2', color: '#ffe478' }],
+      ['rune_pad', 6, 20, { gateId: 'sm_rune', runeIdx: 0, seq: '1,3,0,2', color: '#ff5e78' }],
+      ['rune_pad', 8, 20, { gateId: 'sm_rune', runeIdx: 1, seq: '1,3,0,2', color: '#48c8ff' }],
+      ['rune_pad', 11, 20, { gateId: 'sm_rune', runeIdx: 2, seq: '1,3,0,2', color: '#ffd848' }],
+      ['rune_pad', 13, 20, { gateId: 'sm_rune', runeIdx: 3, seq: '1,3,0,2', color: '#b874ff' }],
+      ['gate_bar', 9, 17, { w: 2, h: 1, gateId: 'sm_rune', color: '#b874ff' }],
       ['ice_tile', 7, 15, { w: 6, h: 4 }],
       ['warp_pad', 7, 9, { toX: 3, toY: 15, color: '#48c8ff' }],
       ['arrow_pad', 4, 15, { dir: 'up', steps: 4 }],
@@ -636,7 +738,6 @@ const GYM_LAYOUTS = {
       ['warp_pad', 5, 10, { toX: 16, toY: 15, color: '#ff6470' }],
       ['gate_bar', 14, 12, { w: 5, h: 1, gateId: 'sm1', color: '#ff6470' }],
       ['warp_pad', 16, 10, { toX: 10, toY: 7, color: '#b478ff' }],
-      ['warp_pad', 7, 7, { toX: 10, toY: 20, color: '#48c8ff' }],
     ],
     spawns: [['trainer:leader_summit', 10, 4, { face: 'down' }], ['trainer:gym_summit_t1', 2, 13, { face: 'right' }], ['trainer:gym_summit_t2', 17, 11, { face: 'left' }]],
     lights: [[10, 5], [3, 12], [16, 12], [10, 21]],
@@ -645,7 +746,7 @@ const GYM_LAYOUTS = {
 for (const [town, g] of Object.entries(GYM_LAYOUTS)) {
   ROOMS[`gym_${town}`] = {
     name: g.name, W: g.W, H: g.H, door: g.door, wall: g.wall, floor: g.floor, trim: darken(g.col, 0.55),
-    walls: g.walls, gimmicks: g.gimmicks,
+    walls: g.walls, gimmicks: g.gimmicks, elevs: g.elevs, ramps: g.ramps,
     decor: [['banner', 2, g.col], ['banner', Math.floor(g.W / 2), g.col], ['banner', g.W - 4, g.col]],
     rugs: g.rugs, furn: g.furn,
     spawns: [...g.spawns, ['wp_gate', g.door, g.H - 2], ['entry', g.door, g.H - 2]],

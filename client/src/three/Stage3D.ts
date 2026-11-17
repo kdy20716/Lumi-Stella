@@ -113,6 +113,7 @@ export class Stage3D {
   private soilTex?: THREE.Texture;
   private soilDirty = true;
   private waterT = 0;
+  private bridgeCamBoost = 0;
   private swayT = 0;
   private camTarget = new THREE.Vector3();
   private camInit = false;
@@ -127,6 +128,58 @@ export class Stage3D {
   private nightAlpha = 0;
   private hiddenByBattle = false;
   private unsubToggle?: () => void;
+  private dynArrows: { group: THREE.Group; baseDir: string; altDir: string; railGroup: string; curAngle: number }[] = [];
+  private railLevers: { lever: THREE.Group; railGroup: string; curRot: number }[] = [];
+  private cardMeshes = new Map<number, { group: THREE.Group; back: THREE.Mesh; front: THREE.Mesh; flip: number }>();
+  private prismMeshes = new Map<number, { rotor: THREE.Group; crystal: THREE.Mesh; curRot: number }>();
+  private laserDestRings = new Map<number, { gem: THREE.Mesh; mat: THREE.MeshBasicMaterial }>();
+  private laserBeamGroup: THREE.Group | null = null;
+  private laserSig = '';
+  private quizMats = new Map<string, { pad: THREE.MeshBasicMaterial; rim: THREE.MeshBasicMaterial }[]>();
+  private runeNodes: { id: number; idx: number; padMat: THREE.MeshBasicMaterial; baseColor: number; gem: THREE.Mesh; phase: number }[] = [];
+  private demoGems: { gem: THREE.Mesh; baseY: number; mat: THREE.MeshBasicMaterial }[] = [];
+  private resetPads: { ring: THREE.Mesh; baseY: number }[] = [];
+  private snowShards: { mesh: THREE.Mesh; vx: number; vy: number; vz: number; life: number }[] = [];
+  private gymPuzzle: {
+    flippedRails?: Set<string>;
+    revealedCards?: Set<number>;
+    prismRots?: Map<number, number>;
+    litLaserDests?: Set<number>;
+    laserSegments?: [number, number, number, number][];
+    litRune?: number | null;
+    matchedRunes?: number;
+    demoActive?: boolean;
+    quizWrongUntil?: number;
+  } = {};
+  private gymOpenGates?: Set<string>;
+
+  static isExtGimmick(t: string) {
+    return t === 'snowball' || t === 'snow_reset' || t === 'pair_card' || t === 'rail_switch' || t === 'quiz_pad'
+      || t === 'prism' || t === 'laser_src' || t === 'laser_dst' || t === 'rune_pad' || t === 'rune_demo';
+  }
+
+  setGymPuzzleState(p: Stage3D['gymPuzzle'], openGates?: Set<string>) {
+    this.gymPuzzle = p;
+    this.gymOpenGates = openGates;
+  }
+
+  burstSnow3D(px: number, py: number) {
+    const cx = px / TILE, cz = py / TILE;
+    const h = this.hts.sample(Math.max(0.05, cx), Math.max(0.05, cz));
+    const cols = [0xffffff, 0xd8eefc, 0x98d4f8];
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + Math.random() * 0.4;
+      const spd = 1.2 + Math.random() * 2.2;
+      const s = 0.08 + Math.random() * 0.08;
+      const m = new THREE.Mesh(
+        new THREE.BoxGeometry(s, s, s),
+        new THREE.MeshBasicMaterial({ color: cols[i % cols.length] }),
+      );
+      m.position.set(cx + (Math.random() - 0.5) * 0.3, h + 0.35 + Math.random() * 0.25, cz + (Math.random() - 0.5) * 0.3);
+      this.scene3d.add(m);
+      this.snowShards.push({ mesh: m, vx: Math.cos(a) * spd, vy: 2.2 + Math.random() * 2.2, vz: Math.sin(a) * spd, life: 0.55 + Math.random() * 0.25 });
+    }
+  }
 
   constructor(
     private phaserScene: Phaser.Scene,
@@ -242,7 +295,7 @@ export class Stage3D {
       while (k < H && Array.from({ length: W }, (_, x) => info.isBlocked(x, k)).every(Boolean)) k++;
       k = Math.min(k, 4);
       this.hts = computeHeights({ ...raw, layers: raw.layers.filter((l) => l.name !== 'Cliff') }, undefined);
-      const room3d = buildInteriorRoom3D(info, groundTex, bgImg, k, T);
+      const room3d = buildInteriorRoom3D(info, groundTex, bgImg, k, T, this.hts);
       this.scene3d.add(room3d);
       this.registerTintMat(room3d);
     } else {
@@ -266,7 +319,7 @@ export class Stage3D {
       this.scene3d.add(skirt);
       this.registerTintMat(skirt);
       const bridgeLayer = raw.layers.find((x) => x.name === 'Bridge');
-      if (bridgeLayer?.data) this.addBridge3D(bridgeLayer.data, W, H, info);
+      if (bridgeLayer?.data && String(prop(raw, 'bridgeStyle', 'wood')) === 'wood') this.addBridge3D(bridgeLayer.data, W, H, info);
     }
 
     this.fx = new Fx3D(this.scene3d, this.hts);
@@ -424,6 +477,7 @@ export class Stage3D {
     });
     this.bulbGlowMat.userData = { noTint: true };
     const buildingFronts: Array<{ x0: number; x1: number; z1: number }> = [];
+    if (!this.interior) this.addBridgeAndHighway3D(raw, W, H, info);
 
     for (const o of info.objects) {
       const ALIAS: Record<string, string> = { vine: 'bush', boulder: 'rock_big' };
@@ -441,7 +495,13 @@ export class Stage3D {
       const isBuilding = !!this.manifest.buildings?.[type] || type === 'house';
       const created: THREE.Object3D[] = [];
 
-      if (type === 'ice_tile' || type === 'arrow_pad' || type === 'warp_pad' || type === 'switch_btn' || type === 'gate_bar') {
+      if (type === 'gatehouse' || type === 'cycle_gate') {
+        this.addGatehouse3D(type, o, cellX, cellY, cellW, cellH, created, W, H);
+        this.objMeshes.set(o.id, created);
+        continue;
+      }
+
+      if (type === 'ice_tile' || type === 'arrow_pad' || type === 'warp_pad' || type === 'switch_btn' || type === 'gate_bar' || Stage3D.isExtGimmick(type)) {
         this.addGimmick3D(type, o, cellX, cellY, cellW, cellH, created, W, H);
         this.objMeshes.set(o.id, created);
         continue;
@@ -525,6 +585,7 @@ export class Stage3D {
           const t = pixelTex(pimg, `img:${type}`);
           const prop3d = makeInteriorProp3D(type, o, t, im.w, im.h, W, this.shadowTex, T);
           if (prop3d) {
+            prop3d.position.y += base;
             this.scene3d.add(prop3d);
             this.registerTintMat(prop3d);
             created.push(prop3d);
@@ -537,7 +598,7 @@ export class Stage3D {
               gm.userData = { noTint: true };
               const g = new THREE.Mesh(new THREE.PlaneGeometry(type === 'forge' ? 3.2 : 2.2, type === 'forge' ? 2.2 : 1.6), gm);
               g.rotation.x = -Math.PI / 2;
-              g.position.set(cellX + cellW / 2, 0.02, cellY + (type === 'forge' ? 0.9 : 0.55));
+              g.position.set(cellX + cellW / 2, base + 0.02, cellY + (type === 'forge' ? 0.9 : 0.55));
               this.scene3d.add(g);
               created.push(g);
             }
@@ -1165,6 +1226,378 @@ export class Stage3D {
     }
   }
 
+  /** 3D 박스·경사 빔 배치 빌더 (단일 드로우콜 + 방향별 음영) */
+  private makeColorBatch() {
+    const pos: number[] = [];
+    const col: number[] = [];
+    const idx: number[] = [];
+    const tmp = new THREE.Color();
+    const pushTri = (a: number, b: number, c: number) => idx.push(a, b, c);
+    const pushQuad = (pts: [number, number, number][], hex: number, shade: number) => {
+      tmp.setHex(hex);
+      const r = Math.min(1, tmp.r * shade), g = Math.min(1, tmp.g * shade), b = Math.min(1, tmp.b * shade);
+      const base = pos.length / 3;
+      for (const p of pts) {
+        pos.push(p[0], p[1], p[2]);
+        col.push(r, g, b);
+      }
+      pushTri(base, base + 1, base + 2);
+      pushTri(base, base + 2, base + 3);
+    };
+    const pushBox = (cx: number, cy: number, cz: number, sx: number, sy: number, sz: number, hex: number) => {
+      const x0 = cx - sx / 2, x1 = cx + sx / 2;
+      const y0 = cy - sy / 2, y1 = cy + sy / 2;
+      const z0 = cz - sz / 2, z1 = cz + sz / 2;
+      pushQuad([[x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0]], hex, 1.05); // top
+      pushQuad([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], hex, 0.94); // +z front
+      pushQuad([[x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0]], hex, 0.80); // -z back
+      pushQuad([[x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1]], hex, 0.86); // +x right
+      pushQuad([[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]], hex, 0.86); // -x left
+      pushQuad([[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], hex, 0.68); // bottom
+    };
+    const pushBeam = (ax: number, ay: number, az: number, bx: number, by: number, bz: number, r: number, hex: number) => {
+      const dx = bx - ax, dy = by - ay, dz = bz - az;
+      const len = Math.hypot(dx, dy, dz);
+      if (len < 1e-4) return;
+      const upx = Math.abs(dy / len) > 0.92 ? 1 : 0, upy = upx ? 0 : 1, upz = 0;
+      let rx = dy * upz - dz * upy, ry = dz * upx - dx * upz, rz = dx * upy - dy * upx;
+      const rl = Math.hypot(rx, ry, rz) || 1;
+      rx = (rx / rl) * r; ry = (ry / rl) * r; rz = (rz / rl) * r;
+      let ux = ry * dz - rz * dy, uy = rz * dx - rx * dz, uz = rx * dy - ry * dx;
+      const ul = Math.hypot(ux, uy, uz) || 1;
+      ux = (ux / ul) * r; uy = (uy / ul) * r; uz = (uz / ul) * r;
+      const a0: [number, number, number] = [ax - rx - ux, ay - ry - uy, az - rz - uz];
+      const a1: [number, number, number] = [ax + rx - ux, ay + ry - uy, az + rz - uz];
+      const a2: [number, number, number] = [ax + rx + ux, ay + ry + uy, az + rz + uz];
+      const a3: [number, number, number] = [ax - rx + ux, ay - ry + uy, az - rz + uz];
+      const b0: [number, number, number] = [bx - rx - ux, by - ry - uy, bz - rz - uz];
+      const b1: [number, number, number] = [bx + rx - ux, by + ry - uy, bz + rz - uz];
+      const b2: [number, number, number] = [bx + rx + ux, by + ry + uy, bz + rz + uz];
+      const b3: [number, number, number] = [bx - rx + ux, by - ry + uy, bz - rz + uz];
+      pushQuad([a3, a2, b2, b3], hex, 1.02);
+      pushQuad([a0, a1, b1, b0], hex, 0.78);
+      pushQuad([a1, a2, b2, b1], hex, 0.90);
+      pushQuad([a3, b3, b0, a0], hex, 0.88);
+    };
+    const build = (): THREE.Mesh | null => {
+      if (!idx.length) return null;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      geo.setIndex(idx);
+      geo.computeBoundingSphere();
+      const mat = new THREE.MeshBasicMaterial({ vertexColors: true });
+      const mesh = new THREE.Mesh(geo, mat);
+      this.scene3d.add(mesh);
+      this.registerTintMat(mesh);
+      return mesh;
+    };
+    return { pushBox, pushBeam, build };
+  }
+
+  /** 도시 철교·석조교·현수교 및 Y축 고가도로(자전거 도로) 3D 구조물 + 야간 가로등 생성 */
+  private addBridgeAndHighway3D(
+    raw: { layers: { name: string; data?: number[] }[]; properties?: { name: string; type: string; value: string | number | boolean }[] },
+    W: number,
+    H: number,
+    info: Stage3D['world']['info'],
+  ) {
+    const batch = this.makeColorBatch();
+    const bridgeStyle = String(prop(raw, 'bridgeStyle', 'wood'));
+    const bridgeLayer = raw.layers.find((x) => x.name === 'Bridge');
+    const bData = bridgeLayer?.data;
+    const lamps: Array<{ x: number; y: number; z: number; color: number }> = [];
+
+    const parseJson = <T,>(k: string): T[] => {
+      const v = raw.properties?.find((p) => p.name === k)?.value;
+      if (Array.isArray(v)) return v as T[];
+      if (typeof v === 'string' && v.trim()) {
+        try { const parsed = JSON.parse(v); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+      }
+      return [];
+    };
+
+    // 1) 스타일 다리(steel / stone / suspension / timber): 난간 · 교각 · 상판 두께 · 트러스/주탑/케이블
+    if (bData && bridgeStyle !== 'wood') {
+      const hasB = (tx: number, ty: number) => tx >= 0 && ty >= 0 && tx < W && ty < H && (bData[ty * W + tx] ?? 0) > 0;
+      const isEdgeDrop = (nx: number, ny: number, h: number) =>
+        nx >= 0 && ny >= 0 && nx < W && ny < H && !hasB(nx, ny) &&
+        (info.terrainAt(nx, ny) === '2' || Math.abs(this.hts.sample(nx + 0.5, ny + 0.5) - h) > 0.35);
+
+      const deckColor = bridgeStyle === 'stone' ? 0x9ca2ac : bridgeStyle === 'steel' ? 0x525d6b : bridgeStyle === 'timber' ? 0x7d5836 : 0x3b434e;
+      const railColor = bridgeStyle === 'stone' ? 0xb4bac4 : bridgeStyle === 'steel' ? 0x627387 : bridgeStyle === 'timber' ? 0x986d42 : 0xd9e1ec;
+      const postColor = bridgeStyle === 'stone' ? 0x828894 : bridgeStyle === 'steel' ? 0x3a4654 : bridgeStyle === 'timber' ? 0x5d3d22 : 0xc8372d;
+      const pierColor = bridgeStyle === 'stone' ? 0x777d88 : bridgeStyle === 'steel' ? 0x3c4552 : bridgeStyle === 'timber' ? 0x4f351e : 0x8e96a3;
+      const railH = bridgeStyle === 'stone' ? 0.42 : bridgeStyle === 'suspension' ? 0.46 : 0.48;
+
+      const visited = new Uint8Array(W * H);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        if (!hasB(x, y)) continue;
+        const h = this.hts.sample(x + 0.5, y + 0.5);
+        const dropL = isEdgeDrop(x - 1, y, h);
+        const dropR = isEdgeDrop(x + 1, y, h);
+        const dropU = isEdgeDrop(x, y - 1, h);
+        const dropD = isEdgeDrop(x, y + 1, h);
+
+        // 상판 측면 두께 (3D 부피감) & 교각
+        if (h > 0.25 || info.terrainAt(x, y) === '2') {
+          if (dropL) batch.pushBox(x + 0.04, h - 0.12, y + 0.5, 0.08, 0.24, 1.0, deckColor);
+          if (dropR) batch.pushBox(x + 0.96, h - 0.12, y + 0.5, 0.08, 0.24, 1.0, deckColor);
+          if (dropU) batch.pushBox(x + 0.5, h - 0.12, y + 0.04, 1.0, 0.24, 0.08, deckColor);
+          if (dropD) batch.pushBox(x + 0.5, h - 0.12, y + 0.96, 1.0, 0.24, 0.08, deckColor);
+        }
+
+        // 외곽 난간 & 보행 안전 연석
+        if (dropL) {
+          batch.pushBox(x + 0.06, h + railH, y + 0.5, 0.09, 0.09, 1.0, railColor);
+          batch.pushBox(x + 0.06, h + railH * 0.45, y + 0.5, 0.10, railH * 0.9, 0.14, postColor);
+        }
+        if (dropR) {
+          batch.pushBox(x + 0.94, h + railH, y + 0.5, 0.09, 0.09, 1.0, railColor);
+          batch.pushBox(x + 0.94, h + railH * 0.45, y + 0.5, 0.10, railH * 0.9, 0.14, postColor);
+        }
+        if (dropU) {
+          batch.pushBox(x + 0.5, h + railH, y + 0.06, 1.0, 0.09, 0.09, railColor);
+          batch.pushBox(x + 0.5, h + railH * 0.45, y + 0.06, 0.14, railH * 0.9, 0.10, postColor);
+        }
+        if (dropD) {
+          batch.pushBox(x + 0.5, h + railH, y + 0.94, 1.0, 0.09, 0.09, railColor);
+          batch.pushBox(x + 0.5, h + railH * 0.45, y + 0.94, 0.14, railH * 0.9, 0.10, postColor);
+        }
+
+        // 물/계곡 아래로 내리는 교각 기둥
+        const edgeCell = dropL || dropR || dropU || dropD;
+        if (edgeCell && ((x * 3 + y * 5) % 4 === 0) && (h > 0.35 || info.terrainAt(x, y) === '2')) {
+          const bot = -0.45, top = h - 0.12;
+          const px = dropL ? x + 0.14 : dropR ? x + 0.86 : x + 0.5;
+          const pz = dropU ? y + 0.14 : dropD ? y + 0.86 : y + 0.5;
+          batch.pushBox(px, (top + bot) / 2, pz, 0.34, top - bot, 0.34, pierColor);
+          batch.pushBox(px, bot + 0.25, pz, 0.50, 0.50, 0.50, bridgeStyle === 'suspension' ? 0xd96b43 : pierColor);
+        }
+
+        // 다리 가로등 (양 측면 5칸 간격)
+        if ((dropL || dropU) && ((x + y) % 5 === 2)) {
+          const lx = dropL ? x + 0.08 : x + 0.5, lz = dropU ? y + 0.08 : y + 0.5;
+          batch.pushBox(lx, h + 1.05, lz, 0.10, 2.1, 0.10, 0x353c46);
+          batch.pushBox(lx, h + 2.12, lz, 0.28, 0.14, 0.28, bridgeStyle === 'suspension' ? 0x9cf0ff : 0xffe6a0);
+          lamps.push({ x: lx, y: h, z: lz, color: bridgeStyle === 'suspension' ? 0x9ef4ff : 0xffdf94 });
+        }
+
+        // 연결된 다리 전체 스팬을 뽑아 대형 아치·트러스·현수 주탑 건설
+        if (!visited[y * W + x]) {
+          const st = [[x, y]];
+          visited[y * W + x] = 1;
+          let minX = x, maxX = x, minY = y, maxY = y, sumH = 0, cnt = 0;
+          while (st.length) {
+            const [cx, cy] = st.pop()!;
+            minX = Math.min(minX, cx); maxX = Math.max(maxX, cx);
+            minY = Math.min(minY, cy); maxY = Math.max(maxY, cy);
+            sumH += this.hts.sample(cx + 0.5, cy + 0.5); cnt++;
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+              const nx = cx + dx, ny = cy + dy;
+              if (hasB(nx, ny) && !visited[ny * W + nx]) { visited[ny * W + nx] = 1; st.push([nx, ny]); }
+            }
+          }
+          const avgH = sumH / Math.max(1, cnt);
+          const spanW = maxX - minX + 1, spanH = maxY - minY + 1;
+          const horiz = spanW >= spanH;
+          const mainLen = horiz ? spanW : spanH;
+
+          if (bridgeStyle === 'suspension' && mainLen >= 6) {
+            // 스카이애로우 브리지 스타일 붉은 쌍둥이 주탑 + 현수 케이블 + 행어 케이블
+            const tFracs = mainLen >= 10 ? [0.28, 0.72] : [0.5];
+            const cablePts = (sideOffset: number) => {
+              const anchors: number[] = [];
+              if (horiz) {
+                anchors.push(minX, avgH + 0.5);
+                for (const f of tFracs) anchors.push(minX + spanW * f, avgH + 5.1);
+                anchors.push(maxX + 1, avgH + 0.5);
+                for (let k = 0; k < anchors.length - 2; k += 2) {
+                  const ax = anchors[k], ay = anchors[k + 1], bx = anchors[k + 2], by = anchors[k + 3];
+                  const midLow = k === 0 || k + 2 === anchors.length - 2 ? 0.5 : 1.75;
+                  const segs = 6;
+                  for (let s = 0; s < segs; s++) {
+                    const u0 = s / segs, u1 = (s + 1) / segs;
+                    const xA = ax + (bx - ax) * u0, xB = ax + (bx - ax) * u1;
+                    const sag0 = -4 * midLow * u0 * (1 - u0), sag1 = -4 * midLow * u1 * (1 - u1);
+                    const yA = ay + (by - ay) * u0 + sag0, yB = ay + (by - ay) * u1 + sag1;
+                    batch.pushBeam(xA, yA, sideOffset, xB, yB, sideOffset, 0.055, 0xd8e3f0);
+                    if (s % 2 === 1) batch.pushBeam(xA, yA, sideOffset, xA, avgH + 0.42, sideOffset, 0.025, 0xbcc7d4);
+                  }
+                }
+              } else {
+                anchors.push(minY, avgH + 0.5);
+                for (const f of tFracs) anchors.push(minY + spanH * f, avgH + 5.1);
+                anchors.push(maxY + 1, avgH + 0.5);
+                for (let k = 0; k < anchors.length - 2; k += 2) {
+                  const az = anchors[k], ay = anchors[k + 1], bz = anchors[k + 2], by = anchors[k + 3];
+                  const midLow = k === 0 || k + 2 === anchors.length - 2 ? 0.5 : 1.75;
+                  const segs = 6;
+                  for (let s = 0; s < segs; s++) {
+                    const u0 = s / segs, u1 = (s + 1) / segs;
+                    const zA = az + (bz - az) * u0, zB = az + (bz - az) * u1;
+                    const sag0 = -4 * midLow * u0 * (1 - u0), sag1 = -4 * midLow * u1 * (1 - u1);
+                    const yA = ay + (by - ay) * u0 + sag0, yB = ay + (by - ay) * u1 + sag1;
+                    batch.pushBeam(sideOffset, yA, zA, sideOffset, yB, zB, 0.055, 0xd8e3f0);
+                    if (s % 2 === 1) batch.pushBeam(sideOffset, yA, zA, sideOffset, avgH + 0.42, zA, 0.025, 0xbcc7d4);
+                  }
+                }
+              }
+            };
+            for (const f of tFracs) {
+              if (horiz) {
+                const tx = minX + spanW * f, zA = minY + 0.06, zB = maxY + 0.94;
+                batch.pushBox(tx, avgH + 2.55, zA, 0.38, 5.2, 0.34, 0xc8372d);
+                batch.pushBox(tx, avgH + 2.55, zB, 0.38, 5.2, 0.34, 0xc8372d);
+                batch.pushBox(tx, avgH + 5.22, zA, 0.44, 0.24, 0.40, 0xf2f4f8);
+                batch.pushBox(tx, avgH + 5.22, zB, 0.44, 0.24, 0.40, 0xf2f4f8);
+                batch.pushBox(tx, avgH + 4.45, (zA + zB) / 2, 0.26, 0.34, Math.max(0.8, zB - zA), 0xc8372d);
+                batch.pushBox(tx, avgH + 2.95, (zA + zB) / 2, 0.22, 0.24, Math.max(0.8, zB - zA), 0xb12c24);
+              } else {
+                const tz = minY + spanH * f, xA = minX + 0.06, xB = maxX + 0.94;
+                batch.pushBox(xA, avgH + 2.55, tz, 0.34, 5.2, 0.38, 0xc8372d);
+                batch.pushBox(xB, avgH + 2.55, tz, 0.34, 5.2, 0.38, 0xc8372d);
+                batch.pushBox(xA, avgH + 5.22, tz, 0.40, 0.24, 0.44, 0xf2f4f8);
+                batch.pushBox(xB, avgH + 5.22, tz, 0.40, 0.24, 0.44, 0xf2f4f8);
+                batch.pushBox((xA + xB) / 2, avgH + 4.45, tz, Math.max(0.8, xB - xA), 0.34, 0.26, 0xc8372d);
+                batch.pushBox((xA + xB) / 2, avgH + 2.95, tz, Math.max(0.8, xB - xA), 0.24, 0.22, 0xb12c24);
+              }
+            }
+            cablePts(horiz ? minY + 0.06 : minX + 0.06);
+            cablePts(horiz ? maxY + 0.94 : maxX + 0.94);
+          } else if (bridgeStyle === 'steel' && mainLen >= 4) {
+            // 쇳불 강철 트러스교 (사선 철골 트러스 + 상부 횡보)
+            const topY = avgH + 2.25;
+            if (horiz) {
+              const zA = minY + 0.06, zB = maxY + 0.94;
+              batch.pushBeam(minX + 0.5, topY, zA, maxX + 0.5, topY, zA, 0.08, 0x4b5c6e);
+              batch.pushBeam(minX + 0.5, topY, zB, maxX + 0.5, topY, zB, 0.08, 0x4b5c6e);
+              for (let tx = minX; tx <= maxX; tx += 2) {
+                batch.pushBox(tx + 0.5, avgH + 1.15, zA, 0.18, 2.25, 0.18, 0x3b4858);
+                batch.pushBox(tx + 0.5, avgH + 1.15, zB, 0.18, 2.25, 0.18, 0x3b4858);
+                batch.pushBox(tx + 0.5, topY, (zA + zB) / 2, 0.18, 0.18, Math.max(0.8, zB - zA), 0x4b5c6e);
+                if (tx + 2 <= maxX) {
+                  batch.pushBeam(tx + 0.5, avgH + 0.3, zA, tx + 2.5, topY, zA, 0.055, 0x627387);
+                  batch.pushBeam(tx + 0.5, avgH + 0.3, zB, tx + 2.5, topY, zB, 0.055, 0x627387);
+                }
+              }
+            } else {
+              const xA = minX + 0.06, xB = maxX + 0.94;
+              batch.pushBeam(xA, topY, minY + 0.5, xA, topY, maxY + 0.5, 0.08, 0x4b5c6e);
+              batch.pushBeam(xB, topY, minY + 0.5, xB, topY, maxY + 0.5, 0.08, 0x4b5c6e);
+              for (let tz = minY; tz <= maxY; tz += 2) {
+                batch.pushBox(xA, avgH + 1.15, tz + 0.5, 0.18, 2.25, 0.18, 0x3b4858);
+                batch.pushBox(xB, avgH + 1.15, tz + 0.5, 0.18, 2.25, 0.18, 0x3b4858);
+                batch.pushBox((xA + xB) / 2, topY, tz + 0.5, Math.max(0.8, xB - xA), 0.18, 0.18, 0x4b5c6e);
+                if (tz + 2 <= maxY) {
+                  batch.pushBeam(xA, avgH + 0.3, tz + 0.5, xA, topY, tz + 2.5, 0.055, 0x627387);
+                  batch.pushBeam(xB, avgH + 0.3, tz + 0.5, xB, topY, tz + 2.5, 0.055, 0x627387);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 2) 고가도로 / 자전거 도로 (Bridge 타일이 없는 고가 elevs 구간에 안전 가드레일 · 교각 · 안내 비콘 설치)
+    const elevs = parseJson<{ x0: number; y0: number; x1: number; y1: number; h: number; openUnder?: boolean }>('elevs');
+    const bAt = (x: number, y: number) => bData && x >= 0 && y >= 0 && x < W && y < H && (bData[y * W + x] ?? 0) > 0;
+    for (const e of elevs) {
+      if (e.h < 1.1) continue;
+      const x0 = Math.max(0, Math.floor(e.x0)), y0 = Math.max(0, Math.floor(e.y0));
+      const x1 = Math.min(W - 1, Math.floor(e.x1)), y1 = Math.min(H - 1, Math.floor(e.y1));
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        if (bAt(x, y)) continue;
+        const h = this.hts.sample(x + 0.5, y + 0.5);
+        const dropEdge = (nx: number, ny: number) =>
+          nx >= 0 && ny >= 0 && nx < W && ny < H && h - this.hts.sample(nx + 0.5, ny + 0.5) > 0.55;
+        if (dropEdge(x - 1, y)) {
+          batch.pushBox(x + 0.06, h + 0.42, y + 0.5, 0.08, 0.09, 1.0, 0x4298dc);
+          batch.pushBox(x + 0.06, h + 0.21, y + 0.5, 0.09, 0.42, 0.12, 0xd8e6f2);
+        }
+        if (dropEdge(x + 1, y)) {
+          batch.pushBox(x + 0.94, h + 0.42, y + 0.5, 0.08, 0.09, 1.0, 0x4298dc);
+          batch.pushBox(x + 0.94, h + 0.21, y + 0.5, 0.09, 0.42, 0.12, 0xd8e6f2);
+        }
+        if (dropEdge(x, y - 1)) {
+          batch.pushBox(x + 0.5, h + 0.42, y + 0.06, 1.0, 0.09, 0.08, 0x4298dc);
+          batch.pushBox(x + 0.5, h + 0.21, y + 0.06, 0.12, 0.42, 0.09, 0xd8e6f2);
+        }
+        if (dropEdge(x, y + 1)) {
+          batch.pushBox(x + 0.5, h + 0.42, y + 0.94, 1.0, 0.09, 0.08, 0x4298dc);
+          batch.pushBox(x + 0.5, h + 0.21, y + 0.94, 0.12, 0.42, 0.09, 0xd8e6f2);
+        }
+        if ((dropEdge(x - 1, y) || dropEdge(x, y - 1)) && (x + y) % 6 === 2) {
+          const lx = dropEdge(x - 1, y) ? x + 0.07 : x + 0.5, lz = dropEdge(x, y - 1) ? y + 0.07 : y + 0.5;
+          batch.pushBox(lx, h + 1.05, lz, 0.09, 2.1, 0.09, 0x35485c);
+          batch.pushBox(lx, h + 2.12, lz, 0.26, 0.14, 0.26, 0x8ef2d8);
+          lamps.push({ x: lx, y: h, z: lz, color: 0x8ef2d8 });
+        }
+      }
+    }
+
+    batch.build();
+    for (const l of lamps) this.addLampGlow(l.x, l.y, l.z);
+  }
+
+  /** 도시 게이트하우스 · 자전거 도로 통과형 3D 아치 관문 (중앙 도로는 열려 있어 그대로 통과) */
+  private addGatehouse3D(
+    type: string,
+    o: { properties?: { name: string; type: string; value: string | number | boolean }[] },
+    cellX: number,
+    cellY: number,
+    cellW: number,
+    cellH: number,
+    created: THREE.Object3D[],
+    W: number,
+    H: number,
+  ) {
+    const batch = this.makeColorBatch();
+    const axis = String(prop(o, 'axis', cellW >= cellH ? 'ns' : 'ew'));
+    const isCycle = type === 'cycle_gate';
+    const wallHex = isCycle ? 0xd9e8e4 : 0xdccbb4;
+    const roofHex = isCycle ? 0x268a6e : 0x385e8c;
+    const trimHex = isCycle ? 0x46e0b8 : 0xe3b854;
+
+    if (axis === 'ns') {
+      const cx = cellX + cellW / 2;
+      const cz = cellY - (cellH - 1) / 2 + 0.5;
+      const base = this.hts.sample(Math.max(0.05, Math.min(W - 0.05, cx)), Math.max(0.05, Math.min(H - 0.05, cz)));
+      const spanX = Math.max(3, cellW);
+      const lx = cellX + 0.42, rx = cellX + spanX - 0.42;
+      batch.pushBox(lx, base + 1.15, cz, 0.72, 2.3, 1.35, wallHex);
+      batch.pushBox(rx, base + 1.15, cz, 0.72, 2.3, 1.35, wallHex);
+      batch.pushBox(lx, base + 2.42, cz, 0.86, 0.30, 1.50, roofHex);
+      batch.pushBox(rx, base + 2.42, cz, 0.86, 0.30, 1.50, roofHex);
+      batch.pushBox(cx, base + 2.60, cz, spanX + 0.3, 0.68, 1.45, wallHex);
+      batch.pushBox(cx, base + 3.08, cz, spanX + 0.65, 0.38, 1.65, roofHex);
+      batch.pushBox(cx, base + 2.60, cz + 0.74, Math.max(1.4, spanX - 1.2), 0.34, 0.08, trimHex);
+      const mesh = batch.build();
+      if (mesh) created.push(mesh);
+      created.push(...this.addLampGlow(lx, base, cz + 0.72));
+      created.push(...this.addLampGlow(rx, base, cz + 0.72));
+    } else {
+      const cx = cellX + cellW / 2;
+      const z0 = cellY - cellH + 1;
+      const cz = z0 + cellH / 2;
+      const base = this.hts.sample(Math.max(0.05, Math.min(W - 0.05, cx)), Math.max(0.05, Math.min(H - 0.05, cz)));
+      const spanZ = Math.max(3, cellH);
+      const uz = z0 + 0.42, dz = z0 + spanZ - 0.42;
+      batch.pushBox(cx, base + 1.15, uz, 1.35, 2.3, 0.72, wallHex);
+      batch.pushBox(cx, base + 1.15, dz, 1.35, 2.3, 0.72, wallHex);
+      batch.pushBox(cx, base + 2.42, uz, 1.50, 0.30, 0.86, roofHex);
+      batch.pushBox(cx, base + 2.42, dz, 1.50, 0.30, 0.86, roofHex);
+      batch.pushBox(cx, base + 2.60, cz, 1.45, 0.68, spanZ + 0.3, wallHex);
+      batch.pushBox(cx, base + 3.08, cz, 1.65, 0.38, spanZ + 0.65, roofHex);
+      batch.pushBox(cx + 0.74, base + 2.60, cz, 0.08, 0.34, Math.max(1.4, spanZ - 1.2), trimHex);
+      const mesh = batch.build();
+      if (mesh) created.push(mesh);
+      created.push(...this.addLampGlow(cx + 0.72, base, uz));
+      created.push(...this.addLampGlow(cx + 0.72, base, dz));
+    }
+  }
+
   /** 다리 타일(Bridge)에 입체 목재 상판·물속 교각·난간 추가 (단일 드로우콜) */
   private addBridge3D(data: number[], W: number, H: number, info: MapInfo) {
     const pos: number[] = [], col: number[] = [];
@@ -1246,6 +1679,10 @@ export class Stage3D {
     const cx = cellX + cellW * 0.5;
     const cz = cellY + 1 - cellH * 0.5;
     const h = this.hts.sample(Math.max(0.05, Math.min(W - 0.05, cx)), Math.max(0.05, Math.min(H - 0.05, cz)));
+    if (Stage3D.isExtGimmick(type) || (type === 'arrow_pad' && o.properties?.some((pr) => pr.name === 'altDir'))) {
+      this.addGymPuzzle3D(type, o, cellW, cellH, created, cx, cz, h);
+      return;
+    }
 
     if (type === 'ice_tile') {
       const m = new THREE.Mesh(
@@ -1373,6 +1810,440 @@ export class Stage3D {
     }
   }
 
+  private dirAngleY(dir: string) {
+    return dir === 'right' ? -Math.PI / 2 : dir === 'left' ? Math.PI / 2 : dir === 'down' ? Math.PI : 0;
+  }
+
+  private addGymPuzzle3D(
+    type: string,
+    o: MapInfo['objects'][number],
+    cellW: number,
+    cellH: number,
+    created: THREE.Object3D[],
+    cx: number,
+    cz: number,
+    h: number,
+  ) {
+    const op = (k: string, d: unknown = '') => o.properties?.find((pr) => pr.name === k)?.value ?? d;
+    const addM = (m: THREE.Object3D) => {
+      this.scene3d.add(m);
+      this.registerTintMat(m);
+      created.push(m);
+      return m;
+    };
+    const makeLabelTex = (txt: string, bg: string, fg: string) => {
+      const c = document.createElement('canvas');
+      c.width = 64; c.height = 64;
+      const g = c.getContext('2d')!;
+      g.fillStyle = bg; g.fillRect(0, 0, 64, 64);
+      g.strokeStyle = '#ffd080'; g.lineWidth = 4; g.strokeRect(4, 4, 56, 56);
+      g.fillStyle = fg; g.font = 'bold 34px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(txt, 32, 34);
+      const tex = new THREE.CanvasTexture(c);
+      tex.magFilter = THREE.NearestFilter;
+      return tex;
+    };
+
+    if (type === 'arrow_pad') {
+      const baseDir = String(op('dir', 'up'));
+      const altDir = String(op('altDir', baseDir));
+      const railGroup = String(op('railGroup', 'fg1'));
+      const col = railGroup === 'fg2' || railGroup === 'r2' ? 0x38d8ff : 0xfacc15;
+      const grp = new THREE.Group();
+      grp.position.set(cx, h + 0.03, cz);
+      grp.rotation.y = this.dirAngleY(baseDir);
+      const plate = new THREE.Mesh(
+        new THREE.BoxGeometry(0.86, 0.04, 0.86),
+        new THREE.MeshBasicMaterial({ color: 0x334155 }),
+      );
+      grp.add(plate);
+      const shaft = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, 0.055, 0.42),
+        new THREE.MeshBasicMaterial({ color: col }),
+      );
+      shaft.position.set(0, 0.015, 0.1);
+      grp.add(shaft);
+      const head = new THREE.Mesh(
+        new THREE.BoxGeometry(0.48, 0.06, 0.24),
+        new THREE.MeshBasicMaterial({ color: col }),
+      );
+      head.position.set(0, 0.02, -0.18);
+      grp.add(head);
+      const tip = new THREE.Mesh(
+        new THREE.BoxGeometry(0.24, 0.065, 0.16),
+        new THREE.MeshBasicMaterial({ color: 0xffffff }),
+      );
+      tip.position.set(0, 0.025, -0.28);
+      grp.add(tip);
+      addM(grp);
+      this.dynArrows.push({ group: grp, baseDir, altDir, railGroup, curAngle: this.dirAngleY(baseDir) });
+      return;
+    }
+
+    if (type === 'snowball') {
+      const grp = new THREE.Group();
+      grp.position.set(cx, h, cz);
+      const shadow = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4, 0.44, 0.04, 12),
+        new THREE.MeshBasicMaterial({ color: 0x8bb6db }),
+      );
+      shadow.position.y = 0.02;
+      const body = new THREE.Mesh(
+        new THREE.SphereGeometry(0.42, 10, 8),
+        new THREE.MeshBasicMaterial({ color: 0xdcf0ff }),
+      );
+      body.scale.set(1.08, 0.76, 1.08);
+      body.position.y = 0.31;
+      const cap = new THREE.Mesh(
+        new THREE.SphereGeometry(0.32, 8, 6),
+        new THREE.MeshBasicMaterial({ color: 0xffffff }),
+      );
+      cap.scale.set(1.05, 0.56, 1.05);
+      cap.position.set(-0.04, 0.46, -0.04);
+      const band = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.41, 0.43, 0.12, 10),
+        new THREE.MeshBasicMaterial({ color: 0xadd8f8 }),
+      );
+      band.position.y = 0.18;
+      grp.add(shadow, body, cap, band);
+      addM(grp);
+      return;
+    }
+
+    if (type === 'snow_reset') {
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(0.84, 0.05, 0.84),
+        new THREE.MeshBasicMaterial({ color: 0x1e4d82 }),
+      );
+      base.position.set(cx, h + 0.025, cz);
+      const ring = new THREE.Mesh(
+        new THREE.BoxGeometry(0.54, 0.07, 0.54),
+        new THREE.MeshBasicMaterial({ color: 0x64d2ff }),
+      );
+      ring.position.set(cx, h + 0.05, cz);
+      addM(base);
+      addM(ring);
+      this.resetPads.push({ ring, baseY: h + 0.05 });
+      return;
+    }
+
+    if (type === 'pair_card') {
+      const sym = String(op('pairKey', 'leaf_red'));
+      const SYM_COL: Record<string, number> = {
+        leaf_red: 0xe8524a, sun_gold: 0xffd448, sakura: 0xff88b8, violet: 0xa870ff, bellflower: 0x48b8ff,
+      };
+      const fc = SYM_COL[sym] ?? 0xff6b9d;
+      const grp = new THREE.Group();
+      grp.position.set(cx, h + 0.04, cz);
+      const back = new THREE.Mesh(
+        new THREE.BoxGeometry(0.82, 0.06, 0.82),
+        new THREE.MeshBasicMaterial({ color: 0x31703f }),
+      );
+      const leaf = new THREE.Mesh(
+        new THREE.BoxGeometry(0.44, 0.07, 0.44),
+        new THREE.MeshBasicMaterial({ color: 0x62c46d }),
+      );
+      back.add(leaf);
+      const front = new THREE.Mesh(
+        new THREE.BoxGeometry(0.76, 0.08, 0.76),
+        new THREE.MeshBasicMaterial({ color: 0xfff7e6 }),
+      );
+      const petal = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.28, 0),
+        new THREE.MeshBasicMaterial({ color: fc }),
+      );
+      petal.scale.set(1.2, 0.45, 1.2);
+      petal.position.y = 0.09;
+      const core = new THREE.Mesh(
+        new THREE.BoxGeometry(0.16, 0.1, 0.16),
+        new THREE.MeshBasicMaterial({ color: 0xfacc15 }),
+      );
+      core.position.y = 0.13;
+      front.add(petal, core);
+      front.visible = false;
+      grp.add(back, front);
+      addM(grp);
+      this.cardMeshes.set(o.id, { group: grp, back, front, flip: 0 });
+      return;
+    }
+
+    if (type === 'rail_switch') {
+      const rg = String(op('railGroup', 'fg1'));
+      const col = rg === 'fg2' || rg === 'r2' ? 0x38d8ff : 0xfacc15;
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(0.72, 0.18, 0.72),
+        new THREE.MeshBasicMaterial({ color: 0x333b4d }),
+      );
+      base.position.set(cx, h + 0.09, cz);
+      const trim = new THREE.Mesh(
+        new THREE.BoxGeometry(0.78, 0.06, 0.78),
+        new THREE.MeshBasicMaterial({ color: col }),
+      );
+      trim.position.set(cx, h + 0.03, cz);
+      const lever = new THREE.Group();
+      lever.position.set(cx, h + 0.18, cz);
+      const stick = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.48, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0xd1d5db }),
+      );
+      stick.position.y = 0.24;
+      const knob = new THREE.Mesh(
+        new THREE.SphereGeometry(0.14, 8, 6),
+        new THREE.MeshBasicMaterial({ color: col }),
+      );
+      knob.position.y = 0.5;
+      lever.add(stick, knob);
+      lever.rotation.z = -0.45;
+      addM(trim);
+      addM(base);
+      addM(lever);
+      this.railLevers.push({ lever, railGroup: rg, curRot: -0.45 });
+      return;
+    }
+
+    if (type === 'quiz_pad') {
+      const gid = String(op('gateId', 'eq1'));
+      const lbl = String(op('num', '?'));
+      const rimMat = new THREE.MeshBasicMaterial({ color: 0x7a2412 });
+      const padMat = new THREE.MeshBasicMaterial({ map: makeLabelTex(lbl, '#c2410c', '#fff4cc') });
+      const rim = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.04, 0.88), rimMat);
+      rim.position.set(cx, h + 0.02, cz);
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.055, 0.78), padMat);
+      pad.position.set(cx, h + 0.025, cz);
+      addM(rim);
+      addM(pad);
+      const list = this.quizMats.get(gid) ?? [];
+      list.push({ pad: padMat, rim: rimMat });
+      this.quizMats.set(gid, list);
+      return;
+    }
+
+    if (type === 'prism') {
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.38, 0.44, 0.16, 8),
+        new THREE.MeshBasicMaterial({ color: 0x263250 }),
+      );
+      base.position.set(cx, h + 0.08, cz);
+      const rotor = new THREE.Group();
+      rotor.position.set(cx, h + 0.34, cz);
+      const crystal = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.28, 0),
+        new THREE.MeshBasicMaterial({ color: 0x56d8ff }),
+      );
+      crystal.scale.set(0.9, 1.35, 0.9);
+      const mirror = new THREE.Mesh(
+        new THREE.BoxGeometry(0.74, 0.42, 0.07),
+        new THREE.MeshBasicMaterial({ color: 0xd8f8ff }),
+      );
+      const rot0 = Number(op('rot', 0));
+      rotor.rotation.y = (rot0 * Math.PI) / 2 - Math.PI / 4;
+      rotor.add(crystal, mirror);
+      addM(base);
+      addM(rotor);
+      this.prismMeshes.set(o.id, { rotor, crystal, curRot: rotor.rotation.y });
+      return;
+    }
+
+    if (type === 'laser_src') {
+      const grp = new THREE.Group();
+      grp.position.set(cx, h, cz);
+      grp.rotation.y = this.dirAngleY(String(op('dir', 'right')));
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(0.74, 0.32, 0.74),
+        new THREE.MeshBasicMaterial({ color: 0x2a183b }),
+      );
+      base.position.y = 0.16;
+      const nozzle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.26, 0.24, 0.44),
+        new THREE.MeshBasicMaterial({ color: 0x5c247a }),
+      );
+      nozzle.position.set(0, 0.28, -0.22);
+      const lens = new THREE.Mesh(
+        new THREE.BoxGeometry(0.2, 0.18, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0xff3b8b }),
+      );
+      lens.position.set(0, 0.28, -0.44);
+      grp.add(base, nozzle, lens);
+      addM(grp);
+      return;
+    }
+
+    if (type === 'laser_dst') {
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.36, 0.42, 0.22, 8),
+        new THREE.MeshBasicMaterial({ color: 0x1e363c }),
+      );
+      base.position.set(cx, h + 0.11, cz);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x2c6e60 });
+      const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0), mat);
+      gem.position.set(cx, h + 0.48, cz);
+      addM(base);
+      addM(gem);
+      this.laserDestRings.set(o.id, { gem, mat });
+      return;
+    }
+
+    if (type === 'rune_pad' || type === 'rune_demo') {
+      const idx = Number(op('runeIdx', 0));
+      const COLS = [0xff5e78, 0x48c8ff, 0xffd848, 0xb874ff];
+      const baseColor = type === 'rune_demo' ? 0xc084fc : (COLS[idx % COLS.length] ?? 0x60a5fa);
+      const rim = new THREE.Mesh(
+        new THREE.BoxGeometry(0.86, 0.05, 0.86),
+        new THREE.MeshBasicMaterial({ color: type === 'rune_demo' ? 0x3f1e68 : 0x1f2b54 }),
+      );
+      rim.position.set(cx, h + 0.025, cz);
+      const padMat = new THREE.MeshBasicMaterial({ color: baseColor });
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.07, 0.68), padMat);
+      pad.position.set(cx, h + 0.04, cz);
+      addM(rim);
+      addM(pad);
+      if (type === 'rune_demo') {
+        const gMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+        const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), gMat);
+        gem.position.set(cx, h + 0.45, cz);
+        addM(gem);
+        this.demoGems.push({ gem, baseY: h + 0.45, mat: gMat });
+      } else {
+        const gem = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.14, 0),
+          new THREE.MeshBasicMaterial({ color: baseColor }),
+        );
+        gem.position.set(cx, h + 0.22, cz);
+        addM(gem);
+        this.runeNodes.push({ id: o.id, idx, padMat, baseColor, gem, phase: idx * 1.1 });
+      }
+      return;
+    }
+    void cellW; void cellH;
+  }
+
+  private updateGymPuzzle3D(dt: number) {
+    const s = dt / 1000;
+    const pz = this.gymPuzzle;
+    const gates = this.gymOpenGates;
+
+    // 1. 철도 레버 & 회전식 화살표 발판
+    for (const rv of this.railLevers) {
+      const target = pz.flippedRails?.has(rv.railGroup) ? 0.45 : -0.45;
+      rv.curRot += (target - rv.curRot) * Math.min(1, s * 12);
+      rv.lever.rotation.z = rv.curRot;
+    }
+    for (const da of this.dynArrows) {
+      const dir = pz.flippedRails?.has(da.railGroup) ? da.altDir : da.baseDir;
+      const target = this.dirAngleY(dir);
+      let diff = target - da.curAngle;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      da.curAngle += diff * Math.min(1, s * 14);
+      da.group.rotation.y = da.curAngle;
+    }
+
+    // 2. 기억력 단풍꽃 카드 뒤집기
+    for (const [id, cm] of this.cardMeshes) {
+      const rev = pz.revealedCards?.has(id) ?? false;
+      const tgt = rev ? 1 : 0;
+      cm.flip += (tgt - cm.flip) * Math.min(1, s * 12);
+      const showFront = cm.flip > 0.5;
+      cm.front.visible = showFront;
+      cm.back.visible = !showFront;
+      cm.group.scale.x = Math.max(0.12, Math.abs(cm.flip * 2 - 1));
+      cm.front.position.y = showFront ? (cm.flip - 0.5) * 0.14 : 0;
+    }
+
+    // 3. 프리즘 회전 & 레이저 광선 + 리시버
+    for (const [id, pm] of this.prismMeshes) {
+      const rot = pz.prismRots?.get(id) ?? 0;
+      const tgt = (rot * Math.PI) / 2 - Math.PI / 4;
+      pm.curRot += (tgt - pm.curRot) * Math.min(1, s * 14);
+      pm.rotor.rotation.y = pm.curRot;
+    }
+    for (const [id, dst] of this.laserDestRings) {
+      const lit = pz.litLaserDests?.has(id) ?? false;
+      dst.mat.color.setHex(lit ? 0x4cffb8 : 0x2c6e60);
+      dst.gem.rotation.y += s * (lit ? 4.2 : 0.9);
+      const sc = lit ? 1.25 : 0.95;
+      dst.gem.scale.set(sc, sc, sc);
+    }
+    const segs = pz.laserSegments ?? [];
+    const sig = segs.map((v) => v.join(',')).join('|');
+    if (sig !== this.laserSig) {
+      this.laserSig = sig;
+      if (this.laserBeamGroup) {
+        this.scene3d.remove(this.laserBeamGroup);
+        this.laserBeamGroup = null;
+      }
+      if (segs.length) {
+        const g = new THREE.Group();
+        for (const [x1, z1, x2, z2] of segs) {
+          const dx = x2 - x1, dz = z2 - z1;
+          const len = Math.hypot(dx, dz);
+          if (len < 0.05) continue;
+          const h1 = this.hts.sample(x1, z1), h2 = this.hts.sample(x2, z2);
+          const midY = (h1 + h2) * 0.5 + 0.34;
+          const beam = new THREE.Mesh(
+            new THREE.BoxGeometry(len, 0.07, 0.07),
+            new THREE.MeshBasicMaterial({ color: 0xff3b9a }),
+          );
+          beam.position.set((x1 + x2) * 0.5, midY, (z1 + z2) * 0.5);
+          beam.rotation.y = -Math.atan2(dz, dx);
+          g.add(beam);
+          const core = new THREE.Mesh(
+            new THREE.BoxGeometry(len, 0.035, 0.035),
+            new THREE.MeshBasicMaterial({ color: 0xffffff }),
+          );
+          core.position.copy(beam.position);
+          core.rotation.y = beam.rotation.y;
+          g.add(core);
+        }
+        this.scene3d.add(g);
+        this.laserBeamGroup = g;
+      }
+    }
+
+    // 4. 잿빛 도장 불꽃 퀴즈 발판
+    const wrongFlash = (pz.quizWrongUntil ?? 0) > performance.now();
+    for (const [gid, mats] of this.quizMats) {
+      const ok = gates?.has(gid) ?? false;
+      for (const m of mats) m.rim.color.setHex(ok ? 0x22c55e : wrongFlash ? 0xff2244 : 0x7a2412);
+    }
+
+    // 5. 별마루 도장 별빛 룬 시퀀스 & 리셋 패드
+    const nowSec = performance.now() / 1000;
+    for (const rn of this.runeNodes) {
+      const bright = pz.litRune === rn.idx;
+      rn.padMat.color.setHex(bright ? 0xffffff : rn.baseColor);
+      rn.gem.rotation.y += s * (bright ? 5 : 1.5);
+      rn.gem.scale.setScalar(bright ? 1.65 : 1.0);
+    }
+    for (const dg of this.demoGems) {
+      dg.gem.rotation.y += s * (pz.demoActive ? 4.5 : 1.4);
+      dg.gem.position.y = dg.baseY + Math.sin(nowSec * 3.2) * 0.06;
+      dg.mat.color.setHex(pz.demoActive ? 0xffffff : 0xfde047);
+    }
+    for (const rp of this.resetPads) {
+      rp.ring.rotation.y += s * 0.8;
+      rp.ring.position.y = rp.baseY + Math.sin(nowSec * 2.5) * 0.02;
+    }
+
+    // 6. 눈덩이 파괴 파편 물리
+    for (let i = this.snowShards.length - 1; i >= 0; i--) {
+      const sh = this.snowShards[i];
+      sh.life -= s;
+      if (sh.life <= 0) {
+        this.scene3d.remove(sh.mesh);
+        sh.mesh.geometry.dispose();
+        (sh.mesh.material as THREE.Material).dispose();
+        this.snowShards.splice(i, 1);
+        continue;
+      }
+      sh.vy -= 8.5 * s;
+      sh.mesh.position.x += sh.vx * s;
+      sh.mesh.position.y += sh.vy * s;
+      sh.mesh.position.z += sh.vz * s;
+      sh.mesh.scale.setScalar(Math.max(0.1, sh.life / 0.6));
+    }
+  }
+
   private frameOffsets(gy: number, zoomScale = 1) {
     const tmpV = new THREE.Vector3();
     const el = (this.cam.el * Math.PI) / 180;
@@ -1422,6 +2293,7 @@ export class Stage3D {
     if (this.soilDirty && state.tiles) this.refreshSoil(state.tiles);
 
     // 1) 제거된 맵 오브젝트 동기화 (벌목·채광·비전기술·보물상자)
+    this.updateGymPuzzle3D(dt);
     for (const wo of this.world.objects) {
       const meshes = this.objMeshes.get(wo.id);
       if (meshes) {
@@ -1487,6 +2359,12 @@ export class Stage3D {
     };
 
     syncChar(state.player);
+    const py = this.hts.sample(
+      Math.max(0.05, Math.min(this.world.info.width - 0.05, state.player.sprite.x / T)),
+      Math.max(0.05, Math.min(this.world.info.height - 0.05, state.player.sprite.y / T)),
+    );
+    const targetBoost = Math.max(0, Math.min(1, (py - 1.15) / 1.45));
+    this.bridgeCamBoost += (targetBoost - this.bridgeCamBoost) * Math.min(1, dt * 0.0045);
     if (state.partner) {
       this.syncSprite(state.partner.sprite, { shadowScale: 0.45, zOffset: 0.01 });
       if (state.partner.coordSprite?.active) this.syncSprite(state.partner.coordSprite, { shadowScale: 0, zOffset: 0.03 });
@@ -1659,8 +2537,8 @@ export class Stage3D {
     const shX = shake?.isRunning ? (Math.random() - 0.5) * (shake.intensity?.x ?? 0.01) * 34 : 0;
     const shY = shake?.isRunning ? (Math.random() - 0.5) * (shake.intensity?.y ?? shake.intensity?.x ?? 0.01) * 28 : 0;
 
-    const el = (this.cam.el * Math.PI) / 180;
-    const dist = this.cam.dist * Math.max(0.45, Math.min(2.6, zoomScale));
+    const el = ((this.cam.el - 3.5 * this.bridgeCamBoost) * Math.PI) / 180;
+    const dist = this.cam.dist * Math.max(0.45, Math.min(2.6, zoomScale)) * (1 + 0.34 * this.bridgeCamBoost);
     const horiz = Math.cos(el) * dist;
     this.camera.position.set(
       this.camTarget.x + Math.sin(this.camYaw) * horiz + shX,

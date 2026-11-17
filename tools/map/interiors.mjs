@@ -2,7 +2,8 @@
 import { MapBuilder } from './lib.mjs';
 import { ROOMS, FURN } from '../art/interior.mjs';
 
-const EXTERNAL = { barrel: { w: 1, h: 1 }, crate: { w: 1, h: 1 }, anvil: { w: 1, h: 1 }, cafe_table: { w: 2, h: 1 } };
+const EXTERNAL = { barrel: { w: 1, h: 1 }, crate: { w: 1, h: 1 }, anvil: { w: 1, h: 1 }, cafe_table: { w: 2, h: 1 }, sign: { w: 1, h: 1 } };
+const BLOCKING_GIMMICKS = new Set(['gate_bar', 'snowball', 'laser_src', 'laser_dst']);
 
 export function buildInterior(id) {
   const s = ROOMS[id];
@@ -16,14 +17,16 @@ export function buildInterior(id) {
   for (const [wx, wy, ww, wh] of s.walls ?? []) {
     for (let y = wy; y < wy + wh; y++) for (let x = wx; x < wx + ww; x++) m.blocked[y][x] = true;
   }
+  for (const [x0, y0, x1, y1, h] of s.elevs ?? []) m.addElevRect(x0, y0, x1, y1, h, false);
+  for (const [x0, y0, x1, y1, dir, h0, h1] of s.ramps ?? []) m.addRamp(x0, y0, x1, y1, dir, h0, h1, false);
   for (const [type, gx, gy, props = {}] of s.gimmicks ?? []) {
     const { w = 1, h = 1, ...rest } = props;
-    m.place(type, gx, gy, { w, h, block: type === 'gate_bar', force: true, props: rest });
+    m.place(type, gx, gy, { w, h, block: BLOCKING_GIMMICKS.has(type), force: true, props: rest });
   }
   for (const [type, cx, cy, props = {}] of s.furn) {
-    const f = FURN[type] ?? EXTERNAL[type];
+    const f = FURN[type] ?? EXTERNAL[type] ?? { w: 1, h: 1 };
     const passable = type === 'attic_stairs_up' || type === 'attic_stairs_down';
-    m.place(type, cx, cy, { w: f.w, h: f.h, block: !passable, force: true, props });
+    m.place(type, cx, cy, { w: f.w, h: f.h, block: !passable, force: true, props: type === 'sign' ? { interact: 'sign', ...props } : props });
   }
   for (const [name, cx, cy, props] of s.spawns) m.spawn(name, cx, cy, props);
   if (!s.noDoor) {

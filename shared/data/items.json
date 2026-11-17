@@ -920,5 +920,14 @@
     "sellPrice": 0,
     "maxStack": 99,
     "description": "원하는 새 닉네임으로 즉시 변경할 수 있는 특별 티켓. 상점·가방에서 바로 적용할 수 있어요!"
+  },
+  "bicycle": {
+    "id": "bicycle",
+    "name": "고속 자전거",
+    "type": "key",
+    "icon": "bicycle",
+    "sellPrice": 0,
+    "maxStack": 1,
+    "description": "야외 어디서나 B키 또는 가방에서 꺼내 빠르게 달릴 수 있는 로드 자전거. 14번 자전거 도로에서는 자동으로 탑승한다!"
   }
 }

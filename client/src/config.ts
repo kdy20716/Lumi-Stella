@@ -1,6 +1,7 @@
 export const TILE = 16;
 export const WALK_SPEED = 62;   // px/s (월드 단위)
 export const RUN_SPEED = 108;
+export const BIKE_SPEED = 188;
 /** 화면 높이에 맞춘 정수 배율 줌 (픽셀이 깨지지 않도록) */
 export const pickZoom = (h: number) => Math.max(2, Math.min(5, Math.round(h / 250)));
 

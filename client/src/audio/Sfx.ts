@@ -192,6 +192,18 @@ const SOUNDS: Record<string, () => void> = {
   waves: () => { for (let i = 0; i < 3; i++) burst({ t: i * 0.5, d: 0.6, v: 0.12, lp: 900, hp: 150, a: 0.25 }); },
   ocarina: () => { const notes = [N('D5'), N('F5'), N('A5'), N('D6'), N('C6'), N('A5'), N('G5'), N('A5')]; notes.forEach((f, i) => ping(f, undefined, i * 0.32, 0.36, 'sine', 0.13)); notes.forEach((f, i) => ping(f * 2, undefined, i * 0.32 + 0.01, 0.2, 'sine', 0.02)); },
   tap: () => { burst({ d: 0.015, v: 0.08, bp: 4200, q: 3 }); ping(1800, undefined, 0, 0.015, 'sine', 0.03); },
+  bike_bell: () => { ping(N('E7'), undefined, 0, 0.08, 'sine', 0.14); ping(N('E7'), undefined, 0.09, 0.14, 'sine', 0.14); },
+  // 체육관 기믹
+  card_flip: () => { burst({ d: 0.04, v: 0.14, bp: 2200, q: 2 }); ping(520, 760, 0.01, 0.06, 'triangle', 0.12); },
+  puzzle_ok: () => seq([N('C5'), N('E5'), N('G5'), N('C6')], 0.06, 'triangle', 0.22, 0.14),
+  puzzle_ng: () => { tone({ f: 220, f2: 140, t: 0, d: 0.14, w: 'sawtooth', v: 0.16 }); tone({ f: 165, f2: 110, t: 0.12, d: 0.16, w: 'sawtooth', v: 0.14 }); },
+  snow_smash: () => { burst({ d: 0.24, v: 0.35, lp: 2400 }); ping(180, 65, 0, 0.16, 'triangle', 0.24); for (let i = 0; i < 3; i++) burst({ t: 0.04 + i * 0.04, d: 0.05, v: 0.16, bp: 3200 + i * 500, q: 2 }); },
+  laser_hit: () => { ping(N('A5'), N('E6'), 0, 0.12, 'sine', 0.16); ping(N('A6'), undefined, 0.06, 0.18, 'triangle', 0.12); },
+  lever: () => { ping(280, 520, 0, 0.07, 'square', 0.12); burst({ d: 0.06, v: 0.18, bp: 1800, q: 3 }); },
+  note0: () => ping(N('C5'), undefined, 0, 0.26, 'triangle', 0.24),
+  note1: () => ping(N('E5'), undefined, 0, 0.26, 'triangle', 0.24),
+  note2: () => ping(N('G5'), undefined, 0, 0.26, 'triangle', 0.24),
+  note3: () => ping(N('C6'), undefined, 0, 0.30, 'triangle', 0.24),
   // 배틀
   encounter: () => { for (let i = 0; i < 6; i++) tone({ f: i % 2 ? 660 : 880, t: i * 0.06, d: 0.05, v: 0.22 }); },
   hit: () => { noise(0, 0.12, 0.45, 1800); tone({ f: 160, f2: 60, t: 0, d: 0.12, w: 'square', v: 0.3 }); },

@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 const DIR = new URL('../../client/public/assets/maps/', import.meta.url);
 const region = JSON.parse(readFileSync(new URL('../../shared/data/region.json', import.meta.url), 'utf8'));
 const only = process.argv[2];
-const SKILL = new Set(['vine', 'crack_rock', 'climb_wall']), PASS = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal', 'cave_hole', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn']);
+const SKILL = new Set(['vine', 'crack_rock', 'climb_wall']), PASS = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal', 'cave_hole', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gatehouse', 'cycle_gate', 'pair_card', 'rail_switch', 'quiz_pad', 'prism', 'rune_pad', 'rune_demo', 'snow_reset']);
 
 function runGimmickBfs(W, H, col, objs, startX, startY) {
   const P = (o, k) => o.properties?.find((p) => p.name === k)?.value;
@@ -17,7 +17,11 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
   const warps = new Map();
   const arrows = new Map();
   const switches = new Map();
+  const railSwitches = new Map();
+  const snowballs = new Set();
   const gates = new Map();
+  const puzzleNeeds = new Map(); // gateId -> Set<idx> (all must be seen; for quiz_pad any correct idx unlocks)
+  const quizCorrect = new Map(); // idx -> gateId
   for (const o of objs) {
     const cx = P(o, 'cellX'), cy = P(o, 'cellY'), w = P(o, 'cellW') ?? 1, h = P(o, 'cellH') ?? 1;
     if (cx == null) continue;
@@ -26,9 +30,16 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
       const idx = y * W + x;
       if (o.type === 'ice_tile') ice[idx] = 1;
       else if (o.type === 'warp_pad') warps.set(idx, [Number(P(o, 'toX') ?? x), Number(P(o, 'toY') ?? y)]);
-      else if (o.type === 'arrow_pad') arrows.set(idx, [P(o, 'dir') ?? 'up', Number(P(o, 'steps') ?? 3)]);
+      else if (o.type === 'arrow_pad') arrows.set(idx, { dir: P(o, 'dir') ?? 'up', altDir: P(o, 'altDir') ?? '', railGroup: P(o, 'railGroup') ?? '', steps: Number(P(o, 'steps') ?? 3) });
       else if (o.type === 'switch_btn') switches.set(idx, String(P(o, 'gateId') ?? ''));
-      else if (o.type === 'gate_bar') {
+      else if (o.type === 'rail_switch') railSwitches.set(idx, { rg: String(P(o, 'railGroup') ?? ''), gid: String(P(o, 'gateId') ?? '') });
+      else if (o.type === 'snowball') snowballs.add(idx);
+      else if (o.type === 'quiz_pad' && P(o, 'correct')) quizCorrect.set(idx, String(P(o, 'gateId') ?? ''));
+      else if (o.type === 'pair_card' || o.type === 'prism' || o.type === 'rune_pad') {
+        const gid = String(P(o, 'gateId') ?? '');
+        if (!puzzleNeeds.has(gid)) puzzleNeeds.set(gid, new Set());
+        puzzleNeeds.get(gid).add(idx);
+      } else if (o.type === 'gate_bar') {
         const gid = String(P(o, 'gateId') ?? '');
         if (!gates.has(gid)) gates.set(gid, []);
         gates.get(gid).push([x, y]);
@@ -37,17 +48,25 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
     }
   }
   const openGates = new Set();
+  const brokenSnow = new Set();
+  const switchedRails = new Set();
   const blocked = (x, y) => {
     if (x < 0 || y < 0 || x >= W || y >= H) return true;
     const i = y * W + x;
     if (!col[i]) return false;
     const o = objAt.get(i);
     if (!o) return true;
+    if (o.type === 'snowball') return !brokenSnow.has(i);
     if (o.type === 'gate_bar') return !openGates.has(String(P(o, 'gateId') ?? ''));
     return !(SKILL.has(o.type) || PASS.has(o.type));
   };
 
   const seen = new Uint8Array(W * H), q = [];
+  const unlockGate = (gid) => {
+    if (!gid || openGates.has(gid)) return;
+    openGates.add(gid);
+    for (const [gx, gy] of gates.get(gid) ?? []) push(gx, gy);
+  };
   const push = (x, y) => { if (blocked(x, y) || seen[y * W + x]) return; seen[y * W + x] = 1; q.push([x, y]); };
   push(startX, startY);
 
@@ -55,18 +74,27 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
     const [x, y] = q.pop();
     const idx = y * W + x;
     if (warps.has(idx)) { const [tx, ty] = warps.get(idx); push(tx, ty); }
-    if (switches.has(idx)) {
-      const gid = switches.get(idx);
-      if (!openGates.has(gid)) {
-        openGates.add(gid);
-        for (const [gx, gy] of gates.get(gid) ?? []) push(gx, gy);
+    if (switches.has(idx)) unlockGate(switches.get(idx));
+    if (quizCorrect.has(idx)) unlockGate(quizCorrect.get(idx));
+    if (railSwitches.has(idx)) {
+      const { rg, gid } = railSwitches.get(idx);
+      unlockGate(gid);
+      if (rg && !switchedRails.has(rg)) {
+        switchedRails.add(rg);
+        for (const [aIdx, ap] of arrows) {
+          if (ap.railGroup === rg && seen[aIdx]) q.push([aIdx % W, Math.floor(aIdx / W)]);
+        }
       }
     }
+    for (const [gid, req] of puzzleNeeds) {
+      if (!openGates.has(gid) && [...req].every((ri) => seen[ri])) unlockGate(gid);
+    }
     if (arrows.has(idx)) {
-      const [dir, steps] = arrows.get(idx);
-      const [dx, dy] = dir === 'right' ? [1, 0] : dir === 'down' ? [0, 1] : dir === 'left' ? [-1, 0] : [0, -1];
+      const ap = arrows.get(idx);
+      const useDir = (ap.railGroup && switchedRails.has(ap.railGroup) && ap.altDir) ? ap.altDir : ap.dir;
+      const [dx, dy] = useDir === 'right' ? [1, 0] : useDir === 'down' ? [0, 1] : useDir === 'left' ? [-1, 0] : [0, -1];
       let cx = x, cy = y;
-      for (let s = 0; s < steps; s++) {
+      for (let s = 0; s < ap.steps; s++) {
         if (blocked(cx + dx, cy + dy)) break;
         cx += dx; cy += dy; push(cx, cy);
       }
@@ -76,11 +104,20 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
       const nx = x + dx, ny = y + dy;
       if (blocked(nx, ny)) continue;
       if (ice[ny * W + nx]) {
-        // 빙판 미끄럼 시뮬레이션: 벽이나 일반 바닥까지 직선 미끄럼
-        let ix = nx, iy = ny;
-        while (ice[iy * W + ix] && !blocked(ix + dx, iy + dy)) {
+        // 빙판 미끄럼 시뮬레이션: 벽이나 일반 바닥까지 직선 미끄럼 + 2칸+ 가속으로 눈덩이 파괴!
+        let ix = nx, iy = ny, iceSteps = 1;
+        while (ice[iy * W + ix]) {
+          const sx = ix + dx, sy = iy + dy, sIdx = sy * W + sx;
+          if (sx >= 0 && sy >= 0 && sx < W && sy < H && snowballs.has(sIdx) && !brokenSnow.has(sIdx) && iceSteps >= 2) {
+            brokenSnow.add(sIdx);
+            // 깨진 눈덩이 옆의 이미 탐색된 빙판칸들을 다시 큐에 넣어 후속 슬라이드 허용
+            for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) if (seen[yy * W + xx]) q.push([xx, yy]);
+            push(sIdx % W, Math.floor(sIdx / W));
+            break;
+          }
+          if (blocked(sx, sy)) break;
           seen[iy * W + ix] = 1;
-          ix += dx; iy += dy;
+          ix = sx; iy = sy; iceSteps++;
         }
         push(ix, iy);
       } else {

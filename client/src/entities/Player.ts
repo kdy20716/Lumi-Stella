@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { DIR_VEC, type Dir } from '@shared/types';
-import { RUN_SPEED, TILE, WALK_SPEED, type CharacterMeta } from '../config';
+import { BIKE_SPEED, RUN_SPEED, TILE, WALK_SPEED, type CharacterMeta } from '../config';
 import type { Grid } from '../world/Grid';
 import { Character } from './Character';
 
@@ -47,7 +47,8 @@ export class Player extends Character {
    * 축별로 따로 충돌 검사해서 벽을 따라 미끄러짐.
    * 턱(ledge)은 위에서 아래로만 뛰어내릴 수 있고, 아래나 옆에서는 못 올라감.
    */
-  public slide: { vx: number; vy: number; mode: 'ice' | 'arrow'; remainPx: number } | null = null;
+  public slide: { vx: number; vy: number; mode: 'ice' | 'arrow'; remainPx: number; distPx: number } | null = null;
+  public onSlideBlocked?: (x: number, y: number, vx: number, vy: number, distPx: number) => void;
   private stopGrace = 0;
 
   get isSliding() {
@@ -56,7 +57,7 @@ export class Player extends Character {
 
   startSlide(vx: number, vy: number, mode: 'ice' | 'arrow', remainPx = Infinity) {
     const len = Math.hypot(vx, vy) || 1;
-    this.slide = { vx: vx / len, vy: vy / len, mode, remainPx };
+    this.slide = { vx: vx / len, vy: vy / len, mode, remainPx, distPx: 0 };
   }
 
   stopSlide() {
@@ -106,7 +107,7 @@ export class Player extends Character {
     if (len < 0.05) {
       this.moving = false;
       this.stopGrace = 0;
-      this.play('idle', this.dir);
+      this.play(this.riding ? 'bike_idle' : 'idle', this.dir);
       return;
     }
     vx /= len; vy /= len;   // 방향만 사용: 조이스틱을 살짝 밀어도 걷는 속도는 일정
@@ -116,7 +117,7 @@ export class Player extends Character {
     const horizontal = ax > 0.01 && ay > 0.01 ? (wasH ? ax >= ay * 0.6 : ax > ay * 1.6) : ax >= ay;
     const dir: Dir = horizontal ? (vx > 0 ? 'right' : 'left') : (vy > 0 ? 'down' : 'up');
 
-    let totalDist = ((running ? RUN_SPEED : WALK_SPEED) * dt) / 1000;
+    let totalDist = (((this.riding ? BIKE_SPEED : running ? RUN_SPEED : WALK_SPEED)) * dt) / 1000;
     if (this.slide && Number.isFinite(this.slide.remainPx)) {
       totalDist = Math.min(totalDist, this.slide.remainPx);
     }
@@ -233,11 +234,16 @@ export class Player extends Character {
 
     const actualDisp = Math.hypot(this.x - startX, this.y - startY);
     if (this.slide) {
+      this.slide.distPx += actualDisp;
       if (Number.isFinite(this.slide.remainPx)) {
         this.slide.remainPx -= totalDist;
       }
       if (actualDisp < 0.06 || this.slide.remainPx <= 0.1) {
+        const s = this.slide;
         this.slide = null;
+        if (actualDisp < 0.06 && s.mode === 'ice' && this.onSlideBlocked) {
+          this.onSlideBlocked(this.x, this.y, s.vx, s.vy, s.distPx);
+        }
       }
     }
 
@@ -247,16 +253,18 @@ export class Player extends Character {
 
     this.moving = trulyMoved;
     if (trulyMoved) {
-      this.play(this.slide?.mode === 'ice' ? 'idle' : running ? 'run' : 'walk', dir);
+      this.play(this.slide?.mode === 'ice' ? (this.riding ? 'bike_idle' : 'idle') : this.riding ? 'bike' : running ? 'run' : 'walk', dir);
       this.dust += dt;
-      if (running && !this.slide && this.dust > 135) { this.dust = 0; this.kickDust(); }
+      if ((running || this.riding) && !this.slide && this.dust > (this.riding ? 105 : 135)) { this.dust = 0; this.kickDust(); }
     } else if (this.stopGrace <= 0) {
-      this.play('idle', dir);
+      this.play(this.riding ? 'bike_idle' : 'idle', dir);
     }
   }
   /** 순간이동 직후 등: 이동 상태 초기화 */
   stopStep() { this.moving = false; this.slide = null; this.stopGrace = 0; }
 
+  /** 자전거 탑승 여부 */
+  riding = false;
   /** 턱 넘어 뛰어내리기: 턱 칸을 지나 그 아래 칸 가운데에 착지 (포물선) */
   hopping = false;
   onHop?: () => void;

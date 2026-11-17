@@ -112,7 +112,7 @@ export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_caul
   'seeds_lumi_herb', 'seeds_fire_pepper', 'seeds_iron_bean', 'lumi_herb', 'fire_pepper', 'iron_bean', 'craft',
   'hammer', 'wood', 'fiber', 'fence_wood', 'crate_wood', 'barrel_wood', 'scarecrow', 'lamp_post', 'planter_box', 'origin_ball', 'ocarina',
   'quick_ball', 'moon_ball', 'tide_ball', 'leaf_ball', 'ember_ball', 'repeat_ball', 'heavy_ball',
-  'star_candy', 'name_ticket'];
+  'star_candy', 'name_ticket', 'bicycle'];
 // 도구 등급 아이콘 (구리 · 강철 · 별빛): 기본 도구 그림의 쇠 부분을 등급 색으로 바꿈
 export const TOOL_TIERS = { copper: ['#8a4a20', '#c8743a', '#f0a868'], iron: ['#4a5a70', '#9aaec4', '#e4eef8'], star: ['#8a6a10', '#e8b830', '#fff2a0'] };
 for (const base of ['hoe', 'watering_can', 'axe', 'pickaxe', 'rod']) for (const tier of Object.keys(TOOL_TIERS)) ICONS.push(`${base}_${tier}`);
@@ -193,6 +193,25 @@ export function buildIcons() {
       t.circle(8, 8, 4.2, '#2d8cff'); t.circle(7.5, 7.5, 3, '#6ad4ff');
       t.line(6, 10, 10, 6, '#ffe066'); t.set(6, 6, '#ffffff'); t.set(7, 6, '#ffffff');
       t.set(3, 4, '#ffe066'); t.set(13, 11, '#ffe066');
+    },
+    bicycle: (t) => {
+      // 뒷바퀴·앞바퀴 타이어 + 은빛 스포크 허브
+      for (const cx of [3, 12]) {
+        t.rect(cx - 2, 9, 5, 5, '#1d222b');
+        t.rect(cx - 1, 10, 3, 3, '#b8c4d4');
+        t.set(cx, 11, '#3a4252');
+      }
+      // 붉은 로드바이크 프레임 + 크랭크
+      t.line(3, 11, 7, 11, '#d93829');
+      t.line(7, 11, 6, 6, '#e84c3d');
+      t.line(6, 7, 11, 7, '#e84c3d');
+      t.line(7, 11, 11, 7, '#d93829');
+      t.line(3, 11, 6, 7, '#b5281c');
+      // 포크·핸들바·안장
+      t.line(11, 5, 12, 11, '#c8d4e3');
+      t.hline(10, 4, 4, '#2f3845');
+      t.hline(4, 5, 3, '#2f3845');
+      t.rect(7, 10, 2, 2, '#eef2f8');
     },
     name_ticket: (t) => {
       // 황금빛 닉네임 변경권 티켓

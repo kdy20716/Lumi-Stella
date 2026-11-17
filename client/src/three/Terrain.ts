@@ -57,6 +57,7 @@ export function buildTerrainMesh(hts: Heights, groundTex: THREE.Texture, faceTex
   const EPS = 0.01;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const c = hts.at(x, y);
+    if (c.openUnder) continue;
     const sides: { nb: CellShape | null; a: [number, number]; b: [number, number]; ha: number; hb: number; na: number; nbh: number; dir: 's' | 'n' | 'e' | 'w' }[] = [];
     const S = y < H - 1 ? hts.at(x, y + 1) : null, N = y > 0 ? hts.at(x, y - 1) : null;
     const E = x < W - 1 ? hts.at(x + 1, y) : null, Wn = x > 0 ? hts.at(x - 1, y) : null;

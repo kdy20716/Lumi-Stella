@@ -77,9 +77,13 @@ export abstract class Authority {
       case 'time': case 'newDay': this.time = { ...e.time }; this.subMs = 0; break;
       case 'gold': if (e.playerId === me.id) { this.gold = e.gold; me.gold = e.gold; } break;
       case 'player': if (e.id === me.id) { me.energy = e.energy; me.inventory = e.inventory.map((s) => ({ ...s })); } break;
+      case 'bike': if (e.id === me.id) me.riding = e.riding; break;
       case 'tile': if ((e.map ?? 'farm') === me.map && e.owner === this.farmOwner) { const k = `${e.tile.x},${e.tile.y}`; if (e.tile.soil === SoilState.Unplowed) this.tiles.delete(k); else this.tiles.set(k, { ...e.tile, crop: e.tile.crop ? { ...e.tile.crop } : null }); } break;
       case 'objectRemoved': if (!e.owner || e.owner === this.farmOwner) this.removed.add(e.key); break;
-      case 'objectRestored': for (const k of e.keys) this.removed.delete(k); break;
+      case 'objectRestored':
+        for (const k of e.keys) this.removed.delete(k);
+        if ((!e.playerId || e.playerId === me.id) && me.cleared) me.cleared = me.cleared.filter((k) => !e.keys.includes(k));
+        break;
       case 'forage': this.forage = [...e.spots]; break;
       case 'party': if (e.id === me.id) Object.assign(me, { party: e.party.map((c) => ({ ...c, moves: [...c.moves] })), bag: { ...e.bag }, badges: [...e.badges], defeated: [...e.defeated], seen: [...e.seen], caught: [...e.caught], visited: [...e.visited], recipes: [...(e.recipes ?? [])], flags: [...(e.flags ?? [])], bonds: { ...(e.bonds ?? me.bonds ?? {}) }, asks: { ...(e.asks ?? me.asks ?? {}) }, stock: JSON.parse(JSON.stringify(e.stock ?? me.stock ?? {})), opened: [...(e.opened ?? me.opened ?? [])] }); break;
       case 'room': if (e.playerId === me.id) { Object.assign(me, { map: e.map, inst: e.inst, world: e.world, x: e.x, y: e.y }); this.applySnapshot(e.snapshot); } break;
@@ -206,6 +210,12 @@ export class LocalAuthority extends Authority {
         this.sim.resetBmState(t);
         this.save();
         return { ok: true, message: '캐쉬 상점 구매 기록을 초기화했어요' };
+      }
+      case 'warp': {
+        const t = this.sim.players.get(cmd.uid);
+        if (!t || !this.sim.warpTo(t, cmd.map)) return { ok: false, message: '이동 실패' };
+        this.save();
+        return { ok: true, message: `${REGION_MAPS[cmd.map]?.name ?? cmd.map}(으)로 이동했어요` };
       }
       default:
         return { ok: false, message: '멀티플레이 서버에서 사용할 수 있는 명령이에요' };

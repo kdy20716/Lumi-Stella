@@ -79,6 +79,8 @@ export const ANIMS = [
   { key: 'interact', gen: interact, fps: 9, repeat: 0 },
   { key: 'pick', gen: swing('pick'), fps: 14, repeat: 0 },
   { key: 'fish', gen: fishing, fps: 6, repeat: 0 },
+  { key: 'bike_idle', gen: idle, fps: 4, repeat: -1 },
+  { key: 'bike', gen: run, fps: 14, repeat: -1 },
 ];
 
 // ── 그리기 ──────────────────────────────────────────────
@@ -419,6 +421,70 @@ function drawLegsSide(p, look, s, pose) {
   leg(-s, pose.liftN ?? 0, false);  // 가까운 다리
 }
 
+/** 48x48 캐릭터 시트용 픽셀 자전거 + 탑승 자세 합성 */
+function drawBikeFrame(frame, dir, fi, moving, rider) {
+  const bob = moving && fi % 2 === 1 ? -1 : 0;
+  const tire = '#1c212b', rim = '#cad4e2', red = '#d93829', hi = '#ff6b57', chrome = '#dce4ef', dark = '#2e3542';
+  const drawWheel = (cx, cy) => {
+    for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) {
+      const d2 = dx * dx + dy * dy;
+      if (d2 <= 25 && d2 >= 13) frame.set(cx + dx, cy + dy, tire);
+      else if (d2 < 13 && d2 >= 6) frame.set(cx + dx, cy + dy, rim);
+    }
+    // 회전 스포크
+    const ph = moving ? fi % 2 : 0;
+    if (ph === 0) { frame.hline(cx - 3, cy, 7, chrome); frame.vline(cx, cy - 3, 7, chrome); }
+    else { frame.line(cx - 2, cy - 2, cx + 2, cy + 2, chrome); frame.line(cx - 2, cy + 2, cx + 2, cy - 2, chrome); }
+    frame.rect(cx - 1, cy - 1, 3, 3, dark);
+  };
+
+  if (dir === 'left') {
+    // 왼쪽 주행: 앞바퀴(16,36), 뒷바퀴(31,36) — right 방향은 flipX로 자동 반전됨
+    drawWheel(16, 36);
+    drawWheel(31, 36);
+    // 뒷프레임(탑승자 뒤)
+    frame.line(31, 36, 24, 35, red);
+    frame.line(31, 36, 27, 28, red);
+    frame.line(24, 35, 27, 27, red);
+    frame.line(27, 28, 19, 27, hi);
+    frame.line(24, 35, 19, 27, red);
+    frame.hline(25, 26, 4, dark); // 안장
+    // 탑승자 (안장 높이만큼 위로 살짝 이동 + 주행 바운스)
+    frame.blit(rider, 2, -4 + bob);
+    // 앞 포크·핸들바·전조등 (전경)
+    frame.line(19, 25, 16, 36, chrome);
+    frame.line(19, 24, 17, 23, dark);
+    frame.hline(16, 23, 3, dark);
+    frame.set(16, 26, '#fff4a8');
+  } else if (dir === 'down') {
+    // 정면 주행: 세로 타이어(중앙) + 핸들바
+    const tread = moving ? (fi % 3) : 0;
+    frame.blit(rider, 0, -4 + bob);
+    frame.rect(22, 31, 4, 10, '#141820');
+    frame.rect(23, 32, 2, 8, tire);
+    for (let y = 32 + tread; y < 40; y += 3) frame.hline(23, y, 2, '#5a6475');
+    frame.line(23, 27, 23, 34, red);
+    frame.line(24, 27, 24, 34, hi);
+    frame.hline(17, 26, 14, dark);
+    frame.hline(19, 26, 10, chrome);
+    frame.rect(16, 26, 2, 2, red);
+    frame.rect(30, 26, 2, 2, red);
+    frame.rect(23, 27, 2, 2, '#fff4b0');
+  } else {
+    // 후면 주행: 뒷바퀴 타이어 + 후미등
+    const tread = moving ? (fi % 3) : 0;
+    frame.hline(17, 26, 14, dark);
+    frame.hline(19, 26, 10, chrome);
+    frame.blit(rider, 0, -4 + bob);
+    frame.rect(22, 31, 4, 10, '#141820');
+    frame.rect(23, 32, 2, 8, tire);
+    for (let y = 32 + tread; y < 40; y += 3) frame.hline(23, y, 2, '#5a6475');
+    frame.rect(23, 28, 2, 3, red);
+    frame.set(23, 28, '#ff4848');
+    frame.set(24, 28, '#ff4848');
+  }
+}
+
 // ── 시트 생성 ───────────────────────────────────────────
 export function buildCharacterSheet(look, { anims = ANIMS } = {}) {
   const maxF = Math.max(...anims.map((a) => a.gen('down').length));
@@ -430,15 +496,19 @@ export function buildCharacterSheet(look, { anims = ANIMS } = {}) {
       const view = dir === 'left' || dir === 'right' ? 'side' : dir;
       const poses = a.gen(view);
       const row = ai * 4 + di;
+      const isBike = a.key === 'bike' || a.key === 'bike_idle';
       poses.forEach((pose, fi) => {
         const fx = fi * FW, fy = row * FH;
-        if (dir === 'right') {
-          const tmp = new Img(FW, FH); drawFrame(tmp, 0, 0, look, 'left', pose); tmp.outline(P.outline, 0.5);
-          img.blit(tmp, fx, fy, { flipX: true });
+        const rider = new Img(FW, FH);
+        drawFrame(rider, 0, 0, look, dir === 'right' ? 'left' : dir, pose);
+        rider.outline(P.outline, 0.5);
+        const frame = new Img(FW, FH);
+        if (isBike) {
+          drawBikeFrame(frame, dir === 'right' ? 'left' : dir, fi, a.key === 'bike', rider);
         } else {
-          const tmp = new Img(FW, FH); drawFrame(tmp, 0, 0, look, dir, pose); tmp.outline(P.outline, 0.5);
-          img.blit(tmp, fx, fy);
+          frame.blit(rider, 0, 0);
         }
+        img.blit(frame, fx, fy, { flipX: dir === 'right' });
       });
       meta.anims[`${a.key}-${dir}`] = { start: row * maxF, end: row * maxF + poses.length - 1, fps: a.fps, repeat: a.repeat };
     });

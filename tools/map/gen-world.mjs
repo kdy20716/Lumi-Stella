@@ -9,6 +9,7 @@ import { buildGraph, GYMS } from './region-graph.mjs';
 import { caveLayout, caveExits } from './cavegen.mjs';
 import { PLACE_GATES } from './region-spec.mjs';
 import { ARCS } from './side-stories.mjs';
+import { applySpecialRoute } from './route-specials.mjs';
 
 const ALL_B = { ...BUILDINGS, ...ADV_BUILDINGS };
 const cells = (key) => { const b = ALL_B[key]; return { w: Math.round(b.w / 16), h: Math.ceil((b.wallH + 7) / 16), door: Math.floor((b.doorX + 7) / 16) }; };
@@ -109,7 +110,7 @@ export function buildRegion() {
     data.maps[n.id] = { name: n.name, kind: n.kind, biome: n.biome ?? n.theme ?? 'room', x: n.x, y: n.y, tier: n.tier ?? 1 };
     if (n.existing || n.v2) continue;   // 확장 도로(v2)는 맨 마지막에 (기존 이름 · 맵이 그대로 나오게)
     if (n.kind === 'town') builders.push(genTown(n));
-    else if (n.kind === 'route') builders.push(genRoute(n));
+    else if (n.kind === 'route') { const m = genRoute(n); applySpecialRoute(n, m); builders.push(m); }
     else if (n.kind === 'area') builders.push(genArea(n));
     else if (n.kind === 'cave') builders.push(genCave(n));
     else if (n.kind === 'room') data.rooms.push({ id: n.id, room: n.room, links: n.links });
@@ -118,7 +119,7 @@ export function buildRegion() {
   for (const [town, g] of Object.entries(GYMS)) if (town !== 'windvale') data.rooms.push({ id: `gym_${town}`, room: 'gym', type: g.type, leader: `leader_${town}`, town });
   for (const r of data.rooms) data.maps[r.id] ??= { name: r.room === 'gym' ? `${nodes[r.town].name} 도장` : nodes[r.id]?.name ?? r.id, kind: 'room', biome: 'room', x: nodes[r.town ?? r.id]?.x ?? 0, y: nodes[r.town ?? r.id]?.y ?? 0, tier: nodes[r.town ?? r.id]?.tier ?? 1 };
   genLeaders();
-  for (const n of Object.values(nodes)) if (n.v2 && n.kind === 'route') { const m = genRoute(n); if (n.need) skillGate(m, n); builders.push(m); }
+  for (const n of Object.values(nodes)) if (n.v2 && n.kind === 'route') { const m = genRoute(n); applySpecialRoute(n, m); if (n.need) skillGate(m, n); builders.push(m); }
   // ── 비전 기술 지역 (확장분: 기존 맵은 덧붙이기만) ──
   const byId = Object.fromEntries(builders.map((m) => [m.name, m]));
   for (const [id, need] of Object.entries(PLACE_GATES)) { const m = byId[id], back = nodes[id]?.links[0]?.to; if (m && back) skillGate(m, { ends: [back], need }); }

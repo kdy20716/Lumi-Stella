@@ -438,6 +438,7 @@
     },
     {
       "id": "ch5_ember",
+      "give": { "bicycle": 1 },
       "chapter": 5,
       "map": "ember",
       "needs": [

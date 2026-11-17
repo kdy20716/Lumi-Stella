@@ -88,6 +88,13 @@ export async function handleAdmin(me: Client, cmd: AdminCmd, sim: FarmSimulation
       log(`상점초기화 ${cmd.uid}`);
       return { ok: true, message: `${t.name} 님의 캐쉬 상점 구매 기록을 초기화했어요` };
     }
+    case 'warp': {
+      if (!uidOk(cmd.uid) || typeof cmd.map !== 'string' || !Object.prototype.hasOwnProperty.call(REGION_MAPS, cmd.map)) return { ok: false, message: '없는 장소' };
+      const t = target(cmd.uid); if (!t) return { ok: false, message: '접속 중이 아니에요' };
+      if (!sim.warpTo(t, cmd.map)) return { ok: false, message: '이동 실패' };
+      log(`장소이동 ${cmd.uid} → ${cmd.map}`);
+      return { ok: true, message: `${REGION_MAPS[cmd.map]?.name ?? cmd.map}(으)로 이동했어요` };
+    }
     default: return { ok: false, message: '모르는 명령' };
   }
 }

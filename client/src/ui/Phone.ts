@@ -2,8 +2,8 @@
 //   - 폰이 열려 있어도 걸어 다닐 수 있음 (지도만 가로 화면으로 넓어짐)
 //   - Esc: 앱 → 홈 → 닫기 / M: 열기·닫기 / P: 나의 루미 / H: 도움말
 import { BM_ALL_TOTAL_KRW, BM_CASH_PACK_MAP, BM_CASH_PACKS, BM_PRODUCT_MAP, BM_PRODUCTS, CHAT_BUBBLES, STARTER_LUMI_IDS, STARTER_LUMI_SET, UI_THEMES, formatCash, formatKrw, formatUsd, isBmUnlocked, remainingBmCostKrw, type BmCashPack, type BmCategory, type BmProduct } from '@shared/bmShop';
-import { ITEMS, RECIPES, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
-import { MAP_META, type CreatureInst, type MapMeta, type PlayerState, type WorldTime } from '@shared/types';
+import { ITEMS, RECIPES, REGION_MAPS, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
+import { MAP_META, type CreatureInst, type MapId, type MapMeta, type PlayerState, type WorldTime } from '@shared/types';
 import { sfx } from '../audio/Sfx';
 import { music } from '../audio/Music';
 import { lumiCoordBadgeHtml, lumiSheetUrl } from './LumiCoord';
@@ -259,6 +259,7 @@ export const phone = {
       return `${tabs}${msg}${list || '<div class="ph-empty">신고가 없어요</div>'}`;
     }
     const items = Object.values(ITEMS).map((it) => `<option value="${it.id}">${esc(it.name)}</option>`).join('');
+    const maps = Object.entries(REGION_MAPS).map(([id, rm]) => `<option value="${esc(id)}">${esc(rm.name)} (${esc(id)})</option>`).join('');
     const allUsers = d.users ?? [];
     const q = this.adminUserQuery.trim().toLowerCase();
     const filtered = q ? allUsers.filter((u) => u.name.toLowerCase().includes(q) || u.uid.toLowerCase().includes(q)) : allUsers;
@@ -293,6 +294,7 @@ export const phone = {
           <div class="ph-acts"><button data-aop="goto" data-uid="${esc(sel.uid)}" class="ph-btn sm">가기</button><button data-aop="bring" data-uid="${esc(sel.uid)}" class="ph-btn sm">데려오기</button><button data-aop="kick" data-uid="${esc(sel.uid)}" class="ph-btn sm ghost">강퇴</button><button data-aop="ban" data-uid="${esc(sel.uid)}" class="ph-btn sm ghost">밴</button></div>
           <div class="ph-acts"><select data-gi="${esc(sel.uid)}" class="ph-input sm">${items}</select><input data-gq="${esc(sel.uid)}" class="ph-input sm" type="number" min="1" max="999" value="1" style="width:56px"><button data-aop="give" data-uid="${esc(sel.uid)}" class="ph-btn sm">지급</button></div>
           <div class="ph-acts"><input data-gg="${esc(sel.uid)}" class="ph-input sm" type="number" value="1000" style="width:84px"><button data-aop="gold" data-uid="${esc(sel.uid)}" class="ph-btn sm">골드 ±</button><button data-aop="grantCash" data-uid="${esc(sel.uid)}" class="ph-btn sm">캐쉬 +100만</button></div>
+          <div class="ph-acts"><select data-gm="${esc(sel.uid)}" class="ph-input sm">${maps}</select><button data-aop="warp" data-uid="${esc(sel.uid)}" class="ph-btn sm">장소 이동</button></div>
         </div>`
       : '';
 
@@ -861,6 +863,7 @@ export const phone = {
           if (op === 'give') { const it = n.querySelector<HTMLSelectElement>(`[data-gi="${CSS.escape(uid)}"]`)?.value ?? ''; const q = Number(n.querySelector<HTMLInputElement>(`[data-gq="${CSS.escape(uid)}"]`)?.value ?? 1); void this.adminRun({ op: 'give', uid, itemId: it, qty: q }); return; }
           if (op === 'gold') { const a = Number(n.querySelector<HTMLInputElement>(`[data-gg="${CSS.escape(uid)}"]`)?.value ?? 0); void this.adminRun({ op: 'gold', uid, amount: a }); return; }
           if (op === 'grantCash') { void this.adminRun({ op: 'grantCash', uid, amount: 1_000_000 }); return; }
+          if (op === 'warp') { const mp = (n.querySelector<HTMLSelectElement>(`[data-gm="${CSS.escape(uid)}"]`)?.value ?? '') as MapId; void this.adminRun({ op: 'warp', uid, map: mp }); return; }
           void this.adminRun({ op: op as 'goto' | 'bring' | 'kick' | 'ban' | 'unban', uid });
         };
       });
@@ -1044,7 +1047,7 @@ export const phone = {
 };
 
 const HELP_HTML = `<table class="ph-help"><tbody>
-  ${[['WASD / 방향키', '이동 (Shift 달리기)'], ['Space / 좌클릭', '손에 든 도구 사용 · 씨앗 · 낚시'], ['E / 우클릭', '대화 · 수확 · 출하 · 잡초 뽑기 · 조사'], ['R', '휴대폰 홈 화면 (가방에서 도구 바꾸기)'], ['M', '지도 바로 열기'], ['P', '휴대폰 › 나의 루미'], ['H', '휴대폰 › 도움말'], ['Esc', '휴대폰 뒤로 · 닫기'], ['Enter', '채팅'], ['Tab', '감정표현 휠 (톡 누르고 클릭 · 누른 채 고르고 떼기)'], ['L', '접속자 목록 접기']]
+  ${[['WASD / 방향키', '이동 (Shift 달리기 · B 자전거 타기/내리기)'], ['Space / 좌클릭', '손에 든 도구 사용 · 씨앗 · 낚시'], ['E / 우클릭', '대화 · 수확 · 출하 · 잡초 뽑기 · 조사'], ['R', '휴대폰 홈 화면 (가방에서 도구 바꾸기)'], ['M', '지도 바로 열기'], ['P', '휴대폰 › 나의 루미'], ['H', '휴대폰 › 도움말'], ['Esc', '휴대폰 뒤로 · 닫기'], ['Enter', '채팅'], ['Tab', '감정표현 휠 (톡 누르고 클릭 · 누른 채 고르고 떼기)'], ['L', '접속자 목록 접기']]
     .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}
   </tbody></table>
   <div class="ph-note"><b>내 농장 일구기</b>: 마을 소라네 루미 마트에서 괭이 · 물뿌리개 · 도끼 · 곡괭이 · 망치를 사요. 잡초는 E 로 뽑고, 안쪽 나무는 도끼로(5번), 돌은 곡괭이로 치운 뒤 괭이로 땅을 갈아요. 가방에서 씨앗을 누르면 주변 밭에 심고, 매일 물을 주면 자라요. 작업대에서 만든 울타리 · 상자는 가방에서 설치하고 망치로 부숴요.<br><b>모험 보급</b>: 루미풀 · 불꽃고추 · 단단콩과 돌 · 구리 · 철로 회복약 · 도핑약 · 루미볼을 만들어요.</div>`;

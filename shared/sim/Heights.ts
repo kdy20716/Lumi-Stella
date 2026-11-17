@@ -33,6 +33,28 @@ export interface CellShape {
   runBot?: number;
   runRows?: number;
   uvY?: number;
+  openUnder?: boolean;
+}
+
+export interface ElevRect {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  h: number;
+  openUnder?: boolean;
+}
+
+export interface RampRect {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  /** 올라가는 방향 ('N'=남→북, 'S'=북→남, 'E'=서→동, 'W'=동→서) */
+  dir: 'N' | 'S' | 'E' | 'W';
+  h0: number;
+  h1: number;
+  openUnder?: boolean;
 }
 
 export class Heights {
@@ -174,6 +196,35 @@ export function computeHeights(map: TiledMap, spawn?: { x: number; y: number }):
         // 벽 · 턱: 위쪽 땅을 그대로 늘려 덮음 (세로 면은 아래에서 따로 세움)
         Object.assign(c, { nw: top, ne: top, sw: top, se: top, kind: CLIFF_LEDGE.has(k) ? 'ledge' : 'wall' });
       }
+    }
+  }
+  const parseList = <T,>(name: string): T[] => {
+    const raw = map.properties?.find((p) => p.name === name)?.value;
+    if (Array.isArray(raw)) return raw as T[];
+    if (typeof raw === 'string' && raw.trim()) {
+      try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+    }
+    return [];
+  };
+  for (const e of parseList<ElevRect>('elevs')) {
+    const x0 = Math.max(0, Math.floor(e.x0)), y0 = Math.max(0, Math.floor(e.y0));
+    const x1 = Math.min(W - 1, Math.floor(e.x1)), y1 = Math.min(H - 1, Math.floor(e.y1));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      Object.assign(cells[y * W + x], { nw: e.h, ne: e.h, sw: e.h, se: e.h, kind: 'flat' as const, openUnder: !!e.openUnder });
+    }
+  }
+  for (const r of parseList<RampRect>('ramps')) {
+    const rx0 = Math.floor(r.x0), ry0 = Math.floor(r.y0), rx1 = Math.floor(r.x1), ry1 = Math.floor(r.y1);
+    const spanY = Math.max(1, ry1 - ry0 + 1), spanX = Math.max(1, rx1 - rx0 + 1);
+    const x0 = Math.max(0, rx0), y0 = Math.max(0, ry0), x1 = Math.min(W - 1, rx1), y1 = Math.min(H - 1, ry1);
+    const lerp = (t: number) => r.h0 + (r.h1 - r.h0) * t;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      let nw = r.h0, ne = r.h0, sw = r.h0, se = r.h0;
+      if (r.dir === 'N') { nw = ne = lerp((ry1 + 1 - y) / spanY); sw = se = lerp((ry1 - y) / spanY); }
+      else if (r.dir === 'S') { nw = ne = lerp((y - ry0) / spanY); sw = se = lerp((y + 1 - ry0) / spanY); }
+      else if (r.dir === 'E') { nw = sw = lerp((x - rx0) / spanX); ne = se = lerp((x + 1 - rx0) / spanX); }
+      else { ne = se = lerp((rx1 - x) / spanX); nw = sw = lerp((rx1 + 1 - x) / spanX); }
+      Object.assign(cells[y * W + x], { nw, ne, sw, se, kind: 'flat' as const, openUnder: !!r.openUnder });
     }
   }
   return new Heights(W, H, cells);

@@ -39,7 +39,7 @@ export type SimEvent =
   | { type: 'player'; id: string; energy: number; inventory: InventorySlot[] }
   | { type: 'newDay'; time: WorldTime }
   | { type: 'objectRemoved'; key: string; owner?: string }
-  | { type: 'objectRestored'; keys: string[] }
+  | { type: 'objectRestored'; keys: string[]; playerId?: string }
   | { type: 'cleared'; playerId: string; key: string }
   | { type: 'opened'; playerId: string; key: string }
   | { type: 'forage'; spots: ForageSpot[] }
@@ -55,14 +55,15 @@ export type SimEvent =
   | { type: 'story'; id: string; story: number }
   | { type: 'placed'; owner: string; obj: PlacedObject }
   | { type: 'unplaced'; owner: string; id: string }
-  | { type: 'bmState'; id: string; mailItems: MailGift[]; uiTheme: string; ownedThemes: string[]; ownedOutfits: string[]; lumiCoord: string; ownedLumiCoords: string[]; chatBubble: string; ownedBubbles: string[]; bmOrders: string[]; cash: number; isAdmin: boolean };
+  | { type: 'bmState'; id: string; mailItems: MailGift[]; uiTheme: string; ownedThemes: string[]; ownedOutfits: string[]; lumiCoord: string; ownedLumiCoords: string[]; chatBubble: string; ownedBubbles: string[]; bmOrders: string[]; cash: number; isAdmin: boolean }
+  | { type: 'bike'; id: string; riding: boolean };
 
 type Listener = (e: SimEvent) => void;
 interface FarmState { owner: string; /** 마을 텃밭이면 그 마을 */ map?: MapId; tiles: Map<string, FarmTile>; removed: Set<number>; placed: Map<string, PlacedObject>; dish: Dish | null }
 /** 농장 맵 배치 버전: 바뀌면 옛 세이브의 '치운 오브젝트' 목록은 맞지 않으므로 비움 (경작지는 유지) */
 const FARM_VER = 2;
 /** 지나갈 수 있는 오브젝트 (충돌 없음) */
-const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'attic_stairs_up', 'attic_stairs_down', 'portal', 'glint', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn']);
+const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'attic_stairs_up', 'attic_stairs_down', 'portal', 'glint', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gatehouse', 'cycle_gate', 'pair_card', 'rail_switch', 'quiz_pad', 'prism', 'rune_pad', 'rune_demo', 'snow_reset']);
 const TREES = new Set(['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm', 'dead_tree']);
 const TREE_HITS = 5, STUMP_HITS = 2;
 /** 전설 · 환상 (별마루산 꼭대기 별의 제단) */
@@ -268,6 +269,10 @@ export class FarmSimulation {
   private relocate(p: PlayerState, map: MapId, inst: string, x: number, y: number) {
     p.map = map; p.inst = inst; p.x = x; p.y = y; p.sleeping = false;
     p.cleared = [];   // 비전 기술로 치운 장애물은 맵을 떠나면 다시 생김
+    if (p.riding && (isInterior(map) || this.maps[map]?.props.cave)) {
+      p.riding = false;
+      this.emit({ type: 'bike', id: p.id, riding: false });
+    }
     if (!isHomeMap(map) && !isInterior(map)) p.ret = undefined;
     if (!isInterior(map) && !p.visited.includes(map)) { p.visited.push(map); this.emitParty(p); }
     this.emit({ type: 'room', playerId: p.id, map, inst, world: p.world, x, y, snapshot: this.snapshot(p.id) });
@@ -447,6 +452,9 @@ export class FarmSimulation {
       case 'goHome': { p.world = p.homeWorld; const h = this.homeSpot(); this.relocate(p, 'farm', p.id, h.x, h.y); return { ok: true }; }
       case 'pad': return this.usePad(p, a.objectId);
       case 'switch': return this.triggerSwitch(p, a.gateId);
+      case 'gymClear': return this.gymClear(p, a.gateId, a.objectId);
+      case 'gymReset': return this.gymReset(p);
+      case 'toggleBike': return this.toggleBike(p, a.force);
     }
     return { ok: false, reason: 'unknown' };
   }
@@ -561,6 +569,30 @@ export class FarmSimulation {
     }
     this.emit({ type: 'look', id: p.id, look: p.look, name: p.name });
     return { ok: true };
+  }
+
+  /** 고속 자전거 탑승 · 하차 전환 (실내·동굴 불가, 자전거 소지 시 가능) */
+  private toggleBike(p: PlayerState, force?: boolean): ActionResult {
+    if (this.battles.has(p.id)) return { ok: false, reason: 'battle' };
+    const want = force ?? !p.riding;
+    if (want) {
+      if (isInterior(p.map) || this.maps[p.map]?.props.cave) {
+        if (!force) this.emit({ type: 'toast', playerId: p.id, text: '실내나 동굴에서는 자전거를 탈 수 없어요!', icon: 'bicycle' });
+        return { ok: false, reason: 'indoor' };
+      }
+      if (this.countItem(p, 'bicycle') < 1) {
+        if (!force) this.emit({ type: 'toast', playerId: p.id, text: '아직 자전거가 없어요! (안개 마을 · 빛누리 시티 주민 또는 중반 챕터 보상)', icon: 'bicycle' });
+        return { ok: false, reason: 'no-bike' };
+      }
+      if (p.riding) return { ok: true, data: { qty: 1 } };
+      p.riding = true;
+      this.emit({ type: 'bike', id: p.id, riding: true });
+      return { ok: true, data: { qty: 1 } };
+    }
+    if (!p.riding) return { ok: true, data: { qty: 0 } };
+    p.riding = false;
+    this.emit({ type: 'bike', id: p.id, riding: false });
+    return { ok: true, data: { qty: 0 } };
   }
 
   /** 닉네임 변경권(name_ticket)을 1장 사용하여 새 닉네임으로 변경 (중복 시 뒤에 2, 3... 자동 부여) */
@@ -737,6 +769,42 @@ export class FarmSimulation {
       }
     }
     return { ok: true, anim: 'interact', data: openedAny ? { item: gateId } : undefined };
+  }
+  /** 체육관 미니게임 완료 시 관문(gate_bar) 해제 또는 빙판 눈덩이(snowball) 파괴 */
+  private gymClear(p: PlayerState, gateId?: string, objectId?: number): ActionResult {
+    const m = this.maps[p.map];
+    if (!m) return { ok: false, reason: 'no-map' };
+    let changed = false;
+    if (objectId != null) {
+      const o = m.objects.find((ob) => ob.id === objectId && ob.type === 'snowball');
+      if (!o) return { ok: false, reason: 'no-snowball' };
+      const T = m.tile;
+      if (Math.hypot(Number(oprop(o, 'cellX') ?? -99) * T + 8 - p.x, Number(oprop(o, 'cellY') ?? -99) * T + 12 - p.y) > T * 3.5) {
+        return { ok: false, reason: 'far' };
+      }
+      const key = `${p.map}:${o.id}`;
+      if (!p.cleared?.includes(key)) { (p.cleared ??= []).push(key); this.emit({ type: 'cleared', playerId: p.id, key }); changed = true; }
+    }
+    if (gateId) {
+      for (const o of m.objects) {
+        if (o.type !== 'gate_bar' || String(oprop(o, 'gateId') ?? '') !== gateId) continue;
+        const key = `${p.map}:${o.id}`;
+        if (!p.cleared?.includes(key)) { (p.cleared ??= []).push(key); this.emit({ type: 'cleared', playerId: p.id, key }); changed = true; }
+      }
+    }
+    return { ok: true, data: changed ? { item: gateId ?? String(objectId ?? '') } : undefined };
+  }
+  /** 체육관 눈덩이 등 파괴 가능 퍼즐 초기화 */
+  private gymReset(p: PlayerState): ActionResult {
+    const m = this.maps[p.map];
+    if (!m) return { ok: false, reason: 'no-map' };
+    const snowIds = new Set(m.objects.filter((o) => o.type === 'snowball').map((o) => `${p.map}:${o.id}`));
+    const back = (p.cleared ?? []).filter((k) => snowIds.has(k));
+    if (back.length) {
+      p.cleared = (p.cleared ?? []).filter((k) => !snowIds.has(k));
+      this.emit({ type: 'objectRestored', keys: back, playerId: p.id });
+    }
+    return { ok: true };
   }
   private finishEvent(p: PlayerState, id: string) {
     if (p.flags.includes(id)) return;
@@ -1422,6 +1490,12 @@ export class FarmSimulation {
     const def = NPCS[npc]; if (!def?.hand || def.hand !== p.map) return { ok: false, reason: 'no-npc' };
     const b = (p.bonds ??= {}), d = (p.bondDay ??= {});
     if (d[npc] !== this.time.day) { d[npc] = this.time.day; this.addBond(p, npc, 1); }
+    if ((p.map === 'lumina' || p.map === 'mist') && this.countItem(p, 'bicycle') < 1) {
+      if (this.addItem(p, 'bicycle', 1)) {
+        this.changed(p);
+        this.emit({ type: 'toast', playerId: p.id, text: '모험가용 고속 자전거를 선물 받았어요! (B키로 언제든 타고 내릴 수 있어요)', icon: 'bicycle' });
+      }
+    }
     return { ok: true, data: { qty: b[npc] ?? 0 } };
   }
   private addBond(p: PlayerState, npc: string, n: number) {
@@ -1686,6 +1760,13 @@ export class FarmSimulation {
 
   // ── 관리자 전용 (서버가 관리자 계정을 확인한 뒤에만 호출) ──
   teleport(p: PlayerState, map: MapId, inst: string, world: string, x: number, y: number) { this.battles.delete(p.id); p.world = world; this.relocate(p, map, inst, x, y); }
+  warpTo(p: PlayerState, map: MapId) {
+    const m = this.maps[map]; if (!m) return false;
+    const s = m.spawns.get('player') ?? m.spawns.get('entry');
+    if (!s) return false;
+    this.teleport(p, map, map === 'farm' || isHomeMap(map) ? p.id : '', p.world, s.x, s.y + 5);
+    return true;
+  }
   grant(p: PlayerState, itemId: string, qty: number) {
     if (!Object.prototype.hasOwnProperty.call(ITEMS, itemId) || !Number.isFinite(qty)) return false;
     const n = Math.max(1, Math.min(999, Math.floor(qty)));

@@ -258,11 +258,156 @@ export class MapBuilder {
     this.objects = this.objects.filter((o) => o.type !== '_removed');
   }
 
+  /** 맵 속성(property) 설정 또는 갱신 */
+  setProp(name, value, type = 'string') {
+    const prev = this.props.find((p) => p.name === name);
+    if (prev) { prev.value = value; prev.type = type; }
+    else this.props.push({ name, type, value });
+  }
+
+  /** Y축 고가 / 단차 구역 추가 (Heights.ts에서 computeHeights 후처리로 적용) */
+  addElevRect(x0, y0, x1, y1, h, openUnder = false) {
+    (this._elevs ??= []).push({ x0, y0, x1, y1, h, openUnder });
+  }
+
+  /** 4방향 경사로(Ramp) 추가 ('N'=남→북 오르막, 'S'=북→남, 'E'=서→동, 'W'=동→서) */
+  addRamp(x0, y0, x1, y1, dir, h0, h1, openUnder = false) {
+    (this._ramps ??= []).push({ x0, y0, x1, y1, dir, h0, h1, openUnder });
+  }
+
+  /** 자전거 도로 자동 탑승 구역 추가 */
+  addCycleZone(x, y, w, h) {
+    (this._cycleZones ??= []).push({ x, y, w, h });
+  }
+
+  /** 도시/아스팔트/데크 표면 마스크(surface) 칠하기 ('a','h','v','z','y','w','p','d','g') */
+  paintSurface(x0, y0, x1, y1, ch) {
+    if (!this._surf) this._surf = Array.from({ length: this.H }, () => Array(this.W).fill('g'));
+    for (let y = Math.max(0, y0); y <= Math.min(this.H - 1, y1); y++) {
+      for (let x = Math.max(0, x0); x <= Math.min(this.W - 1, x1); x++) this._surf[y][x] = ch;
+    }
+  }
+
+  /** 통과형 3D 게이트하우스(도시 관문 · 자전거 도로 검문소) 배치 */
+  placeGatehouse(cx, cy, span = 5, axis = 'ns', kind = 'gatehouse') {
+    const half = Math.floor(span / 2);
+    if (axis === 'ns') {
+      const gx = cx - half;
+      this.objects.push({
+        id: this.oid++, name: '', type: kind,
+        x: (cx + 0.5) * T, y: (cy + 1) * T, width: span * T, height: T, rotation: 0, visible: true,
+        properties: [
+          { name: 'cellX', type: 'int', value: gx }, { name: 'cellY', type: 'int', value: cy },
+          { name: 'cellW', type: 'int', value: span }, { name: 'cellH', type: 'int', value: 1 },
+          { name: 'axis', type: 'string', value: 'ns' },
+        ],
+      });
+      for (const px of [gx, gx + span - 1]) {
+        if (this.inb(px, cy)) this.blocked[cy][px] = true;
+      }
+      for (let x = gx + 1; x <= gx + span - 2; x++) {
+        if (this.inb(x, cy)) { this.blocked[cy][x] = false; this.terrain[cy][x] = S; }
+      }
+    } else {
+      const topY = cy - half;
+      this.objects.push({
+        id: this.oid++, name: '', type: kind,
+        x: (cx + 0.5) * T, y: (cy + half + 1) * T, width: T, height: span * T, rotation: 0, visible: true,
+        properties: [
+          { name: 'cellX', type: 'int', value: cx }, { name: 'cellY', type: 'int', value: cy + half },
+          { name: 'cellW', type: 'int', value: 1 }, { name: 'cellH', type: 'int', value: span },
+          { name: 'axis', type: 'string', value: 'ew' },
+        ],
+      });
+      for (const py of [topY, topY + span - 1]) {
+        if (this.inb(cx, py)) this.blocked[py][cx] = true;
+      }
+      for (let y = topY + 1; y <= topY + span - 2; y++) {
+        if (this.inb(cx, y)) { this.blocked[y][cx] = false; this.terrain[y][cx] = S; }
+      }
+    }
+  }
+
+  /**
+   * 4방향 Y축 고가교/대교 통합 설치 (진입 램프 + openUnder 고가 상판 + 하차 램프 + 측면 안전 난간 + 도로 표면)
+   * axis: 'ew' (서↔동) | 'ns' (북↔남)
+   */
+  elevBridge(x0, y0, x1, y1, axis, { h = 2.4, rampLen = 4, style = 'steel', surfaceChar = null, roadTile = S } = {}) {
+    this.setProp('bridgeStyle', style);
+    const lane = surfaceChar ?? (style === 'timber' ? 'd' : style === 'stone' ? 'p' : axis === 'ew' ? 'h' : 'v');
+    if (axis === 'ew') {
+      const rLen = Math.min(rampLen, Math.floor((x1 - x0) / 3));
+      const d0 = x0 + rLen, d1 = x1 - rLen;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        if (!this.inb(x, y)) continue;
+        this.blocked[y][x] = false;
+        if (x >= d0 && x <= d1) {
+          this.setBridge(x, y, ROW.STONE, 5);
+        } else {
+          if (this.terrain[y][x] === Wt) this.setBridge(x, y, ROW.STONE, 5);
+          else this.terrain[y][x] = roadTile;
+        }
+      }
+      if (rLen > 0) {
+        this.addRamp(x0, y0, d0 - 1, y1, 'E', 0, h, false);
+        this.addRamp(d1 + 1, y0, x1, y1, 'W', 0, h, false);
+      }
+      let curOpen = null, segStart = d0;
+      for (let x = d0; x <= d1 + 1; x++) {
+        const isW = x <= d1 ? (() => { for (let y = y0; y <= y1; y++) if (this.terrain[y]?.[x] === Wt) return true; return false; })() : null;
+        if (isW !== curOpen) {
+          if (curOpen !== null) this.addElevRect(segStart, y0, x - 1, y1, h, curOpen);
+          curOpen = isW;
+          segStart = x;
+        }
+      }
+      this.paintSurface(x0, y0, x1, y1, lane);
+      // 고가 구간 양측(지상과 높이차 있는 구간) 추락 방지 충돌 처리
+      for (let x = x0 + 1; x <= x1 - 1; x++) {
+        for (const by of [y0 - 1, y1 + 1]) {
+          if (this.inb(x, by) && this.terrain[by][x] !== D && this.terrain[by][x] !== S) this.blocked[by][x] = true;
+        }
+      }
+    } else {
+      const rLen = Math.min(rampLen, Math.floor((y1 - y0) / 3));
+      const d0 = y0 + rLen, d1 = y1 - rLen;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        if (!this.inb(x, y)) continue;
+        this.blocked[y][x] = false;
+        if (y >= d0 && y <= d1) {
+          this.setBridge(x, y, ROW.STONE, 5);
+        } else {
+          if (this.terrain[y][x] === Wt) this.setBridge(x, y, ROW.STONE, 5);
+          else this.terrain[y][x] = roadTile;
+        }
+      }
+      if (rLen > 0) {
+        this.addRamp(x0, y0, x1, d0 - 1, 'S', 0, h, false);
+        this.addRamp(x0, d1 + 1, x1, y1, 'N', 0, h, false);
+      }
+      let curOpen = null, segStart = d0;
+      for (let y = d0; y <= d1 + 1; y++) {
+        const isW = y <= d1 ? (() => { for (let x = x0; x <= x1; x++) if (this.terrain[y]?.[x] === Wt) return true; return false; })() : null;
+        if (isW !== curOpen) {
+          if (curOpen !== null) this.addElevRect(x0, segStart, x1, y - 1, h, curOpen);
+          curOpen = isW;
+          segStart = y;
+        }
+      }
+      this.paintSurface(x0, y0, x1, y1, lane);
+      for (let y = y0 + 1; y <= y1 - 1; y++) {
+        for (const bx of [x0 - 1, x1 + 1]) {
+          if (this.inb(bx, y) && this.terrain[y][bx] !== D && this.terrain[y][bx] !== S) this.blocked[y][bx] = true;
+        }
+      }
+    }
+  }
+
   /** 소품 발밑 타일 정리 및 끊긴 길 조각(stray) 제거 */
   cleanPaths() {
     if (this.noGround || this.props.some((p) => p.name === 'cave')) return;
     const { W, H, terrain } = this;
-    const PASSABLE = new Set(['tallgrass', 'tuft', 'glint', 'stairs_up', 'cave_hole', 'portal', 'vine', 'crack_rock', 'climb_wall', 'boulder', 'water_gate']);
+    const PASSABLE = new Set(['tallgrass', 'tuft', 'glint', 'stairs_up', 'cave_hole', 'portal', 'vine', 'crack_rock', 'climb_wall', 'boulder', 'water_gate', 'gatehouse', 'cycle_gate', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gate_bar']);
     const P = (o, k) => o.properties?.find((p) => p.name === k)?.value;
     // 1) 지나갈 수 없는 오브젝트가 길(D/S) 위에 놓인 경우, 발밑 타일을 잔디/화단(G)으로 정리
     for (const o of this.objects) {
@@ -321,6 +466,10 @@ export class MapBuilder {
   build() {
     if (!this.noTidy) this.tidyProps();   // 도시(전부 포장된 맵)는 가로등을 옮기지 않음
     this.cleanPaths();
+    if (this._elevs?.length) this.setProp('elevs', JSON.stringify(this._elevs));
+    if (this._ramps?.length) this.setProp('ramps', JSON.stringify(this._ramps));
+    if (this._cycleZones?.length) this.setProp('cycleZones', JSON.stringify(this._cycleZones));
+    if (this._surf) this.setProp('surface', this._surf.map((r) => r.join('')).join('|'));
     const { W, H, terrain, blocked, bridge } = this;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (terrain[y][x] === Wt && !bridge[y * W + x]) blocked[y][x] = true;
     const collision = blocked.flat().map((b) => (b ? gid(ROW.MISC, MISC.COLLIDE) : 0));

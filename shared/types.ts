@@ -97,6 +97,7 @@ export interface ForageSpot { key: string; map: MapId; x: number; y: number; ite
 export interface InventorySlot { slotIndex: number; itemId: string | null; quantity: number; /** 도구 남은 내구도 (없으면 새것) */ dur?: number }
 
 export interface PlayerState {
+  riding?: boolean;
   id: string;
   name: string;
   look: string;           // 캐릭터 시트 키 ('' = 아직 캐릭터를 만들지 않음)
@@ -309,7 +310,10 @@ export type ActionIntent =
   | { kind: 'resetSave' }
   | { kind: 'goHome' }                               // 친구 세계/농장에서 내 농장으로                            // 저장 초기화 (처음부터)
   | { kind: 'pad'; objectId: number }                 // 워프 패드(같은 맵 순간이동)
-  | { kind: 'switch'; gateId: string };               // 바닥 스위치로 전자문 열기
+  | { kind: 'switch'; gateId: string }                // 바닥 스위치로 전자문 열기
+  | { kind: 'gymClear'; gateId?: string; objectId?: number } // 체육관 퍼즐 관문 해제 · 눈덩이 파괴
+  | { kind: 'gymReset' }                              // 체육관 눈덩이 등 퍼즐 초기화
+  | { kind: 'toggleBike'; force?: boolean };          // 자전거 탑승/하차 토글 (force: 자전거 도로 자동 탑승)
 
 export interface ActionResult { ok: boolean; reason?: string; anim?: string; battle?: BattleUpdate; data?: { item?: string; qty?: number } }
 
