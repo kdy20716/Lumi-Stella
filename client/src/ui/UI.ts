@@ -471,7 +471,17 @@ const menu = {
           <button data-a="resume" class="px-btn green text-lg">계속하기</button>
           ${o.canSave ? '<button data-a="save" class="px-btn text-lg">지금 저장하기</button>' : ''}
           <button data-a="sound" class="px-btn text-lg">효과음: ${sfx.muted ? '끔 🔇' : '켬 🔊'}</button>
+          <div class="flex items-center gap-2 px-1 text-sm text-[#5e3620]">
+            <span class="w-24 shrink-0">효과음 볼륨</span>
+            <input data-vol="sfx" type="range" min="0" max="100" value="${Math.round(sfx.volume * 100)}" class="flex-1 accent-[#4e8c3e]" />
+            <span data-vollbl="sfx" class="w-10 text-right tabular-nums">${Math.round(sfx.volume * 100)}%</span>
+          </div>
           <button data-a="music" class="px-btn text-lg">배경음악: ${music.on ? '켬 🎵' : '끔 🔇'}</button>
+          <div class="flex items-center gap-2 px-1 text-sm text-[#5e3620]">
+            <span class="w-24 shrink-0">배경음 볼륨</span>
+            <input data-vol="music" type="range" min="0" max="100" value="${Math.round(music.volume * 100)}" class="flex-1 accent-[#4e8c3e]" />
+            <span data-vollbl="music" class="w-10 text-right tabular-nums">${Math.round(music.volume * 100)}%</span>
+          </div>
           <button data-a="reset" class="px-btn text-lg" style="background:linear-gradient(#e8705a,#c8453c)">저장 초기화</button>
           <button data-a="title" class="px-btn text-base !py-1.5">타이틀로</button>`}
       </div>`;
@@ -479,6 +489,16 @@ const menu = {
       on('resume', () => this.close()); on('save', () => { o.onSave(); this.close(); });
       on('sound', () => { sfx.setMuted(!sfx.muted); render(); }); on('music', () => { music.setOn(!music.on); render(); }); on('reset', () => render(true));
       on('no', () => render()); on('yes', () => { this.close(); o.onReset(); }); on('title', () => { this.close(); o.onTitle(); });
+      n.querySelectorAll<HTMLInputElement>('[data-vol]').forEach((inp) => {
+        inp.addEventListener('input', () => {
+          const v = Number(inp.value) / 100;
+          const k = inp.dataset.vol;
+          if (k === 'sfx') sfx.setVolume(v);
+          else if (k === 'music') music.setVolume(v);
+          const lbl = n.querySelector<HTMLElement>(`[data-vollbl="${k}"]`);
+          if (lbl) lbl.textContent = `${Math.round(v * 100)}%`;
+        });
+      });
     };
     render();
     root().appendChild(n); this.node = n;

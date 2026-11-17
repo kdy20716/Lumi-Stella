@@ -12,7 +12,7 @@ export const prop = <T = string | number>(o: { properties?: TiledProperty[] }, n
 export interface WarpDef { x: number; y: number; w: number; h: number; to: string; spawn: string; ferry?: boolean }
 export interface PlotDef { name: string; x: number; y: number; w: number; h: number; crop: string; stage: number; watered: boolean }
 
-const PASSABLE_OBJECTS = new Set(['spawn', 'warp', 'farm_zone', 'tallgrass', 'tuft', 'glint', 'stairs_up', 'attic_stairs_up', 'attic_stairs_down', 'cave_hole', 'portal', 'light']);
+const PASSABLE_OBJECTS = new Set(['spawn', 'warp', 'farm_zone', 'tallgrass', 'tuft', 'glint', 'stairs_up', 'attic_stairs_up', 'attic_stairs_down', 'cave_hole', 'portal', 'light', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn']);
 
 export class MapInfo {
   readonly width: number;
@@ -30,6 +30,10 @@ export class MapInfo {
   readonly ledges = new Set<number>();
   readonly stairs = new Set<number>();
   readonly cliffRim = new Set<number>();
+  readonly iceCells = new Set<number>();
+  readonly arrowPads = new Map<number, { id: number; dir: 'up' | 'down' | 'left' | 'right'; steps: number }>();
+  readonly warpPads = new Map<number, { id: number; toX: number; toY: number; color: string }>();
+  readonly switchBtns = new Map<number, { id: number; gateId: string; color: string }>();
   readonly heights: Heights;
   readonly name: string;
   /** 맵 속성 (biome · battleBg · cave · title …) */
@@ -52,10 +56,20 @@ export class MapInfo {
     this.heights = computeHeights(map);
     const solidObj = new Uint8Array(this.width * this.height);
     for (const o of this.objects) {
-      if (PASSABLE_OBJECTS.has(o.type)) continue;
       const cx = prop<number | undefined>(o, 'cellX', undefined), cy = prop<number | undefined>(o, 'cellY', undefined);
       if (cx == null || cy == null) continue;
       const cw = prop(o, 'cellW', 1), ch = prop(o, 'cellH', 1);
+      if (o.type === 'ice_tile' || o.type === 'arrow_pad' || o.type === 'warp_pad' || o.type === 'switch_btn') {
+        for (let yy = cy - ch + 1; yy <= cy; yy++) for (let xx = cx; xx < cx + cw; xx++) {
+          if (!this.inBounds(xx, yy)) continue;
+          const idx = yy * this.width + xx;
+          if (o.type === 'ice_tile') this.iceCells.add(idx);
+          else if (o.type === 'arrow_pad') this.arrowPads.set(idx, { id: o.id, dir: prop(o, 'dir', 'up') as 'up' | 'down' | 'left' | 'right', steps: Number(prop(o, 'steps', 3)) || 3 });
+          else if (o.type === 'warp_pad') this.warpPads.set(idx, { id: o.id, toX: Number(prop(o, 'toX', xx)), toY: Number(prop(o, 'toY', yy)), color: String(prop(o, 'color', '#48c8ff')) });
+          else if (o.type === 'switch_btn') this.switchBtns.set(idx, { id: o.id, gateId: String(prop(o, 'gateId', 'g1')), color: String(prop(o, 'color', '#ff6470')) });
+        }
+      }
+      if (PASSABLE_OBJECTS.has(o.type)) continue;
       for (let yy = cy - ch + 1; yy <= cy; yy++) for (let xx = cx; xx < cx + cw; xx++) {
         if (this.inBounds(xx, yy)) solidObj[yy * this.width + xx] = 1;
       }
@@ -86,6 +100,10 @@ export class MapInfo {
   isLedge(x: number, y: number) { return this.inBounds(x, y) && this.ledges.has(y * this.width + x); }
   isStairs(x: number, y: number) { return this.inBounds(x, y) && this.stairs.has(y * this.width + x); }
   isCliffRim(x: number, y: number) { return this.inBounds(x, y) && this.cliffRim.has(y * this.width + x); }
+  isIce(x: number, y: number) { return this.inBounds(x, y) && this.iceCells.has(y * this.width + x); }
+  arrowAt(x: number, y: number) { return this.inBounds(x, y) ? this.arrowPads.get(y * this.width + x) : undefined; }
+  warpPadAt(x: number, y: number) { return this.inBounds(x, y) ? this.warpPads.get(y * this.width + x) : undefined; }
+  switchAt(x: number, y: number) { return this.inBounds(x, y) ? this.switchBtns.get(y * this.width + x) : undefined; }
   canCrossEdge(ax: number, ay: number, bx: number, by: number) { return this.heights.canCrossEdge(ax, ay, bx, by); }
   spansCliffWall(x0: number, y0: number, x1: number, y1: number) { return this.heights.spansCliffWall(x0, y0, x1, y1); }
   inBounds(x: number, y: number) { return x >= 0 && y >= 0 && x < this.width && y < this.height; }

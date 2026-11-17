@@ -24,7 +24,7 @@ export class Hub {
   title(id: string) { return this.clients.get(id)?.admin ? 'admin' : undefined; }
   netPlayer(id: string): NetPlayer {
     const p = this.sim.players.get(id)!;
-    return { id, name: p.name, look: p.look, map: p.map, inst: p.inst, world: p.world, x: p.x, y: p.y, dir: p.dir, anim: this.clients.get(id)?.anim ?? 'idle', partner: p.party[0]?.species, lumiCoord: p.lumiCoord, battling: this.sim.inBattle(id), title: this.title(id) };
+    return { id, name: p.name, look: p.look, map: p.map, inst: p.inst, world: p.world, x: p.x, y: p.y, dir: p.dir, anim: this.clients.get(id)?.anim ?? 'idle', partner: p.party[0]?.species, lumiCoord: p.lumiCoord, chatBubble: p.chatBubble, battling: this.sim.inBattle(id), title: this.title(id) };
   }
   roster(): RosterEntry[] { return [...this.clients.keys()].map((id) => { const p = this.sim.players.get(id)!; return { id, name: p.name, look: p.look, map: p.map, inst: p.inst, title: this.title(id) }; }); }
 

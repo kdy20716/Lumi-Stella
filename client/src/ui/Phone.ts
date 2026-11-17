@@ -1,13 +1,12 @@
 // 휴대폰 (R · 지도는 M): 화면 오른쪽에 뜨는 루미폰. 지도 · 나의 루미 · 가방 · 도감 · 제작 노트 · 배지 · 친구 · 설정 · 도움말을 모두 여기서.
 //   - 폰이 열려 있어도 걸어 다닐 수 있음 (지도만 가로 화면으로 넓어짐)
 //   - Esc: 앱 → 홈 → 닫기 / M: 열기·닫기 / P: 나의 루미 / H: 도움말
-import { BM_ALL_TOTAL_KRW, BM_CASH_PACK_MAP, BM_CASH_PACKS, BM_PRODUCT_MAP, BM_PRODUCTS, UI_THEMES, formatCash, formatKrw, formatUsd, isBmUnlocked, remainingBmCostKrw, type BmCashPack, type BmCategory, type BmProduct } from '@shared/bmShop';
+import { BM_ALL_TOTAL_KRW, BM_CASH_PACK_MAP, BM_CASH_PACKS, BM_PRODUCT_MAP, BM_PRODUCTS, CHAT_BUBBLES, STARTER_LUMI_IDS, STARTER_LUMI_SET, UI_THEMES, formatCash, formatKrw, formatUsd, isBmUnlocked, remainingBmCostKrw, type BmCashPack, type BmCategory, type BmProduct } from '@shared/bmShop';
 import { ITEMS, RECIPES, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
 import { MAP_META, type CreatureInst, type MapMeta, type PlayerState, type WorldTime } from '@shared/types';
 import { sfx } from '../audio/Sfx';
 import { music } from '../audio/Music';
-import { Stage3D } from '../three/Stage3D';
-import { lumiCoordBadgeHtml } from './LumiCoord';
+import { lumiCoordBadgeHtml, lumiSheetUrl } from './LumiCoord';
 import { lookPortrait } from './Social';
 import { iconStyle, formatTime } from './UI';
 import type { AdminCmd } from '@shared/protocol';
@@ -42,6 +41,9 @@ export interface PhoneCtx {
   buyCashPack?(pack: BmCashPack): void;
   buyBm?(product: BmProduct): Promise<boolean>;
   equipBm?(category: BmCategory, itemId: string): void;
+  previewBm?(category: BmCategory | '', itemId: string): void;
+  changeName?(newName: string): Promise<{ ok: boolean; name?: string; error?: string }>;
+  useCandy?(partyIndex: number): Promise<boolean>;
   buyAllBmCash?(): Promise<{ ok: boolean; error?: string; boughtCount?: number }>;
   testPgSystem?(): Promise<PgSystemTestResult>;
 }
@@ -82,7 +84,9 @@ export const phone = {
   ctx: null as PhoneCtx | null,
   confirmReset: false,
   bagPick: '' as string,
-  shopTab: 'cash' as 'cash' | BmCategory,
+  shopTab: 'theme' as 'cash' | BmCategory,
+  shopPreviewId: '' as string,
+  shopDetailId: '' as string,
   unfold: false,
   unfoldTimer: 0,
   get open() { return !!this.node; },
@@ -92,8 +96,15 @@ export const phone = {
   show(app: PhoneApp = 'home') {
     if (!this.ctx) return;
     const fresh = !this.node;
-    // 지도 앱은 폴더블처럼 펼쳐지며 열림
-    this.unfold = app === 'map' && (fresh || this.app !== 'map');
+    if (this.app === 'shop' && app !== 'shop') {
+      this.shopPreviewId = '';
+      this.shopDetailId = '';
+      this.ctx.previewBm?.('', '');
+    }
+    // 지도 · 상점 앱은 폴더블폰이 넓게 펼쳐지며 열림
+    const isFoldable = app === 'map' || app === 'shop';
+    this.unfold = isFoldable && (fresh || this.app !== app);
+    if (app === 'admin') this.adminData = null;
     this.app = app; this.confirmReset = false; this.bagPick = '';
     if (fresh) {
       sfx.play('phone_open');
@@ -104,16 +115,39 @@ export const phone = {
     this.render();
   },
   go(app: PhoneApp) { this.show(app); },
-  /** Esc: 앱이면 홈으로, 홈이면 닫기 */
-  back() { if (!this.node) return false; if (this.app !== 'home') this.show('home'); else this.close(); return true; },
-  close() { if (!this.node) return; sfx.play('phone_close'); const n = this.node; this.node = null; n.classList.add('ph-out'); setTimeout(() => n.remove(), 180); },
+  /** Esc: 상점 상세 탭이면 상점 목록으로, 앱이면 홈으로, 홈이면 닫기 */
+  back() {
+    if (!this.node) return false;
+    if (this.app === 'shop' && this.shopDetailId) {
+      sfx.play('tap');
+      this.shopDetailId = '';
+      this.render();
+      return true;
+    }
+    if (this.app !== 'home') this.show('home');
+    else this.close();
+    return true;
+  },
+  close() {
+    if (!this.node) return;
+    if (this.app === 'shop') {
+      this.shopPreviewId = '';
+      this.shopDetailId = '';
+      this.ctx?.previewBm?.('', '');
+    }
+    sfx.play('phone_close');
+    const n = this.node;
+    this.node = null;
+    n.classList.add('ph-out');
+    setTimeout(() => n.remove(), 180);
+  },
   refresh() { if (this.node) this.render(); },
   /** 시계만 갱신 (매 10분) */
   tick(t: WorldTime) { const s = this.node?.querySelector('[data-ph=clock]'); if (s) s.textContent = formatTime(t.minutes); },
 
   render() {
     const n = this.node!, c = this.ctx!, me = c.me(), t = c.time();
-    const wide = this.app === 'map';
+    const wide = this.app === 'map' || this.app === 'shop';
     // 같은 앱을 다시 그릴 때는 스크롤 위치 유지 (가방 · 도감 등)
     const prev = n.querySelector<HTMLElement>('.ph-content'), keep = prev && n.dataset.app === this.app ? prev.scrollTop : 0;
     n.dataset.app = this.app;
@@ -174,6 +208,9 @@ export const phone = {
   adminData: null as null | AdminReply,
   adminMsg: '',
   adminLoading: false,
+  adminUserQuery: '',
+  adminSelUid: '',
+  pendingNameInput: '',
   pgTestRes: null as null | PgSystemTestResult,
   pgTestBusy: false,
   adminApp(me: PlayerState) {
@@ -222,13 +259,45 @@ export const phone = {
       return `${tabs}${msg}${list || '<div class="ph-empty">신고가 없어요</div>'}`;
     }
     const items = Object.values(ITEMS).map((it) => `<option value="${it.id}">${esc(it.name)}</option>`).join('');
-    const users = (d.users ?? []).map((u) => `<div class="ph-card ph-col"><b>${esc(u.name)}</b> <span class="ph-small">${esc(u.mapName)} · ${u.gold.toLocaleString()}G · ${formatCash(u.cash ?? 0)} · 배지 ${u.badges} · ${esc(u.world)}</span>
-      <div class="ph-small">${esc(u.party || '루미 없음')}</div><div class="ph-small" style="opacity:.6">${esc(u.uid)}</div>
-      <div class="ph-acts"><button data-aop="goto" data-uid="${esc(u.uid)}" class="ph-btn sm">가기</button><button data-aop="bring" data-uid="${esc(u.uid)}" class="ph-btn sm">데려오기</button><button data-aop="kick" data-uid="${esc(u.uid)}" class="ph-btn sm ghost">강퇴</button><button data-aop="ban" data-uid="${esc(u.uid)}" class="ph-btn sm ghost">밴</button></div>
-      <div class="ph-acts"><select data-gi="${esc(u.uid)}" class="ph-input sm">${items}</select><input data-gq="${esc(u.uid)}" class="ph-input sm" type="number" min="1" max="999" value="1" style="width:60px"><button data-aop="give" data-uid="${esc(u.uid)}" class="ph-btn sm">지급</button></div>
-      <div class="ph-acts"><input data-gg="${esc(u.uid)}" class="ph-input sm" type="number" value="1000" style="width:90px"><button data-aop="gold" data-uid="${esc(u.uid)}" class="ph-btn sm">골드 ±</button><button data-aop="grantCash" data-uid="${esc(u.uid)}" class="ph-btn sm">캐쉬 +100만</button></div></div>`).join('');
+    const allUsers = d.users ?? [];
+    const q = this.adminUserQuery.trim().toLowerCase();
+    const filtered = q ? allUsers.filter((u) => u.name.toLowerCase().includes(q) || u.uid.toLowerCase().includes(q)) : allUsers;
+    const sel = filtered.find((u) => u.uid === this.adminSelUid) ?? filtered[0] ?? null;
+    if (sel) this.adminSelUid = sel.uid;
+
+    const searchBar = `<div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
+      <input data-usearch class="ph-input sm" type="text" placeholder="🔍 닉네임 검색 (예: 민초맛츄르, 민초맛츄르2)" value="${esc(this.adminUserQuery)}" style="flex:1">
+      <span class="ph-small">${filtered.length}/${allUsers.length}명</span>
+    </div>`;
+
+    const nameList = filtered.length
+      ? `<div data-ulist style="max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;padding:3px;border:1px solid rgba(255,255,255,0.16);border-radius:6px;margin-bottom:6px">
+          ${filtered.map((u) => {
+            const on = sel?.uid === u.uid;
+            return `<button data-usel="${esc(u.uid)}" class="ph-btn sm ${on ? '' : 'ghost'}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:4px 8px;text-align:left">
+              <span style="font-weight:700">${esc(u.name)}</span>
+              <span class="ph-small" style="opacity:.85">${esc(u.mapName)}</span>
+            </button>`;
+          }).join('')}
+        </div>`
+      : '<div class="ph-empty" style="padding:12px 0">일치하는 닉네임의 유저가 없어요</div>';
+
+    const selCard = sel
+      ? `<div class="ph-card ph-col">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+            <b>👤 ${esc(sel.name)}</b>
+            <span class="ph-small">${esc(sel.mapName)} · ${esc(sel.world)}</span>
+          </div>
+          <div class="ph-small">${sel.gold.toLocaleString()}G · ${formatCash(sel.cash ?? 0)} · 배지 ${sel.badges} · ${esc(sel.party || '루미 없음')}</div>
+          <div class="ph-small" style="opacity:.6">UID: ${esc(sel.uid)}</div>
+          <div class="ph-acts"><button data-aop="goto" data-uid="${esc(sel.uid)}" class="ph-btn sm">가기</button><button data-aop="bring" data-uid="${esc(sel.uid)}" class="ph-btn sm">데려오기</button><button data-aop="kick" data-uid="${esc(sel.uid)}" class="ph-btn sm ghost">강퇴</button><button data-aop="ban" data-uid="${esc(sel.uid)}" class="ph-btn sm ghost">밴</button></div>
+          <div class="ph-acts"><select data-gi="${esc(sel.uid)}" class="ph-input sm">${items}</select><input data-gq="${esc(sel.uid)}" class="ph-input sm" type="number" min="1" max="999" value="1" style="width:56px"><button data-aop="give" data-uid="${esc(sel.uid)}" class="ph-btn sm">지급</button></div>
+          <div class="ph-acts"><input data-gg="${esc(sel.uid)}" class="ph-input sm" type="number" value="1000" style="width:84px"><button data-aop="gold" data-uid="${esc(sel.uid)}" class="ph-btn sm">골드 ±</button><button data-aop="grantCash" data-uid="${esc(sel.uid)}" class="ph-btn sm">캐쉬 +100만</button></div>
+        </div>`
+      : '';
+
     const bans = (d.bans ?? []).map((b) => `<div class="ph-card ph-col ph-dim"><b>${esc(b.name)}</b> <span class="ph-small">${esc(b.reason)}</span><div class="ph-acts"><button data-aop="unban" data-uid="${esc(b.uid)}" class="ph-btn sm">밴 해제</button></div></div>`).join('');
-    return `${tabs}${msg}${users || '<div class="ph-empty">접속한 유저가 없어요</div>'}${bans ? `<div class="ph-sec">정지된 계정</div>${bans}` : ''}`;
+    return `${tabs}${msg}${searchBar}${nameList}${selCard}${bans ? `<div class="ph-sec">정지된 계정</div>${bans}` : ''}`;
   },
   async adminLoad() {
     const r = await this.ctx!.admin(this.adminTab === 'reports' ? { op: 'reports' } : { op: 'users' });
@@ -247,8 +316,9 @@ export const phone = {
   home(me: PlayerState) {
     const lead = me.party[0];
     const sp = lead ? SPECIES[lead.species] : null;
+    const leadSheet = lead ? lumiSheetUrl(lead.species, me.lumiCoord) : '';
     return `<div class="ph-hello">
-        ${sp ? `<span class="lumi-icon lumi-bounce" style="background-image:url(assets/lumi/${lead!.species}.png);width:56px;height:56px;background-size:336px 56px"></span>` : '<span class="ph-emoji" style="font-size:34px">✨</span>'}
+        ${sp ? `<span class="lumi-icon lumi-bounce" style="background-image:url(${leadSheet});width:56px;height:56px;background-size:336px 56px"></span>` : '<span class="ph-emoji" style="font-size:34px">✨</span>'}
         <div><div class="ph-name">${esc(me.name)}</div><div class="ph-sub">${sp ? `파트너 ${sp.name} · Lv.${lead!.level}` : '아직 파트너가 없어요'} · 배지 ${me.badges.length}/8</div></div>
       </div>
       <div class="ph-grid">${[...APPS, ...(this.ctx!.isAdmin() ? [ADMIN_APP] : [])].map((a) => `<button data-app="${a.id}" class="ph-app"><span class="ph-tile" style="background:${a.bg}">${a.glyph()}</span><span class="ph-label">${a.name}</span>${a.id === 'admin' && this.newReports ? `<i class="ph-badge">${this.newReports}</i>` : ''}</button>`).join('')}</div>
@@ -327,16 +397,21 @@ export const phone = {
   // ── 나의 루미 ──
   partyApp(me: PlayerState) {
     if (!me.party.length) return '<div class="ph-empty">아직 파트너가 없어요.<br>별빛 마을 <b>마을회관</b>의 한별 박사님을 찾아가 보세요!</div>';
+    const candyCount = countItem(me, 'star_candy');
     return `<div class="ph-list">${me.party.map((c, i) => {
       const sp = SPECIES[c.species], max = maxHpOf(c), r = Math.max(0, c.hp / max);
+      const sheetUrl = lumiSheetUrl(c.species, i === 0 ? me.lumiCoord : '');
       return `<div class="ph-card ${i === 0 ? 'lead' : ''}">
-        <span class="lumi-icon" style="background-image:url(assets/lumi/${c.species}.png);width:48px;height:48px;background-size:288px 48px"></span>
+        <span class="lumi-icon" style="background-image:url(${sheetUrl});width:48px;height:48px;background-size:288px 48px"></span>
         <div class="flex-1 min-w-0">
           <div class="ph-row"><b>${i === 0 ? '★ ' : ''}${sp.name}</b>${typeChip(sp.type)}<span class="ml-auto">Lv.${c.level}</span></div>
           <div class="ph-hp"><i style="width:${r * 100}%;background:${r > 0.5 ? '#5fc04a' : r > 0.2 ? '#f0c84a' : '#e0473b'}"></i></div>
           <div class="ph-row ph-small"><span>HP ${c.hp}/${max}</span><span class="ml-auto">${sp.kind}</span></div>
           <div class="ph-small ph-help1">🌱 ${HELPS[sp.helps] ?? ''}</div>
-          ${i > 0 ? `<button data-partner="${i}" class="ph-btn sm">함께 걷기</button>` : '<div class="ph-small ph-ok">함께 걷는 중</div>'}
+          <div class="ph-acts" style="margin-top:3px">
+            ${i > 0 ? `<button data-partner="${i}" class="ph-btn sm">함께 걷기</button>` : '<span class="ph-small ph-ok">함께 걷는 중</span>'}
+            ${candyCount > 0 && c.level < 100 ? `<button data-usecandy="${i}" class="ph-btn sm">🍬 별빛 사탕 Lv.+1 (${candyCount})</button>` : ''}
+          </div>
         </div></div>`;
     }).join('')}</div>
     <div class="ph-foot">보관함 ${me.box.length}마리 · 파티는 최대 6마리</div>`;
@@ -424,32 +499,128 @@ export const phone = {
     <div class="ph-foot">배지 8개를 모으면 왕관 시티 루미 리그에 도전할 수 있어요</div>`;
   },
 
-  // ── 캐쉬 상점 (외부 토스/PG 캐쉬 충전 · 보유 캐쉬로 UI/의상/루미 코디 구매) ──
+  /** 말풍선 스킨 HTML 미리보기 생성 */
+  bubblePreviewHtml(bubbleId: string, sampleText = '안녕! 반가워요 ✨', compact = false): string {
+    const skin = CHAT_BUBBLES[bubbleId] ?? CHAT_BUBBLES.default;
+    const pad = compact ? '3px 8px' : '6px 14px';
+    const fs = compact ? '10px' : '12px';
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:${pad};border-radius:9px;background:linear-gradient(180deg,${skin.bgTop},${skin.bgBottom});border:2px solid ${skin.borderOuter};box-shadow:inset 0 0 0 1.5px ${skin.borderInner},0 2px 4px rgba(0,0,0,0.22);color:${skin.textColor};font-weight:700;font-size:${fs};white-space:nowrap">${esc(sampleText)}</span>`;
+  },
+
+  /** 상점 내 구매 확인 전용 상세 탭 (상세 내용물 이미지 + 가격/잔액 + 구매/취소 버튼) */
+  shopDetailView(me: PlayerState, prod: BmProduct): string {
+    const cash = me.cash ?? 0;
+    const afterCash = cash - prod.priceKrw;
+    const canAfford = afterCash >= 0;
+    const baseLook = me.look || 'm1';
+
+    let showcase = '';
+    if (prod.category === 'outfit') {
+      // 정면 · 측면 · 뒷면 3방향 큰 캐릭터 도트 프리뷰
+      showcase = `<div style="display:flex;align-items:center;justify-content:center;gap:18px;padding:14px;background:linear-gradient(180deg,#fffaf0,#f3dfb4);border:2px solid #d8b67c;border-radius:12px">
+        <div style="text-align:center"><span style="${lookPortrait(prod.id, 2)}"></span><div class="ph-small" style="margin-top:4px">정면 모습</div></div>
+        <div style="text-align:center"><span style="display:inline-block;width:60px;height:80px;background-image:url(assets/characters/${prod.id}.png);background-size:768px auto;background-position:-18px -100px;background-repeat:no-repeat;image-rendering:pixelated"></span><div class="ph-small" style="margin-top:4px">측면 모습</div></div>
+        <div style="text-align:center"><span style="display:inline-block;width:60px;height:80px;background-image:url(assets/characters/${prod.id}.png);background-size:768px auto;background-position:-18px -292px;background-repeat:no-repeat;image-rendering:pixelated"></span><div class="ph-small" style="margin-top:4px">뒷면 모습</div></div>
+      </div>`;
+    } else if (prod.category === 'lumi') {
+      // 기본 스타팅 루미 3종(새록·찰랑·모락) 착용 모습 전체 상세 프리뷰
+      const names: Record<string, string> = { saerok: '🌱 새록', chalang: '💧 찰랑', morak: '🔥 모락' };
+      showcase = `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px;background:linear-gradient(180deg,#f4fbf0,#dfeed8);border:2px solid #8fc97a;border-radius:12px">
+        <div class="ph-small" style="font-weight:700;color:#2f6a35">🌱💧🔥 기본 스타팅 루미 3종 전용 치장 적용 모습</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:20px">
+          ${STARTER_LUMI_IDS.map((sp) => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <span class="lumi-icon lumi-bounce" style="display:inline-block;background-image:url(${lumiSheetUrl(sp, prod.id)});width:56px;height:56px;background-size:336px 56px;image-rendering:pixelated"></span>
+            <span class="ph-small"><b>${names[sp]}</b></span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    } else if (prod.category === 'bubble') {
+      showcase = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;background:linear-gradient(180deg,#2a3550,#182030);border:2px solid #6b7fd8;border-radius:12px">
+        ${this.bubblePreviewHtml(prod.id, `${me.name}: 오늘도 별빛 마을에서 즐거운 하루 보내요! ✨`, false)}
+        <span style="${lookPortrait(baseLook, 1.5)}"></span>
+        <div class="ph-small" style="color:#d8e4ff">채팅 입력 시 캐릭터 머리 위에 표시되는 실제 말풍선 모습</div>
+      </div>`;
+    } else if (prod.category === 'theme') {
+      const th = UI_THEMES[prod.id] ?? UI_THEMES.rural;
+      showcase = `<div style="padding:12px;border-radius:12px;background:${th.bg};border:3px solid ${th.border};box-shadow:inset 0 0 0 2px ${th.borderBright}">
+        <div style="padding:10px;border-radius:8px;background:${th.panel};color:${th.text};border:2px solid ${th.borderBright}">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">✨ ${esc(th.name)} 미리보기</div>
+          <div style="font-size:11px;color:${th.textDim};margin-bottom:8px">${esc(th.desc)}</div>
+          <div style="display:flex;gap:6px">
+            <span style="padding:3px 10px;border-radius:6px;background:${th.accent};color:#fff;font-size:11px;font-weight:700">확인 버튼</span>
+            <span style="padding:3px 10px;border-radius:6px;background:${th.panelAlt};color:#202438;font-size:11px">정보 패널</span>
+          </div>
+        </div>
+      </div>`;
+    } else {
+      const iconId = prod.id === 'star_candy' ? 'star_candy' : 'name_ticket';
+      const effectText = prod.id === 'star_candy'
+        ? '원하는 루미의 레벨을 즉시 +1 올려 주며, 레벨업 기술 습득과 진화까지 바로 진행됩니다!'
+        : '원하는 새 트레이너 닉네임으로 즉시 변경할 수 있습니다! (중복 시 자동 번호 부여)';
+      showcase = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;background:linear-gradient(180deg,#fffdf6,#f3e2bc);border:2px solid #d49a35;border-radius:12px">
+        <span class="px-icon lumi-bounce" style="${iconStyle(iconId, 56)}"></span>
+        <div class="ph-small" style="text-align:center;font-weight:700;color:#5e3620">${esc(effectText)}</div>
+      </div>`;
+    }
+
+    return `<div class="ph-card ph-col" style="padding:10px 12px;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px dashed #d8b67c;padding-bottom:6px">
+        <div>
+          <span class="bm-lock">${prod.category === 'theme' ? 'UI 테마' : prod.category === 'outfit' ? '트레이너 의상' : prod.category === 'lumi' ? '기본 루미 3종 전용 치장' : prod.category === 'bubble' ? '채팅 말풍선' : '특별 아이템'}</span>
+          <div style="font-size:15px;font-weight:700;margin-top:2px">${esc(prod.name)}</div>
+        </div>
+        <button data-bmcancel class="ph-btn sm ghost">‹ 목록으로</button>
+      </div>
+      ${showcase}
+      <div class="ph-small" style="line-height:1.45">${esc(prod.desc)}</div>
+      <div class="bm-pay-summary" style="flex-direction:column;align-items:stretch;gap:4px">
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span>상품 가격</span><b>💎 ${formatCash(prod.priceKrw)}${prod.priceUsd ? ` (≈ ${formatUsd(prod.priceUsd)})` : ''}</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span>현재 보유 캐쉬</span><span>${formatCash(cash)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px solid #d8b67c;padding-top:4px">
+          <span>구매 후 잔액</span>
+          <b class="${canAfford ? 'ph-ok' : 'ph-bad'}">${canAfford ? formatCash(afterCash) : `캐쉬 부족 (${formatCash(Math.abs(afterCash))} 더 필요)`}</b>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button data-bmcancel class="ph-btn ghost" style="flex:1">취소 (뒤로)</button>
+        ${canAfford
+          ? `<button data-bmconfirm="${prod.id}" class="ph-btn" style="flex:1.4">💎 구매하기 (즉시 적용)</button>`
+          : `<button data-bmtab="cash" class="ph-btn" style="flex:1.4">💎 캐쉬 충전하러 가기</button>`}
+      </div>
+    </div>`;
+  },
+
+  // ── 캐쉬 상점 (폴더블 와이드 화면 · 클릭 시 미리보기 · 구매 버튼 클릭 시 상세 탭 확인) ──
   shopApp(me: PlayerState) {
+    if (this.shopDetailId && BM_PRODUCT_MAP[this.shopDetailId]) {
+      return this.shopDetailView(me, BM_PRODUCT_MAP[this.shopDetailId]);
+    }
+
     const tabs = `<div class="ph-tabs" style="margin-bottom:4px">
       <button data-bmtab="cash" class="${this.shopTab === 'cash' ? 'on' : ''}">💎 캐쉬</button>
+      <button data-bmtab="item" class="${this.shopTab === 'item' ? 'on' : ''}">🎁 아이템</button>
       <button data-bmtab="theme" class="${this.shopTab === 'theme' ? 'on' : ''}">UI</button>
       <button data-bmtab="outfit" class="${this.shopTab === 'outfit' ? 'on' : ''}">의상</button>
       <button data-bmtab="lumi" class="${this.shopTab === 'lumi' ? 'on' : ''}">루미</button>
+      <button data-bmtab="bubble" class="${this.shopTab === 'bubble' ? 'on' : ''}">💬 말풍선</button>
     </div>`;
-    const mailPending = (me.mailItems ?? []).filter((g) => !g.claimed).length;
     const isAdmin = this.ctx!.isAdmin();
     const remCost = remainingBmCostKrw(me);
     const walletBar = `<div class="ph-card" style="margin-bottom:4px;padding:6px 8px">
       <div class="flex-1 min-w-0">
-        <div class="ph-small"><b>💎 보유 캐쉬</b>: <span class="ph-ok">${formatCash(me.cash ?? 0)}</span>${isAdmin ? ' · 🛡️ 어드민 전품목 해금' : ''}</div>
+        <div class="ph-small"><b>💎 보유 캐쉬</b>: <span class="ph-ok">${formatCash(me.cash ?? 0)}</span>${isAdmin ? ' · 🛡️ 어드민 해금' : ''}</div>
       </div>
       ${this.shopTab !== 'cash' ? '<button data-bmtab="cash" class="ph-btn sm">+ 캐쉬 충전</button>' : ''}
     </div>`;
     const adminBanner = isAdmin && remCost > 0
       ? `<div class="ph-card ph-col" style="margin-bottom:4px">
-          <div class="ph-small">관리자 전용 · 미보유 ${BM_PRODUCTS.length}종 합계 ${formatCash(remCost)}</div>
+          <div class="ph-small">관리자 전용 · 미보유 코스메틱 합계 ${formatCash(remCost)}</div>
           <div class="ph-acts"><button data-bmbuyall class="ph-btn sm">💎 미보유 전 상품 캐쉬 일괄 구매</button></div>
         </div>`
       : '';
 
     if (this.shopTab === 'cash') {
-      const cashNotice = `<div class="ph-small" style="line-height:1.4">캐쉬 상품을 누르면 <b>실제 PayPal 결제 링크</b>로 바로 연결됩니다. 승인 완료 시 즉시 캐쉬가 지급돼요.${mailPending ? ` <span class="ph-ok">(미수령 우편 ${mailPending}개)</span>` : ''}</div>`;
+      const cashNotice = `<div class="ph-small" style="line-height:1.4">캐쉬 상품을 누르면 <b>실제 PayPal 결제 링크</b>로 바로 연결됩니다. 승인 완료 시 즉시 캐쉬가 지급돼요.</div>`;
       const packCards = BM_CASH_PACKS.map((pk) => `<div class="ph-card">
         <span class="bm-swatch" style="background:linear-gradient(135deg,#0070ba,#003087);color:#fff;font-size:18px">🅿️</span>
         <div class="flex-1 min-w-0">
@@ -461,15 +632,87 @@ export const phone = {
       return `${tabs}${walletBar}${adminBanner}${cashNotice}<div class="ph-list">${packCards}</div>`;
     }
 
-    const notice = `<div class="ph-small" style="line-height:1.4">이장 · 도장 관장을 깨면 품목이 해금됩니다. 캐쉬 구매 시 <b>모든 마을 밭 우편함</b>으로 배송돼요.${mailPending ? ` <span class="ph-ok">(미수령 ${mailPending}개)</span>` : ''}</div>`;
+    if (this.shopTab === 'item') {
+      const candyCount = countItem(me, 'star_candy');
+      const ticketCount = countItem(me, 'name_ticket');
+      const candyProd = BM_PRODUCT_MAP.star_candy;
+      const ticketProd = BM_PRODUCT_MAP.name_ticket;
+
+      const candyTargets = me.party.length
+        ? `<div class="ph-acts" style="flex-wrap:wrap;margin-top:4px">${me.party.map((c, idx) => `<button data-usecandy="${idx}" class="ph-btn sm" ${candyCount < 1 || c.level >= 100 ? 'disabled' : ''}>🍬 ${esc(SPECIES[c.species].name)} Lv.${c.level}${c.level >= 100 ? ' (MAX)' : ` → Lv.${c.level + 1} 적용`}</button>`).join('')}</div>`
+        : `<div class="ph-small" style="margin-top:4px">파트너 루미를 받은 뒤 바로 레벨업에 사용할 수 있어요.</div>`;
+
+      const itemCards = `
+        <div class="ph-card ph-col">
+          <div style="display:flex;align-items:center;gap:8px;width:100%">
+            <span class="bm-swatch" style="background:#eef7ff"><span class="px-icon" style="${iconStyle('star_candy', 28)}"></span></span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1 flex-wrap"><b class="text-xs">${esc(candyProd.name)}</b><span class="bm-lock">≈ $1.00</span><span class="ph-small">· 보유 ${candyCount}개</span></div>
+              <div class="ph-small" style="line-height:1.3">${esc(candyProd.desc)}</div>
+            </div>
+            <button data-bmbuy="star_candy" class="bm-pay-pill">💎 ${candyProd.priceKrw.toLocaleString('ko-KR')} 구매</button>
+          </div>
+          ${candyTargets}
+        </div>
+        <div class="ph-card ph-col">
+          <div style="display:flex;align-items:center;gap:8px;width:100%">
+            <span class="bm-swatch" style="background:#fff6de"><span class="px-icon" style="${iconStyle('name_ticket', 28)}"></span></span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1 flex-wrap"><b class="text-xs">${esc(ticketProd.name)}</b><span class="bm-lock">≈ $4.00</span><span class="ph-small">· 보유 ${ticketCount}장</span></div>
+              <div class="ph-small" style="line-height:1.3">${esc(ticketProd.desc)}</div>
+            </div>
+            <button data-bmbuy="name_ticket" class="bm-pay-pill">💎 ${ticketProd.priceKrw.toLocaleString('ko-KR')} 구매</button>
+          </div>
+          <div class="ph-small" style="margin-top:2px">현재 닉네임: <b>${esc(me.name)}</b> (멀티플레이 중복 시 2, 3… 자동 부여)</div>
+          <div class="ph-acts" style="width:100%;margin-top:2px">
+            <input data-nameinp class="ph-input sm" type="text" maxlength="10" placeholder="새 닉네임 입력 (현재: ${esc(me.name)})" value="${esc(this.pendingNameInput)}" style="flex:1">
+            <button data-usename class="ph-btn sm" ${ticketCount < 1 ? 'disabled' : ''}>${ticketCount > 0 ? '티켓 1장 사용하여 변경' : '변경권 구매 필요'}</button>
+          </div>
+        </div>`;
+      return `${tabs}${walletBar}<div class="ph-small" style="line-height:1.4;margin-bottom:4px">구매 버튼을 누르면 <b>상세 내용물 확인 창</b>이 열리며, 구매 즉시 그 자리에서 바로 사용할 수 있어요!</div><div class="ph-list">${itemCards}</div>`;
+    }
+
     const owned = new Set(
       this.shopTab === 'theme' ? (me.ownedThemes ?? ['rural']) :
       this.shopTab === 'outfit' ? (me.ownedOutfits ?? []) :
+      this.shopTab === 'bubble' ? (me.ownedBubbles ?? ['default']) :
       (me.ownedLumiCoords ?? []),
     );
-    const pendingIds = new Set((me.mailItems ?? []).filter((g) => !g.claimed).map((g) => g.productId));
     const curTheme = me.uiTheme ?? 'rural';
     const curLumi = me.lumiCoord ?? '';
+    const curBubble = me.chatBubble ?? 'default';
+    const leadSp = me.party[0]?.species ?? 'saerok';
+    const previewStarter = STARTER_LUMI_SET.has(leadSp) ? leadSp : 'saerok';
+
+    const tabList = BM_PRODUCTS.filter((p) => p.category === this.shopTab);
+    const activePreviewProd = tabList.find((p) => p.id === this.shopPreviewId) ?? tabList[0];
+
+    // 상단 실시간 미리보기 스테이지 (항목을 하나하나 눌러 적용 모습을 먼저 확인)
+    let previewBox = '';
+    if (activePreviewProd) {
+      let pvVisual = '';
+      if (activePreviewProd.category === 'outfit') {
+        pvVisual = `<span style="${lookPortrait(activePreviewProd.id, 1.5)}"></span>`;
+      } else if (activePreviewProd.category === 'lumi') {
+        pvVisual = `<div style="display:flex;gap:8px;align-items:center">${STARTER_LUMI_IDS.map((sp) => `<span class="lumi-icon" style="display:inline-block;background-image:url(${lumiSheetUrl(sp, activePreviewProd.id)});width:40px;height:40px;background-size:240px 40px;image-rendering:pixelated"></span>`).join('')}</div>`;
+      } else if (activePreviewProd.category === 'bubble') {
+        pvVisual = this.bubblePreviewHtml(activePreviewProd.id, '안녕! 반가워요 ✨', true);
+      } else {
+        const th = UI_THEMES[activePreviewProd.id] ?? UI_THEMES.rural;
+        pvVisual = `<span style="padding:6px 10px;border-radius:8px;background:${th.panel};color:${th.text};border:2px solid ${th.borderBright};font-size:11px;font-weight:700">${esc(th.name)}</span>`;
+      }
+      previewBox = `<div class="ph-card" style="background:rgba(255,248,236,0.95);border:2px solid #e0a43a;margin-bottom:5px;padding:6px 10px;gap:10px">
+        ${pvVisual}
+        <div class="flex-1 min-w-0">
+          <div class="ph-small" style="color:#8a5a32;font-weight:700">🔍 미리보기 중: ${esc(activePreviewProd.name)}</div>
+          <div class="ph-small" style="line-height:1.3">아래 목록을 하나씩 눌러 적용 모습을 먼저 확인하고, <b>[구매]</b>를 눌러 상세 창에서 구매하세요!</div>
+        </div>
+      </div>`;
+    }
+
+    const notice = this.shopTab === 'lumi'
+      ? `<div class="ph-card" style="background:rgba(95,192,74,0.14);border-color:#5fc04a;padding:5px 8px;margin-bottom:4px"><div class="ph-small" style="line-height:1.3">🌱💧🔥 <b>기본 스타팅 루미 3종 (새록 · 찰랑 · 모락) 전용 치장 아이템</b> — 새록·찰랑·모락 스프라이트에 직접 그려진 전용 모습으로 적용됩니다!</div></div>`
+      : '';
 
     let extra = '';
     if (this.shopTab === 'theme') {
@@ -478,40 +721,66 @@ export const phone = {
       extra = `<div class="ph-card ${on ? 'lead' : ''}">
         <span class="bm-swatch" style="background:linear-gradient(135deg,${r.panel},${r.border})"></span>
         <div class="flex-1 min-w-0"><b>${esc(r.name)}</b><div class="ph-small">${esc(r.desc)}</div></div>
-        ${on ? '<span class="ph-ok">✔ 적용 중</span>' : '<button data-bmeq="theme:rural" class="ph-btn sm">적용</button>'}
+        ${on ? '<span class="ph-ok">✔ 적용 중</span>' : '<button data-bmeq="theme:rural" class="ph-btn sm">적용하기</button>'}
       </div>`;
-    } else if (this.shopTab === 'lumi' && curLumi) {
-      extra = `<div class="ph-card"><div class="flex-1 text-xs">현재 루미 코디: <b>${esc(BM_PRODUCT_MAP[curLumi]?.name ?? curLumi)}</b></div><button data-bmeq="lumi:" class="ph-btn sm ghost">해제</button></div>`;
+    } else if (this.shopTab === 'outfit') {
+      const isBasic = !me.look.startsWith('bm_');
+      const baseLook = me.look.startsWith('f') ? 'f1' : 'm1';
+      extra = `<div class="ph-card ${isBasic ? 'lead' : ''}">
+        <span class="bm-swatch" style="background:#f3dfb4"><span style="${lookPortrait(isBasic ? me.look : baseLook, 1)}"></span></span>
+        <div class="flex-1 min-w-0"><b>기본 트레이너 의상</b><div class="ph-small">언제든 기본 의상(남/여)으로 즉시 돌아갈 수 있어요.</div></div>
+        <div class="ph-acts">
+          <button data-bmeq="outfit:m1" class="ph-btn sm ${me.look === 'm1' ? '' : 'ghost'}">남(기본)</button>
+          <button data-bmeq="outfit:f1" class="ph-btn sm ${me.look === 'f1' ? '' : 'ghost'}">여(기본)</button>
+        </div>
+      </div>`;
+    } else if (this.shopTab === 'lumi') {
+      extra = `<div class="ph-card ${!curLumi ? 'lead' : ''}">
+        <span class="bm-swatch" style="background:#eef5ea"><span class="lumi-icon" style="display:inline-block;background-image:url(assets/lumi/${previewStarter}.png);width:32px;height:32px;background-size:192px 32px"></span></span>
+        <div class="flex-1 min-w-0"><b>기본 스타팅 루미 모습</b><div class="ph-small">현재 치장: ${curLumi ? esc(BM_PRODUCT_MAP[curLumi]?.name ?? curLumi) : '없음 (기본 모습)'}</div></div>
+        ${curLumi ? '<button data-bmeq="lumi:" class="ph-btn sm ghost">치장 해제</button>' : '<span class="ph-ok">✔ 기본</span>'}
+      </div>`;
+    } else if (this.shopTab === 'bubble') {
+      const d = CHAT_BUBBLES.default;
+      const on = curBubble === 'default';
+      extra = `<div class="ph-card ${on ? 'lead' : ''}">
+        ${this.bubblePreviewHtml('default', '안녕!', true)}
+        <div class="flex-1 min-w-0"><b>${esc(d.name)}</b><div class="ph-small">${esc(d.desc)}</div></div>
+        ${on ? '<span class="ph-ok">✔ 적용 중</span>' : '<button data-bmeq="bubble:default" class="ph-btn sm">적용하기</button>'}
+      </div>`;
     }
 
-    const cards = BM_PRODUCTS.filter((p) => p.category === this.shopTab).map((p) => {
+    const cards = tabList.map((p) => {
       const isOwned = owned.has(p.id);
-      const inMail = pendingIds.has(p.id);
       const u = isBmUnlocked(p, me, isAdmin);
-      const isEq = (p.category === 'theme' && curTheme === p.id) || (p.category === 'outfit' && me.look === p.id) || (p.category === 'lumi' && curLumi === p.id);
+      const isEq =
+        (p.category === 'theme' && curTheme === p.id) ||
+        (p.category === 'outfit' && me.look === p.id) ||
+        (p.category === 'lumi' && curLumi === p.id) ||
+        (p.category === 'bubble' && curBubble === p.id);
+      const isPreview = activePreviewProd?.id === p.id;
       const thumb =
         p.category === 'outfit' ? `<span class="bm-swatch" style="background:#f3dfb4"><span style="${lookPortrait(p.id, 1)}"></span></span>` :
-        p.category === 'lumi' ? `<span class="bm-swatch" style="background:#eef5ea">${lumiCoordBadgeHtml(p.id, 30)}</span>` :
+        p.category === 'lumi' ? `<span class="bm-swatch" style="background:#eef5ea">${lumiCoordBadgeHtml(p.id, 32, previewStarter)}</span>` :
+        p.category === 'bubble' ? this.bubblePreviewHtml(p.id, '안녕♪', true) :
         `<span class="bm-swatch" style="background:linear-gradient(135deg,${p.previewColor},${p.accentColor})"></span>`;
       const action = isEq
         ? '<span class="ph-ok">✔ 적용 중</span>'
         : isOwned
           ? `<button data-bmeq="${p.category}:${p.id}" class="ph-btn sm">적용하기</button>`
-          : inMail
-            ? '<span class="bm-lock">📮 우편함 도착</span>'
-            : !u.unlocked
-              ? `<span class="bm-lock">🔒 ${esc(p.town)}</span>`
-              : `<button data-bmbuy="${p.id}" class="bm-pay-pill">💎 ${p.priceKrw.toLocaleString('ko-KR')}</button>`;
-      return `<div class="ph-card ${isEq ? 'lead' : !u.unlocked && !isOwned && !inMail ? 'locked' : ''}">
+          : !u.unlocked
+            ? `<span class="bm-lock">🔒 ${esc(p.town)}</span>`
+            : `<button data-bmbuy="${p.id}" class="bm-pay-pill">💎 ${p.priceKrw.toLocaleString('ko-KR')} 구매</button>`;
+      return `<div data-bmpreview="${p.id}" class="ph-card ${isEq ? 'lead' : !u.unlocked && !isOwned ? 'locked' : ''}" style="cursor:pointer;${isPreview ? 'outline:2px solid #e0a43a;' : ''}">
         ${thumb}
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1 flex-wrap"><b class="text-xs">${esc(p.name)}</b><span class="ph-small">· ${esc(p.town)}</span></div>
-          <div class="ph-small" style="line-height:1.3">${esc(u.unlocked || isOwned || inMail ? p.desc : u.reason)}</div>
+          <div class="flex items-center gap-1 flex-wrap"><b class="text-xs">${esc(p.name)}</b>${p.category === 'lumi' ? '<span class="bm-lock">기본 루미 3종 전용</span>' : `<span class="ph-small">· ${esc(p.town)}</span>`}</div>
+          <div class="ph-small" style="line-height:1.3">${esc(u.unlocked || isOwned ? p.desc : u.reason)}</div>
         </div>
         ${action}
       </div>`;
     }).join('');
-    return `${tabs}${walletBar}${adminBanner}${notice}<div class="ph-list">${extra}${cards}</div>`;
+    return `${tabs}${walletBar}${adminBanner}${previewBox}${notice}<div class="ph-list">${extra}${cards}</div>`;
   },
 
   // ── 친구 ──
@@ -528,8 +797,22 @@ export const phone = {
     if (this.confirmReset) return `<div class="ph-empty">정말 처음부터 다시 시작할까요?<br><span class="ph-bad">캐릭터 · 가방 · 루미 · 농장이 모두 지워져요.</span></div>
       <div class="ph-stack"><button data-set="yes" class="ph-btn danger">네, 초기화할게요</button><button data-set="no" class="ph-btn">아니요</button></div>`;
     const sw = (k: string, label: string, on: boolean) => `<button data-set="${k}" class="ph-switch ${on ? 'on' : ''}"><span>${label}</span><i></i></button>`;
+    const sfxPct = Math.round(sfx.volume * 100);
+    const bgmPct = Math.round(music.volume * 100);
     return `<div class="ph-stack">
-        ${sw('sound', '효과음', !sfx.muted)}${sw('steps', '발소리', sfx.stepsOn)}${sw('music', '배경음악', music.on)}${sw('view25d', '2.5D 입체 시점 (V)', Stage3D.enabled)}
+        ${sw('sound', '효과음', !sfx.muted)}
+        <div class="ph-card" style="padding:8px 12px;display:flex;align-items:center;gap:8px">
+          <span class="text-xs" style="min-width:74px">🔔 효과음 볼륨</span>
+          <input data-phvol="sfx" type="range" min="0" max="100" value="${sfxPct}" style="flex:1;accent-color:#5fc04a" />
+          <b data-phvollbl="sfx" class="text-xs" style="min-width:34px;text-align:right">${sfxPct}%</b>
+        </div>
+        ${sw('steps', '발소리', sfx.stepsOn)}
+        ${sw('music', '배경음악', music.on)}
+        <div class="ph-card" style="padding:8px 12px;display:flex;align-items:center;gap:8px">
+          <span class="text-xs" style="min-width:74px">🎵 배경음 볼륨</span>
+          <input data-phvol="music" type="range" min="0" max="100" value="${bgmPct}" style="flex:1;accent-color:#5fc04a" />
+          <b data-phvollbl="music" class="text-xs" style="min-width:34px;text-align:right">${bgmPct}%</b>
+        </div>
       </div>
       <div class="ph-sec">저장 <span>${esc(c.storage())}</span></div>
       <div class="ph-stack">
@@ -554,6 +837,23 @@ export const phone = {
       n.querySelector<HTMLButtonElement>('[data-arefresh]')?.addEventListener('click', () => { this.adminMsg = ''; void this.adminLoad(); });
       n.querySelectorAll<HTMLButtonElement>('[data-resolve]').forEach((b) => { b.onclick = () => void this.adminRun({ op: 'resolve', id: b.dataset.resolve! }); });
       n.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.ph-input').forEach((el) => el.addEventListener('keydown', (e) => e.stopPropagation()));
+      const uSearch = n.querySelector<HTMLInputElement>('[data-usearch]');
+      if (uSearch) {
+        uSearch.addEventListener('input', () => {
+          this.adminUserQuery = uSearch.value;
+          const pos = uSearch.selectionStart ?? uSearch.value.length;
+          this.render();
+          const nextInp = this.node?.querySelector<HTMLInputElement>('[data-usearch]');
+          if (nextInp) { nextInp.focus(); nextInp.setSelectionRange(pos, pos); }
+        });
+      }
+      n.querySelectorAll<HTMLButtonElement>('[data-usel]').forEach((b) => {
+        b.onclick = () => {
+          sfx.play('tap');
+          this.adminSelUid = b.dataset.usel ?? '';
+          this.render();
+        };
+      });
       n.querySelectorAll<HTMLButtonElement>('[data-aop]').forEach((b) => {
         b.onclick = () => {
           const op = b.dataset.aop!, uid = b.dataset.uid!;
@@ -603,27 +903,102 @@ export const phone = {
     n.querySelectorAll<HTMLButtonElement>('[data-bmpack]').forEach((b) => {
       b.onclick = () => { const pk = BM_CASH_PACK_MAP[b.dataset.bmpack!]; if (pk) { sfx.play('tap'); c.buyCashPack?.(pk); } };
     });
-    n.querySelectorAll<HTMLButtonElement>('[data-bmtab]').forEach((b) => { b.onclick = () => { sfx.play('tap'); this.shopTab = b.dataset.bmtab as 'cash' | BmCategory; this.render(); }; });
-    n.querySelectorAll<HTMLButtonElement>('[data-bmbuy]').forEach((b) => {
+    n.querySelectorAll<HTMLButtonElement>('[data-bmtab]').forEach((b) => {
       b.onclick = () => {
+        sfx.play('tap');
+        this.shopTab = b.dataset.bmtab as 'cash' | BmCategory;
+        this.shopDetailId = '';
+        this.shopPreviewId = '';
+        c.previewBm?.('', '');
+        this.render();
+      };
+    });
+    n.querySelectorAll<HTMLElement>('[data-bmpreview]').forEach((card) => {
+      card.onclick = (ev) => {
+        if ((ev.target as HTMLElement).closest('button')) return;
+        const pid = card.dataset.bmpreview!;
+        const prod = BM_PRODUCT_MAP[pid];
+        if (!prod) return;
+        sfx.play('tap');
+        this.shopPreviewId = pid;
+        c.previewBm?.(prod.category, prod.id);
+        this.render();
+      };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-bmbuy]').forEach((b) => {
+      b.onclick = (ev) => {
+        ev.stopPropagation();
         const prod = BM_PRODUCT_MAP[b.dataset.bmbuy!];
         if (!prod) return;
         sfx.play('tap');
-        if ((me.cash ?? 0) < prod.priceKrw) {
-          this.shopTab = 'cash';
-          void c.buyBm?.(prod);
-          this.render();
-          return;
-        }
-        void c.buyBm?.(prod);
+        this.shopPreviewId = prod.id;
+        c.previewBm?.(prod.category, prod.id);
+        this.shopDetailId = prod.id;
+        this.render();
       };
     });
-    n.querySelectorAll<HTMLButtonElement>('[data-bmeq]').forEach((b) => {
+    n.querySelector<HTMLButtonElement>('[data-bmcancel]')?.addEventListener('click', () => {
+      sfx.play('tap');
+      this.shopDetailId = '';
+      this.render();
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-bmcancel]').forEach((b) => {
       b.onclick = () => {
+        sfx.play('tap');
+        this.shopDetailId = '';
+        this.render();
+      };
+    });
+    n.querySelector<HTMLButtonElement>('[data-bmconfirm]')?.addEventListener('click', (ev) => {
+      const pid = (ev.currentTarget as HTMLButtonElement).dataset.bmconfirm!;
+      const prod = BM_PRODUCT_MAP[pid];
+      if (!prod) return;
+      sfx.play('confirm');
+      void c.buyBm?.(prod).then((ok) => {
+        if (ok) this.shopDetailId = '';
+        this.render();
+      });
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-bmeq]').forEach((b) => {
+      b.onclick = (ev) => {
+        ev.stopPropagation();
         const [cat, id] = b.dataset.bmeq!.split(':');
         sfx.play('confirm');
         c.equipBm?.(cat as BmCategory, id ?? '');
       };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-usecandy]').forEach((b) => {
+      b.onclick = () => {
+        const idx = Number(b.dataset.usecandy ?? 0);
+        void c.useCandy?.(idx).then(() => this.render());
+      };
+    });
+    const nameInp = n.querySelector<HTMLInputElement>('[data-nameinp]');
+    if (nameInp) {
+      const syncVal = () => { this.pendingNameInput = nameInp.value; };
+      nameInp.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          syncVal();
+          n.querySelector<HTMLButtonElement>('[data-usename]')?.click();
+        }
+      });
+      nameInp.addEventListener('input', syncVal);
+      nameInp.addEventListener('change', syncVal);
+      nameInp.addEventListener('keyup', syncVal);
+    }
+    n.querySelector<HTMLButtonElement>('[data-usename]')?.addEventListener('click', () => {
+      const inpEl = n.querySelector<HTMLInputElement>('[data-nameinp]');
+      const val = (inpEl?.value || this.pendingNameInput).trim();
+      if (!val) { sfx.play('error'); return; }
+      void c.changeName?.(val).then((r) => {
+        if (r?.ok) {
+          this.pendingNameInput = '';
+          this.adminData = null;
+          this.render();
+        }
+      });
     });
     n.querySelectorAll<HTMLButtonElement>('[data-partner]').forEach((b) => { b.onclick = () => { sfx.play('confirm'); c.setPartner(Number(b.dataset.partner)); }; });
     n.querySelectorAll<HTMLButtonElement>('[data-item]').forEach((b) => { b.onclick = () => { sfx.play('tap'); this.bagPick = this.bagPick === b.dataset.item ? '' : b.dataset.item!; this.render(); }; });
@@ -641,7 +1016,6 @@ export const phone = {
         if (k === 'sound') sfx.setMuted(!sfx.muted);
         else if (k === 'steps') sfx.setSteps(!sfx.stepsOn);
         else if (k === 'music') music.setOn(!music.on);
-        else if (k === 'view25d') { Stage3D.enabled = !Stage3D.enabled; this.refresh(); }
         else if (k === 'save') c.save();
         else if (k === 'reset') this.confirmReset = true;
         else if (k === 'no') this.confirmReset = false;
@@ -649,6 +1023,16 @@ export const phone = {
         else if (k === 'title') { this.close(); c.toTitle(); return; }
         this.render();
       };
+    });
+    n.querySelectorAll<HTMLInputElement>('[data-phvol]').forEach((inp) => {
+      inp.addEventListener('input', () => {
+        const v = Number(inp.value) / 100;
+        const k = inp.dataset.phvol;
+        if (k === 'sfx') sfx.setVolume(v);
+        else if (k === 'music') music.setVolume(v);
+        const lbl = n.querySelector<HTMLElement>(`[data-phvollbl="${k}"]`);
+        if (lbl) lbl.textContent = `${Math.round(v * 100)}%`;
+      });
     });
     const tip = n.querySelector<HTMLDivElement>('.ph-tip');
     if (tip) n.querySelectorAll<HTMLElement>('.ph-pin').forEach((p) => {

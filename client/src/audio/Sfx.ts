@@ -6,7 +6,10 @@ interface Tone { f: number; f2?: number; t: number; d: number; w?: Wave; v?: num
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;   // 최종 출력 (효과음 버스 + 음악 버스)
 let sfxBus: GainNode | null = null;
+let musicBus: GainNode | null = null;
 let muted = (() => { try { return localStorage.getItem('sf:mute') === '1'; } catch { return false; } })();
+let sfxVol = (() => { try { const v = Number(localStorage.getItem('sf:sfxVol')); return Number.isFinite(v) && localStorage.getItem('sf:sfxVol') !== null ? Math.max(0, Math.min(1, v)) : 0.8; } catch { return 0.8; } })();
+let bgmVol = (() => { try { const v = Number(localStorage.getItem('sf:bgmVol')); return Number.isFinite(v) && localStorage.getItem('sf:bgmVol') !== null ? Math.max(0, Math.min(1, v)) : 0.8; } catch { return 0.8; } })();
 let noiseBuf: AudioBuffer | null = null;
 let stepsOn = (() => { try { return localStorage.getItem('sf:steps') !== '0'; } catch { return true; } })();
 /** 발소리 전용 음량 (효과음 버스 안에서 한 번 더 줄임) */
@@ -23,7 +26,8 @@ function ac() {
     const limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -14; limiter.knee.value = 12; limiter.ratio.value = 6; limiter.attack.value = 0.004; limiter.release.value = 0.2;
     master.connect(limiter).connect(ctx.destination);
-    sfxBus = ctx.createGain(); sfxBus.gain.value = muted ? 0 : 0.32; sfxBus.connect(master);
+    sfxBus = ctx.createGain(); sfxBus.gain.value = muted ? 0 : 0.4 * sfxVol; sfxBus.connect(master);
+    musicBus = ctx.createGain(); musicBus.gain.value = bgmVol; musicBus.connect(master);
     stepBus = ctx.createGain(); stepBus.gain.value = 1.9; stepBus.connect(sfxBus);
     if (document.hidden || !document.hasFocus()) master.gain.value = 0;
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 1.5, ctx.sampleRate);
@@ -216,8 +220,24 @@ export const sfx = {
   },
   get stepsOn() { return stepsOn; },
   setSteps(on: boolean) { stepsOn = on; try { localStorage.setItem('sf:steps', on ? '1' : '0'); } catch { /* 무시 */ } },
-  setMuted(m: boolean) { muted = m; try { localStorage.setItem('sf:mute', m ? '1' : '0'); } catch { /* 무시 */ } if (sfxBus) sfxBus.gain.value = m ? 0 : 0.32; },
+  setMuted(m: boolean) { muted = m; try { localStorage.setItem('sf:mute', m ? '1' : '0'); } catch { /* 무시 */ } if (sfxBus) sfxBus.gain.value = m ? 0 : 0.4 * sfxVol; },
+  get volume() { return sfxVol; },
+  setVolume(v: number) {
+    sfxVol = Math.max(0, Math.min(1, v));
+    try { localStorage.setItem('sf:sfxVol', String(sfxVol)); } catch { /* 무시 */ }
+    if (sfxVol > 0 && muted) {
+      muted = false;
+      try { localStorage.setItem('sf:mute', '0'); } catch { /* 무시 */ }
+    }
+    if (sfxBus) sfxBus.gain.value = muted ? 0 : 0.4 * sfxVol;
+  },
+  get bgmVolume() { return bgmVol; },
+  setBgmVolume(v: number) {
+    bgmVol = Math.max(0, Math.min(1, v));
+    try { localStorage.setItem('sf:bgmVol', String(bgmVol)); } catch { /* 무시 */ }
+    if (musicBus) musicBus.gain.value = bgmVol;
+  },
 };
 
 /** 음악 모듈이 같은 오디오 컨텍스트를 쓰도록 (첫 입력 전에는 null) */
-export const audioOut = () => { const c = ac(); return c && master ? { ctx: c, out: master, noise: noiseBuf! } : null; };
+export const audioOut = () => { const c = ac(); return c && musicBus ? { ctx: c, out: musicBus, noise: noiseBuf! } : null; };

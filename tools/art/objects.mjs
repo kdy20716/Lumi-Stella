@@ -608,3 +608,100 @@ export function buildGlint() {
   for (const [x, y, c] of [[8, 10, '#ffffff'], [7, 10, '#fff4b0'], [9, 10, '#fff4b0'], [8, 9, '#fff4b0'], [8, 11, '#fff4b0'], [6, 10, '#ffd65a'], [10, 10, '#ffd65a'], [8, 8, '#ffd65a'], [8, 12, '#ffd65a'], [11, 7, '#fff4b0'], [5, 13, '#fff4b0']]) t.set(x, y, c);
   return t;
 }
+
+/** 빙판 미끄럼 바닥 타일 */
+export function buildIceTile() {
+  const t = new Img(16, 16);
+  t.rect(0, 0, 16, 16, '#8cdaf8');
+  t.rect(1, 1, 14, 14, '#aae9ff');
+  t.hline(0, 0, 16, '#d6f7ff');
+  t.line(2, 5, 6, 1, '#ffffff');
+  t.line(3, 6, 7, 2, '#e8fbff');
+  t.line(9, 13, 14, 8, '#ffffff');
+  t.line(10, 14, 14, 10, '#72c2ea');
+  return t;
+}
+
+/** 방향 강제 이동 패드 (4프레임: 0=위, 1=오른쪽, 2=아래, 3=왼쪽) */
+export function buildArrowPad() {
+  const t = new Img(64, 16);
+  for (let f = 0; f < 4; f++) {
+    const ox = f * 16;
+    t.rect(ox + 1, 1, 14, 14, '#242e40');
+    t.rect(ox + 2, 2, 12, 12, '#34445c');
+    const drawPx = (px, py, c) => {
+      let rx = px, ry = py;
+      if (f === 1) { rx = 15 - py; ry = px; }
+      else if (f === 2) { rx = 15 - px; ry = 15 - py; }
+      else if (f === 3) { rx = py; ry = 15 - px; }
+      t.set(ox + rx, ry, c);
+    };
+    // 위쪽 화살표 원형 → 회전
+    for (const [x, y] of [[7, 3], [8, 3], [6, 4], [7, 4], [8, 4], [9, 4], [5, 5], [6, 5], [9, 5], [10, 5], [4, 6], [5, 6], [10, 6], [11, 6], [7, 7], [8, 7], [6, 8], [7, 8], [8, 8], [9, 8], [5, 9], [6, 9], [9, 9], [10, 9], [4, 10], [5, 10], [10, 10], [11, 10]]) {
+      drawPx(x, y, y <= 6 ? '#88f4ff' : '#40d0f0');
+    }
+  }
+  return t;
+}
+
+/** 워프 패드 (같은 맵 순간이동) */
+export function buildWarpPad() {
+  const t = new Img(16, 16);
+  t.ellipse(8, 8, 7, 7, '#222838');
+  t.ellipse(8, 8, 5, 5, '#b8f2ff');
+  t.ellipse(8, 8, 3, 3, '#ffffff');
+  t.set(8, 8, '#7ae0ff');
+  return t;
+}
+
+/** 바닥 스위치 버튼 (2프레임: 0=올라옴, 1=눌림) */
+export function buildSwitchBtn() {
+  const t = new Img(32, 16);
+  // frame 0: 올라온 버튼
+  t.rect(2, 2, 12, 12, '#2a303c');
+  t.rect(3, 3, 10, 10, '#4a5366');
+  t.ellipse(8, 7, 3.6, 3.6, '#ffffff');
+  t.ellipse(8, 6, 2.5, 2.2, '#e4e8f0');
+  // frame 1: 눌린 버튼
+  t.rect(18, 2, 12, 12, '#2a303c');
+  t.rect(19, 3, 10, 10, '#3e4656');
+  t.ellipse(24, 9, 3.6, 3.2, '#b0b8c8');
+  return t;
+}
+
+/** 스위치로 열리는 전자문 */
+export function buildGateBar() {
+  const t = new Img(16, 16);
+  t.rect(0, 2, 3, 12, '#3c4454');
+  t.rect(13, 2, 3, 12, '#3c4454');
+  t.hline(0, 2, 3, '#727e94');
+  t.hline(13, 2, 3, '#727e94');
+  t.rect(3, 5, 10, 2, '#ffd0dc');
+  t.rect(3, 9, 10, 2, '#ffd0dc');
+  t.hline(3, 6, 10, '#ffffff');
+  t.hline(3, 10, 10, '#ffffff');
+  return t;
+}
+
+/** 마을 모닥불 (파이어 캠프): 돌 테두리 + 장작 + 불씨 */
+export function buildCampfire() {
+  const t = new Img(24, 24), s = P.stone, w = P.wood;
+  t.ellipse(12, 17, 9, 5, '#3b2414');
+  // 둥근 돌 테두리
+  for (const [sx, sy] of [[4, 16], [7, 19], [12, 20], [17, 19], [20, 16], [18, 13], [12, 12], [6, 13]]) {
+    t.ellipse(sx, sy, 2.4, 1.8, s.base);
+    t.set(sx - 1, sy - 1, s.l1);
+  }
+  // 엇갈린 장작
+  t.line(6, 18, 18, 13, w.d1); t.line(6, 17, 18, 12, w.base);
+  t.line(6, 13, 18, 18, w.d1); t.line(6, 12, 18, 17, w.l1);
+  // 가운데 타오르는 불꽃
+  t.ellipse(12, 14, 4.5, 4, '#e63928');
+  t.ellipse(12, 13, 3.2, 4.2, '#ff8a2b');
+  t.ellipse(12, 12, 2, 3.2, '#ffd65a');
+  t.rect(11, 7, 2, 3, '#ff8a2b');
+  t.set(12, 6, '#ffd65a');
+  t.set(12, 13, '#fff8d6');
+  t.outline(O, 0.55);
+  return t;
+}

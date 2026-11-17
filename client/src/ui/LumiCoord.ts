@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { LUMI_COORDS, type LumiCoordDef } from '@shared/bmShop';
+import { LUMI_COORDS, STARTER_LUMI_SET, type LumiCoordDef } from '@shared/bmShop';
 
 /** 32×32 루미 스프라이트 비율(origin 0.5, 30/32) 위에 겹치는 32×32 픽셀 코디 아트를 그린다. */
 function drawCoordPixels(ctx: CanvasRenderingContext2D, def: LumiCoordDef) {
@@ -88,23 +88,20 @@ export function ensureLumiCoordTexture(scene: Phaser.Scene, coordId?: string): s
   return key;
 }
 
-const previewCache = new Map<string, string>();
+/** 종과 코디 ID에 맞는 루미 스프라이트 시트 경로(assets/lumi/...) 반환 */
+export function lumiSheetUrl(species: string, coordId?: string): string {
+  if (coordId && LUMI_COORDS[coordId] && STARTER_LUMI_SET.has(species)) {
+    return `assets/lumi/${species}_${coordId}.png`;
+  }
+  return `assets/lumi/${species}.png`;
+}
 
-/** DOM(휴대폰 상점 · 우편함)용 루미 + 코디 합성 픽셀 데이터 URL 또는 코디 아이콘 HTML */
-export function lumiCoordBadgeHtml(coordId: string, size = 34): string {
+/** DOM(휴대폰 상점 · 우편함)용 기본 스타팅 루미 3종(새록·찰랑·모락) 치장 미리보기 HTML */
+export function lumiCoordBadgeHtml(coordId: string, size = 34, species = 'saerok'): string {
   const def = LUMI_COORDS[coordId];
   if (!def) return '';
-  let dataUrl = previewCache.get(coordId);
-  if (!dataUrl && typeof document !== 'undefined') {
-    const c = document.createElement('canvas');
-    c.width = 32; c.height = 32;
-    const ctx = c.getContext('2d');
-    if (ctx) {
-      drawCoordPixels(ctx, def);
-      dataUrl = c.toDataURL();
-      previewCache.set(coordId, dataUrl);
-    }
-  }
-  if (!dataUrl) return `<span style="display:inline-block;width:${size}px;height:${size}px;background:${def.primary}"></span>`;
-  return `<img src="${dataUrl}" alt="${def.name}" style="width:${size}px;height:${size}px;image-rendering:pixelated;object-fit:contain" />`;
+  const sp = STARTER_LUMI_SET.has(species) ? species : 'saerok';
+  const url = lumiSheetUrl(sp, coordId);
+  return `<span class="lumi-icon" title="${def.name} (기본 스타팅 루미 3종 전용)" style="display:inline-block;background-image:url(${url});width:${size}px;height:${size}px;background-size:${size * 6}px ${size}px;image-rendering:pixelated"></span>`;
 }
+

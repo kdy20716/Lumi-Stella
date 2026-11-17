@@ -154,14 +154,16 @@ function publicOrigin(req: IncomingMessage): string {
 }
 
 function isOwnedOrPending(
-  p: { ownedThemes?: string[]; ownedOutfits?: string[]; ownedLumiCoords?: string[]; mailItems?: { productId: string }[] },
+  p: { ownedThemes?: string[]; ownedOutfits?: string[]; ownedLumiCoords?: string[]; ownedBubbles?: string[]; mailItems?: { productId: string }[] },
   productId: string,
 ): boolean {
+  if (BM_PRODUCT_MAP[productId]?.repeatable) return false;
   return (
     (p.ownedThemes?.includes(productId) ?? false) ||
     (p.ownedOutfits?.includes(productId) ?? false) ||
     (p.ownedLumiCoords?.includes(productId) ?? false) ||
-    (p.mailItems?.some((g) => g.productId === productId) ?? false)
+    (p.ownedBubbles?.includes(productId) ?? false) ||
+    (p.mailItems?.some((g) => g.productId === productId && !(g as { claimed?: boolean }).claimed) ?? false)
   );
 }
 

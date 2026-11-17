@@ -1,7 +1,100 @@
 import { STORY } from './story';
 import { ALL_PLAYER_LOOKS } from './types';
 
-export type BmCategory = 'theme' | 'outfit' | 'lumi';
+export type BmCategory = 'theme' | 'outfit' | 'lumi' | 'bubble' | 'item';
+
+export interface ChatBubbleDef {
+  id: string;
+  name: string;
+  desc: string;
+  bgTop: string;
+  bgBottom: string;
+  borderOuter: string;
+  borderInner: string;
+  textColor: string;
+  badgeColor: string;
+  ornament: 'wood' | 'sakura' | 'star' | 'mint' | 'neon' | 'crown';
+}
+
+/** 채팅 말풍선 디자인 (기본 + 상점 구매 스킨) */
+export const CHAT_BUBBLES: Record<string, ChatBubbleDef> = {
+  default: {
+    id: 'default',
+    name: '별빛 원목 말풍선 (기본)',
+    desc: '따뜻한 양피지와 금빛 테두리가 어우러진 기본 말풍선입니다.',
+    bgTop: '#fffdf7',
+    bgBottom: '#f4e0be',
+    borderOuter: '#3b2414',
+    borderInner: '#d49a45',
+    textColor: '#3b2414',
+    badgeColor: '#e0a43a',
+    ornament: 'wood',
+  },
+  bubble_sakura: {
+    id: 'bubble_sakura',
+    name: '봄꽃 벚꽃 말풍선',
+    desc: '화사한 분홍빛 벚꽃잎 장식이 달린 사랑스러운 말풍선입니다.',
+    bgTop: '#fff4f8',
+    bgBottom: '#ffd0e2',
+    borderOuter: '#9e2a52',
+    borderInner: '#ff7aa8',
+    textColor: '#4a1228',
+    badgeColor: '#ff5c8a',
+    ornament: 'sakura',
+  },
+  bubble_starlight: {
+    id: 'bubble_starlight',
+    name: '별빛 은하수 말풍선',
+    desc: '밤하늘 은하수와 반짝이는 별빛 테두리가 빛나는 신비로운 말풍선입니다.',
+    bgTop: '#1c2347',
+    bgBottom: '#11162e',
+    borderOuter: '#ffe066',
+    borderInner: '#6b7fd8',
+    textColor: '#fff9e6',
+    badgeColor: '#ffe066',
+    ornament: 'star',
+  },
+  bubble_mint: {
+    id: 'bubble_mint',
+    name: '산들 민트 말풍선',
+    desc: '바람골의 상쾌한 민트와 네잎클로버 장식이 담긴 청량한 말풍선입니다.',
+    bgTop: '#f0fffb',
+    bgBottom: '#bff5e4',
+    borderOuter: '#1c6b54',
+    borderInner: '#48c9a4',
+    textColor: '#10382c',
+    badgeColor: '#39b59a',
+    ornament: 'mint',
+  },
+  bubble_neon: {
+    id: 'bubble_neon',
+    name: '빛누리 사이버 말풍선',
+    desc: '빛누리 시티의 네온 마젠타·시안 프레임이 반짝이는 특별 말풍선입니다.',
+    bgTop: '#231342',
+    bgBottom: '#130926',
+    borderOuter: '#00f0ff',
+    borderInner: '#ff4df0',
+    textColor: '#f6eeff',
+    badgeColor: '#00f0ff',
+    ornament: 'neon',
+  },
+  bubble_royal: {
+    id: 'bubble_royal',
+    name: '챔피언 황금 왕관 말풍선',
+    desc: '순금 프레임과 루비 왕관 문양이 새겨진 최고급 로열 말풍선입니다.',
+    bgTop: '#3d1e4d',
+    bgBottom: '#21102b',
+    borderOuter: '#ffd23f',
+    borderInner: '#ff4d6d',
+    textColor: '#fff6cc',
+    badgeColor: '#ffd23f',
+    ornament: 'crown',
+  },
+};
+
+/** 루미 치장 아이템이 직접 그려진 기본 스타팅 루미 3종 (새록 · 찰랑 · 모락) */
+export const STARTER_LUMI_IDS = ['saerok', 'chalang', 'morak'] as const;
+export const STARTER_LUMI_SET = new Set<string>(STARTER_LUMI_IDS);
 
 /** 외부 결제 링크(PayPal 등)로 구매하는 유료 캐쉬 충전 상품 */
 export interface BmCashPack {
@@ -26,8 +119,11 @@ export interface BmProduct {
   category: BmCategory;
   name: string;
   desc: string;
-  /** 현금 결제 가격 (KRW, 웹 카드 결제 전용) */
+  /** 캐쉬 가격 (1,300 캐쉬 ≈ $1.00 / 5,000 캐쉬 ≈ $4.00) */
   priceKrw: number;
+  priceUsd?: number;
+  /** 반복 구매 가능 소모품/이용권 여부 */
+  repeatable?: boolean;
   town: string;
   unlock: BmUnlockReq;
   previewColor: string;
@@ -229,51 +325,94 @@ export const BM_PRODUCTS: readonly BmProduct[] = [
     priceKrw: 5900, town: '왕관 시티', unlock: U_CHAMP, previewColor: '#3a224a', accentColor: '#ffd23f',
   },
 
-  // ── 루미 코디 (9종) ─────────────────────────────────
+  // ── 기본 루미 3종(새록·찰랑·모락) 전용 치장 아이템 (9종) ──────────────
   {
     id: 'lumi_ribbon', category: 'lumi', name: '별빛 실크 리본',
-    desc: '파트너 루미 머리 위에 예쁜 핑크 골드 리본을 달아 줍니다.',
+    desc: '[기본 루미 3종(새록·찰랑·모락) 전용] 머리 위에 핑크 골드 실크 리본이 그려진 전용 모습으로 바뀝니다.',
     priceKrw: 1900, town: '별빛 마을', unlock: U_MAYOR, previewColor: '#ff5c8a', accentColor: '#ffe066',
   },
   {
     id: 'lumi_scarf', category: 'lumi', name: '바람골 하늘 머플러',
-    desc: '산들바람에 나부끼는 폭신한 하늘색 머플러를 둘러 줍니다.',
+    desc: '[기본 루미 3종(새록·찰랑·모락) 전용] 폭신한 하늘색 머플러를 두른 전용 모습으로 바뀝니다.',
     priceKrw: 1900, town: '바람골 마을', unlock: uBadge('badge_wind', '바람골 관장 세나'), previewColor: '#56c2ff', accentColor: '#ffffff',
   },
   {
     id: 'lumi_goggles', category: 'lumi', name: '물결 탐험 물안경',
-    desc: '파트너 루미 이마에 시원한 블루 탐험가 물안경을 씌워 줍니다.',
+    desc: '[기본 루미 3종(새록·찰랑·모락) 전용] 이마에 시원한 블루 탐험가 물안경을 쓴 전용 모습으로 바뀝니다.',
     priceKrw: 2500, town: '물결항', unlock: uBadge('badge_water', '물결항 관장 파도'), previewColor: '#2d8cff', accentColor: '#a8f0ff',
   },
   {
     id: 'lumi_flower', category: 'lumi', name: '단풍 꽃잎 화관',
-    desc: '단풍골 야생화로 엮은 싱그러운 꽃화관 액세서리.',
+    desc: '[기본 루미 3종(새록·찰랑·모락) 전용] 단풍골 야생화로 엮은 싱그러운 꽃화관을 쓴 전용 모습으로 바뀝니다.',
     priceKrw: 2500, town: '단풍골', unlock: uBadge('badge_leaf', '단풍골 관장 단비'), previewColor: '#ff7058', accentColor: '#77dd66',
   },
   {
     id: 'lumi_helmet', category: 'lumi', name: '쇳불 황동 고글모',
-    desc: '광산 탐험도 거뜬한 번쩍이는 브라스 안전 고글 모자.',
+    desc: '[기본 루미 3종(새록·찰랑·모락) 전용] 번쩍이는 황동 안전 고글 모자를 쓴 전용 모습으로 바뀝니다.',
     priceKrw: 2900, town: '쇳불 도시', unlock: uBadge('badge_earth', '쇳불 관장 무쇠'), previewColor: '#d49a35', accentColor: '#4d5563',
   },
   {
     id: 'lumi_cape', category: 'lumi', name: '잿빛 불꽃 히어로 망토',
-    desc: '파트너 루미 어깨에 펄럭이는 붉은 영웅 망토를 둘러 줍니다.',
+    desc: '[기본 루미 3종(새록·찰랑·모락) 전용] 어깨에 펄럭이는 붉은 영웅 망토를 두른 전용 모습으로 바뀝니다.',
     priceKrw: 3500, town: '잿빛 마을', unlock: uBadge('badge_flame', '잿빛 관장 화련'), previewColor: '#e63928', accentColor: '#ffb703',
   },
   {
     id: 'lumi_shades', category: 'lumi', name: '네온 스타 선글라스',
-    desc: '빛누리 아이돌처럼 시크한 네온 테 선글라스를 씌워 줍니다.',
+    desc: '[기본 루미 3종(새록·찰랑·모락) 전용] 빛누리 아이돌처럼 시크한 네온 선글라스를 쓴 전용 모습으로 바뀝니다.',
     priceKrw: 3500, town: '빛누리 시티', unlock: uBadge('badge_light', '빛누리 관장 샛별'), previewColor: '#1f1638', accentColor: '#00f0ff',
   },
   {
     id: 'lumi_earmuff', category: 'lumi', name: '서리 눈꽃 귀마개',
-    desc: '추운 설원에서도 따뜻한 포근한 흰색 눈꽃 귀마개.',
+    desc: '[기본 루미 3종(새록·찰랑·모락) 전용] 추운 설원에서도 포근한 흰색 눈꽃 귀마개를 쓴 전용 모습으로 바뀝니다.',
     priceKrw: 3500, town: '서리 마을', unlock: uBadge('badge_normal', '서리 관장 설아'), previewColor: '#e8f6ff', accentColor: '#7cc6fe',
   },
   {
     id: 'lumi_crown', category: 'lumi', name: '챔피언 미니 왕관',
-    desc: '별마루의 빛으로 만든 황금 보석 왕관. 루미가 빛납니다.',
+    desc: '[기본 루미 3종(새록·찰랑·모락) 전용] 황금 보석 왕관을 쓴 전용 모습으로 바뀝니다.',
     priceKrw: 4900, town: '별마루 마을', unlock: uBadge('badge_star', '별마루 관장 천문'), previewColor: '#ffd23f', accentColor: '#ff4d6d',
+  },
+
+  // ── 채팅 말풍선 스킨 (5종) ──────────────────────────────
+  {
+    id: 'bubble_sakura', category: 'bubble', name: '봄꽃 벚꽃 말풍선',
+    desc: '채팅을 칠 때 분홍빛 벚꽃 테두리와 꽃잎 장식이 달린 예쁜 말풍선이 나타납니다.',
+    priceKrw: 1900, town: '별빛 마을', unlock: { kind: 'story', step: 0, label: '언제나 구매 가능' }, previewColor: '#ffd0e2', accentColor: '#ff5c8a',
+  },
+  {
+    id: 'bubble_starlight', category: 'bubble', name: '별빛 은하수 말풍선',
+    desc: '밤하늘 은하수 배경과 황금 별빛 테두리로 꾸며진 감성 말풍선입니다.',
+    priceKrw: 2500, town: '별빛 마을', unlock: { kind: 'story', step: 0, label: '언제나 구매 가능' }, previewColor: '#1c2347', accentColor: '#ffe066',
+  },
+  {
+    id: 'bubble_mint', category: 'bubble', name: '산들 민트 말풍선',
+    desc: '산뜻한 민트 그라데이션과 새싹 장식이 돋보이는 말풍선입니다.',
+    priceKrw: 2500, town: '바람골 마을', unlock: { kind: 'story', step: 0, label: '언제나 구매 가능' }, previewColor: '#bff5e4', accentColor: '#1c6b54',
+  },
+  {
+    id: 'bubble_neon', category: 'bubble', name: '빛누리 사이버 말풍선',
+    desc: '화려한 시안·마젠타 네온 테두리가 빛나는 사이버펑크 말풍선입니다.',
+    priceKrw: 2900, town: '빛누리 시티', unlock: { kind: 'story', step: 0, label: '언제나 구매 가능' }, previewColor: '#231342', accentColor: '#00f0ff',
+  },
+  {
+    id: 'bubble_royal', category: 'bubble', name: '챔피언 황금 왕관 말풍선',
+    desc: '순금 테두리와 왕관 보석 장식이 빛나는 최고급 황금 말풍선입니다.',
+    priceKrw: 3500, town: '왕관 시티', unlock: { kind: 'story', step: 0, label: '언제나 구매 가능' }, previewColor: '#3d1e4d', accentColor: '#ffd23f',
+  },
+
+  // ── 캐쉬 소모품 · 특별 이용권 (반복 구매 · 즉시 사용) ───────────────────
+  {
+    id: 'star_candy', category: 'item', name: '별빛 사탕 (Lv.+1)',
+    desc: '포켓몬의 이상한 사탕처럼 원하는 루미의 레벨을 즉시 1 올려 줍니다. 구매 후 상점·가방에서 바로 적용 가능! (1개 ≈ $1.00)',
+    priceKrw: 1300, priceUsd: 1.00, repeatable: true,
+    town: '상시 판매', unlock: { kind: 'story', step: 0, label: '언제나 구매 가능' },
+    previewColor: '#2d8cff', accentColor: '#ffe066',
+  },
+  {
+    id: 'name_ticket', category: 'item', name: '닉네임 변경권',
+    desc: '트레이너 닉네임을 원하는 새 이름으로 즉시 변경할 수 있는 특별 변경권입니다. 구매 후 상점·가방에서 바로 사용! (1장 ≈ $4.00)',
+    priceKrw: 5000, priceUsd: 4.00, repeatable: true,
+    town: '상시 판매', unlock: { kind: 'story', step: 0, label: '언제나 구매 가능' },
+    previewColor: '#e8a838', accentColor: '#fff4d2',
   },
 ];
 
@@ -324,20 +463,22 @@ export const BM_ALL_TOTAL_KRW = BM_PRODUCTS.reduce((sum, p) => sum + p.priceKrw,
 /** 어드민 계정에 기본 지급되는 테스트 캐쉬(전체 품목 반복 테스트 가능 금액) */
 export const ADMIN_DEFAULT_CASH_KRW = Math.max(1_000_000, BM_ALL_TOTAL_KRW * 3);
 
-/** 미보유 캐쉬 상품 전부 구매 시 필요한 합계 계산 */
+/** 미보유 캐쉬 상품(영구 해금 코스메틱) 전부 구매 시 필요한 합계 계산 */
 export function remainingBmCostKrw(player: {
   ownedThemes?: readonly string[];
   ownedOutfits?: readonly string[];
   ownedLumiCoords?: readonly string[];
+  ownedBubbles?: readonly string[];
   mailItems?: readonly { productId: string }[];
 }): number {
   const owned = new Set([
     ...(player.ownedThemes ?? []),
     ...(player.ownedOutfits ?? []),
     ...(player.ownedLumiCoords ?? []),
+    ...(player.ownedBubbles ?? []),
     ...(player.mailItems ?? []).map((g) => g.productId),
   ]);
-  return BM_PRODUCTS.reduce((sum, p) => (owned.has(p.id) ? sum : sum + p.priceKrw), 0);
+  return BM_PRODUCTS.reduce((sum, p) => (p.repeatable || owned.has(p.id) ? sum : sum + p.priceKrw), 0);
 }
 
 /** 원화 표시 (₩2,900) */

@@ -111,7 +111,8 @@ export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_caul
   'badge_water', 'badge_leaf', 'badge_earth', 'badge_flame', 'badge_light', 'badge_normal', 'badge_star',
   'seeds_lumi_herb', 'seeds_fire_pepper', 'seeds_iron_bean', 'lumi_herb', 'fire_pepper', 'iron_bean', 'craft',
   'hammer', 'wood', 'fiber', 'fence_wood', 'crate_wood', 'barrel_wood', 'scarecrow', 'lamp_post', 'planter_box', 'origin_ball', 'ocarina',
-  'quick_ball', 'moon_ball', 'tide_ball', 'leaf_ball', 'ember_ball', 'repeat_ball', 'heavy_ball'];
+  'quick_ball', 'moon_ball', 'tide_ball', 'leaf_ball', 'ember_ball', 'repeat_ball', 'heavy_ball',
+  'star_candy', 'name_ticket'];
 // 도구 등급 아이콘 (구리 · 강철 · 별빛): 기본 도구 그림의 쇠 부분을 등급 색으로 바꿈
 export const TOOL_TIERS = { copper: ['#8a4a20', '#c8743a', '#f0a868'], iron: ['#4a5a70', '#9aaec4', '#e4eef8'], star: ['#8a6a10', '#e8b830', '#fff2a0'] };
 for (const base of ['hoe', 'watering_can', 'axe', 'pickaxe', 'rod']) for (const tier of Object.keys(TOOL_TIERS)) ICONS.push(`${base}_${tier}`);
@@ -185,6 +186,22 @@ export function buildIcons() {
     fish_catfish: (t) => fish(t, '#6a5a4a', '#a89070', '#3a3028', false, true),
     fish_rainbow: (t) => fish(t, '#8a9ad8', '#ffb0d0', '#5a6aa8', true),
     heart: (t) => { const h = '#e0475b'; t.rect(3, 4, 4, 4, h); t.rect(9, 4, 4, 4, h); t.rect(4, 7, 8, 3, h); t.rect(5, 10, 6, 2, h); t.rect(7, 12, 2, 1, h); t.rect(4, 5, 2, 1, '#ff9fb0'); },
+    star_candy: (t) => {
+      // 양끝 포장지 날개 + 하늘빛·별빛 구슬 사탕 (이상한 사탕 스타일)
+      t.line(2, 11, 5, 9, '#5ec8ff'); t.line(2, 14, 5, 11, '#5ec8ff'); t.line(3, 13, 5, 10, '#bdeaff');
+      t.line(11, 5, 14, 2, '#5ec8ff'); t.line(11, 7, 14, 5, '#5ec8ff'); t.line(11, 6, 13, 3, '#bdeaff');
+      t.circle(8, 8, 4.2, '#2d8cff'); t.circle(7.5, 7.5, 3, '#6ad4ff');
+      t.line(6, 10, 10, 6, '#ffe066'); t.set(6, 6, '#ffffff'); t.set(7, 6, '#ffffff');
+      t.set(3, 4, '#ffe066'); t.set(13, 11, '#ffe066');
+    },
+    name_ticket: (t) => {
+      // 황금빛 닉네임 변경권 티켓
+      t.rect(2, 4, 12, 8, '#e8a838'); t.rect(3, 5, 10, 6, '#fff4d2');
+      t.hline(2, 4, 12, '#ffe082'); t.hline(2, 11, 12, '#b87818');
+      t.vline(10, 5, 6, '#d49a35');
+      t.rect(4, 6, 4, 2, '#ff6b8a'); t.hline(4, 9, 5, '#6b4a2b');
+      t.set(11, 7, '#e8a838'); t.set(11, 9, '#e8a838');
+    },
   };
   const seedCol = { parsnip: '#e6d29a', cauliflower: '#9fd06a', tomato: '#e0574b', pumpkin: '#e8892e', lumi_herb: '#5ec8b8', fire_pepper: '#e0402a', iron_bean: '#7a8aa8' };
   const hexRgb = (h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));

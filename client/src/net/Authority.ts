@@ -1,6 +1,8 @@
 import { io, type Socket } from 'socket.io-client';
 import { mixedContentProblem } from './serverUrl';
-import type { AdminCmd, BugReport, S2C as _S2C } from '@shared/protocol';
+import { ITEMS, REGION_MAPS, SPECIES } from '@shared/data';
+import { formatKrw } from '@shared/bmShop';
+import type { AdminCmd, AdminUser, BugReport, S2C as _S2C } from '@shared/protocol';
 import type { NetPlayer, RosterEntry, S2C, C2S } from '@shared/protocol';
 import { FarmSimulation, MS_PER_10_MIN, type SimEvent } from '@shared/sim/FarmSimulation';
 import type { MapInfo } from '@shared/sim/MapInfo';
@@ -88,7 +90,8 @@ export abstract class Authority {
       case 'bmState':
         if (e.id === me.id) Object.assign(me, {
           mailItems: e.mailItems, uiTheme: e.uiTheme, ownedThemes: e.ownedThemes,
-          ownedOutfits: e.ownedOutfits, lumiCoord: e.lumiCoord, ownedLumiCoords: e.ownedLumiCoords, bmOrders: e.bmOrders,
+          ownedOutfits: e.ownedOutfits, lumiCoord: e.lumiCoord, ownedLumiCoords: e.ownedLumiCoords,
+          chatBubble: e.chatBubble, ownedBubbles: e.ownedBubbles, bmOrders: e.bmOrders,
           cash: e.cash, isAdmin: e.isAdmin,
         });
         break;
@@ -131,6 +134,11 @@ export class LocalAuthority extends Authority {
     if (saved?.time) this.sim.setWorld(saved.time);
     this.me = this.sim.addPlayer('local', saved?.save?.name ?? '트레이너', saved?.save?.look ?? '', saved?.save ?? null);
     this.me.mode = 'story';   // 이 브라우저 저장 = 스토리 모드 (혼자)
+    const params = new URLSearchParams(location.search);
+    if (params.has('admin') || params.has('offline')) {
+      this.isAdmin = true;
+      this.sim.setAdminProfile('local', true);
+    }
     this.applySnapshot(this.sim.snapshot('local'));
     this.storageKind = '이 브라우저 (혼자하기)';
     this.sim.on((event) => {
@@ -150,6 +158,58 @@ export class LocalAuthority extends Authority {
   async request(a: ActionIntent) {
     if (a.kind === 'resetSave') { this.resetting = true; LocalAuthority.clear(); return { ok: true }; }
     return this.sim.apply(this.me.id, a);
+  }
+  override async admin(cmd: AdminCmd): Promise<AdminReply> {
+    if (!this.isAdmin) return { ok: false, message: '권한 없음' };
+    switch (cmd.op) {
+      case 'users': {
+        const users: AdminUser[] = [...this.sim.players.values()].map((p) => ({
+          uid: p.id,
+          name: p.name,
+          look: p.look,
+          map: p.map,
+          mapName: REGION_MAPS[p.map]?.name ?? p.map,
+          gold: p.gold,
+          cash: p.cash ?? 0,
+          badges: p.badges.length,
+          party: p.party.map((c) => `${SPECIES[c.species]?.name ?? c.species} Lv${c.level}`).join(', '),
+          online: true,
+          world: p.world ? '친구들만' : '모두',
+        }));
+        return { ok: true, users, bans: [] };
+      }
+      case 'reports': return { ok: true, reports: [] };
+      case 'give': {
+        const t = this.sim.players.get(cmd.uid);
+        if (!t || !ITEMS[cmd.itemId]) return { ok: false, message: ' 지급 실패' };
+        if (!this.sim.grant(t, cmd.itemId, Number(cmd.qty))) return { ok: false, message: '가방이 가득 찼어요' };
+        this.save();
+        return { ok: true, message: `${ITEMS[cmd.itemId].name}을(를) 지급했어요` };
+      }
+      case 'gold': {
+        const t = this.sim.players.get(cmd.uid);
+        if (!t || !this.sim.grantGold(t, Number(cmd.amount))) return { ok: false, message: '골드 변경 실패' };
+        this.save();
+        return { ok: true, message: '골드를 바꿨어요' };
+      }
+      case 'grantCash': {
+        const t = this.sim.players.get(cmd.uid);
+        if (!t) return { ok: false, message: '대상이 없어요' };
+        if (cmd.mode === 'ensureAll') this.sim.ensureAdminCash(t, true);
+        else this.sim.grantCash(t, Number(cmd.amount));
+        this.save();
+        return { ok: true, message: `${t.name} 님 보유 캐쉬: ${formatKrw(t.cash ?? 0)}` };
+      }
+      case 'resetBm': {
+        const t = this.sim.players.get(cmd.uid);
+        if (!t) return { ok: false, message: '대상이 없어요' };
+        this.sim.resetBmState(t);
+        this.save();
+        return { ok: true, message: '캐쉬 상점 구매 기록을 초기화했어요' };
+      }
+      default:
+        return { ok: false, message: '멀티플레이 서버에서 사용할 수 있는 명령이에요' };
+    }
   }
   sendMove(x: number, y: number, dir: Dir, anim: string) { Object.assign(this.me, { x, y, dir, anim }); }
   sendAnim() { /* 혼자: 브로드캐스트 불필요 */ }

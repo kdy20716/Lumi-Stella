@@ -343,18 +343,21 @@ export function buildInteriorRoom3D(
     });
   }
 
-  // 주인공 집 1층(home)의 벽난로: 3D 돌출 벽돌 화로 · 맨틀 선반 · 모닥불 불꽃 추가
-  if (info.name === 'home') {
-    const fx0 = 6.08, fx1 = 7.92;
-    // 돌 바닥 화덕턱
-    pushBoxSolid(trimBuf, fx0 - 0.1, fx1 + 0.1, 0, 0.12, z0, z0 + 0.46, 0x8e8682);
-    // 좌·우 돌출 벽돌 기둥
-    pushBoxSolid(trimBuf, fx0, fx0 + 0.36, 0.12, 1.55, z0, z0 + 0.30, 0x888c96);
-    pushBoxSolid(trimBuf, fx1 - 0.36, fx1, 0.12, 1.55, z0, z0 + 0.30, 0x888c96);
-    // 윗부분 원목 맨틀 선반
-    pushBoxSolid(trimBuf, fx0 - 0.06, fx1 + 0.06, 2.08, 2.34, z0, z0 + 0.34, 0x9b663a);
-    // 3D 장작
-    pushBoxSolid(trimBuf, 6.68, 7.32, 0.12, 0.26, z0 + 0.06, z0 + 0.24, 0x5d3920);
+  // 실내 내부 칸막이·미로 벽(가구나 전자문이 아닌 막힌 칸)을 입체 벽체로 돌출
+  const objCells = new Set<number>();
+  for (const o of info.objects) {
+    const cx = Number(prop(o, 'cellX', -1)), cy = Number(prop(o, 'cellY', -1));
+    const cw = Number(prop(o, 'cellW', 1)), ch = Number(prop(o, 'cellH', 1));
+    if (cx < 0) continue;
+    for (let yy = cy - ch + 1; yy <= cy; yy++) for (let xx = cx; xx < cx + cw; xx++) {
+      objCells.add(yy * W + xx);
+    }
+  }
+  for (let py = z0; py < z1; py++) for (let px = x0; px < x1; px++) {
+    if (!info.isBlocked(px, py) || objCells.has(py * W + px)) continue;
+    pushBoxSolid(trimBuf, px + 0.02, px + 0.98, 0, 1.35, py + 0.02, py + 0.98, trimHex, {
+      top: 1.12, bot: 0.4, front: 0.88, back: 0.65, left: 0.74, right: 0.74,
+    });
   }
 
   const trimMesh = bufToMesh(
@@ -362,17 +365,6 @@ export function buildInteriorRoom3D(
     new THREE.MeshBasicMaterial({ vertexColors: true }),
   );
   if (trimMesh) grp.add(trimMesh);
-
-  // 주인공 집 1층 벽난로 모닥불 발광(noTint)
-  if (info.name === 'home') {
-    const glowBuf = newBuf();
-    pushBoxSolid(glowBuf, 6.76, 7.24, 0.22, 0.42, z0 + 0.08, z0 + 0.22, 0xff7b29);
-    pushBoxSolid(glowBuf, 6.88, 7.12, 0.28, 0.56, z0 + 0.10, z0 + 0.20, 0xffdf6b);
-    const fpGlowMat = new THREE.MeshBasicMaterial({ vertexColors: true });
-    fpGlowMat.userData = { noTint: true };
-    const gm = bufToMesh(glowBuf, fpGlowMat);
-    if (gm) grp.add(gm);
-  }
 
   // 5) 바닥-벽 경계 소프트 앰비언트 오클루전(깊이감)
   const aoMat = new THREE.MeshBasicMaterial({ color: 0x090507, transparent: true, opacity: 0.26, depthWrite: false });
@@ -390,17 +382,8 @@ export function buildInteriorRoom3D(
   return grp;
 }
 
-const THREE_D_TYPES = new Set([
-  'bed', 'bed_pink', 'bed_green',
-  'wardrobe', 'bookshelf', 'shelf_goods', 'shelf_goods_b', 'lab_machine',
-  'kitchen', 'counter', 'counter_cafe', 'counter_heal', 'counter_lab', 'piano',
-  'dtable', 'table_small', 'desk', 'workbench', 'starter_table',
-  'sofa', 'sofa_red', 'chair_l', 'chair_r', 'stool',
-  'forge', 'anvil', 'crate', 'barrel', 'sacks', 'millstone',
-  'attic_stairs_up', 'attic_stairs_down',
-  'pillar', 'pedestal', 'crystal', 'crystal_red', 'statue', 'heal_pad', 'candle',
-  'lamp_floor', 'plant', 'plant_b',
-]);
+// 쯔꾸르 / 포켓몬 게임 감성을 살리기 위해 실내 가구·소품은 어색한 3D 조형물 대신 정교한 픽셀아트 스프라이트(빌보드)로 렌더링한다.
+const THREE_D_TYPES = new Set<string>([]);
 
 export function hasInteriorProp3D(type: string): boolean {
   return THREE_D_TYPES.has(type);

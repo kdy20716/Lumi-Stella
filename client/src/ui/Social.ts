@@ -73,31 +73,38 @@ export const creator = {
 // ── Tab 감정표현 휠 ───────────────────────────────────
 export const emoteWheel = {
   node: null as HTMLDivElement | null, cx: 0, cy: 0, sel: -1,
+  onBlur: null as null | (() => void),
+  onMouseMove: null as null | ((ev: MouseEvent) => void),
   get open() { return !!this.node; },
   show(cx: number, cy: number, onPick: (emote: number) => void) {
     this.close();
-    this.cx = cx; this.cy = cy; this.sel = -1;
+    this.cx = cx || window.innerWidth / 2;
+    this.cy = cy || window.innerHeight / 2;
+    this.sel = -1;
     const R = 104;
     const n = el('div', 'fixed z-40 pointer-events-auto');
-    n.style.left = `${cx / uiScale()}px`; n.style.top = `${cy / uiScale()}px`;   // #ui 가 축소돼 있으면 그 좌표로
+    n.style.left = `${this.cx / uiScale()}px`;
+    n.style.top = `${this.cy / uiScale()}px`;
     const items = EMOTES.map((e, i) => {
       const a = -Math.PI / 2 + (i / EMOTES.length) * Math.PI * 2;
-      return `<button data-i="${i}" class="absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2 transition-transform" style="left:${Math.cos(a) * R}px;top:${Math.sin(a) * R}px">
+      return `<button data-i="${i}" class="absolute flex flex-col items-center transition-transform" style="left:${Math.round(Math.cos(a) * R)}px;top:${Math.round(Math.sin(a) * R)}px;transform:translate(-50%,-50%) scale(1)">
         <span data-b class="flex items-center justify-center w-[68px] h-[68px] rounded-full bg-[#fff8ec] border-4 border-[#a8683a] shadow-[0_4px_0_rgba(0,0,0,.35)]"><span style="${emoteIcon(e.id, 48)}"></span></span>
         <span class="text-xs text-white px-outline mt-0.5">${e.name}</span></button>`;
     }).join('');
-    n.innerHTML = `<div class="absolute -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-[#3b2414]/45 border-4 border-[#fff8ec]/30"></div>
-      <div data-c="center" class="absolute -translate-x-1/2 -translate-y-1/2 w-[86px] h-[86px] rounded-full bg-[#3b2414]/85 border-4 border-[#e0a43a] flex items-center justify-center text-center text-sm text-[#fff8ec] leading-tight">감정<br>표현</div>${items}`;
+    n.innerHTML = `<div class="absolute w-[300px] h-[300px] rounded-full bg-[#3b2414]/45 border-4 border-[#fff8ec]/30" style="left:0;top:0;transform:translate(-50%,-50%)"></div>
+      <div data-c="center" class="absolute w-[86px] h-[86px] rounded-full bg-[#3b2414]/85 border-4 border-[#e0a43a] flex items-center justify-center text-center text-sm text-[#fff8ec] leading-tight pointer-events-none" style="left:0;top:0;transform:translate(-50%,-50%)">감정<br>표현</div>${items}`;
     n.querySelectorAll<HTMLButtonElement>('[data-i]').forEach((b) => {
       b.onmouseenter = () => this.highlight(Number(b.dataset.i));
       b.onclick = () => { const id = EMOTES[Number(b.dataset.i)].id; this.close(); onPick(id); };
     });
     // 바깥 클릭 · 창 포커스 잃음 → 닫기 (휠이 화면에 남아 고정되는 문제 방지)
     n.querySelector<HTMLDivElement>('div')!.onclick = (ev) => { if (ev.target === ev.currentTarget) this.close(); };
-    this.onBlur = () => this.close(); window.addEventListener('blur', this.onBlur);
+    this.onBlur = () => this.close();
+    this.onMouseMove = (ev: MouseEvent) => this.move(ev.clientX, ev.clientY);
+    window.addEventListener('blur', this.onBlur);
+    window.addEventListener('mousemove', this.onMouseMove, { passive: true });
     root().appendChild(n); this.node = n;
   },
-  onBlur: null as null | (() => void),
   /** 마우스 위치 → 방향으로 칸 선택 */
   move(mx: number, my: number) {
     if (!this.node) return;
@@ -119,7 +126,11 @@ export const emoteWheel = {
   },
   /** Tab 을 떼면 선택된 감정 반환 */
   release(): number | null { const i = this.sel; this.close(); return i >= 0 ? EMOTES[i].id : null; },
-  close() { this.node?.remove(); this.node = null; this.sel = -1; if (this.onBlur) { window.removeEventListener('blur', this.onBlur); this.onBlur = null; } },
+  close() {
+    this.node?.remove(); this.node = null; this.sel = -1;
+    if (this.onBlur) { window.removeEventListener('blur', this.onBlur); this.onBlur = null; }
+    if (this.onMouseMove) { window.removeEventListener('mousemove', this.onMouseMove); this.onMouseMove = null; }
+  },
 };
 
 // ── 우편함: 편지 + 친구 초대 ──────────────────────────

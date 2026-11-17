@@ -1,4 +1,4 @@
-import type { BmCashPack, BmProduct } from '@shared/bmShop';
+import { BM_PRODUCTS, type BmCashPack, type BmProduct } from '@shared/bmShop';
 import type { Authority } from './Authority';
 
 export type ShopPgMode = 'paypal' | 'paypal-link' | 'unconfigured';
@@ -147,7 +147,25 @@ export async function purchaseAllWithAdminCash(
   auth: Authority,
 ): Promise<{ ok: boolean; boughtCount?: number; totalSpent?: number; cashRemaining?: number; error?: string }> {
   const base = auth.shopServerUrl();
-  if (!auth.online || !base) return { ok: false, error: '관리자 계정으로 서버 접속 중일 때만 사용할 수 있어요.' };
+  if (!auth.online || !base) {
+    const me = auth.me;
+    const owned = new Set([
+      ...(me.ownedThemes ?? []),
+      ...(me.ownedOutfits ?? []),
+      ...(me.ownedLumiCoords ?? []),
+      ...(me.ownedBubbles ?? []),
+    ]);
+    const unowned = BM_PRODUCTS.filter((p) => !p.repeatable && !owned.has(p.id));
+    let count = 0;
+    for (const prod of unowned) {
+      const orderId = `local_all_${Date.now().toString(36)}_${prod.id}`;
+      const r = await auth.request({ kind: 'bmDeliver', productId: prod.id, orderId, provider: 'cash-shop', useCash: true });
+      if (r.ok) count++;
+    }
+    return count > 0
+      ? { ok: true, boughtCount: count, cashRemaining: me.cash ?? 0 }
+      : { ok: false, error: '이미 모든 코스메틱 상품을 보유 중이거나 캐쉬가 부족해요.' };
+  }
   try {
     const res = await fetch(`${base}/api/shop/cash-buy-all`, {
       method: 'POST',

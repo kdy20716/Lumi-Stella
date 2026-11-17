@@ -13,6 +13,13 @@ export function buildInterior(id) {
     const wall = y < 3 || x === 0 || x === s.W - 1 || (y === s.H - 1 && (s.noDoor || x !== s.door));
     if (wall) m.blocked[y][x] = true;
   }
+  for (const [wx, wy, ww, wh] of s.walls ?? []) {
+    for (let y = wy; y < wy + wh; y++) for (let x = wx; x < wx + ww; x++) m.blocked[y][x] = true;
+  }
+  for (const [type, gx, gy, props = {}] of s.gimmicks ?? []) {
+    const { w = 1, h = 1, ...rest } = props;
+    m.place(type, gx, gy, { w, h, block: type === 'gate_bar', force: true, props: rest });
+  }
   for (const [type, cx, cy, props = {}] of s.furn) {
     const f = FURN[type] ?? EXTERNAL[type];
     const passable = type === 'attic_stairs_up' || type === 'attic_stairs_down';

@@ -21,7 +21,7 @@ export interface MailGift {
   id: string;
   orderId: string;
   productId: string;
-  category: 'theme' | 'outfit' | 'lumi';
+  category: 'theme' | 'outfit' | 'lumi' | 'bubble' | 'item';
   name: string;
   boughtAt: number;
   claimed: boolean;
@@ -152,6 +152,10 @@ export interface PlayerState {
   lumiCoord?: string;
   /** 보유한 루미 코디 id 목록 */
   ownedLumiCoords?: string[];
+  /** 현재 장착한 채팅 말풍선 스킨 id (기본 'default') */
+  chatBubble?: string;
+  /** 보유한 채팅 말풍선 스킨 id 목록 */
+  ownedBubbles?: string[];
   /** 중복 지급 방지용 처리 완료 주문 id 목록 */
   bmOrders?: string[];
   /** 중복 충전 방지용 처리 완료 캐쉬 충전 주문 id 목록 */
@@ -236,6 +240,8 @@ export interface SaveData {
   ownedOutfits?: string[];
   lumiCoord?: string;
   ownedLumiCoords?: string[];
+  chatBubble?: string;
+  ownedBubbles?: string[];
   bmOrders?: string[];
   cashOrders?: string[];
   cash?: number;
@@ -297,9 +303,13 @@ export type ActionIntent =
   | { kind: 'learn'; npc: string }                  // 공방 NPC에게 제작법 배우기
   | { kind: 'bmDeliver'; productId: string; orderId: string; provider?: string; useCash?: boolean }
   | { kind: 'bmClaimMail'; giftId: string }
-  | { kind: 'equipCosmetic'; category: 'theme' | 'outfit' | 'lumi'; itemId: string }
+  | { kind: 'equipCosmetic'; category: 'theme' | 'outfit' | 'lumi' | 'bubble'; itemId: string }
+  | { kind: 'changeName'; name: string }
+  | { kind: 'useCandy'; partyIndex: number }
   | { kind: 'resetSave' }
-  | { kind: 'goHome' };                               // 친구 세계/농장에서 내 농장으로                            // 저장 초기화 (처음부터)
+  | { kind: 'goHome' }                               // 친구 세계/농장에서 내 농장으로                            // 저장 초기화 (처음부터)
+  | { kind: 'pad'; objectId: number }                 // 워프 패드(같은 맵 순간이동)
+  | { kind: 'switch'; gateId: string };               // 바닥 스위치로 전자문 열기
 
 export interface ActionResult { ok: boolean; reason?: string; anim?: string; battle?: BattleUpdate; data?: { item?: string; qty?: number } }
 

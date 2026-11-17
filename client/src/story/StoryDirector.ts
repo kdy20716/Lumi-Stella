@@ -96,11 +96,7 @@ export class StoryDirector {
     const st = this.me.story, map = this.h.mapId, own = this.me.inst === this.me.id;
     if (st >= STORY.DONE || !this.me.look) return;
     if (map === 'home_2f' && own && st === STORY.HOME) {
-      const key = `wake2f:${this.me.id}`;
-      if (!seenNow.has(key) && !seen(key)) {
-        seenNow.add(key); markSeen(key);
-        ui.toast.push('다락방 내 방에서 눈을 떴다! 오른쪽 계단으로 1층에 내려가 보자.', 'sun');
-      }
+      void this.wakeTvScene();
       return;
     }
     if (map === 'home' && own && st === STORY.HOME) void this.rivalVisit();
@@ -121,26 +117,387 @@ export class StoryDirector {
     a.faceTo(this.h.player.x, this.h.player.y);
     const st = this.me.story;
     if (a.id === 'rival' && st === STORY.PHONE) await this.meetAtLamp(a);
-    else if (a.id === 'rival') await this.say(this.rival, ['빨리 들어와! 이장님이 기다리고 계셔!']);
+    else if (a.id === 'rival') await this.say(this.rival, ['빨리 내려가서 마을로 출발하자! 이장님이 기다리고 계셔!']);
     else if (a.id === 'mom') await this.say(MOM, ['다녀오렴! 무리하지 말고~']);
   }
 
-  // ── 1. 내 방: 친구가 찾아옴 ───────────────────────────
+  // ── 0. 2층 내 방: 포켓몬 스타일 TV 뉴스(산맥 먹구름 → 0.5초 전설 루미 실루엣 → 뉴스 캐스터 마무리 → 화면 축소) 후 라이벌과 대화 ──
+  private async wakeTvScene() {
+    const key = `wake2f:${this.me.id}`;
+    if (seenNow.has(key) || seen(key)) return;
+    seenNow.add(key); markSeen(key);
+    this.busy = true; this.h.lock();
+    const r = this.rival, name = this.me.name;
+    const [px, py] = this.h.player.cell();
+    this.h.player.play('idle', 'up');
+
+    // TV 화면이 줄어들었을 때 주인공과 라이벌이 나란히 서서 TV를 보고 있는 모습이 드러나도록 미리 배치
+    const st = this.wp('from_1f') ?? [8, 7];
+    const a = this.spawn('rival', r.look, r.name, px + 1, py, 'up');
+
+    await this.playTvNewsIntro();
+
+    await this.wait(250);
+    a.showEmote(1, 900); sfx.play('surprise');
+    a.faceTo(this.h.player.x, this.h.player.y);
+    this.h.player.play('idle', facingFromVector(a.x - this.h.player.x, a.y - this.h.player.y, 'right'));
+    await this.say(r, [
+      `방금 뉴스 특보 봤어, ${name}?! 별마루산 먹구름 속에서 잠깐 비친 그 거대한 실루엣… 전설의 루미가 분명해!`,
+      '헤헤, 어제 너무 설레서 아침 일찍부터 네 방에 올라와서 같이 티비 보고 있었잖아!',
+      '드디어 우리도 열다섯 살! 마을의 떳떳한 일원, 루미 트레이너가 되는 날이야!',
+      '티비만 보고 있을 시간이 없어! 마을회관까지 누가 먼저 도착하는지 승부야! 나 먼저 내려간다~! 슝!',
+    ]);
+    sfx.play('dash');
+    await a.walkTo(st[0] + 1, st[1], true);
+    await a.vanish();
+    sfx.play('stairs');
+    await this.step(STORY.RACE);
+    ui.toast.push('오른쪽 아래 계단으로 1층에 내려가 밖으로 나가자! 마을은 농장 동쪽 길 끝에 있어요.', 'heart');
+    this.busy = false; this.h.unlock();
+  }
+
+  /** 포켓몬스터 오프닝 스타일 TV 특별 뉴스 연출:
+   *  1) 별마루산 산맥을 덮치는 검은 먹구름
+   *  2) 번개와 함께 0.5초간 비치는 전설의 루미 거대 실루엣
+   *  3) 뉴스 스튜디오 캐스터의 클로징 멘트
+   *  4) 뉴스 화면이 점점 작아지며 2층 방 TV 앞에 나란히 서 있는 주인공과 라이벌이 나타남
+   */
+  private playTvNewsIntro(): Promise<void> {
+    return new Promise((resolve) => {
+      const wrap = document.createElement('div');
+      Object.assign(wrap.style, {
+        position: 'fixed',
+        inset: '0',
+        zIndex: '38',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(6, 8, 16, 0.92)',
+        transition: 'background 1.1s ease',
+        pointerEvents: 'auto',
+      });
+
+      const tvBox = document.createElement('div');
+      Object.assign(tvBox.style, {
+        position: 'relative',
+        width: 'min(860px, 92vw)',
+        aspectRatio: '16 / 10',
+        background: '#1c1824',
+        border: '10px solid #3a2a20',
+        outline: '4px solid #7a5438',
+        borderRadius: '18px',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.85), inset 0 0 24px rgba(0,0,0,0.9)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        transformOrigin: '50% 24%',
+        transition: 'transform 1.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease 0.95s',
+      });
+
+      const cv = document.createElement('canvas');
+      cv.width = 320;
+      cv.height = 180;
+      Object.assign(cv.style, {
+        width: '100%',
+        height: '100%',
+        imageRendering: 'pixelated',
+        display: 'block',
+      });
+
+      const badge = document.createElement('div');
+      Object.assign(badge.style, {
+        position: 'absolute',
+        top: '14px',
+        left: '16px',
+        padding: '4px 10px',
+        background: 'rgba(210, 38, 38, 0.92)',
+        border: '2px solid #ffe58a',
+        borderRadius: '6px',
+        color: '#fff',
+        fontFamily: 'Galmuri11, Galmuri9, sans-serif',
+        fontSize: '13px',
+        fontWeight: '700',
+        letterSpacing: '0.5px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+      });
+      badge.textContent = '🔴 LIVE · 루미나 뉴스 특보';
+
+      const subBox = document.createElement('div');
+      Object.assign(subBox.style, {
+        position: 'absolute',
+        left: '14px',
+        right: '14px',
+        bottom: '14px',
+        padding: '10px 14px',
+        background: 'rgba(14, 18, 34, 0.92)',
+        border: '2px solid #7aaee0',
+        borderRadius: '8px',
+        color: '#f4f8ff',
+        fontFamily: 'Galmuri11, Galmuri9, sans-serif',
+        fontSize: '14px',
+        lineHeight: '1.45',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+      });
+
+      tvBox.append(cv, badge, subBox);
+      wrap.appendChild(tvBox);
+      document.body.appendChild(wrap);
+
+      const ctx = cv.getContext('2d')!;
+      const startAt = performance.now();
+      let thunderPlayed = false;
+      let shrinking = false;
+      let finished = false;
+      let rafId = 0;
+
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        cancelAnimationFrame(rafId);
+        wrap.remove();
+        resolve();
+      };
+
+      const drawMountainScene = (elapsed: number, showSilhouette: boolean, flashAlpha: number) => {
+        const W = cv.width, H = cv.height;
+        // 1) 어두운 폭풍 하늘
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0, showSilhouette ? '#2a1f4a' : '#121528');
+        sky.addColorStop(0.6, showSilhouette ? '#4b3278' : '#242b4a');
+        sky.addColorStop(1, '#1a2030');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+
+        // 2) 멀리 보이는 산맥 능선
+        ctx.fillStyle = '#1e2538';
+        ctx.beginPath();
+        ctx.moveTo(0, 130);
+        for (const [x, y] of [[40, 96], [85, 114], [135, 74], [168, 56], [205, 82], [255, 68], [295, 102], [320, 90]]) {
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(W, H);
+        ctx.lineTo(0, H);
+        ctx.closePath();
+        ctx.fill();
+
+        // 산맥 눈 덮인 봉우리 하이라이트
+        ctx.fillStyle = showSilhouette ? '#9ab0e8' : '#435274';
+        ctx.beginPath();
+        ctx.moveTo(135, 74); ctx.lineTo(168, 56); ctx.lineTo(192, 74); ctx.lineTo(168, 68); ctx.closePath();
+        ctx.fill();
+
+        // 3) 전설의 루미 거대 실루엣 (딱 0.5초간 먹구름과 번개 속에서 비침)
+        if (showSilhouette) {
+          ctx.save();
+          // 번개 줄기
+          ctx.strokeStyle = '#fff6b0';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(198, 8); ctx.lineTo(186, 32); ctx.lineTo(194, 36); ctx.lineTo(176, 66);
+          ctx.stroke();
+
+          // 신비한 후광
+          const aura = ctx.createRadialGradient(164, 52, 4, 164, 52, 54);
+          aura.addColorStop(0, 'rgba(255, 230, 128, 0.65)');
+          aura.addColorStop(0.5, 'rgba(155, 120, 255, 0.3)');
+          aura.addColorStop(1, 'rgba(20, 16, 40, 0)');
+          ctx.fillStyle = aura;
+          ctx.fillRect(100, 0, 128, 110);
+
+          // 거대한 날개 + 뿔 달린 전설의 루미 검은 실루엣
+          ctx.fillStyle = '#090612';
+          // 왼쪽 거대 날개
+          ctx.beginPath();
+          ctx.moveTo(156, 52); ctx.lineTo(106, 22); ctx.lineTo(118, 46); ctx.lineTo(102, 58); ctx.lineTo(132, 64); ctx.lineTo(154, 62);
+          ctx.closePath(); ctx.fill();
+          // 오른쪽 거대 날개
+          ctx.beginPath();
+          ctx.moveTo(172, 52); ctx.lineTo(222, 22); ctx.lineTo(210, 46); ctx.lineTo(226, 58); ctx.lineTo(196, 64); ctx.lineTo(174, 62);
+          ctx.closePath(); ctx.fill();
+          // 몸통 · 머리 · 별의 왕관 뿔 실루엣
+          ctx.beginPath();
+          ctx.arc(164, 46, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(155, 40); ctx.lineTo(148, 22); ctx.lineTo(160, 36);
+          ctx.moveTo(173, 40); ctx.lineTo(180, 22); ctx.lineTo(168, 36);
+          ctx.moveTo(164, 35); ctx.lineTo(164, 17);
+          ctx.strokeStyle = '#090612';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+
+          // 실루엣 안에서 빛나는 황금빛 눈과 가슴의 별빛 코어
+          ctx.fillStyle = '#ffe58a';
+          ctx.fillRect(159, 44, 3, 2);
+          ctx.fillRect(166, 44, 3, 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(163, 55, 3, 3);
+          ctx.restore();
+        }
+
+        // 4) 산맥을 덮치는 거대한 어두운 먹구름 떼 (시간에 따라 산으로 몰려듦)
+        const drift = Math.min(28, (elapsed / 1000) * 12);
+        const clouds = [
+          [55 + drift, 42, 46, 18, '#141726'],
+          [115 + drift * 0.8, 34, 58, 22, '#101220'],
+          [210 - drift * 0.9, 38, 62, 22, '#111424'],
+          [158, 26 + Math.min(12, drift * 0.4), 68, 20, showSilhouette ? 'rgba(18, 16, 34, 0.55)' : '#0d101d'],
+          [85 + drift, 62, 54, 16, 'rgba(16, 19, 32, 0.88)'],
+          [230 - drift, 60, 56, 16, 'rgba(16, 19, 32, 0.88)'],
+        ] as const;
+        for (const [cx, cy, rx, ry, col] of clouds) {
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 앞쪽 침엽수 숲 실루엣
+        ctx.fillStyle = '#0d131d';
+        ctx.fillRect(0, 126, W, H - 126);
+        for (let x = 8; x < W; x += 18) {
+          const h = 16 + ((x * 7) % 10);
+          ctx.beginPath();
+          ctx.moveTo(x - 8, 128); ctx.lineTo(x, 128 - h); ctx.lineTo(x + 8, 128);
+          ctx.closePath(); ctx.fill();
+        }
+
+        if (flashAlpha > 0) {
+          ctx.fillStyle = `rgba(255, 250, 220, ${flashAlpha})`;
+          ctx.fillRect(0, 0, W, H);
+        }
+      };
+
+      const drawStudioScene = (elapsed: number) => {
+        const W = cv.width, H = cv.height;
+        // 뉴스 스튜디오 배경
+        ctx.fillStyle = '#1b2848';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#263a66';
+        for (let x = 0; x < W; x += 32) ctx.fillRect(x, 0, 16, H);
+
+        // 스튜디오 뒤쪽 자료 화면 (별마루산 먹구름 사진)
+        ctx.fillStyle = '#0f1424';
+        ctx.fillRect(34, 22, 112, 64);
+        ctx.strokeStyle = '#7aaee0';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(34, 22, 112, 64);
+        ctx.fillStyle = '#28334e';
+        ctx.beginPath();
+        ctx.moveTo(36, 84); ctx.lineTo(68, 52); ctx.lineTo(92, 42); ctx.lineTo(120, 60); ctx.lineTo(144, 84);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffe066';
+        ctx.fillRect(88, 36, 3, 2); ctx.fillRect(93, 36, 3, 2);
+
+        // 뉴스 캐스터 (도트풍 아나운서)
+        const bob = Math.floor(elapsed / 180) % 2;
+        const talk = Math.floor(elapsed / 140) % 2;
+        // 정장 어깨·몸통
+        ctx.fillStyle = '#2d4678';
+        ctx.fillRect(176, 68 + bob, 48, 42);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(194, 68 + bob, 12, 24);
+        ctx.fillStyle = '#d8473b';
+        ctx.fillRect(198, 72 + bob, 4, 20);
+        // 얼굴·머리
+        ctx.fillStyle = '#f5d0b0';
+        ctx.fillRect(184, 38 + bob, 32, 28);
+        ctx.fillStyle = '#3b2418';
+        ctx.fillRect(182, 32 + bob, 36, 12);
+        ctx.fillRect(182, 36 + bob, 6, 16);
+        ctx.fillRect(212, 36 + bob, 6, 16);
+        // 눈·입
+        ctx.fillStyle = '#1e1424';
+        ctx.fillRect(191, 49 + bob, 4, 4);
+        ctx.fillRect(205, 49 + bob, 4, 4);
+        ctx.fillStyle = '#c8453c';
+        ctx.fillRect(197, 58 + bob, 6, talk ? 4 : 2);
+
+        // 뉴스 데스크
+        ctx.fillStyle = '#e8eef8';
+        ctx.fillRect(0, 104, W, 76);
+        ctx.fillStyle = '#3b5fa8';
+        ctx.fillRect(0, 104, W, 8);
+        ctx.fillStyle = '#ffd65a';
+        ctx.fillRect(130, 114, 60, 14);
+        ctx.fillStyle = '#1b2848';
+        ctx.font = 'bold 9px Galmuri9, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('LUMINA NEWS', 160, 124);
+      };
+
+      const tick = (now: number) => {
+        if (finished) return;
+        const elapsed = now - startAt;
+
+        // 0 ~ 1700ms: 산맥에 어두운 먹구름이 몰려옴
+        // 1700 ~ 2200ms (정확히 0.5초 = 500ms): 번개와 함께 전설의 루미 실루엣 등장!
+        // 2200 ~ 2800ms: 실루엣이 사라지고 먹구름에 덮인 산맥
+        // 2800 ~ 5000ms: 뉴스 캐스터가 뉴스를 마무리함
+        // 5000 ~ 6250ms: 화면이 점점 줄어들며(Zoom-out) TV를 보고 있는 주인공과 라이벌이 나타남
+        if (elapsed < 2800) {
+          const showSilhouette = elapsed >= 1700 && elapsed < 2200;
+          if (showSilhouette && !thunderPlayed) {
+            thunderPlayed = true;
+            sfx.play('roar');
+          }
+          const flash = elapsed >= 1700 && elapsed < 1820 ? (1820 - elapsed) / 120 * 0.75 : 0;
+          drawMountainScene(elapsed, showSilhouette, flash);
+          subBox.innerHTML = showSilhouette
+            ? '『앗…! 방금 별마루산 먹구름 사이로 <b>거대한 전설의 루미 실루엣</b>이 포착되었습니다!』'
+            : '『긴급 특보입니다! 지금 별마루산 산맥 정상 일대를 거대한 먹구름이 뒤덮고 있습니다…』';
+        } else {
+          badge.textContent = '📺 루미나 뉴스 스튜디오';
+          badge.style.background = 'rgba(42, 96, 184, 0.92)';
+          drawStudioScene(elapsed);
+          subBox.innerHTML = '<b>뉴스 캐스터</b>: 『이상, 별마루산 특보였습니다. 오늘 첫 여정을 떠나는 신입 트레이너 여러분, 힘찬 하루 되십시오!』';
+        }
+
+        // 스캔라인 효과
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        for (let y = 0; y < cv.height; y += 3) ctx.fillRect(0, y, cv.width, 1);
+
+        if (elapsed >= 5000 && !shrinking) {
+          shrinking = true;
+          sfx.play('tap');
+          wrap.style.background = 'rgba(6, 8, 16, 0)';
+          tvBox.style.transform = 'translate(0, -16vh) scale(0.08)';
+          tvBox.style.opacity = '0';
+        }
+
+        if (elapsed >= 6300) {
+          finish();
+          return;
+        }
+        rafId = requestAnimationFrame(tick);
+      };
+
+      rafId = requestAnimationFrame(tick);
+    });
+  }
+
+  // ── 1. 내 집 1층: (혹시 1층에서 시작했을 때 폴백) TV 시청 중 친구가 찾아옴 ──
   private async rivalVisit() {
     this.busy = true; this.h.lock();
     const r = this.rival, name = this.me.name;
-    await this.wait(900);
+    this.h.player.play('idle', 'up');
+    await this.wait(600);
+    await this.say({ name: '📺 TV 특별방송', color: '#3a6a9a' }, [
+      '『지금 루미나 지방의 루미 리그 특별 중계와 함께, 달빛호수에서 포착된 신비한 별빛 루미 특집 방송이 진행 중입니다!』',
+    ]);
     sfx.play('door');
     const e = this.wp('entry')!;
     const a = this.spawn('rival', r.look, r.name, e[0], e[1], 'up');
     const [px, py] = this.h.player.cell();
-    await a.walkTo(px + 1, py + 1);
+    await a.walkTo(px + 1, py);
+    a.face('up');
+    await this.wait(300);
+    await this.say(r, [`우와, ${name}! 너도 이 특별방송 보고 있었구나!`]);
     a.faceTo(this.h.player.x, this.h.player.y);
     this.h.player.play('idle', facingFromVector(a.x - this.h.player.x, a.y - this.h.player.y, 'down'));
     a.showEmote(1, 900); sfx.play('surprise');
-    await this.wait(500);
+    await this.wait(400);
     await this.say(r, [
-      `${name}! 일어났어? 잘 잤어? 헤헤, 어제 너무 설레서 나는 한숨도 못 잤어!`,
       '오늘이 무슨 날인지 설마 잊은 건 아니지? 드디어 우리도 열다섯 살! 마을의 떳떳한 일원이 되는 날이잖아!',
       '굼뜨고 있을 시간이 없어! 마을까지 누가 먼저 도착하는지 승부야!',
       '그럼 먼저 간다~! 슝!',

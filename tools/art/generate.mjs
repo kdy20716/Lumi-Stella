@@ -8,7 +8,7 @@ import { Img } from './lib/img.mjs';
 import { buildTileset, buildWater, ROW, DECOR, WOOD, MISC, TILESET_COLS } from './tiles.mjs';
 import * as TW from './town.mjs';
 import * as ADV from './adventure.mjs';
-import { buildCreatureSheet, SPECIES_ART as BASE_ART, CF } from './creatures.mjs';
+import { buildCreatureSheet, SPECIES_ART as BASE_ART, CF, STARTER_COORD_SPECIES, LUMI_COORD_IDS } from './creatures.mjs';
 import { dexArt } from './dex.mjs';
 const SPECIES_ART = { ...BASE_ART, ...dexArt() };
 import { buildCharacterSheet } from './char.mjs';
@@ -82,6 +82,12 @@ image('cave_hole', 'objects/cave_hole.png', OB.buildCaveHole());
 image('spire', 'objects/spire.png', OB.buildSpire());
 image('chest', 'objects/chest.png', OB.buildChest());
 image('glint', 'objects/glint.png', OB.buildGlint());
+image('ice_tile', 'objects/ice_tile.png', OB.buildIceTile());
+sheet('arrow_pad', 'objects/arrow_pad.png', OB.buildArrowPad(), 16, 16, { originY: 1 });
+image('warp_pad', 'objects/warp_pad.png', OB.buildWarpPad());
+sheet('switch_btn', 'objects/switch_btn.png', OB.buildSwitchBtn(), 16, 16, { originY: 1 });
+image('gate_bar', 'objects/gate_bar.png', OB.buildGateBar());
+image('campfire', 'objects/campfire.png', OB.buildCampfire());
 image('stump', 'objects/stump.png', OB.buildStump());
 image('cactus', 'objects/cactus.png', RG.buildCactus());
 image('dead_tree', 'objects/dead_tree.png', RG.buildDeadTree());
@@ -142,6 +148,17 @@ for (const [id, cfg] of Object.entries(SPECIES_ART)) {
   const img = LEGEND_ART.includes(id) ? buildLegendSmall(id, CF) : buildCreatureSheet(cfg);
   sheet(`lumi_${id}`, `lumi/${id}.png`, img, CF, CF, { originY: 30 / 32 });
   manifest.lumi[id] = `lumi_${id}`;
+}
+// 기본 스타팅 루미 3종(새록·찰랑·모락) 전용 치장 아이템이 직접 그려진 스프라이트 시트 생성
+for (const sp of STARTER_COORD_SPECIES) {
+  const cfg = SPECIES_ART[sp];
+  if (!cfg) continue;
+  for (const coordId of LUMI_COORD_IDS) {
+    const k = `${sp}_${coordId}`;
+    const img = buildCreatureSheet(cfg, coordId);
+    sheet(`lumi_${k}`, `lumi/${k}.png`, img, CF, CF, { originY: 30 / 32 });
+    manifest.lumi[k] = `lumi_${k}`;
+  }
 }
 // 전설 · 환상: 배틀용 큰 그림 (96px, 2프레임)
 manifest.lumiBig = {};

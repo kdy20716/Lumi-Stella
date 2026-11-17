@@ -20,13 +20,14 @@ export interface WorldObject {
   /** 이 건물이 이어지는 실내 맵 (없으면 건물 종류로) */
   interior?: string;
   label?: string;
+  gateId?: string;
   tall: boolean;
   blocks: boolean;
 }
 
 const TALL = new Set(['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm', 'dead_tree', 'cave_mouth', 'ruin_pillar', 'portal', 'house', 'board', 'stall', 'stall_b']);
 // 풍차 날개 회전 축 위치는 맵 스폰 'windmill_hub'
-const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal', 'cave_hole', 'glint']);
+const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'attic_stairs_up', 'attic_stairs_down', 'portal', 'cave_hole', 'glint', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn']);
 // 그림자 크기 (가로 배율, 세로 배율)
 const SHADOW: Record<string, [number, number, number]> = {
   oak: [1.25, 1.3, -1], oak_apple: [1.25, 1.3, -1], oak_autumn: [1.25, 1.3, -1], pine: [1, 1.1, -1], pine_snow: [1, 1.1, -1], palm: [0.8, 0.8, -1], dead_tree: [0.9, 0.9, -1], cactus: [0.5, 0.5, 0],
@@ -155,6 +156,67 @@ export class World {
       let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
       let blockoutFacility = false;
       const sheet = m.spritesheets[type], img = m.images[type];
+      if (type === 'ice_tile' || type === 'arrow_pad' || type === 'warp_pad' || type === 'switch_btn' || type === 'gate_bar') {
+        const colHex = String(prop(o, 'color', ''));
+        const tint = colHex ? Phaser.Display.Color.HexStringToColor(colHex).color : 0xffffff;
+        const gx = cellX * TILE + (cellW * TILE) / 2;
+        const gy = (cellY - cellH + 1) * TILE + (cellH * TILE) / 2;
+        if (type === 'ice_tile') {
+          const tk = `ice2d:${cellW}x${cellH}`;
+          if (!s.textures.exists(tk)) {
+            const ct = s.textures.createCanvas(tk, cellW * TILE, cellH * TILE)!;
+            const cx = ct.getContext();
+            const src = s.textures.exists('ice_tile') ? s.textures.get('ice_tile').getSourceImage() as HTMLImageElement : null;
+            for (let yy = 0; yy < cellH; yy++) for (let xx = 0; xx < cellW; xx++) {
+              if (src) cx.drawImage(src, xx * TILE, yy * TILE);
+              else {
+                cx.fillStyle = 'rgba(148, 228, 255, 0.52)';
+                cx.fillRect(xx * TILE, yy * TILE, TILE, TILE);
+              }
+            }
+            ct.refresh();
+          }
+          sprite = s.add.image(gx, gy, tk).setOrigin(0.5, 0.5);
+        } else if (type === 'arrow_pad') {
+          const dir = String(prop(o, 'dir', 'up'));
+          const f = dir === 'right' ? 1 : dir === 'down' ? 2 : dir === 'left' ? 3 : 0;
+          sprite = s.textures.exists('arrow_pad')
+            ? s.add.sprite(gx, gy, 'arrow_pad', f).setOrigin(0.5, 0.5)
+            : s.add.image(gx, gy, 'shadow').setOrigin(0.5, 0.5).setTint(0x4fd8ff);
+        } else if (type === 'warp_pad') {
+          sprite = s.textures.exists('warp_pad')
+            ? s.add.sprite(gx, gy, 'warp_pad', 0).setOrigin(0.5, 0.5).setTint(tint)
+            : s.add.image(gx, gy, 'shadow').setOrigin(0.5, 0.5).setTint(tint);
+        } else if (type === 'switch_btn') {
+          sprite = s.textures.exists('switch_btn')
+            ? s.add.sprite(gx, gy, 'switch_btn', 0).setOrigin(0.5, 0.5).setTint(tint)
+            : s.add.image(gx, gy, 'shadow').setOrigin(0.5, 0.5).setTint(tint);
+        } else {
+          const gk = `gate2d:${cellW}x${cellH}:${colHex || 'def'}`;
+          if (!s.textures.exists(gk)) {
+            const ct = s.textures.createCanvas(gk, cellW * TILE, cellH * TILE)!;
+            const cx = ct.getContext();
+            const src = s.textures.exists('gate_bar') ? s.textures.get('gate_bar').getSourceImage() as HTMLImageElement : null;
+            for (let yy = 0; yy < cellH; yy++) for (let xx = 0; xx < cellW; xx++) {
+              if (src) cx.drawImage(src, xx * TILE, yy * TILE);
+              else {
+                cx.fillStyle = colHex || '#ff5a6e';
+                cx.fillRect(xx * TILE, yy * TILE + 5, TILE, 6);
+              }
+            }
+            ct.refresh();
+          }
+          sprite = s.add.image(gx, gy, gk).setOrigin(0.5, 0.5).setTint(tint);
+        }
+        sprite.setDepth(type === 'gate_bar' ? o.y : DEPTH.cursor - 2);
+        const wo: WorldObject = {
+          id: o.id, type, cellX, cellY, cellW, cellH, sprite, tall: false, blocks: type === 'gate_bar',
+          interact: prop<string | undefined>(o, 'interact', undefined), text: prop<string | undefined>(o, 'text', undefined),
+          label: prop<string | undefined>(o, 'label', undefined), gateId: prop<string | undefined>(o, 'gateId', undefined),
+        };
+        this.objects.push(wo);
+        continue;
+      }
       if (sheet) {
         const sp = s.add.sprite(o.x, o.y, type, 0).setOrigin(0.5, sheet.originY);
         if (s.anims.exists(`${type}:sway`)) {
@@ -275,6 +337,7 @@ export class World {
   surfaceAt(px: number, py: number): Surface {
     const cx = Math.floor(px / TILE), cy = Math.floor((py - 3) / TILE);
     if (this.map.getTileAt(cx, cy, false, 'Bridge')) return 'wood';
+    if (this.info.isIce(cx, cy)) return 'ice';
     if (this.info.isStairs(cx, cy)) return 'stone';
     if (this.interior) return TILE_FLOORS.has(this.mapId) || this.mapId.startsWith('gym_') ? 'tile' : 'wood';
     if (this.cave) return this.theme === 'ice' ? 'ice' : 'cave';
@@ -339,9 +402,19 @@ export class World {
     const o = this.objects.find((ob) => ob.id === id);
     if (!o || !o.sprite.active) return;
     for (let y = o.cellY - o.cellH + 1; y <= o.cellY; y++) for (let x = o.cellX; x < o.cellX + o.cellW; x++) this.grid.setBlocked(x, y, false);
+    if (o.gateId) this.pressSwitch(o.gateId);
     if (fx) {
       this.scene.tweens.add({ targets: [o.sprite, o.shadow].filter(Boolean), alpha: 0, scaleY: 0.2, duration: 220, onComplete: () => { o.sprite.destroy(); o.shadow?.destroy(); } });
     } else { o.sprite.destroy(); o.shadow?.destroy(); }
+  }
+
+  /** 스위치 누름 표시(2D 스프라이트 프레임 변경) */
+  pressSwitch(gateId: string) {
+    for (const o of this.objects) {
+      if (o.type === 'switch_btn' && o.gateId === gateId && o.sprite instanceof Phaser.GameObjects.Sprite && o.sprite.active) {
+        o.sprite.setFrame(1);
+      }
+    }
   }
 
   /** 매일 다시 생기는 채석장 바위 복원 */

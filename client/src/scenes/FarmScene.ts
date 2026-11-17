@@ -126,6 +126,10 @@ export class FarmScene extends Phaser.Scene {
   private story!: StoryDirector;
   private plot!: EventDirector;   // 본편 사건 (chapters.json)
   private stage3d?: Stage3D;
+  private openGates = new Set<string>();
+  private padLock = '';
+  private arrowLock = '';
+  private switchLock = '';
   /** 손에 든 가방 칸 (핫바 대신 휴대폰 › 가방에서 고름) */
   private get slot() { return this.selected; }
 
@@ -136,6 +140,7 @@ export class FarmScene extends Phaser.Scene {
     setIconIds(this.manifest.spritesheets.icons.ids ?? []);
     this.npcs = []; this.chickens = []; this.ducks = []; this.remotes.clear(); this.playing = false; this.warping = false;
     this.trainers = []; this.remotePartners.clear(); this.forageSprites.clear(); this.partner = undefined; this.fishing = undefined; this.battling = false; this.lastCell = '';
+    this.openGates.clear(); this.padLock = ''; this.arrowLock = ''; this.switchLock = '';
     this.zoom = pickZoom(this.scale.height);
 
     this.dishSprite = undefined; this.pendingRoom = false;
@@ -195,8 +200,8 @@ export class FarmScene extends Phaser.Scene {
       : { x: (info.spawns.get('player') ?? farmSpawn).x, y: (info.spawns.get('player') ?? farmSpawn).y + 5 });
     const look = this.manifest.characters[this.auth.me.look] ? this.auth.me.look : 'm1';
     this.player = new Player(this, look, start.x, start.y, this.manifest.characters[look], this.world.grid);
-    // 관리자 계정: 내 머리 위에도 [admin] 칭호 (서버가 확인한 값)
-    if (this.auth.online && this.auth.isAdmin) this.player.label = this.add.text(this.player.x, this.player.y, `[admin] ${this.auth.me.name}`, { fontFamily: 'Galmuri9, Galmuri11, sans-serif', fontSize: '8px', color: '#ff8a7a', stroke: '#3b2414', strokeThickness: 2, resolution: this.zoom }).setOrigin(0.5, 1);
+    this.player.bubbleSkin = this.auth.me.chatBubble ?? 'default';
+    this.syncPlayerLabel();
     this.player.onStep = (run) => { if (this.playing) sfx.step(this.world.surfaceAt(this.player.x, this.player.y), run); };
     this.player.onHop = () => sfx.play('hop');
     this.player.onDust = (x, y) => this.stage3d?.burst('dust', x, y);
@@ -261,8 +266,13 @@ export class FarmScene extends Phaser.Scene {
     const unsubscribe = this.auth.on((e) => this.onAuthority(e));
     this.events.once('shutdown', unsubscribe);
 
-    if (data?.authority || !titleMode) this.begin(!!(data?.spawn || data?.fromRoom));
-    else this.titleScreen();
+    if (data?.authority || !titleMode) {
+      if (!data?.authority) {
+        this.withCharacter(this.auth, () => this.scene.restart({ authority: this.auth, map: this.auth.me.map, pos: { x: this.auth.me.x, y: this.auth.me.y } } satisfies SceneData));
+      } else {
+        this.begin(!!(data?.spawn || data?.fromRoom));
+      }
+    } else this.titleScreen();
   }
 
   private onResize(size: Phaser.Structs.Size) { this.zoom = pickZoom(size.height); this.cameras.main.setZoom(this.zoom); this.fitCamera(); this.stage3d?.resize(); }
@@ -432,7 +442,9 @@ export class FarmScene extends Phaser.Scene {
         const r = await purchaseBmItemWithCash(this.auth, product);
         if (r.ok) {
           sfx.play('confirm');
-          ui.toast.push(`${product.name} 구매 완료! 모든 마을 밭 우편함에서 수령하세요.`, 'mail');
+          if (product.category === 'theme') applyUiTheme(this.auth.me.uiTheme);
+          else if (product.category === 'outfit') this.applyMyLook(this.auth.me.look, this.auth.me.name);
+          else if (product.category === 'lumi') this.syncPartner();
           phone.refresh();
           return true;
         }
@@ -441,18 +453,69 @@ export class FarmScene extends Phaser.Scene {
         phone.refresh();
         return false;
       },
-      equipBm: (category, itemId) => void this.auth.request({ kind: 'equipCosmetic', category, itemId }).then((r) => {
+      equipBm: (category, itemId) => {
+        if (category === 'item') return;
+        void this.auth.request({ kind: 'equipCosmetic', category, itemId }).then((r) => {
+          if (r.ok) {
+            if (category === 'theme') applyUiTheme(itemId);
+            else if (category === 'outfit') this.applyMyLook(itemId, this.auth.me.name);
+            else if (category === 'bubble') this.player.bubbleSkin = itemId || 'default';
+            this.syncPartner();
+            phone.refresh();
+          } else ui.toast.push('보유하지 않은 코디예요.', 'heart');
+        });
+      },
+      previewBm: (category, itemId) => {
+        const me = this.auth.me;
+        if (!category || !itemId) {
+          applyUiTheme(me.uiTheme);
+          const curSheet = this.manifest.characters[me.look] ? me.look : 'm1';
+          this.player?.setSheet(curSheet, this.manifest.characters[curSheet]);
+          this.player.bubbleSkin = me.chatBubble ?? 'default';
+          this.syncPartner();
+          return;
+        }
+        if (category === 'theme') {
+          applyUiTheme(itemId);
+        } else if (category === 'outfit') {
+          const sh = this.manifest.characters[itemId] ? itemId : 'm1';
+          this.player?.setSheet(sh, this.manifest.characters[sh]);
+        } else if (category === 'lumi') {
+          this.partner?.setCoord(itemId);
+        } else if (category === 'bubble') {
+          this.player.bubbleSkin = itemId;
+          this.player.say('예쁜 말풍선 미리보기♪', this.zoom);
+        }
+      },
+      changeName: async (newName) => {
+        const r = await this.auth.request({ kind: 'changeName', name: newName });
         if (r.ok) {
-          if (category === 'theme') applyUiTheme(itemId);
+          sfx.play('confirm');
+          this.applyMyLook(this.auth.me.look, this.auth.me.name);
+          phone.refresh();
+          return { ok: true, name: this.auth.me.name };
+        }
+        sfx.play('error');
+        return { ok: false, error: r.reason === 'no-ticket' ? '닉네임 변경권이 없어요! 상점에서 먼저 구매해 주세요.' : '새 닉네임을 입력해 주세요.' };
+      },
+      useCandy: async (partyIndex) => {
+        const r = await this.auth.request({ kind: 'useCandy', partyIndex });
+        if (r.ok) {
+          sfx.play('item');
+          music.jingle('jingle_heal');
+          this.partner?.cheer(4);
           this.syncPartner();
           phone.refresh();
-        } else ui.toast.push('보유하지 않은 코디예요.', 'heart');
-      }),
+          return true;
+        }
+        sfx.play('error');
+        return false;
+      },
       buyAllBmCash: async () => {
         const r = await purchaseAllWithAdminCash(this.auth);
         if (r.ok) {
           sfx.play('confirm');
-          ui.toast.push(`전 상품 ${r.boughtCount ?? 0}종 캐쉬 구매 완료! 모든 마을 밭 우편함에서 수령하세요.`, 'mail');
+          ui.toast.push(`전 상품 ${r.boughtCount ?? 0}종 캐쉬 구매 완료! 상점에서 바로 적용할 수 있어요.`, 'heart');
         } else {
           sfx.play('error');
           ui.toast.push(r.error ?? '일괄 구매 실패', 'heart');
@@ -534,12 +597,6 @@ export class FarmScene extends Phaser.Scene {
       if (ui.menu.open) return;
       if (e.key === 'r' || e.key === 'R') { this.openPhone('home', true); return; }
       if (e.key === 'm' || e.key === 'M') { this.openPhone('map'); return; }
-      if (e.key === 'v' || e.key === 'V') {
-        const on = this.stage3d?.toggle();
-        if (phone.open && phone.app === 'settings') phone.refresh();
-        ui.toast.push(on ? '2.5D 입체 시점으로 전환했어요! (V 키)' : '클래식 2D 시점으로 전환했어요! (V 키)', 'heart');
-        return;
-      }
       if (pgCheckoutModal.open || ui.shop.open || ui.mailbox.open || ui.creator.open) return;
       if (this.fishing && [' ', 'e', 'E', 'c', 'C', 'x', 'X'].includes(e.key)) { this.reel(); return; }
       if (e.key === 'p' || e.key === 'P') { if (this.hasPhone()) phone.toggle('party'); else ui.party.toggle(this.auth.me, (i) => void this.auth.request({ kind: 'setPartner', index: i })); return; }
@@ -713,7 +770,22 @@ export class FarmScene extends Phaser.Scene {
     const nearTable = this.mapId === 'home' && this.world.objects.some((o) => o.interact === 'dtable' && Math.hypot(o.sprite.x - this.player.x, o.sprite.y - this.player.y) < 44);
     if (item.type === 'seed') out.push({ label: '주변 밭에 심기', run: () => this.plantAround(slot), primary: true });
     if (item.type === 'placeable') out.push({ label: '바로 앞에 설치하기', run: () => { const [x, y] = this.player.facingCell(); this.placeAt(slot, x, y); }, primary: true });
-    if (item.type === 'food') out.push({ label: '먹기', run: () => this.eatSlot(slot), primary: true });
+    if (item.id === 'star_candy') {
+      out.push({
+        label: '파트너 루미 Lv.+1 올리기',
+        run: () => {
+          void this.auth.request({ kind: 'useCandy', partyIndex: 0 }).then((r) => {
+            if (r.ok) { sfx.play('item'); music.jingle('jingle_heal'); this.partner?.cheer(4); this.syncPartner(); phone.refresh(); }
+            else sfx.play('error');
+          });
+        },
+        primary: true,
+      });
+      out.push({ label: '다른 루미에게 쓰기 (상점 탭)', run: () => { phone.shopTab = 'item'; phone.show('shop'); } });
+    } else if (item.type === 'food') {
+      out.push({ label: '먹기', run: () => this.eatSlot(slot), primary: true });
+    }
+    if (item.id === 'name_ticket') out.push({ label: '닉네임 변경하기', run: () => { phone.shopTab = 'item'; phone.show('shop'); }, primary: true });
     if (item.id === 'ocarina') out.push({ label: '불기', run: () => this.fluteAnywhere(), primary: true });
     if (nearTable && (item.type === 'food' || item.type === 'crop')) out.push({ label: '식탁에 차리기 (4인분)', run: () => { this.auth.sendAnim('interact', this.player.dir); this.player.playOnce('interact', this.player.dir, () => void this.auth.request({ kind: 'serve', slot }), 1); } });
     if (nearBin && item.sellPrice > 0 && item.type !== 'tool') out.push({ label: `출하하기 (${item.sellPrice * s!.quantity}G)`, run: () => this.shipSlot(slot), primary: true });
@@ -752,6 +824,7 @@ export class FarmScene extends Phaser.Scene {
   }
 
   private say(pages: string[], name = '') {
+    this.player.busy = false;
     this.player.play('idle');
     const SPR: Record<string, string> = { '한별 박사': 'professor', '다온': 'nurse' };
     ui.dialogue.show({ name, pages, sprite: SPR[name] });
@@ -808,11 +881,23 @@ export class FarmScene extends Phaser.Scene {
       case 'nbed': return { label: label('살펴보기'), run: () => this.say([`${houseOwner || '이웃'}의 침대다. 남의 침대에 누울 순 없지.`]) };
       case 'wardrobe': return ownHome ? { label: label('옷장 — 외형 바꾸기'), run: () => { sfx.play('chest'); this.openWardrobe(); } } : { label: label('살펴보기'), run: () => this.say(['친구의 옷장이다. 멋진 옷이 가득하다.']) };
       case 'kitchen': return { label: label('부엌 살펴보기'), run: () => this.say(['깔끔한 부엌. 수확한 작물이나 카페 음식을 들고 식탁에서 E 를 누르면 같이 먹을 수 있어요.']) };
+      case 'tv': return { label: label('TV 보기'), run: () => { sfx.play('tap'); this.say(this.tvProgram(), '📺 TV 방송'); } };
       case 'dtable': return this.tableInteraction();
       case 'piano': return { label: label('피아노 치기'), run: () => { sfx.play('piano'); this.emote(4); this.say(['♪ 도레미파솔~ 서툴지만 즐거운 소리가 난다.']); } };
       case 'starter_table': return { label: label('살펴보기'), run: () => this.say([this.auth.me.party.length ? '루미 구슬이 놓여 있던 받침대. 박사님이 새 아이들을 돌보고 있다.' : '세 개의 루미 구슬이 빛나고 있다. 한별 박사님에게 말을 걸어 보자!']) };
       case 'altar': return this.altarInteraction(o);
       case 'bench': return { label: label('벤치에 앉아 쉬기'), run: () => { sfx.play('sit'); this.say(['벤치에 앉아 호수를 바라본다.\n오리들이 한가롭게 떠다닌다...']); } };
+      case 'campfire': return {
+        label: label('모닥불 곁에 나란히 앉기'),
+        run: () => {
+          sfx.play('sit');
+          const dir = facingFromVector(14 * TILE + 8 - this.player.x, 26 * TILE - this.player.y, this.player.dir);
+          this.player.play('idle', dir);
+          this.emote(2);
+          const isNight = this.auth.time.minutes >= 17 * 60 + 30 || this.auth.time.minutes < 6 * 60 + 30;
+          ui.toast.push(isNight ? '타오르는 모닥불 곁에 나란히 앉았어요. (Enter로 채팅해 보세요!)' : '모닥불 광장 벤치에 앉았어요. 밤이 되면 불꽃이 타오릅니다!', 'heart');
+        },
+      };
       case 'tower': case 'dept': {
         if (!o.label) return null;
         if (o.label === '빛누리 방송국') {
@@ -833,6 +918,33 @@ export class FarmScene extends Phaser.Scene {
     }
     if (FLAVOR[o.type]) return { label: label('살펴보기'), run: () => this.say([FLAVOR[o.type]]) };
     return null;
+  }
+
+  private tvProgram(): string[] {
+    const badges = this.auth.me.badges.length;
+    const flags = this.auth.me.flags ?? [];
+    if (flags.includes('ending')) {
+      return [
+        '『루미나 뉴스 특보입니다! 별빛 마을 출신의 젊은 트레이너가 루미 리그를 제패하고 새로운 루미 마스터에 등극했습니다!』',
+        '『별마루산 너머에서 신비한 별빛이 관측되었다는 소식도 함께 전해 드립니다.』',
+      ];
+    }
+    if (flags.includes('ch6_lumina') && !flags.includes('ch6_nebula')) {
+      return [
+        '『치지직… 여기는 성간단! 빛누리 방송국은 우리가 접수했다!』',
+        '『루미나 지방의 모든 별빛 결정은 성간단의 것이다… 치직…』',
+      ];
+    }
+    if (badges === 0) {
+      return [
+        '『지금 루미나 지방의 루미 리그 특별 중계와 함께, 달빛호수에서 포착된 신비한 별빛 루미 특집 다큐멘터리가 방송되고 있습니다!』',
+        '『전설 속 별빛의 씨앗과 일곱 속성의 루미들… 오늘 열다섯 살이 되어 첫발을 내딛는 신입 트레이너 여러분을 응원합니다!』',
+      ];
+    }
+    return [
+      `『루미나 트레이너 채널입니다! 현재 배지 ${badges}개를 모은 유망주 트레이너들의 활약이 이어지고 있습니다!』`,
+      '『오늘의 팁: 별빛 마을 전통대로 밭에서 키운 루미풀과 광석으로 회복약과 루미볼을 직접 만들면 긴 여정도 든든합니다!』',
+    ];
   }
 
   private boardNotes() {
@@ -912,11 +1024,83 @@ export class FarmScene extends Phaser.Scene {
     });
   }
 
-  // ── 맵 이동 (워프) ──────────────────────────────────
+  // ── 맵 이동 (워프) + 포켓몬식 바닥 기믹 ─────────────
   private checkWarp() {
     if (this.warping || !this.playing) return;
     const w = this.world.info.warpAt(this.player.x, this.player.y - 3);
     if (w) this.warp(w);
+  }
+  private checkGimmicks(vx: number, vy: number) {
+    if (this.warping || !this.playing || this.battling || this.player.busy) return;
+    const info = this.world.info;
+    const cx = Math.floor(this.player.x / TILE), cy = Math.floor((this.player.y - 3) / TILE);
+    const cellKey = `${cx},${cy}`;
+    if (this.padLock && this.padLock !== cellKey) this.padLock = '';
+    if (this.switchLock && this.switchLock !== cellKey) this.switchLock = '';
+    if (this.arrowLock && this.arrowLock !== cellKey && !this.player.isSliding) this.arrowLock = '';
+
+    // 빙판 밖 일반 바닥에 발이 닿으면 빙판 미끄럼 즉시 해제
+    if (this.player.slide?.mode === 'ice' && !info.isIce(cx, cy)) {
+      this.player.stopSlide();
+    }
+
+    const wp = info.warpPadAt(cx, cy);
+    if (wp && this.padLock !== cellKey && !this.player.isSliding) {
+      if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) < 7) {
+        void this.triggerWarpPad(wp);
+        return;
+      }
+    }
+
+    const sw = info.switchAt(cx, cy);
+    if (sw && this.switchLock !== cellKey && !this.openGates.has(sw.gateId)) {
+      if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) < 7) {
+        this.switchLock = cellKey;
+        this.openGates.add(sw.gateId);
+        this.world.pressSwitch(sw.gateId);
+        sfx.play('tap');
+        void this.auth.request({ kind: 'switch', gateId: sw.gateId }).then((r) => {
+          if (r.ok && r.data?.item) ui.toast.push('장치가 작동해 통로가 열렸다!', 'sun');
+        });
+      }
+    }
+
+    const ap = info.arrowAt(cx, cy);
+    if (ap && !this.player.isSliding && this.arrowLock !== cellKey) {
+      if (Math.hypot(this.player.x - (cx * TILE + 8), this.player.y - (cy * TILE + 11)) < 7) {
+        this.arrowLock = cellKey;
+        const dv = ap.dir === 'right' ? [1, 0] : ap.dir === 'down' ? [0, 1] : ap.dir === 'left' ? [-1, 0] : [0, -1];
+        sfx.play('dash');
+        this.player.startSlide(dv[0], dv[1], 'arrow', ap.steps * TILE);
+        return;
+      }
+    }
+
+    if (info.isIce(cx, cy) && !this.player.isSliding && Math.hypot(vx, vy) >= 0.25) {
+      const sx = Math.abs(vx) >= Math.abs(vy) ? Math.sign(vx) : 0;
+      const sy = sx ? 0 : Math.sign(vy);
+      if (sx || sy) {
+        const px = this.player.x + sx * 6, py = this.player.y + sy * 6;
+        if (this.world.grid.canStand(px, py)) {
+          this.player.startSlide(sx, sy, 'ice', Infinity);
+        }
+      }
+    }
+  }
+  private async triggerWarpPad(wp: { id: number; toX: number; toY: number; color: string }) {
+    this.warping = true;
+    this.player.stopStep();
+    sfx.play('warp');
+    this.cameras.main.flash(160, 210, 240, 255);
+    const res = await this.auth.request({ kind: 'pad', objectId: wp.id });
+    if (res.ok) {
+      const nx = wp.toX * TILE + 8, ny = wp.toY * TILE + 13;
+      this.padLock = `${wp.toX},${wp.toY}`;
+      this.player.setPosition(nx, ny);
+      this.partner?.teleport(nx, ny + 2);
+      this.auth.sendMove(nx, ny, this.player.dir, 'idle');
+    }
+    this.time.delayedCall(120, () => { this.warping = false; });
   }
   private warp(w: WarpDef) {
     if (w.to === 'route1' && (!this.auth.me.party.length || this.auth.me.story < STORY.DONE)) {
@@ -1000,7 +1184,15 @@ export class FarmScene extends Phaser.Scene {
         else if (ev.type === 'player' && ev.id === me.id) { ui.hud.energy(ev.energy, me.maxEnergy); this.ensureHeld(); ui.craft.refresh(); phone.refresh(); }
         else if (ev.type === 'objectRemoved') { const [m, id] = ev.key.split(':'); if (m === this.mapId && (!ev.owner || ev.owner === this.auth.farmOwner)) this.world.removeObject(Number(id)); }
         else if (ev.type === 'opened' && ev.playerId === me.id) { const [m, id] = ev.key.split(':'); if (m === this.mapId) this.world.removeObject(Number(id)); }
-        else if (ev.type === 'cleared' && ev.playerId === me.id) { const [m, id] = ev.key.split(':'); if (m === this.mapId) this.world.removeObject(Number(id)); }
+        else if (ev.type === 'cleared' && ev.playerId === me.id) {
+          const [m, id] = ev.key.split(':');
+          if (m === this.mapId) {
+            const numId = Number(id);
+            const wo = this.world.objects.find((o) => o.id === numId);
+            if (wo?.gateId) this.openGates.add(wo.gateId);
+            this.world.removeObject(numId);
+          }
+        }
         else if (ev.type === 'objectRestored') { for (const k of ev.keys) { const [m, id] = k.split(':'); if (m === this.mapId) this.world.restoreObject(Number(id)); } }
         else if (ev.type === 'forage') this.renderForage();
         else if (ev.type === 'placed') { if (this.mapId === 'farm' && ev.owner === this.auth.farmOwner) this.world.addPlaced(ev.obj.id, ev.obj.type, ev.obj.x, ev.obj.y); }
@@ -1011,14 +1203,30 @@ export class FarmScene extends Phaser.Scene {
         else if (ev.type === 'newDay') { ui.hud.time(ev.time); this.stage3d?.markSoilDirty(); if (ev.time.weather === 'rain') ui.toast.push('비가 와요. 오늘은 물을 안 줘도 돼요!', 'rain'); }
         else if (ev.type === 'room' && ev.playerId === me.id) this.goRoom();
         else if (ev.type === 'look') {
-          if (ev.id === me.id) { if (this.playing) this.goRoomSame(); }
-          else { const r = this.remotes.get(ev.id); if (r) { const p = { x: r.x, y: r.y }; this.removeRemote(ev.id); this.addRemote(ev.id, this.auth.roster.get(ev.id)?.title === 'admin' ? `[admin] ${ev.name}` : ev.name, ev.look, p.x, p.y); } this.renderRoster(); }
+          if (ev.id === me.id) {
+            this.applyMyLook(ev.look, ev.name);
+          } else {
+            const r = this.remotes.get(ev.id);
+            if (r) {
+              const p = { x: r.x, y: r.y };
+              this.removeRemote(ev.id);
+              this.addRemote(ev.id, this.auth.roster.get(ev.id)?.title === 'admin' ? `[admin] ${ev.name}` : ev.name, ev.look, p.x, p.y);
+            }
+            this.renderRoster();
+            if (phone.open) phone.refresh();
+          }
         }
         else if (ev.type === 'emote' && ev.room === this.auth.room) { const who: Character | undefined = ev.playerId === me.id ? this.player : this.remotes.get(ev.playerId); who?.showEmote(ev.emote, 2200); }
         else if (ev.type === 'dish' && ev.room === this.auth.room) this.renderDish();
         else if (ev.type === 'invite' && ev.to === me.id) ui.invitePrompt.show(ev.fromName, ev.where, () => this.acceptInvite(ev.from));
         else if (ev.type === 'sleep') ui.toast.push(`친구들이 모두 잠들면 다음 날이 시작돼요 (${ev.ready}/${ev.total}명 잠듦)`, 'energy');
-        else if (ev.type === 'bmState' && ev.id === me.id) { applyUiTheme(ev.uiTheme); this.syncPartner(); phone.refresh(); if (ui.mailbox.open) this.openMailbox(); }
+        else if (ev.type === 'bmState' && ev.id === me.id) {
+          applyUiTheme(ev.uiTheme);
+          this.player.bubbleSkin = ev.chatBubble ?? 'default';
+          this.syncPartner();
+          phone.refresh();
+          if (ui.mailbox.open) this.openMailbox();
+        }
         break;
       }
       case 'players': {
@@ -1028,6 +1236,7 @@ export class FarmScene extends Phaser.Scene {
           let r = this.remotes.get(p.id);
           if (r && r.look !== p.look) { this.removeRemote(p.id); r = undefined; }
           if (!r) { r = this.addRemote(p.id, p.title === 'admin' ? `[admin] ${p.name}` : p.name, p.look, p.x, p.y); if (this.playing) ui.toast.push(`${p.name}님이 왔어요!`, 'heart'); }
+          r.bubbleSkin = p.chatBubble ?? 'default';
           r.push(p.x, p.y, p.dir, p.anim);
           let rp = this.remotePartners.get(p.id);
           if (p.partner && !rp) { rp = new Partner(this, p.partner, p.x, p.y + 10, p.lumiCoord ?? ''); this.remotePartners.set(p.id, rp); }
@@ -1070,8 +1279,37 @@ export class FarmScene extends Phaser.Scene {
         break;
     }
   }
-  /** 같은 방에서 다시 그리기 (외형 변경 후) */
-  private goRoomSame() { this.warping = false; this.goRoom(); }
+  /** 씬 재시작이나 화면 멈춤 없이 내 외형과 머리 위 닉네임 라벨을 즉시 갱신 */
+  private applyMyLook(look: string, name: string) {
+    this.auth.me.look = look;
+    if (name) this.auth.me.name = name;
+    if (this.player) {
+      const sheet = this.manifest.characters[look] ? look : 'm1';
+      this.player.setSheet(sheet, this.manifest.characters[sheet]);
+      this.syncPlayerLabel();
+    }
+    this.renderRoster();
+    if (phone.open) phone.refresh();
+  }
+
+  private syncPlayerLabel() {
+    if (!this.player) return;
+    const isAdmin = this.auth.isAdmin || this.auth.me.isAdmin;
+    const text = isAdmin ? `[admin] ${this.auth.me.name}` : this.auth.me.name;
+    const color = isAdmin ? '#ff8a7a' : '#fff8ec';
+    if (!this.player.label) {
+      this.player.label = this.add.text(this.player.x, this.player.y, text, {
+        fontFamily: 'Galmuri9, Galmuri11, sans-serif',
+        fontSize: '8px',
+        color,
+        stroke: '#3b2414',
+        strokeThickness: 2,
+        resolution: this.zoom,
+      }).setOrigin(0.5, 1);
+    } else {
+      this.player.label.setText(text).setColor(color);
+    }
+  }
 
   private whereText(r: { id: string; map: MapId; inst: string }) {
     if (r.map === 'farm' || isHomeMap(r.map)) {
@@ -1123,12 +1361,32 @@ export class FarmScene extends Phaser.Scene {
   }
   private openWardrobe() {
     const me = this.auth.me;
+    this.player.busy = false;
     this.player.play('idle');
     this.playing = false;
     ui.creator.show({
-      title: '옷장', sub: '오늘은 어떤 모습으로 지내 볼까요?', name: me.name, look: me.look, askName: true, ownedOutfits: me.ownedOutfits ?? [],
-      onDone: async (look, name) => { const r = await this.auth.request({ kind: 'setLook', look, name }); if (!r.ok) { this.playing = true; ui.toast.push('내 집 옷장에서만 바꿀 수 있어요.', 'heart'); } },
-      onCancel: () => { this.playing = true; },
+      title: '옷장',
+      sub: '기본 의상이나 구매한 캐쉬 의상으로 바로 갈아입을 수 있어요. (닉네임 변경은 휴대폰 상점의 닉네임 변경권을 이용해 주세요)',
+      name: me.name,
+      look: me.look,
+      askName: false,
+      ownedOutfits: me.ownedOutfits ?? [],
+      onDone: async (look) => {
+        this.playing = true;
+        this.player.busy = false;
+        const r = await this.auth.request({ kind: 'setLook', look });
+        if (r.ok) {
+          this.applyMyLook(look, this.auth.me.name);
+          sfx.play('confirm');
+          ui.toast.push('의상을 갈아입었어요!', 'heart');
+        } else {
+          ui.toast.push('내 집 옷장에서만 바꿀 수 있어요.', 'heart');
+        }
+      },
+      onCancel: () => {
+        this.playing = true;
+        this.player.busy = false;
+      },
     });
   }
   private tableInteraction(): { label: string; run: () => void } {
@@ -1184,9 +1442,12 @@ export class FarmScene extends Phaser.Scene {
     const run = k.SHIFT.isDown || touch.run;
     this.player.move(dt, { vx, vy, run }, this.npcs.filter((n) => n.state !== 'gone' && n.sprite.visible));
     this.player.update();
-    if (this.playing) this.auth.sendMove(this.player.x, this.player.y, this.player.dir, this.player.anim);
+    const groundY = this.player.sprite.getData('groundY');
+    const syncY = typeof groundY === 'number' ? groundY : this.player.y;
+    if (this.playing) this.auth.sendMove(this.player.x, syncY, this.player.dir, this.player.anim);
     if (this.player.moving) this.farm?.brush(this.player.x, this.player.y);
     this.checkWarp();
+    this.checkGimmicks(vx, vy);
     if (this.playing && !this.battling) { this.checkEncounter(); this.checkTrainers(); }
     this.partner?.update(dt, this.player, this.player.moving);
     this.story.update(dt);
@@ -1228,6 +1489,7 @@ export class FarmScene extends Phaser.Scene {
       bobber: this.fishing?.bobber,
       cursor: this.cursor,
       cam: { baseZoom: this.zoom, followPlayer: followCam },
+      openGates: this.openGates,
       minutes,
       weather: this.auth.time.weather,
     });

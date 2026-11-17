@@ -902,5 +902,23 @@
     "description": "레벨이 높은 루미일수록 잘 잡히는 볼. (Lv.40 이상 ×3, Lv.25 이상 ×2)",
     "catchBonus": 1,
     "ballRule": "level"
+  },
+  "star_candy": {
+    "id": "star_candy",
+    "name": "별빛 사탕",
+    "type": "food",
+    "icon": "star_candy",
+    "sellPrice": 0,
+    "maxStack": 99,
+    "description": "포켓몬의 이상한 사탕처럼 루미 한 마리의 레벨을 즉시 1 올려 주는 신비한 별빛 사탕. 상점·가방에서 바로 사용할 수 있어요! (최대 Lv.100)"
+  },
+  "name_ticket": {
+    "id": "name_ticket",
+    "name": "닉네임 변경권",
+    "type": "key",
+    "icon": "name_ticket",
+    "sellPrice": 0,
+    "maxStack": 99,
+    "description": "원하는 새 닉네임으로 즉시 변경할 수 있는 특별 티켓. 상점·가방에서 바로 적용할 수 있어요!"
   }
 }

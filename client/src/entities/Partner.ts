@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
+import { STARTER_LUMI_SET } from '@shared/bmShop';
 import type { Dir } from '@shared/types';
 import { DEPTH } from '../config';
-import { ensureLumiCoordTexture } from '../ui/LumiCoord';
 
 /** 플레이어 뒤를 졸졸 따라다니는 파트너 루미 (발자취 큐를 따라감) */
 /** 플레이어(약 26px) 대비 루미 그림(약 29px)을 절반 키로 */
@@ -20,34 +20,39 @@ export class Partner {
 
   constructor(private scene: Phaser.Scene, species: string, x: number, y: number, coordId = '') {
     this.species = species;
+    this.coordId = coordId;
     this.shadow = scene.add.image(x, y, 'shadow').setScale(0.3, 0.32).setDepth(DEPTH.cursor - 1).setAlpha(0.85);
+    const key = this.sheetKey();
     // 필드에서는 플레이어 키의 절반 정도 (배틀 · 휴대폰 그림은 원래 크기)
-    this.sprite = scene.add.sprite(x, y, `lumi_${species}`, 0).setOrigin(0.5, 30 / 32).setScale(PARTNER_SCALE);
-    this.sprite.play(`lumi_${species}:down`);
+    this.sprite = scene.add.sprite(x, y, key, 0).setOrigin(0.5, 30 / 32).setScale(PARTNER_SCALE);
+    this.sprite.play(`${key}:down`);
     for (let i = 0; i < 12; i++) this.trail.push({ x, y });
-    this.setCoord(coordId);
   }
   get x() { return this.sprite.x; }
   get y() { return this.sprite.y; }
 
-  setCoord(coordId = '') {
-    if (coordId === this.coordId && (this.coordSprite || !coordId)) return;
-    this.coordId = coordId;
-    this.coordSprite?.destroy();
-    this.coordSprite = undefined;
-    const key = ensureLumiCoordTexture(this.scene, coordId);
-    if (key) {
-      this.coordSprite = this.scene.add.image(this.x, this.y, key)
-        .setOrigin(0.5, 30 / 32)
-        .setScale(PARTNER_SCALE)
-        .setDepth(this.sprite.depth + 0.1);
+  /** 기본 스타팅 루미 3종(새록·찰랑·모락)은 치장이 직접 그려진 전용 스프라이트 시트를 사용 */
+  private sheetKey(): string {
+    if (this.coordId && STARTER_LUMI_SET.has(this.species)) {
+      const k = `lumi_${this.species}_${this.coordId}`;
+      if (this.scene.textures.exists(k)) return k;
     }
+    return `lumi_${this.species}`;
+  }
+
+  setCoord(coordId = '') {
+    if (coordId === this.coordId) return;
+    this.coordId = coordId;
+    const key = this.sheetKey();
+    this.sprite.setTexture(key, 0);
+    this.play();
   }
 
   setSpecies(species: string) {
     if (species === this.species) return;
     this.species = species;
-    this.sprite.setTexture(`lumi_${species}`, 0);
+    const key = this.sheetKey();
+    this.sprite.setTexture(key, 0);
     this.play();
     this.poof();
   }
@@ -55,8 +60,11 @@ export class Partner {
 
   private play() {
     const v = this.dir === 'right' ? 'left' : this.dir;
+    const key = this.sheetKey();
     this.sprite.setFlipX(this.dir === 'right');
-    this.sprite.play(`lumi_${this.species}:${v}`, true);
+    if (this.scene.anims.exists(`${key}:${v}`)) {
+      this.sprite.play(`${key}:${v}`, true);
+    }
   }
 
   /** 기쁨 점프 + 감정 말풍선 (도움을 줄 때) */
@@ -72,7 +80,8 @@ export class Partner {
       },
       onComplete: () => { this.sprite.setData('groundY', undefined); this.sprite.setData('lift', 0); this.sprite.y = y0; } });
     this.emote?.destroy();
-    const e = this.scene.add.sprite(this.x, this.y - 15, 'emotes', emote).setOrigin(0.5, 1).setDepth(DEPTH.overlay - 1).setScale(0);
+    const e = this.scene.add.sprite(this.x, this.y - 12, 'emotes', emote).setOrigin(0.5, 1).setDepth(DEPTH.overlay - 1).setScale(0);
+    e.setData('groundY', this.sprite.y);
     this.emote = e;
     this.scene.tweens.add({ targets: e, scale: 1, duration: 160, ease: 'Back.Out' });
     this.scene.time.delayedCall(1400, () => { if (this.emote === e) { this.scene.tweens.add({ targets: e, scale: 0, duration: 120, onComplete: () => e.destroy() }); this.emote = undefined; } });
@@ -117,7 +126,10 @@ export class Partner {
       this.coordSprite.setData('lift', lift);
     }
     this.shadow.setPosition(this.x, this.y - 1);
-    this.emote?.setPosition(this.x, this.y - 15);
+    if (this.emote) {
+      this.emote.setPosition(this.x, this.y - 12);
+      this.emote.setData('groundY', this.sprite.y);
+    }
   }
   destroy() { this.sprite.destroy(); this.coordSprite?.destroy(); this.shadow.destroy(); this.emote?.destroy(); }
 }

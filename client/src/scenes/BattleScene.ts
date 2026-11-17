@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
+import { STARTER_LUMI_SET } from '@shared/bmShop';
 import { TYPE_COLORS } from '@shared/data';
 import type { BattleLog, BattleUpdate, CreatureView } from '@shared/types';
 import type { Authority } from '../net/Authority';
 import { BattleUI } from '../ui/BattleUI';
 import { sfx } from '../audio/Sfx';
 import { music } from '../audio/Music';
-import { Stage3D } from '../three/Stage3D';
 
 export interface BattleData { auth: Authority; update: BattleUpdate; onEnd: (ended: NonNullable<BattleUpdate['ended']>) => void }
 
@@ -37,8 +37,9 @@ export class BattleScene extends Phaser.Scene {
     this.meShadow = this.add.ellipse(ME.x, ME.y + 1, 42, 9, 0x203018, 0.35);
     this.foe = this.add.sprite(FOE.x + 140, FOE.y, `lumi_${v.foe.species}`, 0);
     this.skinFoe(v.foe.species);
-    this.me = this.add.sprite(ME.x - 140, ME.y, `lumi_${v.me.species}`, 4).setOrigin(0.5, 30 / 32).setScale(2);
-    this.me.play(`lumi_${v.me.species}:up`);
+    const myKey = this.mySheetKey(v.me.species);
+    this.me = this.add.sprite(ME.x - 140, ME.y, myKey, 4).setOrigin(0.5, 30 / 32).setScale(2);
+    this.me.play(`${myKey}:up`);
 
     this.trainerSprite = undefined;
     if (v.trainer) {
@@ -50,7 +51,6 @@ export class BattleScene extends Phaser.Scene {
     this.ui.setView(v);
     this.ui.hideSide('foe'); this.ui.hideSide('me');
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'v' || e.key === 'V') { Stage3D.enabled = !Stage3D.enabled; return; }
       if ([' ', 'Enter', 'e', 'E', 'z', 'Z'].includes(e.key)) this.ui.advance();
     });
     this.input.on('pointerdown', () => this.ui.advance());
@@ -185,6 +185,15 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  private mySheetKey(species: string): string {
+    const coord = this.data_.auth.me.lumiCoord ?? '';
+    if (coord && STARTER_LUMI_SET.has(species)) {
+      const k = `lumi_${species}_${coord}`;
+      if (this.textures.exists(k)) return k;
+    }
+    return `lumi_${species}`;
+  }
+
   private async send(side: 'me' | 'foe', v: CreatureView) {
     const s = side === 'me' ? this.me : this.foe;
     const pos = side === 'me' ? ME : FOE;
@@ -192,7 +201,7 @@ export class BattleScene extends Phaser.Scene {
     s.setPosition(pos.x, pos.y).setAlpha(1);
     (side === 'me' ? this.meShadow : this.foeShadow).setAlpha(0.35);
     if (side === 'foe') { this.skinFoe(v.species); }
-    else { s.setTexture(`lumi_${v.species}`, 4); s.play(`lumi_${v.species}:up`); }
+    else { const mk = this.mySheetKey(v.species); s.setTexture(mk, 4); s.play(`${mk}:up`); }
     this.popIn(s);
     this.ui.setSide(side, v);
     await this.wait(400);

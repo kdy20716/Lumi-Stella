@@ -6,7 +6,7 @@ export const DEFAULT_PORT = 2567;
 export const SNAPSHOT_HZ = 15;
 
 /** 같은 방(room)에 있는 다른 플레이어의 위치 (보간용) */
-export interface NetPlayer { id: string; name: string; look: string; map: MapId; inst: string; world: string; x: number; y: number; dir: Dir; anim: string; partner?: string; lumiCoord?: string; battling?: boolean; title?: string }
+export interface NetPlayer { id: string; name: string; look: string; map: MapId; inst: string; world: string; x: number; y: number; dir: Dir; anim: string; partner?: string; lumiCoord?: string; chatBubble?: string; battling?: boolean; title?: string }
 /** 접속자 목록 (어디 있는지). title: 서버가 정한 칭호 (예: 'admin') — 클라이언트가 보낼 수 없음 */
 export interface RosterEntry { id: string; name: string; look: string; map: MapId; inst: string; title?: string }
 

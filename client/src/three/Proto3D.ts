@@ -207,7 +207,7 @@ async function buildMap(id: string, man: Manifest, maps: Record<string, MapWithP
     }
     if (!bb) continue;
     if (o.type === 'vine' && type !== 'vine') (bb.mesh.material as THREE.MeshBasicMaterial).color.set(0x6a8a4a);
-    const gx = o.x / T, gz = o.y / T;
+    const gx = o.x / T, gz = interior && cellY === 3 && cellH === 1 ? 3.16 : o.y / T;
     bb.mesh.position.set(gx, hts.sample(gx, Math.min(H - 0.01, gz - 0.01)), gz);
     group.add(bb.mesh);
     if (['oak', 'oak_apple', 'pine', 'oak_autumn', 'pine_snow', 'palm', 'rock', 'bush', 'lamp'].includes(type)) {
@@ -657,20 +657,52 @@ export function makeStreetProp(type: string, gx: number, gz: number, base: numbe
   return g;
 }
 
-/** 동굴 벽: 막힌 칸을 솟은 바위 덩어리로 (4세대 동굴처럼 벽이 높게 서 있음)
- *  윗면 = 그 칸의 바닥 그림, 앞면 · 옆면 = 같은 그림을 어둡게 */
+/** 동굴 벽 / 도시 외벽: 2단 층위 암벽 + 수직 앰비언트 오클루전 명암으로 입체감 강화 */
 export function makeCaveWalls(info: MapInfo, W: number, H: number, tex: THREE.Texture, hgt = 1.6, isWall?: (x: number, y: number) => boolean) {
   const pos: number[] = [], uv: number[] = [], col: number[] = [];
-  const quad = (p: number[][], q: number[][], c: number) => { for (const i of [0, 1, 2, 0, 2, 3]) { pos.push(...p[i]); uv.push(...q[i]); col.push(c, c, c); } };
+  const quad = (p: number[][], q: number[][], c: number[]) => {
+    for (const i of [0, 1, 2, 0, 2, 3]) {
+      pos.push(...p[i]);
+      uv.push(...q[i]);
+      col.push(c[i], c[i], c[i]);
+    }
+  };
   const open = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && (isWall ? !isWall(x, y) : !info.isBlocked(x, y));
+  const rim = (x: number, y: number) => open(x, y + 1) || open(x, y - 1) || open(x - 1, y) || open(x + 1, y);
+  const hAt = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= W || y >= H || open(x, y)) return 0;
+    if (rim(x, y)) return hgt;
+    const bump = ((x * 7 + y * 13) & 3) === 0 ? 0.35 : 0;
+    return hgt + 0.55 + bump;
+  };
+  const drawFace = (p0: number[], p1: number[], p2: number[], p3: number[], q: number[][], topC: number, botC: number) => {
+    // 수직 면을 2단으로 나눠 타일 텍스처가 세로로 늘어지지 않게 하고 바닥 그림자 그라데이션 부여
+    const mh = [p0, p1, p2, p3];
+    const mid03 = [(p0[0] + p3[0]) / 2, (p0[1] + p3[1]) / 2, (p0[2] + p3[2]) / 2];
+    const mid12 = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, (p1[2] + p2[2]) / 2];
+    const midC = (topC + botC) * 0.54;
+    if (Math.abs(p0[1] - p1[1]) > 0.7) {
+      quad([mh[0], mid03, mid12, mh[3]], q, [topC, midC, midC, topC]);
+      quad([mid03, mh[1], mh[2], mid12], q, [midC, botC, botC, midC]);
+    } else {
+      quad(mh, q, [topC, botC, botC, topC]);
+    }
+  };
+
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (open(x, y)) continue;
+    const top = hAt(x, y);
+    if (top <= 0) continue;
     const u0 = x / W, u1 = (x + 1) / W, v0 = 1 - (y + 1) / H, v1 = 1 - y / H;
     const q = [[u0, v1], [u0, v0], [u1, v0], [u1, v1]];
-    quad([[x, hgt, y], [x, hgt, y + 1], [x + 1, hgt, y + 1], [x + 1, hgt, y]], q, 0.8);
-    if (open(x, y + 1)) quad([[x, hgt, y + 1], [x, 0, y + 1], [x + 1, 0, y + 1], [x + 1, hgt, y + 1]], q, 0.5);
-    if (open(x - 1, y)) quad([[x, hgt, y], [x, 0, y], [x, 0, y + 1], [x, hgt, y + 1]], q, 0.38);
-    if (open(x + 1, y)) quad([[x + 1, hgt, y + 1], [x + 1, 0, y + 1], [x + 1, 0, y], [x + 1, hgt, y]], q, 0.38);
+    const topShade = rim(x, y) ? 0.82 : 0.72;
+    quad([[x, top, y], [x, top, y + 1], [x + 1, top, y + 1], [x + 1, top, y]], q, [topShade, topShade, topShade, topShade]);
+
+    const hs = hAt(x, y + 1);
+    if (top > hs + 0.01) drawFace([x, top, y + 1], [x, hs, y + 1], [x + 1, hs, y + 1], [x + 1, top, y + 1], q, 0.64, 0.28);
+    const hw = hAt(x - 1, y);
+    if (top > hw + 0.01) drawFace([x, top, y], [x, hw, y], [x, hw, y + 1], [x, top, y + 1], q, 0.48, 0.22);
+    const he = hAt(x + 1, y);
+    if (top > he + 0.01) drawFace([x + 1, top, y + 1], [x + 1, he, y + 1], [x + 1, he, y], [x + 1, top, y], q, 0.48, 0.22);
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));

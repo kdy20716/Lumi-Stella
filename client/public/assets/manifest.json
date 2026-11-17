@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T11:24:33.027Z",
+  "generatedAt": "2026-11-17T03:46:29.999Z",
   "tileSize": 16,
   "images": {
     "water0": {
@@ -223,6 +223,30 @@
       "w": 16,
       "h": 16,
       "originY": 0.875
+    },
+    "ice_tile": {
+      "path": "assets/objects/ice_tile.png",
+      "w": 16,
+      "h": 16,
+      "originY": 1
+    },
+    "warp_pad": {
+      "path": "assets/objects/warp_pad.png",
+      "w": 16,
+      "h": 16,
+      "originY": 0.9375
+    },
+    "gate_bar": {
+      "path": "assets/objects/gate_bar.png",
+      "w": 16,
+      "h": 16,
+      "originY": 0.875
+    },
+    "campfire": {
+      "path": "assets/objects/campfire.png",
+      "w": 24,
+      "h": 24,
+      "originY": 0.9583333333333334
     },
     "stump": {
       "path": "assets/objects/stump.png",
@@ -634,212 +658,212 @@
     },
     "cave_coronet_1f": {
       "path": "assets/caves/coronet_1f.png",
-      "w": 640,
-      "h": 480,
+      "w": 704,
+      "h": 672,
       "originY": 1
     },
     "cave_coronet_2f": {
       "path": "assets/caves/coronet_2f.png",
-      "w": 640,
-      "h": 480,
+      "w": 608,
+      "h": 736,
       "originY": 1
     },
     "cave_coronet_3f": {
       "path": "assets/caves/coronet_3f.png",
-      "w": 640,
-      "h": 480,
+      "w": 576,
+      "h": 768,
       "originY": 1
     },
     "cave_stark_1f": {
       "path": "assets/caves/stark_1f.png",
-      "w": 640,
-      "h": 480,
+      "w": 672,
+      "h": 544,
       "originY": 1
     },
     "cave_stark_2f": {
       "path": "assets/caves/stark_2f.png",
-      "w": 640,
-      "h": 480,
+      "w": 608,
+      "h": 704,
       "originY": 1
     },
     "cave_iron_1f": {
       "path": "assets/caves/iron_1f.png",
-      "w": 640,
+      "w": 800,
       "h": 480,
       "originY": 1
     },
     "cave_iron_2f": {
       "path": "assets/caves/iron_2f.png",
-      "w": 640,
-      "h": 480,
+      "w": 704,
+      "h": 608,
       "originY": 1
     },
     "cave_victory_1f": {
       "path": "assets/caves/victory_1f.png",
-      "w": 640,
-      "h": 480,
+      "w": 736,
+      "h": 608,
       "originY": 1
     },
     "cave_victory_2f": {
       "path": "assets/caves/victory_2f.png",
       "w": 640,
-      "h": 480,
+      "h": 736,
       "originY": 1
     },
     "cave_victory_3f": {
       "path": "assets/caves/victory_3f.png",
-      "w": 640,
-      "h": 480,
+      "w": 608,
+      "h": 768,
       "originY": 1
     },
     "cave_wayward_1f": {
       "path": "assets/caves/wayward_1f.png",
-      "w": 640,
-      "h": 480,
+      "w": 768,
+      "h": 544,
       "originY": 1
     },
     "cave_wayward_2f": {
       "path": "assets/caves/wayward_2f.png",
-      "w": 640,
-      "h": 480,
+      "w": 704,
+      "h": 640,
       "originY": 1
     },
     "cave_ice_cave": {
       "path": "assets/caves/ice_cave.png",
-      "w": 640,
-      "h": 480,
+      "w": 736,
+      "h": 608,
       "originY": 1
     },
     "cave_sea_cave": {
       "path": "assets/caves/sea_cave.png",
-      "w": 640,
-      "h": 480,
+      "w": 672,
+      "h": 512,
       "originY": 1
     },
     "cave_underground": {
       "path": "assets/caves/underground.png",
-      "w": 640,
+      "w": 864,
       "h": 480,
       "originY": 1
     },
     "cave_sea_cave_deep": {
       "path": "assets/caves/sea_cave_deep.png",
-      "w": 640,
-      "h": 480,
+      "w": 544,
+      "h": 544,
       "originY": 1
     },
     "cave_underground_deep": {
       "path": "assets/caves/underground_deep.png",
       "w": 640,
-      "h": 480,
+      "h": 576,
       "originY": 1
     },
     "cave_wayward_deep": {
       "path": "assets/caves/wayward_deep.png",
-      "w": 640,
+      "w": 512,
       "h": 480,
       "originY": 1
     },
     "cave_iron_deep": {
       "path": "assets/caves/iron_deep.png",
-      "w": 640,
-      "h": 480,
+      "w": 544,
+      "h": 544,
       "originY": 1
     },
     "cave_coronet_deep": {
       "path": "assets/caves/coronet_deep.png",
       "w": 640,
-      "h": 480,
+      "h": 544,
       "originY": 1
     },
     "cave_star_maze": {
       "path": "assets/caves/star_maze.png",
-      "w": 640,
-      "h": 480,
+      "w": 768,
+      "h": 576,
       "originY": 1
     },
     "cave_master_hall": {
       "path": "assets/caves/master_hall.png",
       "w": 640,
-      "h": 480,
+      "h": 544,
       "originY": 1
     },
     "cave_stella_nest": {
       "path": "assets/caves/stella_nest.png",
-      "w": 640,
-      "h": 480,
+      "w": 608,
+      "h": 576,
       "originY": 1
     },
     "cave_spire_n": {
       "path": "assets/caves/spire_n.png",
-      "w": 640,
+      "w": 512,
       "h": 480,
       "originY": 1
     },
     "cave_spire_n_2f": {
       "path": "assets/caves/spire_n_2f.png",
-      "w": 640,
-      "h": 480,
+      "w": 576,
+      "h": 704,
       "originY": 1
     },
     "cave_spire_n_top": {
       "path": "assets/caves/spire_n_top.png",
-      "w": 640,
-      "h": 480,
+      "w": 576,
+      "h": 544,
       "originY": 1
     },
     "cave_spire_e": {
       "path": "assets/caves/spire_e.png",
-      "w": 640,
+      "w": 512,
       "h": 480,
       "originY": 1
     },
     "cave_spire_e_2f": {
       "path": "assets/caves/spire_e_2f.png",
-      "w": 640,
-      "h": 480,
+      "w": 736,
+      "h": 544,
       "originY": 1
     },
     "cave_spire_e_top": {
       "path": "assets/caves/spire_e_top.png",
-      "w": 640,
-      "h": 480,
+      "w": 576,
+      "h": 544,
       "originY": 1
     },
     "cave_spire_s": {
       "path": "assets/caves/spire_s.png",
-      "w": 640,
+      "w": 512,
       "h": 480,
       "originY": 1
     },
     "cave_spire_s_2f": {
       "path": "assets/caves/spire_s_2f.png",
-      "w": 640,
-      "h": 480,
+      "w": 608,
+      "h": 736,
       "originY": 1
     },
     "cave_spire_s_top": {
       "path": "assets/caves/spire_s_top.png",
-      "w": 640,
-      "h": 480,
+      "w": 576,
+      "h": 544,
       "originY": 1
     },
     "cave_spire_w": {
       "path": "assets/caves/spire_w.png",
-      "w": 640,
+      "w": 512,
       "h": 480,
       "originY": 1
     },
     "cave_spire_w_2f": {
       "path": "assets/caves/spire_w_2f.png",
-      "w": 640,
-      "h": 480,
+      "w": 704,
+      "h": 608,
       "originY": 1
     },
     "cave_spire_w_top": {
       "path": "assets/caves/spire_w_top.png",
-      "w": 640,
-      "h": 480,
+      "w": 576,
+      "h": 544,
       "originY": 1
     },
     "windmill_blades": {
@@ -928,8 +952,8 @@
     },
     "room_in_gym": {
       "path": "assets/interiors/in_gym.png",
-      "w": 224,
-      "h": 224,
+      "w": 256,
+      "h": 288,
       "originY": 1
     },
     "room_in_windmill": {
@@ -940,44 +964,44 @@
     },
     "room_gym_harbor": {
       "path": "assets/interiors/gym_harbor.png",
-      "w": 224,
-      "h": 256,
+      "w": 288,
+      "h": 352,
       "originY": 1
     },
     "room_gym_maple": {
       "path": "assets/interiors/gym_maple.png",
-      "w": 224,
-      "h": 256,
+      "w": 320,
+      "h": 320,
       "originY": 1
     },
     "room_gym_forge": {
       "path": "assets/interiors/gym_forge.png",
-      "w": 224,
-      "h": 256,
+      "w": 256,
+      "h": 416,
       "originY": 1
     },
     "room_gym_ember": {
       "path": "assets/interiors/gym_ember.png",
-      "w": 224,
-      "h": 256,
+      "w": 320,
+      "h": 352,
       "originY": 1
     },
     "room_gym_lumina": {
       "path": "assets/interiors/gym_lumina.png",
-      "w": 224,
-      "h": 256,
+      "w": 288,
+      "h": 384,
       "originY": 1
     },
     "room_gym_frost": {
       "path": "assets/interiors/gym_frost.png",
-      "w": 224,
-      "h": 256,
+      "w": 288,
+      "h": 352,
       "originY": 1
     },
     "room_gym_summit": {
       "path": "assets/interiors/gym_summit.png",
-      "w": 224,
-      "h": 256,
+      "w": 320,
+      "h": 416,
       "originY": 1
     },
     "room_league": {
@@ -1223,19 +1247,25 @@
     "attic_stairs_up": {
       "path": "assets/objects/attic_stairs_up.png",
       "w": 16,
-      "h": 34,
+      "h": 36,
       "originY": 1
     },
     "attic_stairs_down": {
       "path": "assets/objects/attic_stairs_down.png",
       "w": 16,
-      "h": 26,
+      "h": 24,
       "originY": 1
     },
     "desk": {
       "path": "assets/objects/desk.png",
       "w": 32,
       "h": 28,
+      "originY": 1
+    },
+    "tv": {
+      "path": "assets/objects/tv.png",
+      "w": 32,
+      "h": 38,
       "originY": 1
     },
     "worldmap": {
@@ -1363,7 +1393,7 @@
       "path": "assets/ui/icons.png",
       "frameWidth": 16,
       "frameHeight": 16,
-      "frames": 91,
+      "frames": 93,
       "originY": 0.9375,
       "ids": [
         "hoe",
@@ -1442,6 +1472,8 @@
         "ember_ball",
         "repeat_ball",
         "heavy_ball",
+        "star_candy",
+        "name_ticket",
         "hoe_copper",
         "hoe_iron",
         "hoe_star",
@@ -1458,6 +1490,20 @@
         "rod_iron",
         "rod_star"
       ]
+    },
+    "arrow_pad": {
+      "path": "assets/objects/arrow_pad.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": 4,
+      "originY": 1
+    },
+    "switch_btn": {
+      "path": "assets/objects/switch_btn.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": 2,
+      "originY": 1
     },
     "duck": {
       "path": "assets/animals/duck.png",
@@ -2315,6 +2361,195 @@
     },
     "lumi_n5c": {
       "path": "assets/lumi/n5c.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_saerok_lumi_ribbon": {
+      "path": "assets/lumi/saerok_lumi_ribbon.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_saerok_lumi_scarf": {
+      "path": "assets/lumi/saerok_lumi_scarf.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_saerok_lumi_goggles": {
+      "path": "assets/lumi/saerok_lumi_goggles.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_saerok_lumi_flower": {
+      "path": "assets/lumi/saerok_lumi_flower.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_saerok_lumi_helmet": {
+      "path": "assets/lumi/saerok_lumi_helmet.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_saerok_lumi_cape": {
+      "path": "assets/lumi/saerok_lumi_cape.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_saerok_lumi_shades": {
+      "path": "assets/lumi/saerok_lumi_shades.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_saerok_lumi_earmuff": {
+      "path": "assets/lumi/saerok_lumi_earmuff.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_saerok_lumi_crown": {
+      "path": "assets/lumi/saerok_lumi_crown.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_chalang_lumi_ribbon": {
+      "path": "assets/lumi/chalang_lumi_ribbon.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_chalang_lumi_scarf": {
+      "path": "assets/lumi/chalang_lumi_scarf.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_chalang_lumi_goggles": {
+      "path": "assets/lumi/chalang_lumi_goggles.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_chalang_lumi_flower": {
+      "path": "assets/lumi/chalang_lumi_flower.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_chalang_lumi_helmet": {
+      "path": "assets/lumi/chalang_lumi_helmet.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_chalang_lumi_cape": {
+      "path": "assets/lumi/chalang_lumi_cape.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_chalang_lumi_shades": {
+      "path": "assets/lumi/chalang_lumi_shades.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_chalang_lumi_earmuff": {
+      "path": "assets/lumi/chalang_lumi_earmuff.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_chalang_lumi_crown": {
+      "path": "assets/lumi/chalang_lumi_crown.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_morak_lumi_ribbon": {
+      "path": "assets/lumi/morak_lumi_ribbon.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_morak_lumi_scarf": {
+      "path": "assets/lumi/morak_lumi_scarf.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_morak_lumi_goggles": {
+      "path": "assets/lumi/morak_lumi_goggles.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_morak_lumi_flower": {
+      "path": "assets/lumi/morak_lumi_flower.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_morak_lumi_helmet": {
+      "path": "assets/lumi/morak_lumi_helmet.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_morak_lumi_cape": {
+      "path": "assets/lumi/morak_lumi_cape.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_morak_lumi_shades": {
+      "path": "assets/lumi/morak_lumi_shades.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_morak_lumi_earmuff": {
+      "path": "assets/lumi/morak_lumi_earmuff.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_morak_lumi_crown": {
+      "path": "assets/lumi/morak_lumi_crown.png",
       "frameWidth": 32,
       "frameHeight": 32,
       "frames": 6,
@@ -30444,7 +30679,34 @@
     "n4c": "lumi_n4c",
     "n5a": "lumi_n5a",
     "n5b": "lumi_n5b",
-    "n5c": "lumi_n5c"
+    "n5c": "lumi_n5c",
+    "saerok_lumi_ribbon": "lumi_saerok_lumi_ribbon",
+    "saerok_lumi_scarf": "lumi_saerok_lumi_scarf",
+    "saerok_lumi_goggles": "lumi_saerok_lumi_goggles",
+    "saerok_lumi_flower": "lumi_saerok_lumi_flower",
+    "saerok_lumi_helmet": "lumi_saerok_lumi_helmet",
+    "saerok_lumi_cape": "lumi_saerok_lumi_cape",
+    "saerok_lumi_shades": "lumi_saerok_lumi_shades",
+    "saerok_lumi_earmuff": "lumi_saerok_lumi_earmuff",
+    "saerok_lumi_crown": "lumi_saerok_lumi_crown",
+    "chalang_lumi_ribbon": "lumi_chalang_lumi_ribbon",
+    "chalang_lumi_scarf": "lumi_chalang_lumi_scarf",
+    "chalang_lumi_goggles": "lumi_chalang_lumi_goggles",
+    "chalang_lumi_flower": "lumi_chalang_lumi_flower",
+    "chalang_lumi_helmet": "lumi_chalang_lumi_helmet",
+    "chalang_lumi_cape": "lumi_chalang_lumi_cape",
+    "chalang_lumi_shades": "lumi_chalang_lumi_shades",
+    "chalang_lumi_earmuff": "lumi_chalang_lumi_earmuff",
+    "chalang_lumi_crown": "lumi_chalang_lumi_crown",
+    "morak_lumi_ribbon": "lumi_morak_lumi_ribbon",
+    "morak_lumi_scarf": "lumi_morak_lumi_scarf",
+    "morak_lumi_goggles": "lumi_morak_lumi_goggles",
+    "morak_lumi_flower": "lumi_morak_lumi_flower",
+    "morak_lumi_helmet": "lumi_morak_lumi_helmet",
+    "morak_lumi_cape": "lumi_morak_lumi_cape",
+    "morak_lumi_shades": "lumi_morak_lumi_shades",
+    "morak_lumi_earmuff": "lumi_morak_lumi_earmuff",
+    "morak_lumi_crown": "lumi_morak_lumi_crown"
   },
   "lumiBig": {
     "byeolmuri": "lumi_big_byeolmuri",

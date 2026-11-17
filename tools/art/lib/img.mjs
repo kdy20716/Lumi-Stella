@@ -140,7 +140,21 @@ export class Img {
       chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0)),
     ]);
   }
-  save(path) { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, this.toPNG()); return this; }
+  save(path) {
+    mkdirSync(dirname(path), { recursive: true });
+    const buf = this.toPNG();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        writeFileSync(path, buf);
+        return this;
+      } catch (e) {
+        if (attempt === 4) throw e;
+        const until = Date.now() + 30 * (attempt + 1);
+        while (Date.now() < until) { /* Windows 파일 잠금 재시도 대기 */ }
+      }
+    }
+    return this;
+  }
 }
 
 const CRC_TABLE = (() => {

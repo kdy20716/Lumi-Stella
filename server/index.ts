@@ -63,7 +63,12 @@ async function join(ws: Conn, m: Extract<C2S, { t: 'join' }>): Promise<Client | 
     if (m.token) {
       const u = await verifyIdToken(m.token, firebaseConfig.projectId);
       uid = u.uid; gName = u.name; admin = isAdminEmail(u.email, u.emailVerified);
-    } else if (DEV_AUTH && m.dev) { uid = `dev-${String(m.dev).replace(/[^a-zA-Z0-9가-힣]/g, '').slice(0, 12)}`; gName = String(m.dev).slice(0, 10); }
+    } else if (DEV_AUTH && m.dev) {
+      const rawDev = String(m.dev);
+      uid = `dev-${rawDev.replace(/[^a-zA-Z0-9가-힣_]/g, '').slice(0, 16)}`;
+      gName = rawDev.replace(/^admin_?/i, '').slice(0, 10) || '트레이너';
+      admin = /^admin/i.test(rawDev);
+    }
     else throw new Error('구글 로그인이 필요해요');
   } catch (e) { hub.send(ws, { t: 'error', message: (e as Error).message }); ws.close(); return null; }
   const banned = (await storage.bans().catch(() => ({})) as Record<string, { reason: string }>)[uid];

@@ -14,7 +14,9 @@ export class Character {
   emote?: Phaser.GameObjects.Sprite;
   label?: Phaser.GameObjects.Text;
   bubble?: Phaser.GameObjects.Text;
+  bubbleSkin = 'default';
   private bubbleTimer?: Phaser.Time.TimerEvent;
+  private onceCleanup?: () => void;
 
   constructor(protected scene: Phaser.Scene, readonly sheet: string, x: number, y: number, meta: CharacterMeta) {
     this.shadow = scene.add.image(x, y, 'shadow').setScale(0.55, 0.6).setDepth(DEPTH.cursor - 1).setAlpha(0.9);
@@ -25,29 +27,72 @@ export class Character {
   get y() { return this.sprite.y; }
   setPosition(x: number, y: number) { this.sprite.setPosition(x, y); }
 
-  play(anim: string, dir: Dir = this.dir, ignoreIfPlaying = true) {
-    this.anim = anim; this.dir = dir;
-    this.sprite.play(`${this.sheet}:${anim}-${dir}`, ignoreIfPlaying);
+  /** 씬 재시작 없이 즉시 캐릭터 외형 스프라이트 시트 교체 */
+  setSheet(sheet: string, meta: CharacterMeta) {
+    (this as { sheet: string }).sheet = sheet;
+    this.sprite.setTexture(sheet, 0).setOrigin(meta.originX, meta.originY);
+    this.play(this.anim || 'idle', this.dir, false);
   }
-  /** 일회성 애니메이션 → 완료 시 콜백, 지정 프레임에서 impact 콜백 */
+
+  play(anim: string, dir: Dir = this.dir, ignoreIfPlaying = true) {
+    if (this.onceCleanup && anim !== this.anim) {
+      this.onceCleanup();
+    }
+    this.anim = anim; this.dir = dir;
+    const key = `${this.sheet}:${anim}-${dir}`;
+    if (this.scene.anims.exists(key)) this.sprite.play(key, ignoreIfPlaying);
+  }
+  /** 일회성 애니메이션 → 완료 시 콜백, 지정 프레임에서 impact 콜백 (대화창 등으로 중간에 끊겨도 busy가 영구 고정되지 않도록 보장) */
   playOnce(anim: string, dir: Dir, onImpact?: () => void, impactFrame = 3, onDone?: () => void) {
+    this.onceCleanup?.();
     this.busy = true;
-    this.play(anim, dir, false);
+    this.anim = anim; this.dir = dir;
+    const key = `${this.sheet}:${anim}-${dir}`;
+    if (!this.scene.anims.exists(key)) {
+      this.busy = false;
+      onImpact?.();
+      onDone?.();
+      return;
+    }
     let fired = false;
+    let finished = false;
     const upd = (a: Phaser.Animations.Animation, f: Phaser.Animations.AnimationFrame) => {
       if (!fired && a.frames.indexOf(f) >= impactFrame) { fired = true; onImpact?.(); }
     };
-    this.sprite.on(Phaser.Animations.Events.ANIMATION_UPDATE, upd);
-    this.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+    const cleanup = () => {
+      if (finished) return;
+      finished = true;
+      this.onceCleanup = undefined;
       this.sprite.off(Phaser.Animations.Events.ANIMATION_UPDATE, upd);
-      if (!fired) onImpact?.();
-      this.scene.time.delayedCall(90, () => { this.busy = false; this.play('idle', this.dir); onDone?.(); });
+      this.sprite.off(Phaser.Animations.Events.ANIMATION_COMPLETE, onComplete);
+      safetyTimer.remove(false);
+      if (!fired) { fired = true; onImpact?.(); }
+      this.busy = false;
+      onDone?.();
+    };
+    const onComplete = () => {
+      this.scene.time.delayedCall(60, () => {
+        if (finished) return;
+        cleanup();
+        this.play('idle', this.dir);
+      });
+    };
+    const safetyTimer = this.scene.time.delayedCall(550, () => {
+      if (!finished) {
+        cleanup();
+        this.play('idle', this.dir);
+      }
     });
+    this.onceCleanup = cleanup;
+    this.sprite.on(Phaser.Animations.Events.ANIMATION_UPDATE, upd);
+    this.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, onComplete);
+    this.sprite.play(key, false);
   }
 
   showEmote(index: number, duration = 1600) {
     this.emote?.destroy();
-    const e = this.scene.add.sprite(this.x, this.y - 34, 'emotes', index).setOrigin(0.5, 1).setDepth(DEPTH.overlay - 1).setScale(0);
+    const e = this.scene.add.sprite(this.x, this.y - 26, 'emotes', index).setOrigin(0.5, 1).setDepth(DEPTH.overlay - 1).setScale(0);
+    e.setData('groundY', this.sprite.y);
     this.emote = e;
     this.scene.tweens.add({ targets: e, scale: 1, duration: 160, ease: 'Back.Out' });
     if (duration > 0) this.scene.time.delayedCall(duration, () => { if (this.emote === e) this.hideEmote(); });
@@ -73,9 +118,12 @@ export class Character {
   update() {
     this.sprite.setDepth(this.sprite.y);
     this.shadow.setPosition(this.sprite.x, this.sprite.y - 1);
-    if (this.emote) this.emote.setPosition(this.sprite.x, this.sprite.y - 33 + Math.sin(this.scene.time.now / 250) * 1);
-    if (this.label) this.label.setPosition(this.sprite.x, this.sprite.y - 36).setDepth(DEPTH.overlay - 2);
-    if (this.bubble) this.bubble.setPosition(this.sprite.x, this.sprite.y - (this.label ? 46 : 38));
+    if (this.emote) {
+      this.emote.setPosition(this.sprite.x, this.sprite.y - 26 + Math.sin(this.scene.time.now / 250) * 1);
+      this.emote.setData('groundY', this.sprite.y);
+    }
+    if (this.label) this.label.setPosition(this.sprite.x, this.sprite.y - 30).setDepth(DEPTH.overlay - 2);
+    if (this.bubble) this.bubble.setPosition(this.sprite.x, this.sprite.y - (this.label ? 40 : 34));
   }
   destroy() { this.sprite.destroy(); this.shadow.destroy(); this.emote?.destroy(); this.label?.destroy(); this.bubble?.destroy(); this.bubbleTimer?.remove(); }
 }

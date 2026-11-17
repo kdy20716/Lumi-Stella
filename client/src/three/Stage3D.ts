@@ -4,7 +4,8 @@
 //  - 배틀 씬(BattleScene)이 열릴 때는 자동으로 숨겨지고, V 키 또는 상단 버튼으로 2.5D / 2D 즉시 전환 가능
 import type Phaser from 'phaser';
 import * as THREE from 'three';
-import { prop, type TiledMap } from '@shared/sim/MapInfo';
+import { CHAT_BUBBLES } from '@shared/bmShop';
+import { prop, type MapInfo, type TiledMap } from '@shared/sim/MapInfo';
 import { SoilState, type Dir, type FarmTile, type MapId } from '@shared/types';
 import { TILE, type Manifest } from '../config';
 import type { World } from '../world/World';
@@ -40,23 +41,14 @@ interface DynEntry {
 
 export class Stage3D {
   private static renderer?: THREE.WebGLRenderer;
-  private static badge?: HTMLButtonElement;
-  private static _enabled = localStorage.getItem('sf:view25d') !== '0';
   private static listeners = new Set<(enabled: boolean) => void>();
   static renderSnapshot?: () => void;
 
   static get enabled() {
-    return Stage3D._enabled;
+    return true;
   }
-  static set enabled(v: boolean) {
-    Stage3D._enabled = v;
-    try {
-      localStorage.setItem('sf:view25d', v ? '1' : '0');
-    } catch {
-      /* ignore */
-    }
-    Stage3D.updateBadge();
-    for (const fn of Stage3D.listeners) fn(v);
+  static set enabled(_v: boolean) {
+    // 2.5D is permanently enabled
   }
   static onToggle(fn: (enabled: boolean) => void): () => void {
     Stage3D.listeners.add(fn);
@@ -113,6 +105,10 @@ export class Stage3D {
   private bulbGlowMat?: THREE.MeshBasicMaterial;
   private bladesMesh?: THREE.Mesh;
   private cursorMesh?: THREE.Mesh;
+  private campfires: { group: THREE.Group; glow: THREE.Mesh; glowMat: THREE.MeshBasicMaterial; gx: number; gy: number; gz: number }[] = [];
+  private gimmickSpin: THREE.Object3D[] = [];
+  private gateMeshes = new Map<string, THREE.Object3D[]>();
+  private switchCaps = new Map<string, { cap: THREE.Mesh; baseY: number; col: number }[]>();
   private soilCv?: HTMLCanvasElement;
   private soilTex?: THREE.Texture;
   private soilDirty = true;
@@ -122,6 +118,8 @@ export class Stage3D {
   private camInit = false;
   private camYaw = 0;
   private lastPx = 0;
+  private lastVelX = 0;
+  private smoothGy = 0;
   private cam = { el: 38, fov: 22, dist: 24, stretch: true };
   private tintMaterials: THREE.MeshBasicMaterial[] = [];
   private lastTintColor = new THREE.Color(0xffffff);
@@ -137,13 +135,8 @@ export class Stage3D {
     private mapId: MapId,
   ) {
     this.ensureRenderer();
-    this.ensureBadge();
     this.build();
     this.resize();
-    this.unsubToggle = Stage3D.onToggle(() => {
-      this.syncVisibility();
-      if (Stage3D.enabled && !this.hiddenByBattle) this.resize();
-    });
   }
 
   private ensureRenderer() {
@@ -151,33 +144,8 @@ export class Stage3D {
     this.syncVisibility();
   }
 
-  private ensureBadge() {
-    if (!Stage3D.badge) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'stage3d-badge';
-      b.onclick = () => {
-        Stage3D.enabled = !Stage3D.enabled;
-        this.syncVisibility();
-      };
-      document.body.appendChild(b);
-      Stage3D.badge = b;
-    }
-    Stage3D.updateBadge();
-  }
-
-  private static updateBadge() {
-    if (!Stage3D.badge) return;
-    Stage3D.badge.innerHTML = Stage3D._enabled
-      ? '🎥 <b>2.5D</b> · <span style="opacity:.8">V 전환</span>'
-      : '🖼️ <b>클래식 2D</b> · <span style="opacity:.8">V 전환</span>';
-    Stage3D.badge.style.borderColor = Stage3D._enabled ? '#7cc45a' : '#a8683a';
-  }
-
   toggle() {
-    Stage3D.enabled = !Stage3D.enabled;
-    this.syncVisibility();
-    return Stage3D.enabled;
+    return true;
   }
 
   setBattleHidden(hidden: boolean) {
@@ -186,9 +154,8 @@ export class Stage3D {
   }
 
   private syncVisibility() {
-    const show = Stage3D.enabled && !this.hiddenByBattle;
+    const show = !this.hiddenByBattle;
     if (Stage3D.renderer) Stage3D.renderer.domElement.style.display = show ? 'block' : 'none';
-    if (Stage3D.badge) Stage3D.badge.style.display = this.hiddenByBattle ? 'none' : 'block';
     if (!show) syncPhaserCamOverlay(undefined, false);
   }
 
@@ -298,6 +265,8 @@ export class Stage3D {
       });
       this.scene3d.add(skirt);
       this.registerTintMat(skirt);
+      const bridgeLayer = raw.layers.find((x) => x.name === 'Bridge');
+      if (bridgeLayer?.data) this.addBridge3D(bridgeLayer.data, W, H, info);
     }
 
     this.fx = new Fx3D(this.scene3d, this.hts);
@@ -465,9 +434,18 @@ export class Stage3D {
         cellH = Number(prop(o, 'cellH', 1));
       const im = this.manifest.images[type],
         sh = this.manifest.spritesheets[type];
-      const base = this.hts.at(cellX, cellY).sw;
+      const base = this.hts.sample(
+        Math.max(0.05, Math.min(W - 0.05, cellX + cellW * 0.5)),
+        Math.max(0.05, Math.min(H - 0.05, cellY + 0.5)),
+      );
       const isBuilding = !!this.manifest.buildings?.[type] || type === 'house';
       const created: THREE.Object3D[] = [];
+
+      if (type === 'ice_tile' || type === 'arrow_pad' || type === 'warp_pad' || type === 'switch_btn' || type === 'gate_bar') {
+        this.addGimmick3D(type, o, cellX, cellY, cellW, cellH, created, W, H);
+        this.objMeshes.set(o.id, created);
+        continue;
+      }
 
       if (type === 'vend' || type === 'tlight') {
         const sp = makeStreetProp(type, o.x / T, o.y / T, base);
@@ -597,15 +575,33 @@ export class Stage3D {
       let gz = o.y / T;
       for (const b of buildingFronts) {
         if (Math.abs(gz - b.z1) < 0.08 && gx >= b.x0 - 0.5 && gx <= b.x1 + 0.5) {
-          gz = b.z1 + 0.14;
+          gz = b.z1 + 0.03;
           break;
         }
+      }
+      // 실내 북쪽 벽(y=3)에 붙은 가구는 바닥(y=3..4) 위가 아니라 북쪽 벽(z=3) 바로 앞에 밀착해 세운다 (쯔꾸르/포켓몬식 벽걸이·벽면 가구 배치)
+      if (this.interior && cellY === 3 && cellH === 1) {
+        gz = 3.16;
       }
       gz += ((o.id % 19) - 9) * 0.0012;
       bb.mesh.position.set(gx, this.hts.sample(gx, Math.min(H - 0.01, gz - 0.01)), gz);
       this.scene3d.add(bb.mesh);
       this.registerTintMat(bb.mesh);
       created.push(bb.mesh);
+
+      if (this.interior && (type === 'lamp_floor' || type === 'forge' || type === 'candle') && this.groundGlowTex) {
+        const gm = new THREE.MeshBasicMaterial({
+          map: this.groundGlowTex, color: type === 'forge' ? 0xff9a4a : 0xffe49e,
+          transparent: true, opacity: type === 'forge' ? 0.28 : 0.20,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        });
+        gm.userData = { noTint: true };
+        const g = new THREE.Mesh(new THREE.PlaneGeometry(type === 'forge' ? 3.2 : 2.2, type === 'forge' ? 2.2 : 1.6), gm);
+        g.rotation.x = -Math.PI / 2;
+        g.position.set(cellX + cellW / 2, 0.02, cellY + (type === 'forge' ? 0.9 : 0.55));
+        this.scene3d.add(g);
+        created.push(g);
+      }
 
       if (['oak', 'oak_apple', 'pine', 'oak_autumn', 'pine_snow', 'palm', 'rock', 'rock_big', 'bush', 'lamp', 'well', 'shipping_bin'].includes(type)) {
         const isTree = type.startsWith('oak') || type.startsWith('pine') || type === 'palm';
@@ -632,6 +628,7 @@ export class Stage3D {
         created.push(s);
       }
       if (type === 'lamp') created.push(...this.addLampGlow(gx, bb.mesh.position.y, gz));
+      if (type === 'campfire') created.push(...this.addCampfire3D(gx, bb.mesh.position.y, gz));
       this.objMeshes.set(o.id, created);
     }
 
@@ -822,28 +819,99 @@ export class Stage3D {
     entry.shadow.position.set(gx, h + 0.028, gz - 0.02);
   }
 
-  private syncLabel(txtObj: Phaser.GameObjects.Text | undefined, gx: number, gy: number, gz: number, isBubble = false) {
+  private syncLabel(txtObj: Phaser.GameObjects.Text | undefined, gx: number, gy: number, gz: number, isBubble = false, bubbleSkin = 'default') {
     if (!txtObj || !txtObj.active || !txtObj.visible || txtObj.alpha <= 0.01 || !txtObj.text) return;
+    const sig = isBubble ? `${bubbleSkin}:${txtObj.text}` : txtObj.text;
     let item = this.labelPool.get(txtObj);
-    if (!item || item.text !== txtObj.text) {
+    if (!item || item.text !== sig) {
       const cv = item?.cv ?? document.createElement('canvas');
       const c = cv.getContext('2d')!;
       c.font = isBubble ? 'bold 13px Galmuri11, Galmuri9, sans-serif' : 'bold 12px Galmuri9, sans-serif';
-      const tw = Math.min(240, Math.ceil(c.measureText(txtObj.text).width) + 16);
-      const th = isBubble ? 26 : 20;
+      const tw = Math.min(256, Math.ceil(c.measureText(txtObj.text).width) + (isBubble ? 24 : 16));
+      const th = isBubble ? 34 : 20;
       cv.width = tw;
       cv.height = th;
       c.font = isBubble ? 'bold 13px Galmuri11, Galmuri9, sans-serif' : 'bold 12px Galmuri9, sans-serif';
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       if (isBubble) {
-        c.fillStyle = 'rgba(255, 248, 236, 0.95)';
-        c.fillRect(1, 1, tw - 2, th - 2);
-        c.strokeStyle = '#3b2414';
+        const skin = CHAT_BUBBLES[bubbleSkin] ?? CHAT_BUBBLES.default;
+        const bh = th - 6;
+        const r = 7;
+        const rrect = (x: number, y: number, w: number, h: number, rad: number) => {
+          c.beginPath();
+          c.moveTo(x + rad, y);
+          c.lineTo(x + w - rad, y);
+          c.quadraticCurveTo(x + w, y, x + w, y + rad);
+          c.lineTo(x + w, y + h - rad);
+          c.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+          c.lineTo(x + rad, y + h);
+          c.quadraticCurveTo(x, y + h, x, y + h - rad);
+          c.lineTo(x, y + rad);
+          c.quadraticCurveTo(x, y, x + rad, y);
+          c.closePath();
+        };
+        const grad = c.createLinearGradient(0, 1, 0, bh);
+        grad.addColorStop(0, skin.bgTop);
+        grad.addColorStop(1, skin.bgBottom);
+        rrect(2, 2, tw - 4, bh - 2, r);
+        c.fillStyle = grad;
+        c.fill();
         c.lineWidth = 2;
-        c.strokeRect(1, 1, tw - 2, th - 2);
-        c.fillStyle = '#3b2414';
-        c.fillText(txtObj.text, tw / 2, th / 2);
+        c.strokeStyle = skin.borderOuter;
+        c.stroke();
+
+        rrect(4, 4, tw - 8, bh - 6, Math.max(3, r - 2));
+        c.lineWidth = 1.2;
+        c.strokeStyle = skin.borderInner;
+        c.stroke();
+
+        // 아래쪽 말풍선 꼬리 (▼)
+        const mx = tw / 2;
+        c.beginPath();
+        c.moveTo(mx - 5, bh - 1);
+        c.lineTo(mx, th - 1);
+        c.lineTo(mx + 5, bh - 1);
+        c.closePath();
+        c.fillStyle = skin.bgBottom;
+        c.fill();
+        c.lineWidth = 1.8;
+        c.strokeStyle = skin.borderOuter;
+        c.stroke();
+
+        // 스킨별 모서리/상단 포인트 장식
+        c.fillStyle = skin.badgeColor;
+        if (skin.ornament === 'wood') {
+          for (const [ox, oy] of [[6, 6], [tw - 6, 6], [6, bh - 4], [tw - 6, bh - 4]]) {
+            c.fillRect(ox - 1, oy - 1, 2, 2);
+          }
+        } else if (skin.ornament === 'sakura') {
+          for (const [ox, oy] of [[7, 7], [tw - 7, 7]]) {
+            c.beginPath(); c.arc(ox, oy, 2.4, 0, Math.PI * 2); c.fill();
+          }
+        } else if (skin.ornament === 'star') {
+          for (const [ox, oy] of [[8, 7], [tw - 8, 7], [tw - 12, bh - 5]]) {
+            c.fillRect(ox - 1, oy - 2, 2, 4); c.fillRect(ox - 2, oy - 1, 4, 2);
+          }
+        } else if (skin.ornament === 'mint') {
+          for (const [ox, oy] of [[7, 7], [tw - 7, 7]]) {
+            c.fillRect(ox - 2, oy - 1, 3, 2); c.fillRect(ox - 1, oy - 2, 2, 3);
+          }
+        } else if (skin.ornament === 'neon') {
+          c.fillStyle = '#00f0ff';
+          c.fillRect(4, 4, 6, 2); c.fillRect(tw - 10, bh - 4, 6, 2);
+          c.fillStyle = '#ff4df0';
+          c.fillRect(tw - 10, 4, 6, 2); c.fillRect(4, bh - 4, 6, 2);
+        } else if (skin.ornament === 'crown') {
+          c.fillStyle = '#ffd23f';
+          c.fillRect(mx - 5, 1, 10, 3);
+          c.fillRect(mx - 5, 0, 2, 2); c.fillRect(mx - 1, 0, 2, 2); c.fillRect(mx + 3, 0, 2, 2);
+          c.fillStyle = '#ff4d6d';
+          c.fillRect(mx - 1, 1, 2, 2);
+        }
+
+        c.fillStyle = skin.textColor;
+        c.fillText(txtObj.text, tw / 2, bh / 2 + 1);
       } else {
         c.lineWidth = 3;
         c.strokeStyle = '#2a180c';
@@ -859,17 +927,17 @@ export class Stage3D {
         const mesh = new THREE.Mesh(new THREE.PlaneGeometry(tw / 42, th / 42), mat);
         mesh.renderOrder = 10;
         this.scene3d.add(mesh);
-        item = { mesh, tex, cv, text: txtObj.text, seen: true };
+        item = { mesh, tex, cv, text: sig, seen: true };
         this.labelPool.set(txtObj, item);
       } else {
-        item.text = txtObj.text;
+        item.text = sig;
         item.tex.needsUpdate = true;
         item.mesh.geometry.dispose();
         item.mesh.geometry = new THREE.PlaneGeometry(tw / 42, th / 42);
       }
     }
     item.seen = true;
-    item.mesh.position.set(gx, gy + (isBubble ? 2.45 : 2.05), gz);
+    item.mesh.position.set(gx, gy + (isBubble ? 1.96 : 1.56), gz);
     item.mesh.rotation.y = this.camYaw;
   }
 
@@ -909,6 +977,43 @@ export class Stage3D {
     this.scene3d.add(bulb);
     const pool = this.addGroundGlow(gx, baseY, gz + 0.12, 2.7, 2.2);
     return [bulb, pool];
+  }
+
+  /** 마을 파이어 캠프(모닥불): 밤마다 불꽃이 타오르며 따뜻한 주황빛 바닥 후광을 비춘다 */
+  private addCampfire3D(gx: number, baseY: number, gz: number): THREE.Object3D[] {
+    const group = new THREE.Group();
+    group.position.set(gx, baseY + 0.18, gz + 0.04);
+    const outerMat = new THREE.MeshBasicMaterial({ color: 0xff6a1a, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+    outerMat.userData = { noTint: true };
+    const innerMat = new THREE.MeshBasicMaterial({ color: 0xffe066, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+    innerMat.userData = { noTint: true };
+    const outerCone = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.78, 6), outerMat);
+    outerCone.position.y = 0.34;
+    const innerCone = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.52, 5), innerMat);
+    innerCone.position.y = 0.28;
+    group.add(outerCone, innerCone);
+    this.scene3d.add(group);
+
+    const glowMat = new THREE.MeshBasicMaterial({
+      map: this.groundGlowTex,
+      color: 0xff8a30,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    });
+    glowMat.userData = { noTint: true };
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.6), glowMat);
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.set(gx, baseY + 0.032, gz);
+    glow.renderOrder = 2;
+    this.scene3d.add(glow);
+
+    this.campfires.push({ group, glow, glowMat, gx, gy: baseY, gz });
+    return [group, glow];
   }
 
   private updateAtmosphere(minutes: number, weather: string) {
@@ -1060,6 +1165,214 @@ export class Stage3D {
     }
   }
 
+  /** 다리 타일(Bridge)에 입체 목재 상판·물속 교각·난간 추가 (단일 드로우콜) */
+  private addBridge3D(data: number[], W: number, H: number, info: MapInfo) {
+    const pos: number[] = [], col: number[] = [];
+    const pushBox = (cx: number, cy: number, cz: number, sx: number, sy: number, sz: number, rgb: number) => {
+      const r = ((rgb >> 16) & 255) / 255, g = ((rgb >> 8) & 255) / 255, b = (rgb & 255) / 255;
+      const hx = sx / 2, hy = sy / 2, hz = sz / 2;
+      const x0 = cx - hx, x1 = cx + hx, y0 = cy - hy, y1 = cy + hy, z0 = cz - hz, z1 = cz + hz;
+      const quad = (p: number[][], k: number) => {
+        for (const i of [0, 1, 2, 0, 2, 3]) {
+          pos.push(...p[i]);
+          col.push(r * k, g * k, b * k);
+        }
+      };
+      quad([[x0, y1, z0], [x0, y1, z1], [x1, y1, z1], [x1, y1, z0]], 1.0);
+      quad([[x0, y1, z1], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1]], 0.78);
+      quad([[x1, y1, z0], [x1, y0, z0], [x0, y0, z0], [x0, y1, z0]], 0.65);
+      quad([[x0, y1, z0], [x0, y0, z0], [x0, y0, z1], [x0, y1, z1]], 0.7);
+      quad([[x1, y1, z1], [x1, y0, z1], [x1, y0, z0], [x1, y1, z0]], 0.7);
+    };
+    const isBr = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && (data[y * W + x] & 0x1fffffff) > 0;
+    const isDrop = (x: number, y: number) => x < 0 || y < 0 || x >= W || y >= H || (!isBr(x, y) && info.isBlocked(x, y));
+
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!isBr(x, y)) continue;
+      const h = this.hts.sample(x + 0.5, y + 0.5);
+      // 다리 밑면 목재 보강
+      pushBox(x + 0.5, h - 0.05, y + 0.5, 0.98, 0.1, 0.98, 0x6b4423);
+      const dN = isDrop(x, y - 1), dS = isDrop(x, y + 1), dW = isDrop(x - 1, y), dE = isDrop(x + 1, y);
+      if (dN || dS || dW || dE) {
+        if ((x + y) % 2 === 0) pushBox(x + 0.5, (h - 0.38) / 2, y + 0.5, 0.18, h + 0.38, 0.18, 0x452a14);
+      }
+      if (dN) {
+        pushBox(x + 0.5, h + 0.28, y + 0.08, 0.96, 0.09, 0.09, 0x9b6838);
+        pushBox(x + 0.12, h + 0.16, y + 0.08, 0.1, 0.34, 0.1, 0x774c27);
+        pushBox(x + 0.88, h + 0.16, y + 0.08, 0.1, 0.34, 0.1, 0x774c27);
+      }
+      if (dS) {
+        pushBox(x + 0.5, h + 0.28, y + 0.92, 0.96, 0.09, 0.09, 0x9b6838);
+        pushBox(x + 0.12, h + 0.16, y + 0.92, 0.1, 0.34, 0.1, 0x774c27);
+        pushBox(x + 0.88, h + 0.16, y + 0.92, 0.1, 0.34, 0.1, 0x774c27);
+      }
+      if (dW) {
+        pushBox(x + 0.08, h + 0.28, y + 0.5, 0.09, 0.09, 0.96, 0x9b6838);
+        pushBox(x + 0.08, h + 0.16, y + 0.12, 0.1, 0.34, 0.1, 0x774c27);
+        pushBox(x + 0.08, h + 0.16, y + 0.88, 0.1, 0.34, 0.1, 0x774c27);
+      }
+      if (dE) {
+        pushBox(x + 0.92, h + 0.28, y + 0.5, 0.09, 0.09, 0.96, 0x9b6838);
+        pushBox(x + 0.92, h + 0.16, y + 0.12, 0.1, 0.34, 0.1, 0x774c27);
+        pushBox(x + 0.92, h + 0.16, y + 0.88, 0.1, 0.34, 0.1, 0x774c27);
+      }
+    }
+    if (!pos.length) return;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true }));
+    this.scene3d.add(mesh);
+    this.registerTintMat(mesh);
+  }
+
+  /** 포켓몬 스타일 맵 기믹(빙판·화살표패드·워프패드·스위치·전자문) 3D 시각화 */
+  private addGimmick3D(
+    type: string,
+    o: MapInfo['objects'][number],
+    cellX: number,
+    cellY: number,
+    cellW: number,
+    cellH: number,
+    created: THREE.Object3D[],
+    W: number,
+    H: number,
+  ) {
+    const parseHex = (v: unknown, def: number) => {
+      const s = String(v ?? '').trim();
+      const n = s ? parseInt(s.replace(/^#/, ''), 16) : NaN;
+      return Number.isFinite(n) ? n : def;
+    };
+    const cx = cellX + cellW * 0.5;
+    const cz = cellY + 1 - cellH * 0.5;
+    const h = this.hts.sample(Math.max(0.05, Math.min(W - 0.05, cx)), Math.max(0.05, Math.min(H - 0.05, cz)));
+
+    if (type === 'ice_tile') {
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(cellW - 0.04, cellH - 0.04),
+        new THREE.MeshBasicMaterial({
+          color: 0xaef0ff,
+          transparent: true,
+          opacity: 0.34,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+          polygonOffsetUnits: -1,
+        }),
+      );
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(cx, h + 0.025, cz);
+      this.scene3d.add(m);
+      this.registerTintMat(m);
+      created.push(m);
+      return;
+    }
+
+    if (type === 'arrow_pad') {
+      const g = new THREE.Group();
+      const dir = String(prop(o, 'dir', 'up'));
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(0.86, 0.07, 0.86),
+        new THREE.MeshBasicMaterial({ color: 0x263244 }),
+      );
+      base.position.y = 0.035;
+      g.add(base);
+      const chevMat = new THREE.MeshBasicMaterial({ color: 0x5ce8ff });
+      const armL = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.04, 0.13), chevMat);
+      armL.position.set(-0.12, 0.085, 0.02);
+      armL.rotation.y = Math.PI / 4;
+      const armR = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.04, 0.13), chevMat);
+      armR.position.set(0.12, 0.085, 0.02);
+      armR.rotation.y = -Math.PI / 4;
+      const arrow = new THREE.Group();
+      arrow.add(armL, armR);
+      arrow.rotation.y = dir === 'down' ? Math.PI : dir === 'left' ? Math.PI / 2 : dir === 'right' ? -Math.PI / 2 : 0;
+      g.add(arrow);
+      g.position.set(cx, h, cz);
+      this.scene3d.add(g);
+      this.registerTintMat(g);
+      created.push(g);
+      return;
+    }
+
+    if (type === 'warp_pad') {
+      const col = parseHex(prop(o, 'color', '#48c8ff'), 0x48c8ff);
+      const g = new THREE.Group();
+      const plate = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.44, 0.48, 0.08, 12),
+        new THREE.MeshBasicMaterial({ color: 0x252a3d }),
+      );
+      plate.position.y = 0.04;
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.24, 0.4, 16),
+        new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.088;
+      const orb = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.16, 0),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.72 }),
+      );
+      orb.position.y = 0.28;
+      g.add(plate, ring, orb);
+      g.position.set(cx, h, cz);
+      this.scene3d.add(g);
+      this.registerTintMat(g);
+      this.gimmickSpin.push(orb);
+      created.push(g);
+      return;
+    }
+
+    if (type === 'switch_btn') {
+      const gateId = String(prop(o, 'gateId', 'g1'));
+      const col = parseHex(prop(o, 'color', '#ff6470'), 0xff6470);
+      const g = new THREE.Group();
+      const rim = new THREE.Mesh(
+        new THREE.BoxGeometry(0.84, 0.08, 0.84),
+        new THREE.MeshBasicMaterial({ color: 0x353b4a }),
+      );
+      rim.position.y = 0.04;
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.28, 0.31, 0.14, 12),
+        new THREE.MeshBasicMaterial({ color: col }),
+      );
+      cap.position.y = 0.14;
+      g.add(rim, cap);
+      g.position.set(cx, h, cz);
+      this.scene3d.add(g);
+      this.registerTintMat(g);
+      const list = this.switchCaps.get(gateId) ?? [];
+      list.push({ cap, baseY: 0.14, col });
+      this.switchCaps.set(gateId, list);
+      created.push(g);
+      return;
+    }
+
+    if (type === 'gate_bar') {
+      const gateId = String(prop(o, 'gateId', 'g1'));
+      const col = parseHex(prop(o, 'color', '#ff5a6e'), 0xff5a6e);
+      const g = new THREE.Group();
+      const pMat = new THREE.MeshBasicMaterial({ color: 0x384152 });
+      const postW = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.05, 0.22), pMat);
+      postW.position.set(-cellW * 0.5 + 0.14, 0.52, 0);
+      const postE = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.05, 0.22), pMat);
+      postE.position.set(cellW * 0.5 - 0.14, 0.52, 0);
+      const bMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.82 });
+      const bar1 = new THREE.Mesh(new THREE.BoxGeometry(cellW - 0.2, 0.14, 0.12), bMat);
+      bar1.position.set(0, 0.42, 0);
+      const bar2 = new THREE.Mesh(new THREE.BoxGeometry(cellW - 0.2, 0.14, 0.12), bMat);
+      bar2.position.set(0, 0.78, 0);
+      g.add(postW, postE, bar1, bar2);
+      g.position.set(cx, h, cz);
+      this.scene3d.add(g);
+      this.registerTintMat(g);
+      const list = this.gateMeshes.get(gateId) ?? [];
+      list.push(g);
+      this.gateMeshes.set(gateId, list);
+      created.push(g);
+    }
+  }
+
   private frameOffsets(gy: number, zoomScale = 1) {
     const tmpV = new THREE.Vector3();
     const el = (this.cam.el * Math.PI) / 180;
@@ -1099,6 +1412,7 @@ export class Stage3D {
       bobber?: Phaser.GameObjects.Arc;
       cursor?: Phaser.GameObjects.Image;
       cam?: { baseZoom: number; followPlayer: boolean };
+      openGates?: ReadonlySet<string>;
       minutes: number;
       weather: string;
     },
@@ -1157,22 +1471,29 @@ export class Stage3D {
       emote?: Phaser.GameObjects.Sprite;
       label?: Phaser.GameObjects.Text;
       bubble?: Phaser.GameObjects.Text;
+      bubbleSkin?: string;
     }) => {
       this.syncSprite(c.sprite, { shadowScale: 0.85 });
       if (!c.sprite.active || !c.sprite.visible || c.sprite.alpha <= 0.01) return;
-      if (c.emote?.active && c.emote.visible) this.syncSprite(c.emote, { shadowScale: 0, yBias: 1.95, zOffset: 0.05 });
+      if (c.emote?.active && c.emote.visible) {
+        c.emote.setData('groundY', c.sprite.y);
+        this.syncSprite(c.emote, { shadowScale: 0, yBias: 1.42, zOffset: 0.05 });
+      }
       const gx = c.sprite.x / T,
         gz = c.sprite.y / T,
         gy = this.hts.sample(gx, Math.max(0, Math.min(this.world.info.height - 0.01, gz)));
       if (c.label) this.syncLabel(c.label, gx, gy, gz, false);
-      if (c.bubble) this.syncLabel(c.bubble, gx, gy, gz, true);
+      if (c.bubble) this.syncLabel(c.bubble, gx, gy, gz, true, c.bubbleSkin ?? 'default');
     };
 
     syncChar(state.player);
     if (state.partner) {
       this.syncSprite(state.partner.sprite, { shadowScale: 0.45, zOffset: 0.01 });
       if (state.partner.coordSprite?.active) this.syncSprite(state.partner.coordSprite, { shadowScale: 0, zOffset: 0.03 });
-      if (state.partner.emote?.active) this.syncSprite(state.partner.emote, { shadowScale: 0, yBias: 1.15, zOffset: 0.04 });
+      if (state.partner.emote?.active) {
+        state.partner.emote.setData('groundY', state.partner.sprite.y);
+        this.syncSprite(state.partner.emote, { shadowScale: 0, yBias: 0.88, zOffset: 0.04 });
+      }
     }
     for (const n of state.npcs) syncChar(n);
     for (const t of state.trainers) syncChar(t);
@@ -1182,7 +1503,10 @@ export class Stage3D {
     for (const rp of state.remotePartners) {
       this.syncSprite(rp.sprite, { shadowScale: 0.45, zOffset: 0.01 });
       if (rp.coordSprite?.active) this.syncSprite(rp.coordSprite, { shadowScale: 0, zOffset: 0.03 });
-      if (rp.emote?.active) this.syncSprite(rp.emote, { shadowScale: 0, yBias: 1.15, zOffset: 0.04 });
+      if (rp.emote?.active) {
+        rp.emote.setData('groundY', rp.sprite.y);
+        this.syncSprite(rp.emote, { shadowScale: 0, yBias: 0.88, zOffset: 0.04 });
+      }
     }
     for (const c of state.chickens) this.syncSprite(c.sprite, { shadowScale: 0.35 });
     for (const d of state.ducks) this.syncSprite(d.sprite, { shadowScale: 0 });
@@ -1217,6 +1541,20 @@ export class Stage3D {
     }
     if (this.bladesMesh) this.bladesMesh.rotation.z -= dt * 0.0006;
     for (const gem of this.spireGems) gem.rotation.y += dt * 0.0014;
+    for (const orb of this.gimmickSpin) orb.rotation.y += dt * 0.0024;
+    if (state.openGates) {
+      for (const [gid, list] of this.gateMeshes) {
+        const open = state.openGates.has(gid);
+        for (const m of list) m.visible = !open;
+      }
+      for (const [gid, caps] of this.switchCaps) {
+        const open = state.openGates.has(gid);
+        for (const c of caps) {
+          c.cap.position.y = open ? c.baseY - 0.07 : c.baseY;
+          c.cap.scale.y = open ? 0.35 : 1;
+        }
+      }
+    }
 
     // 5) 플레이어를 가리는 고층 빌딩 · 마을 건물 · 나무 반투명 처리
     const pLift = Number(state.player.sprite.getData('lift') || 0);
@@ -1224,7 +1562,7 @@ export class Stage3D {
     const px = state.player.sprite.x / T;
     const pz = (typeof pGroundY === 'number' ? pGroundY : pLift ? state.player.sprite.y + pLift : state.player.sprite.y) / T;
     for (const b of this.tall) {
-      const hide = px > b.x0 - 0.5 && px < b.x1 + 0.5 && pz < b.z0 + 0.2 && pz > b.z0 - b.h - 1;
+      const hide = px > b.x0 - 0.4 && px < b.x1 + 0.4 && pz < b.z0 - 0.05 && pz > b.z0 - b.h * 0.95;
       if (hide !== b.faded) {
         b.faded = hide;
         for (const m of b.mats) {
@@ -1248,11 +1586,31 @@ export class Stage3D {
       for (const s of this.sway) s.tex.offset.x = (s.tex.offset.x + 1 / s.frames) % 1;
     }
     this.updateAtmosphere(state.minutes, state.weather);
+    if (this.campfires.length) {
+      const now = this.phaserScene.time.now;
+      const fireOn = this.nightAlpha > 0.02 || state.minutes >= 17 * 60 + 30 || state.minutes < 6 * 60 + 30;
+      const pulse = 0.92 + 0.16 * Math.sin(now * 0.013) + 0.08 * Math.cos(now * 0.029);
+      for (const cf of this.campfires) {
+        cf.group.visible = fireOn;
+        cf.glow.visible = fireOn;
+        if (fireOn) {
+          cf.group.scale.set(1, pulse, 1);
+          cf.group.rotation.y = now * 0.003;
+          cf.glowMat.opacity = Math.max(0.28, this.nightAlpha * 0.55) * (0.9 + 0.1 * Math.sin(now * 0.011));
+          if (Math.random() < 0.06) {
+            this.fx.burst('sparkle', cf.gx * T, cf.gz * T, 10);
+          }
+        }
+      }
+    }
     this.fx.updateWindows(state.minutes, state.weather, this.phaserScene.time.now);
     this.fx.syncFishing(px, pz, state.player.dir ?? 'down', state.bobber, dt / 1000, this.phaserScene.time.now / 1000);
 
     // 7) 포켓몬 5세대풍 다이내믹 카메라 추적 (타이틀 팬 · 줌 · 흔들림 · 페이드/플래시 동기화)
-    const gy = this.hts.sample(px, Math.max(0, Math.min(this.world.info.height - 0.01, pz)));
+    const rawGy = this.hts.sample(px, Math.max(0, Math.min(this.world.info.height - 0.01, pz)));
+    if (!this.camInit) this.smoothGy = rawGy;
+    else this.smoothGy += (rawGy - this.smoothGy) * Math.min(1, dt / 95);
+    const gy = this.smoothGy;
     if (this.torchMesh) {
       this.torchMesh.visible = this.cave || this.nightAlpha > 0.05;
       this.torchMesh.position.set(px, gy + 0.04, pz + 0.1);
@@ -1264,10 +1622,14 @@ export class Stage3D {
     const rawTz = followPlayer ? pz : pCam.midPoint.y / T;
     const zoomScale = state.cam ? state.cam.baseZoom / Math.max(0.25, pCam.zoom) : 1;
 
-    const vx = px - (this.lastPx || px);
+    // 프레임 타임 변동이나 장애물 스침으로 카메라가 덜덜 떨리지 않도록 dt 정규화 + 데드존 적용
+    const instVelX = dt > 1 ? (px - (this.lastPx || px)) / (dt / 1000) : 0;
     this.lastPx = px;
-    const targetYaw = this.interior || !followPlayer ? 0 : Math.max(-0.07, Math.min(0.07, -vx * 0.35));
-    this.camYaw += (targetYaw - this.camYaw) * Math.min(1, dt / 260);
+    this.lastVelX += (instVelX - this.lastVelX) * Math.min(1, dt / 120);
+    const cleanVelX = Math.abs(this.lastVelX) < 1.8 ? 0 : this.lastVelX - Math.sign(this.lastVelX) * 1.8;
+    const targetYaw = this.interior || !followPlayer ? 0 : Math.max(-0.024, Math.min(0.024, -cleanVelX * 0.0045));
+    this.camYaw += (targetYaw - this.camYaw) * Math.min(1, dt / 320);
+    if (Math.abs(this.camYaw) < 0.0004 && targetYaw === 0) this.camYaw = 0;
 
     let tx = rawTx,
       tz = rawTz;
@@ -1283,8 +1645,12 @@ export class Stage3D {
       this.camInit = true;
       this.camTarget.set(tx, gy, tz);
     } else {
-      const lerpAmt = followPlayer ? 1 - Math.pow(0.0008, dt / 1000) : Math.min(1, dt / 90);
+      const lerpAmt = followPlayer ? 1 - Math.pow(0.0005, dt / 1000) : Math.min(1, dt / 90);
       this.camTarget.lerp(new THREE.Vector3(tx, gy, tz), lerpAmt);
+      if (Math.hypot(tx - this.camTarget.x, tz - this.camTarget.z) < 0.0015) {
+        this.camTarget.x = tx;
+        this.camTarget.z = tz;
+      }
     }
 
     this.fx.update(dt, this.camTarget, this.camYaw, state.weather, this.biome, this.interior, this.cave, this.phaserScene.time.now);
@@ -1321,5 +1687,8 @@ export class Stage3D {
     this.labelPool.clear();
     this.objMeshes.clear();
     this.placedMeshes.clear();
+    this.gateMeshes.clear();
+    this.switchCaps.clear();
+    this.gimmickSpin.length = 0;
   }
 }

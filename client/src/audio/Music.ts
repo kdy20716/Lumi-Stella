@@ -2,7 +2,7 @@
 //  - 휴대용 게임기 시절 RPG 느낌: 펄스파 리드 · 금관 · 현악 패드 · 삼각파 베이스 · 노이즈 드럼 + 스테레오 에코
 //  - 곡은 tracks.ts 에 악보(문자열)로 들어 있음. 모두 이 게임을 위해 새로 쓴 곡
 //  - 맵/시간/배틀 종류에 맞춰 곡을 고르고(trackFor), 바뀔 때는 짧게 페이드
-import { audioOut } from './Sfx';
+import { audioOut, sfx } from './Sfx';
 import { TRACKS, type Track, type Part, type Inst } from './tracks';
 
 const NOTE = /^([A-G])(#|b)?(\d)$/;
@@ -366,6 +366,11 @@ export const music = {
   setOn(v: boolean) {
     musicOn = v; try { localStorage.setItem('sf:music', v ? '1' : '0'); } catch { /* 무시 */ }
     if (!v) engine?.stop(0.3); else if (want) start(want.id, want.night);
+  },
+  get volume() { return sfx.bgmVolume; },
+  setVolume(v: number) {
+    sfx.setBgmVolume(v);
+    if (v > 0 && !musicOn) this.setOn(true);
   },
   get current() { return want?.id ?? null; },
 };

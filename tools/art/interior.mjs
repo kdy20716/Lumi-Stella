@@ -123,6 +123,12 @@ export function buildRoom(spec) {
   beam(0, 0, T, H * T); beam((W - 1) * T, 0, T, H * T);
   t.vline(T - 1, 3, H * T - 3 - T, topL); t.vline((W - 1) * T, 3, H * T - 3 - T, topL);
   beam(0, (H - 1) * T, W * T, T); t.hline(T - 1, (H - 1) * T, (W - 2) * T + 2, topL);
+  // 실내 내부 칸막이·미로 벽 ([x, y, w, h])
+  for (const [wx, wy, ww, wh] of spec.walls ?? []) {
+    t.rect(wx * T, wy * T, ww * T, wh * T, top);
+    t.hline(wx * T, wy * T, ww * T, topL);
+    t.hline(wx * T, (wy + wh) * T - 1, ww * T, darken(top, 0.35));
+  }
   // 문: 아래 벽에 1칸 틈 + 문지방 + 발매트 (다락방 등 문 없는 실내는 벽 그대로 유지)
   if (!spec.noDoor) {
     const d = spec.door;
@@ -305,31 +311,68 @@ function workbench() {
   return sheen(t);
 }
 function atticStairsUp() {
-  // 1층 → 2층 다락방 올라가는 원목 계단
-  const t = new Img(16, 34);
-  t.rect(1, 2, 14, 32, '#2a1810');
-  t.rect(1, 2, 2, 32, W_.d1); t.vline(2, 2, 32, W_.l1);
-  t.rect(13, 2, 2, 32, W_.d1); t.vline(13, 2, 32, W_.l1);
-  for (let s = 0; s < 5; s++) {
-    const sy = 5 + s * 6;
-    t.rect(3, sy, 10, 4, W_.l1); t.hline(3, sy, 10, W_.l2);
-    t.rect(3, sy + 4, 10, 2, W_.d1);
+  // 1층 → 2층 다락방 올라가는 원목 계단 (포켓몬/쯔꾸르 스타일 벽면 매립 계단)
+  const t = new Img(16, 36);
+  t.rect(0, 0, 16, 36, W_.d2);
+  t.rect(1, 1, 14, 34, '#1b110d');
+  // 양옆 난간 기둥
+  t.rect(1, 1, 2, 34, W_.base); t.vline(2, 1, 34, W_.l1);
+  t.rect(13, 1, 2, 34, W_.base); t.vline(13, 1, 34, W_.l1);
+  t.rect(0, 0, 16, 2, W_.l1);
+  for (let s = 0; s < 6; s++) {
+    const sy = 5 + s * 5;
+    const shade = s < 2 ? W_.d1 : s < 4 ? W_.base : W_.l1;
+    t.rect(3, sy, 10, 3, shade);
+    t.hline(3, sy, 10, lighten(shade, 0.18));
+    t.rect(3, sy + 3, 10, 2, W_.d2);
   }
-  t.rect(1, 1, 14, 2, W_.base);
   return sheen(t);
 }
 function atticStairsDown() {
-  // 2층 다락방 → 1층 내려가는 계단 입구 (난간 포함)
-  const t = new Img(16, 26);
-  t.rect(1, 4, 14, 22, '#26160e');
-  t.rect(1, 2, 14, 3, W_.base); t.hline(1, 2, 14, W_.l2);
-  t.rect(1, 4, 2, 22, W_.d1); t.rect(13, 4, 2, 22, W_.d1);
+  // 2층 다락방 → 1층 내려가는 바닥 계단구 (포켓몬/쯔꾸르 스타일 난간 + 아래로 내려가는 디딤판)
+  const t = new Img(16, 24);
+  t.rect(1, 2, 14, 21, '#1b110d');
+  // 위·오른쪽·아래 안전 난간 (왼쪽에서 걸어 들어오도록 왼쪽은 개방)
+  t.rect(1, 0, 14, 3, W_.base); t.hline(1, 0, 14, W_.l2); t.hline(1, 2, 14, W_.d2);
+  t.rect(13, 0, 2, 23, W_.base); t.vline(13, 0, 23, W_.l1);
+  t.rect(1, 21, 14, 2, W_.d1); t.hline(1, 21, 14, W_.l1);
+  // 왼쪽 난간 기둥 포스트
+  t.rect(1, 0, 3, 4, W_.l1); t.rect(1, 19, 3, 4, W_.l1);
+  // 서→동으로 내려가는 계단 디딤판
   for (let s = 0; s < 4; s++) {
-    const sy = 7 + s * 4;
-    t.rect(3, sy, 10, 3, s === 0 ? W_.d1 : W_.base);
-    t.hline(3, sy, 10, s === 0 ? W_.base : W_.l1);
+    const sx = 2 + s * 3;
+    const c = s === 0 ? W_.l1 : s === 1 ? W_.base : s === 2 ? W_.d1 : W_.d2;
+    t.rect(sx, 4, 3, 16, c);
+    t.vline(sx, 4, 16, lighten(c, 0.16));
   }
-  t.rect(2, 23, 12, 3, '#1a0e08');
+  return sheen(t);
+}
+function tvConsole() {
+  // 거실 브라운관/와이드 TV + 원목 TV 장식장 (포켓몬/쯔꾸르 감성, 화면에 루미 리그 중계 방송)
+  const t = new Img(32, 38);
+  // 하단 원목 TV 캐비닛
+  t.rect(1, 22, 30, 14, W_.base); t.hline(1, 22, 30, W_.l2); t.hline(1, 23, 30, W_.l1);
+  t.rect(3, 25, 12, 9, W_.d1); t.rect(17, 25, 12, 9, W_.d1);
+  t.rect(4, 26, 10, 3, '#3b2c34'); t.rect(5, 27, 4, 1, '#6ad8b0'); // 셋톱박스/게임기
+  t.rect(18, 26, 10, 7, W_.base); t.set(19, 29, P.gold.l1);
+  t.rect(2, 36, 3, 2, W_.d2); t.rect(27, 36, 3, 2, W_.d2);
+  // 상단 TV 본체 베젤
+  t.rect(2, 3, 28, 19, '#2e3440'); t.hline(2, 3, 28, '#5a6273'); t.rect(3, 4, 26, 17, '#3b4252');
+  // TV 화면 (푸른 경기장 배경 + 두 루미가 대결하는 생생한 방송 장면)
+  t.rect(4, 5, 21, 14, '#4fa8e0');
+  t.rect(4, 5, 21, 5, '#8fd4ff');
+  t.rect(4, 14, 21, 5, '#6ec468'); t.hline(4, 14, 21, '#9be28a');
+  // 화면 속 경기장 라인 & 루미 실루엣 + 반짝 이펙트
+  t.ellipse(14, 16, 7, 2, '#e8f6e0');
+  t.circle(9, 13, 3, '#ff7a4d'); t.set(8, 12, '#ffe08a'); // 불꽃 루미
+  t.circle(19, 12, 3, '#5ae0b0'); t.set(19, 11, '#ffffff'); // 바람/풀 루미
+  t.set(14, 9, '#fff4c0'); t.set(13, 10, '#ffd65a'); t.set(15, 10, '#ffd65a'); // 격돌 스파크
+  // 화면 유리 하이라이트
+  t.line(5, 6, 8, 6, '#ffffff'); t.line(5, 7, 6, 7, '#ffffff');
+  // 우측 스피커 그릴 & 전원 LED
+  t.vline(27, 6, 8, '#1f242d'); t.set(27, 16, '#7cc45a'); t.set(27, 18, '#e8502e');
+  // 받침 목
+  t.rect(11, 21, 10, 2, '#232832');
   return sheen(t);
 }
 function studyDesk() {
@@ -358,38 +401,39 @@ export const FURN = {
   forge: { w: 2, h: 1, build: forge }, lab_machine: { w: 2, h: 1, build: labMachine }, starter_table: { w: 3, h: 1, build: starterTable },
   millstone: { w: 2, h: 2, build: millstone }, sacks: { w: 1, h: 1, build: sacks }, piano: { w: 2, h: 1, build: piano },
   pillar: { w: 1, h: 1, build: pillar }, crystal: { w: 1, h: 1, build: () => crystal() }, crystal_red: { w: 1, h: 1, build: () => crystal('#ff8a6a') }, pedestal: { w: 2, h: 1, build: pedestal }, candle: { w: 1, h: 1, build: candle }, statue: { w: 1, h: 1, build: () => statue() }, table_small: { w: 2, h: 1, build: tableSmall }, heal_pad: { w: 2, h: 1, build: healPad }, workbench: { w: 2, h: 1, build: workbench },
-  attic_stairs_up: { w: 1, h: 1, build: atticStairsUp }, attic_stairs_down: { w: 1, h: 1, build: atticStairsDown }, desk: { w: 2, h: 1, build: studyDesk },
+  attic_stairs_up: { w: 1, h: 1, build: atticStairsUp }, attic_stairs_down: { w: 1, h: 1, build: atticStairsDown }, desk: { w: 2, h: 1, build: studyDesk }, tv: { w: 2, h: 1, build: tvConsole },
 };
 
 // ── 방 레이아웃 (아트 + 맵 생성기 공용) ─────────────────
 // furn: [type, cx, cy(맨 아래 칸), props]  /  spawns: [name, cx, cy, props]  /  lights: [cx, cy]
 const WOOD = { kind: 'wood', color: '#b07a48' };
 export const ROOMS = {
-  home: { // 내 집 1층: 거실 · 부엌 · 식탁 · 작업대 · 2층 다락방 계단 (창문/벽난로 겹침 없이 깔끔 배치)
+  home: { // 내 집 1층: 거실(TV · 소파 · 벽난로) · 부엌 · 식탁 · 작업대 · 2층 다락방 계단 (포켓몬/쯔꾸르 스타일 북쪽 벽 밀착 배치, 창문·벽난로 가림 없음)
     name: '나의 집 (1층)', W: 15, H: 11, door: 7, wall: { color: '#ecd2a8', pattern: 'stripe', accent: '#e0b888', wainscot: '#b07a48' }, floor: WOOD,
-    decor: [['window', 3], ['clock', 5], ['fireplace', 6], ['window', 9]],
-    rugs: [[4, 5, 4, 3, '#a83c34']],
+    decor: [['window', 2], ['clock', 6], ['fireplace', 7], ['shelf', 11]],
+    rugs: [[3, 5, 5, 3, '#a83c34']],
     furn: [
-      ['attic_stairs_up', 1, 3], ['bookshelf', 1, 6], ['plant', 1, 9], ['sofa', 4, 9],
-      ['kitchen', 11, 3, { interact: 'kitchen' }],
+      ['attic_stairs_up', 1, 3], ['tv', 4, 3, { interact: 'tv' }], ['bookshelf', 9, 3], ['kitchen', 11, 3, { interact: 'kitchen' }],
+      ['sofa', 3, 6], ['plant_b', 1, 6],
       ['dtable', 10, 7, { interact: 'dtable' }], ['chair_l', 9, 7, { interact: 'dtable' }], ['chair_r', 13, 7, { interact: 'dtable' }],
+      ['plant', 1, 9], ['table_small', 2, 9],
       ['workbench', 10, 9, { interact: 'workbench' }], ['lamp_floor', 13, 9],
     ],
     warps: [[1, 3, 1, 1, 'home_2f', 'from_1f']],
     spawns: [['entry', 7, 9], ['from_2f', 2, 4]], lights: [[7, 2], [13, 8]],
   },
-  home_2f: { // 내 집 2층 다락방: 침실 · 옷장 · 책상 · 1층 계단
+  home_2f: { // 내 집 2층 다락방: 침실 · TV · 옷장 · 책장 · 책상 · 1층 계단 (모든 키 큰 가구는 북쪽 벽 y=3에 밀착, 창문 가림 없음)
     name: '나의 집 (2층 다락방)', W: 12, H: 9, door: 6, noDoor: true,
     wall: { color: '#dfc092', pattern: 'plank', accent: '#c9a26d', wainscot: '#8c5a33' }, floor: WOOD,
-    decor: [['window', 4], ['clock', 6], ['poster', 9]],
-    rugs: [[4, 4, 4, 3, '#5878a8']],
+    decor: [['window', 2], ['clock', 6], ['poster', 8]],
+    rugs: [[3, 5, 5, 2, '#5878a8']],
     furn: [
-      ['bed', 1, 4, { interact: 'bed' }], ['lamp_floor', 3, 3], ['wardrobe', 7, 3, { interact: 'wardrobe' }], ['plant_b', 10, 3],
-      ['bookshelf', 1, 7], ['desk', 4, 7, { interact: 'sign', text: '다락방 책상.\n여행 일기장과 루미나 지방 지도가 정갈히 펼쳐져 있다.' }],
-      ['attic_stairs_down', 9, 7], ['plant', 10, 7],
+      ['bed', 1, 4, { interact: 'bed' }], ['tv', 4, 3, { interact: 'tv' }], ['wardrobe', 7, 3, { interact: 'wardrobe' }], ['bookshelf', 9, 3],
+      ['desk', 4, 6, { interact: 'sign', text: '다락방 내 책상.\n여행 일기장과 루미나 지방 지도가 정갈히 펼쳐져 있다.' }], ['chair_l', 3, 6],
+      ['lamp_floor', 1, 7], ['attic_stairs_down', 9, 7], ['plant', 10, 7],
     ],
     warps: [[9, 7, 1, 1, 'home', 'from_2f']],
-    spawns: [['wake', 3, 5], ['from_1f', 8, 7], ['entry', 8, 7]], lights: [[5, 2], [9, 6]],
+    spawns: [['wake', 4, 4], ['from_1f', 8, 7], ['entry', 8, 7]], lights: [[5, 2], [9, 6]],
   },
   in_store: {
     name: '소라네 루미 마트', W: 14, H: 10, door: 7, wall: { color: '#d8e8d0', pattern: 'dots', accent: '#a8c89a', wainscot: '#8c5a33' }, floor: { kind: 'tile', color: '#c9b08a', color2: '#e0caa0' },
@@ -424,30 +468,30 @@ export const ROOMS = {
   },
   in_house_a: {
     name: '이웃집', W: 12, H: 9, door: 6, wall: { color: '#e8d8c0', pattern: 'diamond', accent: '#d8b890', wainscot: '#8c5a33' }, floor: WOOD,
-    decor: [['window', 3], ['painting', 5], ['clock', 6], ['window', 7]],
+    decor: [['window', 3], ['painting', 5], ['clock', 8]],
     rugs: [[4, 4, 4, 2, '#7d5aa8']],
-    furn: [['bed_pink', 1, 4, { interact: 'nbed' }], ['bookshelf', 9, 3], ['table_small', 5, 5], ['chair_l', 4, 5], ['plant', 10, 7], ['lamp_floor', 1, 7]],
+    furn: [['bed_pink', 1, 4, { interact: 'nbed' }], ['tv', 6, 3, { interact: 'tv' }], ['bookshelf', 9, 3], ['table_small', 5, 5], ['chair_l', 4, 5], ['plant', 10, 7], ['lamp_floor', 1, 7]],
     spawns: [['entry', 6, 7]], lights: [[1, 6]],
   },
   in_house_b: {
     name: '이웃집', W: 12, H: 9, door: 6, wall: { color: '#c8dce8', pattern: 'stripe', accent: '#a8c4d8', wainscot: '#6b4024' }, floor: { kind: 'wood', color: '#a07050' },
-    decor: [['window', 4], ['painting', 6], ['window', 7], ['clock', 10]],
+    decor: [['window', 4], ['painting', 6], ['window', 7], ['clock', 8]],
     rugs: [[3, 5, 6, 2, '#3f8a3e']],
-    furn: [['bed_green', 9, 4, { interact: 'nbed' }], ['kitchen', 1, 3], ['sofa_red', 2, 7], ['plant_b', 10, 7], ['stool', 1, 6]],
+    furn: [['bed_green', 9, 4, { interact: 'nbed' }], ['kitchen', 1, 3], ['tv', 5, 3, { interact: 'tv' }], ['sofa_red', 3, 6], ['plant_b', 10, 7], ['stool', 1, 6]],
     spawns: [['entry', 6, 7]], lights: [[5, 6]],
   },
   in_house_c: {
     name: '이웃집', W: 12, H: 9, door: 6, wall: { color: '#f0d8d8', pattern: 'dots', accent: '#e0b0b0', wainscot: '#8c5a33' }, floor: WOOD,
-    decor: [['painting2', 1], ['window', 3], ['window', 7], ['clock', 10]],
+    decor: [['window', 3], ['window', 7], ['clock', 6]],
     rugs: [[3, 5, 5, 2, '#e0a43a']],
     furn: [['bed', 9, 4, { interact: 'nbed' }], ['piano', 1, 3, { interact: 'piano' }], ['bookshelf', 5, 3], ['table_small', 4, 6], ['plant', 1, 7], ['lamp_floor', 10, 7]],
     spawns: [['entry', 6, 7]], lights: [[10, 6]],
   },
   in_center: { // 루미 센터 (회복)
     name: '루미 센터', W: 14, H: 10, door: 7, wall: { color: '#fbe4ea', pattern: 'stripe', accent: '#f4c8d4', wainscot: '#e8a0b0' }, floor: { kind: 'tile', color: '#f4dce4', color2: '#fff4f8' },
-    decor: [['heartsign', 6], ['window', 2], ['window', 10], ['poster', 13]],
+    decor: [['heartsign', 6], ['window', 2], ['window', 10], ['poster', 12]],
     rugs: [[5, 7, 4, 2, '#e07a8a']],
-    furn: [['counter_heal', 5, 4, { interact: 'center' }], ['heal_pad', 1, 4], ['sofa_red', 1, 7], ['sofa', 10, 7], ['plant', 12, 4], ['plant_b', 1, 8]],
+    furn: [['counter_heal', 5, 4, { interact: 'center' }], ['heal_pad', 1, 4], ['sofa_red', 2, 7], ['sofa', 9, 7], ['plant', 12, 4], ['plant_b', 1, 8]],
     spawns: [['wp_clerk', 7, 3], ['wp_gate', 7, 8], ['entry', 7, 8]], lights: [[7, 2]],
   },
   in_shop_w: {
@@ -457,12 +501,19 @@ export const ROOMS = {
     furn: [['shelf_goods_b', 1, 3], ['shelf_goods', 3, 3], ['counter', 6, 5, { interact: 'shop:windvale' }], ['sacks', 10, 7], ['plant', 1, 7]],
     spawns: [['wp_clerk', 8, 4], ['wp_gate', 6, 7], ['entry', 6, 7]], lights: [[8, 2]],
   },
-  in_gym: { // 바람골 도장
-    name: '바람골 도장', W: 14, H: 14, door: 7, wall: { color: '#c8d8e0', pattern: 'stone' }, floor: { kind: 'stone', color: '#9aa8b4' },
-    decor: [['banner', 2], ['banner', 6], ['banner', 10]],
-    rugs: [[4, 5, 7, 6, '#2a8a8a']],
-    furn: [['pillar', 2, 5], ['pillar', 11, 5], ['pillar', 2, 10], ['pillar', 11, 10], ['plant', 1, 12], ['plant', 12, 12]],
-    spawns: [['trainer:sena', 7, 4, { face: 'down' }], ['wp_gate', 7, 12], ['entry', 7, 12]], lights: [[7, 7]],
+  in_gym: { // 바람골 도장 (입문 스위치 + 바람길 가속)
+    name: '바람골 도장', W: 16, H: 18, door: 8, wall: { color: '#c8d8e0', pattern: 'stone' }, floor: { kind: 'stone', color: '#9aa8b4' },
+    decor: [['banner', 2], ['banner', 7], ['banner', 12]],
+    walls: [[1, 10, 6, 1], [9, 10, 6, 1]],
+    rugs: [[5, 4, 6, 5, '#2a8a8a']],
+    furn: [['pillar', 2, 5], ['pillar', 13, 5], ['pillar', 2, 14], ['pillar', 13, 14], ['plant', 1, 16], ['plant', 14, 16]],
+    gimmicks: [
+      ['switch_btn', 3, 13, { gateId: 'wg1', color: '#38d0a8' }],
+      ['gate_bar', 7, 10, { w: 2, h: 1, gateId: 'wg1', color: '#38d0a8' }],
+      ['arrow_pad', 7, 9, { dir: 'up', steps: 2 }],
+      ['arrow_pad', 8, 9, { dir: 'up', steps: 2 }],
+    ],
+    spawns: [['trainer:sena', 8, 4, { face: 'down' }], ['wp_gate', 8, 16], ['entry', 8, 16]], lights: [[8, 6], [8, 13]],
   },
   in_windmill: {
     name: '풍차 안', W: 10, H: 10, door: 5, wall: { color: '#c8a070', pattern: 'plank' }, floor: { kind: 'wood', color: '#9a6a40' },
@@ -473,23 +524,132 @@ export const ROOMS = {
   },
 };
 
-// ── 루미나 지방 확장: 도장 7 · 리그 · 도전의 탑 · 폐저택 · 태초의 방 ──
-const GYM_ROOMS = {
-  harbor: ['물결항 도장', '#3f8fc8', { kind: 'tile', color: '#9cc8e0', color2: '#c4e2f0' }, { color: '#c8e4f2', pattern: 'tile' }],
-  maple: ['단풍골 도장', '#5fae4a', { kind: 'wood', color: '#a07848' }, { color: '#d8e8c0', pattern: 'plank' }],
-  forge: ['쇳불 도장', '#b8864a', { kind: 'stone', color: '#8a7a6a' }, { color: '#8a7a70', pattern: 'stone' }],
-  ember: ['잿빛 도장', '#e8642e', { kind: 'stone', color: '#7a5a50' }, { color: '#a87060', pattern: 'stone' }],
-  lumina: ['빛누리 도장', '#e0b830', { kind: 'tile', color: '#e8dcb0', color2: '#fff4d0' }, { color: '#f4ecd0', pattern: 'diamond', accent: '#e0c870' }],
-  frost: ['서리 도장', '#a8a090', { kind: 'tile', color: '#d8e4ee', color2: '#f4f8ff' }, { color: '#e4eef6', pattern: 'tile' }],
-  summit: ['별마루 도장', '#7d5aa8', { kind: 'carpet', color: '#3a3058' }, { color: '#4a4070', pattern: 'dots', accent: '#e0c870' }],
+// ── 루미나 지방 확장: 크기·수직성·고유 기믹을 갖춘 도장 7 ──
+const GYM_LAYOUTS = {
+  harbor: {
+    name: '물결항 도장', col: '#3f8fc8', W: 18, H: 22, door: 9,
+    floor: { kind: 'tile', color: '#9cc8e0', color2: '#c4e2f0' }, wall: { color: '#c8e4f2', pattern: 'tile' },
+    walls: [[1, 14, 11, 1], [15, 14, 2, 1], [1, 8, 7, 1], [10, 8, 7, 1]],
+    rugs: [[6, 3, 6, 4, '#3f8fc8'], [4, 9, 10, 4, '#2b74a8']],
+    furn: [['pillar', 3, 5], ['pillar', 14, 5], ['statue', 6, 19], ['statue', 11, 19], ['plant', 1, 20], ['plant', 16, 20]],
+    gimmicks: [
+      ['arrow_pad', 13, 18, { dir: 'up', steps: 5 }],
+      ['arrow_pad', 14, 18, { dir: 'up', steps: 5 }],
+      ['switch_btn', 15, 11, { gateId: 'hb1', color: '#38d8ff' }],
+      ['arrow_pad', 10, 11, { dir: 'left', steps: 5 }],
+      ['gate_bar', 8, 8, { w: 2, h: 1, gateId: 'hb1', color: '#38d8ff' }],
+    ],
+    spawns: [['trainer:leader_harbor', 9, 4, { face: 'down' }], ['trainer:gym_harbor_t1', 5, 17, { face: 'right' }], ['trainer:gym_harbor_t2', 12, 11, { face: 'left' }]],
+    lights: [[9, 6], [9, 12], [9, 18]],
+  },
+  maple: {
+    name: '단풍골 도장', col: '#5fae4a', W: 20, H: 20, door: 10,
+    floor: { kind: 'wood', color: '#a07848' }, wall: { color: '#d8e8c0', pattern: 'plank' },
+    walls: [[7, 4, 1, 10], [12, 4, 1, 10], [1, 11, 3, 1], [5, 11, 2, 1], [13, 11, 2, 1], [17, 11, 2, 1], [8, 8, 1, 1], [11, 8, 1, 1]],
+    rugs: [[8, 3, 4, 5, '#5fae4a'], [8, 12, 4, 6, '#3e8438']],
+    furn: [['pillar', 2, 4], ['pillar', 17, 4], ['plant_b', 1, 18], ['plant_b', 18, 18], ['plant', 6, 5], ['plant', 13, 5]],
+    gimmicks: [
+      ['switch_btn', 3, 5, { gateId: 'mp1', color: '#6ee060' }],
+      ['gate_bar', 15, 11, { w: 2, h: 1, gateId: 'mp1', color: '#6ee060' }],
+      ['switch_btn', 16, 5, { gateId: 'mp2', color: '#ffd452' }],
+      ['gate_bar', 9, 8, { w: 2, h: 1, gateId: 'mp2', color: '#ffd452' }],
+    ],
+    spawns: [['trainer:leader_maple', 10, 4, { face: 'down' }], ['trainer:gym_maple_t1', 4, 8, { face: 'right' }], ['trainer:gym_maple_t2', 15, 8, { face: 'left' }]],
+    lights: [[10, 6], [4, 7], [15, 7]],
+  },
+  forge: {
+    name: '쇳불 도장', col: '#b8864a', W: 16, H: 26, door: 8,
+    floor: { kind: 'stone', color: '#8a7a6a' }, wall: { color: '#8a7a70', pattern: 'stone' },
+    walls: [[1, 18, 11, 1], [4, 11, 11, 1]],
+    rugs: [[5, 3, 6, 4, '#c86e34']],
+    furn: [['anvil', 4, 21], ['forge', 1, 20], ['forge', 13, 13], ['anvil', 11, 6], ['pillar', 3, 5], ['pillar', 12, 5], ['statue', 5, 24], ['statue', 10, 24]],
+    gimmicks: [
+      ['arrow_pad', 13, 22, { dir: 'up', steps: 5 }],
+      ['arrow_pad', 14, 22, { dir: 'up', steps: 5 }],
+      ['arrow_pad', 10, 15, { dir: 'left', steps: 5 }],
+      ['arrow_pad', 2, 14, { dir: 'up', steps: 4 }],
+      ['arrow_pad', 5, 7, { dir: 'right', steps: 3 }],
+    ],
+    spawns: [['trainer:leader_forge', 8, 4, { face: 'down' }], ['trainer:gym_forge_t1', 10, 21, { face: 'left' }], ['trainer:gym_forge_t2', 7, 13, { face: 'right' }]],
+    lights: [[8, 5], [8, 14], [8, 22]],
+  },
+  ember: {
+    name: '잿빛 도장', col: '#e8642e', W: 20, H: 22, door: 10,
+    floor: { kind: 'stone', color: '#7a5a50' }, wall: { color: '#a87060', pattern: 'stone' },
+    walls: [[6, 3, 1, 18], [13, 3, 1, 18], [1, 12, 18, 1]],
+    rugs: [[7, 3, 6, 8, '#e8642e'], [7, 14, 6, 6, '#9c3e24']],
+    furn: [['pillar', 7, 4], ['pillar', 12, 4], ['statue', 1, 14], ['statue', 18, 14], ['candle', 7, 19], ['candle', 12, 19]],
+    gimmicks: [
+      ['warp_pad', 8, 15, { toX: 3, toY: 19, color: '#ff7040' }],
+      ['warp_pad', 11, 15, { toX: 16, toY: 19, color: '#48c8ff' }],
+      ['warp_pad', 17, 19, { toX: 11, toY: 19, color: '#48c8ff' }],
+      ['warp_pad', 2, 19, { toX: 8, toY: 19, color: '#ff7040' }],
+      ['warp_pad', 3, 15, { toX: 3, toY: 10, color: '#b478ff' }],
+      ['warp_pad', 2, 10, { toX: 3, toY: 16, color: '#b478ff' }],
+      ['warp_pad', 3, 5, { toX: 16, toY: 10, color: '#ffd448' }],
+      ['warp_pad', 16, 4, { toX: 10, toY: 10, color: '#ff5088' }],
+      ['warp_pad', 10, 11, { toX: 10, toY: 14, color: '#ff5088' }],
+    ],
+    spawns: [['trainer:leader_ember', 10, 4, { face: 'down' }], ['trainer:gym_ember_t1', 16, 16, { face: 'left' }], ['trainer:gym_ember_t2', 16, 7, { face: 'left' }]],
+    lights: [[10, 6], [3, 8], [16, 8], [10, 17]],
+  },
+  lumina: {
+    name: '빛누리 도장', col: '#e0b830', W: 18, H: 24, door: 9,
+    floor: { kind: 'tile', color: '#e8dcb0', color2: '#fff4d0' }, wall: { color: '#f4ecd0', pattern: 'diamond', accent: '#e0c870' },
+    walls: [[1, 15, 7, 1], [10, 15, 7, 1], [5, 8, 8, 1], [5, 3, 1, 5], [12, 3, 1, 5], [13, 11, 1, 1], [16, 11, 1, 1]],
+    rugs: [[6, 3, 6, 5, '#e0b830'], [6, 17, 6, 5, '#c89e24']],
+    furn: [['crystal', 1, 4], ['crystal_red', 16, 4], ['pillar', 6, 4], ['pillar', 11, 4], ['candle', 2, 21], ['candle', 15, 21]],
+    gimmicks: [
+      ['switch_btn', 3, 19, { gateId: 'lm1', color: '#ffd65a' }],
+      ['gate_bar', 8, 15, { w: 2, h: 1, gateId: 'lm1', color: '#ffd65a' }],
+      ['switch_btn', 3, 5, { gateId: 'lm2', color: '#b478ff' }],
+      ['gate_bar', 14, 11, { w: 2, h: 1, gateId: 'lm2', color: '#b478ff' }],
+      ['warp_pad', 15, 5, { toX: 9, toY: 7, color: '#ffd65a' }],
+      ['warp_pad', 7, 7, { toX: 9, toY: 13, color: '#48c8ff' }],
+    ],
+    spawns: [['trainer:leader_lumina', 9, 4, { face: 'down' }], ['trainer:gym_lumina_t1', 4, 12, { face: 'right' }], ['trainer:gym_lumina_t2', 14, 8, { face: 'left' }]],
+    lights: [[9, 5], [4, 9], [14, 9], [9, 19]],
+  },
+  frost: {
+    name: '서리 도장', col: '#58b4e8', W: 18, H: 22, door: 9,
+    floor: { kind: 'tile', color: '#d8e4ee', color2: '#f4f8ff' }, wall: { color: '#e4eef6', pattern: 'tile' },
+    walls: [[1, 8, 1, 11], [16, 8, 1, 11], [2, 7, 6, 1], [10, 7, 6, 1], [2, 18, 6, 1], [10, 18, 6, 1]],
+    rugs: [[6, 3, 6, 4, '#58b4e8']],
+    furn: [['pillar', 8, 12], ['pillar', 2, 8], ['pillar', 12, 9], ['pillar', 11, 16], ['pillar', 15, 9], ['pillar', 8, 10], ['statue', 4, 5], ['statue', 13, 5]],
+    gimmicks: [
+      ['ice_tile', 2, 17, { w: 14, h: 10 }],
+    ],
+    spawns: [['trainer:leader_frost', 9, 4, { face: 'down' }], ['trainer:gym_frost_t1', 5, 19, { face: 'right' }], ['trainer:gym_frost_t2', 6, 5, { face: 'right' }]],
+    lights: [[9, 5], [9, 12], [9, 19]],
+  },
+  summit: {
+    name: '별마루 도장', col: '#7d5aa8', W: 20, H: 26, door: 10,
+    floor: { kind: 'carpet', color: '#3a3058' }, wall: { color: '#4a4070', pattern: 'dots', accent: '#e0c870' },
+    walls: [[1, 17, 8, 1], [11, 17, 8, 1], [6, 9, 1, 8], [13, 9, 1, 8], [1, 8, 18, 1]],
+    rugs: [[7, 3, 6, 5, '#7d5aa8'], [7, 19, 6, 5, '#4c3872']],
+    furn: [['crystal', 7, 4], ['crystal', 12, 4], ['pillar', 9, 11], ['pillar', 12, 14], ['candle', 2, 23], ['candle', 17, 23]],
+    gimmicks: [
+      ['ice_tile', 7, 15, { w: 6, h: 4 }],
+      ['warp_pad', 7, 9, { toX: 3, toY: 15, color: '#48c8ff' }],
+      ['arrow_pad', 4, 15, { dir: 'up', steps: 4 }],
+      ['switch_btn', 3, 10, { gateId: 'sm1', color: '#ff6470' }],
+      ['warp_pad', 5, 10, { toX: 16, toY: 15, color: '#ff6470' }],
+      ['gate_bar', 14, 12, { w: 5, h: 1, gateId: 'sm1', color: '#ff6470' }],
+      ['warp_pad', 16, 10, { toX: 10, toY: 7, color: '#b478ff' }],
+      ['warp_pad', 7, 7, { toX: 10, toY: 20, color: '#48c8ff' }],
+    ],
+    spawns: [['trainer:leader_summit', 10, 4, { face: 'down' }], ['trainer:gym_summit_t1', 2, 13, { face: 'right' }], ['trainer:gym_summit_t2', 17, 11, { face: 'left' }]],
+    lights: [[10, 5], [3, 12], [16, 12], [10, 21]],
+  },
 };
-for (const [town, [name, col, floor, wall]] of Object.entries(GYM_ROOMS)) {
+for (const [town, g] of Object.entries(GYM_LAYOUTS)) {
   ROOMS[`gym_${town}`] = {
-    name, W: 14, H: 16, door: 7, wall, floor, trim: darken(col, 0.55),
-    decor: [['banner', 2, col], ['banner', 6, col], ['banner', 10, col]],
-    rugs: [[4, 4, 7, 10, col]],
-    furn: [['pillar', 2, 5], ['pillar', 11, 5], ['pillar', 2, 10], ['pillar', 11, 10], ['statue', 5, 13], ['statue', 9, 13], ['plant', 1, 14], ['plant', 12, 14]],
-    spawns: [[`trainer:leader_${town}`, 7, 4, { face: 'down' }], [`trainer:gym_${town}_t1`, 4, 9, { face: 'right' }], [`trainer:gym_${town}_t2`, 10, 7, { face: 'left' }], ['wp_gate', 7, 14], ['entry', 7, 14]], lights: [[7, 7], [7, 12]],
+    name: g.name, W: g.W, H: g.H, door: g.door, wall: g.wall, floor: g.floor, trim: darken(g.col, 0.55),
+    walls: g.walls, gimmicks: g.gimmicks,
+    decor: [['banner', 2, g.col], ['banner', Math.floor(g.W / 2), g.col], ['banner', g.W - 4, g.col]],
+    rugs: g.rugs, furn: g.furn,
+    spawns: [...g.spawns, ['wp_gate', g.door, g.H - 2], ['entry', g.door, g.H - 2]],
+    lights: g.lights,
   };
 }
 Object.assign(ROOMS, {
@@ -513,7 +673,7 @@ Object.assign(ROOMS, {
     decor: [['window', 4], ['ghostframe', 7], ['clock', 10], ['window', 12]],
     rugs: [[6, 5, 6, 4, '#5a2030']],
     furn: [['bookshelf', 1, 3], ['piano', 15, 3, { interact: 'sign', text: '먼지 쌓인 피아노.\n건반 하나가 저절로 눌렸다… 띵.' }], ['dtable', 7, 6, { interact: 'sign', text: '식탁 위에 식은 차가 놓여 있다.\n방금 누군가 마신 것처럼 김이 오른다…' }], ['candle', 6, 6], ['candle', 10, 6],
-      ['sofa_red', 1, 9], ['lamp_floor', 16, 9], ['bed', 15, 7, { interact: 'sign', text: '아무도 자지 않은 침대인데 이불이 따뜻하다.' }], ['plant_b', 1, 6]],
+      ['sofa_red', 2, 9], ['lamp_floor', 16, 9], ['bed', 15, 4, { interact: 'sign', text: '아무도 자지 않은 침대인데 이불이 따뜻하다.' }], ['plant_b', 1, 6]],
     spawns: [['trainer:chateau_ghost', 12, 9, { face: 'left' }], ['wp_gate', 9, 10], ['entry', 9, 10]], lights: [[6, 5], [10, 5], [16, 8]],
   },
   origin: { // 별의 제단 위 계단 → 태초의 방

@@ -69,12 +69,18 @@ export function buildTown() {
 
   // 2.5D: 북쪽 상점가는 한 단 높은 언덕 — 16·17번 줄이 절벽, 가운데 큰길만 계단 (호수와 겹치지 않음)
   m.terrace(15);
-  // 건물 뒤 높은 뒷산 (3단 중 맨 위) · 광장 옆 꽃 언덕
+  // 건물 뒤 높은 뒷산
   m.terrace(3);
-  for (const area of [[9, 21, 20, 33], [42, 26, 52, 35]]) {
-    const h = m.hill(5, 2, area);
-    if (h) { m.place('lamp', h[0] + 1, h[3], { force: true }); m.place('planter', h[2] - 1, h[3], { force: true }); }
+
+  // 서쪽 호숫가 파이어 캠프 광장 (계단 언덕을 없애 시야 가림을 방지하고, 밤마다 불이 켜져 나란히 앉아 소통하는 공간)
+  m.reserve(11, 23, 18, 29);
+  for (let y = 24; y <= 28; y++) for (let x = 12; x <= 17; x++) {
+    m.setT(x, y, S);
   }
+  m.place('bench', 12, 25, { w: 2, force: true, props: { interact: 'campfire' } });
+  m.place('bench', 16, 25, { w: 2, force: true, props: { interact: 'campfire' } });
+  m.place('campfire', 14, 26, { w: 2, force: true, props: { interact: 'campfire' } });
+  m.place('log', 14, 28, { w: 2, force: true, props: { interact: 'campfire' } });
 
   // 6. 숲 테두리 (서쪽 입구 비움) + 자연
   m.forest((x, y) => (x < 6 && y >= 17 && y <= 24) || (x > W - 6 && y >= 19 && y <= 24), 0.1);

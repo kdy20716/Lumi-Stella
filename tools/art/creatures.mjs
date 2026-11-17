@@ -7,6 +7,11 @@ import { P } from './lib/palette.mjs';
 const O = P.outline;
 export const CF = 32;
 export const CVIEWS = ['down', 'left', 'up'];
+export const STARTER_COORD_SPECIES = ['saerok', 'chalang', 'morak'];
+export const LUMI_COORD_IDS = [
+  'lumi_ribbon', 'lumi_scarf', 'lumi_goggles', 'lumi_flower', 'lumi_helmet',
+  'lumi_cape', 'lumi_shades', 'lumi_earmuff', 'lumi_crown',
+];
 
 const tone = (d, b, l) => ({ d, b, l });
 
@@ -160,7 +165,197 @@ function feet(t, c, bx, view, f, bob) {
   for (const [x, lift] of pts) sEll(t, x, 27.5 + lift, 2.3, 1.7, tone(darken(d, 0.2), d, c.pal.b));
 }
 
-export function drawCreature(c, view, f) {
+function drawCoordBehind(t, _c, bx, by, bw, bh, _hx, _hy, _r, view, f, coordId) {
+  if (coordId !== 'lumi_cape') return;
+  const sway = f ? 1 : 0;
+  const topY = Math.round(by - bh + 1);
+  const botY = Math.round(by + bh - 1 + sway);
+  if (view === 'down') {
+    for (const s of [-1, 1]) {
+      tri(t, [bx + s * (bw - 2), topY], [bx + s * (bw + 3 + sway * 0.5), botY], [bx + s * (bw - 1), botY], '#c42418');
+      tri(t, [bx + s * (bw - 1), topY + 1], [bx + s * (bw + 2 + sway * 0.5), botY - 1], [bx + s * (bw - 1), botY - 1], '#e63928');
+      t.set(Math.round(bx + s * (bw + 1)), botY - 1, '#ffb703');
+    }
+  } else if (view === 'left') {
+    tri(t, [bx, topY], [bx + bw + 3 + sway, botY - 1], [bx + 2, botY], '#c42418');
+    tri(t, [bx + 1, topY + 1], [bx + bw + 2 + sway, botY - 2], [bx + 2, botY - 1], '#e63928');
+    t.line(bx + 2, botY - 1, bx + bw + 2 + sway, botY - 2, '#ffb703');
+  }
+}
+
+function drawCoordFront(t, c, bx, by, bw, bh, hx, hy, r, view, f, coordId) {
+  if (!coordId) return;
+  const side = view === 'left';
+  const sway = f ? 1 : 0;
+  const topY = Math.round(hy - r);
+  const neckY = Math.round(hy + r - 1);
+  const ey = Math.round(hy + (c.eyeY ?? 0));
+
+  switch (coordId) {
+    case 'lumi_ribbon': {
+      const rx = Math.round(hx + (side ? -1 : 0));
+      const ry = topY + 1;
+      if (side) {
+        t.rect(rx - 3, ry - 1, 3, 3, '#d63864');
+        t.rect(rx - 2, ry - 1, 2, 2, '#ff5c8a');
+        t.set(rx - 2, ry - 1, '#ff9ebb');
+        t.rect(rx + 1, ry - 1, 3, 3, '#d63864');
+        t.rect(rx + 1, ry, 2, 2, '#ff5c8a');
+        t.rect(rx - 1, ry, 2, 2, '#ffe066');
+        t.set(rx - 1, ry + 2, '#ff5c8a');
+        t.set(rx + 1, ry + 2, '#ff5c8a');
+      } else {
+        t.rect(rx - 5, ry - 1, 4, 3, '#d63864');
+        t.rect(rx + 2, ry - 1, 4, 3, '#d63864');
+        t.rect(rx - 4, ry - 1, 3, 2, '#ff5c8a');
+        t.rect(rx + 2, ry - 1, 3, 2, '#ff5c8a');
+        t.set(rx - 4, ry - 1, '#ff9ebb');
+        t.set(rx + 4, ry - 1, '#ff9ebb');
+        t.rect(rx - 1, ry - 1, 3, 3, '#ffe066');
+        t.set(rx, ry, '#fff6b0');
+        t.rect(rx - 3, ry + 2, 2, 2, '#ff5c8a');
+        t.rect(rx + 2, ry + 2, 2, 2, '#ff5c8a');
+      }
+      break;
+    }
+    case 'lumi_scarf': {
+      const sx0 = side ? Math.round(hx - 4) : Math.round(hx - 6);
+      const sw = side ? 10 : 12;
+      t.rect(sx0, neckY - 1, sw, 3, '#2b8fd6');
+      t.rect(sx0 + 1, neckY - 1, sw - 2, 2, '#56c2ff');
+      for (let x = sx0 + 2; x < sx0 + sw - 2; x += 3) {
+        t.vline(x, neckY - 1, 2, '#ffffff');
+      }
+      const tx = side ? sx0 + sw - 3 : sx0 + sw - 4;
+      t.rect(tx, neckY + 1, 3, 4 + sway, '#2b8fd6');
+      t.rect(tx + 1, neckY + 1, 2, 3 + sway, '#56c2ff');
+      t.hline(tx, neckY + 3 + sway, 3, '#ffffff');
+      break;
+    }
+    case 'lumi_goggles': {
+      const gy = Math.round(hy - 3);
+      t.hline(Math.round(hx - r), gy + 1, Math.round(r * 2), '#2a3446');
+      if (view === 'up') {
+        t.rect(Math.round(hx - 2), gy, 4, 2, '#567090');
+      } else if (side) {
+        t.rect(Math.round(hx - 5), gy - 1, 6, 4, '#1d5fb8');
+        t.rect(Math.round(hx - 4), gy, 4, 2, '#a8f0ff');
+        t.set(Math.round(hx - 4), gy, '#ffffff');
+      } else {
+        t.rect(Math.round(hx - 6), gy - 1, 5, 4, '#1d5fb8');
+        t.rect(Math.round(hx + 1), gy - 1, 5, 4, '#1d5fb8');
+        t.rect(Math.round(hx - 1), gy, 2, 2, '#d8e6f2');
+        t.rect(Math.round(hx - 5), gy, 3, 2, '#a8f0ff');
+        t.rect(Math.round(hx + 2), gy, 3, 2, '#a8f0ff');
+        t.set(Math.round(hx - 5), gy, '#ffffff');
+        t.set(Math.round(hx + 2), gy, '#ffffff');
+      }
+      break;
+    }
+    case 'lumi_flower': {
+      const fy = topY + 2;
+      const x0 = Math.round(hx - r + 1), w = Math.round(r * 2 - 2);
+      t.hline(x0, fy, w, '#3f9a4a');
+      t.hline(x0 + 1, fy + 1, w - 2, '#77dd66');
+      const flowers = side ? [[hx - 3, '#ff7058'], [hx, '#ffe066'], [hx + 3, '#ff9ebb']] : [[hx - 4, '#ff7058'], [hx, '#ffe066'], [hx + 4, '#ff7058']];
+      for (const [fx, col] of flowers) {
+        const ix = Math.round(fx);
+        t.rect(ix - 1, fy - 1, 3, 3, col);
+        t.set(ix, fy, '#fff8c8');
+      }
+      break;
+    }
+    case 'lumi_helmet': {
+      const hy0 = topY;
+      const x0 = Math.round(hx - r + 1), w = Math.round(r * 2 - 1);
+      t.rect(x0 + 1, hy0 - 1, w - 2, 4, '#a87420');
+      t.rect(x0 + 2, hy0 - 1, w - 4, 3, '#d49a35');
+      t.hline(x0 + 3, hy0 - 1, Math.max(2, w - 6), '#ffe082');
+      t.hline(x0, hy0 + 2, w, '#4d5563');
+      if (view !== 'up') {
+        const lx = side ? Math.round(hx - 3) : Math.round(hx - 1);
+        t.rect(lx - 1, hy0, 4, 3, '#4d5563');
+        t.rect(lx, hy0 + 1, 2, 2, '#9bf0ff');
+        t.set(lx, hy0 + 1, '#ffffff');
+      }
+      break;
+    }
+    case 'lumi_cape': {
+      if (view === 'up') {
+        const cy0 = Math.round(by - bh);
+        const ch = Math.round(bh * 2 + 1 + sway);
+        t.rect(Math.round(bx - bw), cy0, Math.round(bw * 2), ch, '#c42418');
+        t.rect(Math.round(bx - bw + 1), cy0 + 1, Math.round(bw * 2 - 2), ch - 2, '#e63928');
+        t.hline(Math.round(bx - bw + 1), cy0 + ch - 2, Math.round(bw * 2 - 2), '#ffb703');
+        t.rect(Math.round(bx - 1), cy0 + 2, 3, 3, '#ffb703');
+        t.set(Math.round(bx), cy0 + 1, '#fff4b0');
+      } else {
+        const cx0 = side ? Math.round(hx - 3) : Math.round(hx - 5);
+        const cw = side ? 8 : 10;
+        t.rect(cx0, neckY - 1, cw, 2, '#e63928');
+        t.rect(Math.round(hx - (side ? 2 : 1)), neckY - 1, 3, 2, '#ffb703');
+        t.set(Math.round(hx - (side ? 1 : 0)), neckY - 1, '#fff6a8');
+      }
+      break;
+    }
+    case 'lumi_shades': {
+      if (view === 'up') {
+        t.hline(Math.round(hx - r), ey, 2, '#00f0ff');
+        t.hline(Math.round(hx + r - 2), ey, 2, '#00f0ff');
+      } else if (side) {
+        t.hline(Math.round(hx - 5), ey - 1, 9, '#00f0ff');
+        t.rect(Math.round(hx - 5), ey, 5, 3, '#1f1638');
+        t.set(Math.round(hx - 4), ey, '#00f0ff');
+        t.set(Math.round(hx - 2), ey + 1, '#ff5ce0');
+      } else {
+        t.hline(Math.round(hx - 6), ey - 1, 13, '#00f0ff');
+        t.rect(Math.round(hx - 6), ey, 5, 3, '#1f1638');
+        t.rect(Math.round(hx + 2), ey, 5, 3, '#1f1638');
+        t.hline(Math.round(hx - 1), ey, 3, '#00f0ff');
+        t.set(Math.round(hx - 5), ey, '#00f0ff');
+        t.set(Math.round(hx + 3), ey, '#00f0ff');
+        t.set(Math.round(hx - 3), ey + 1, '#ff5ce0');
+        t.set(Math.round(hx + 5), ey + 1, '#ff5ce0');
+      }
+      break;
+    }
+    case 'lumi_earmuff': {
+      const my = Math.round(hy);
+      t.hline(Math.round(hx - r + 2), topY, Math.round(r * 2 - 4), '#7cc6fe');
+      if (side) {
+        t.vline(Math.round(hx + 1), topY + 1, my - topY, '#7cc6fe');
+        t.rect(Math.round(hx - 1), my - 2, 5, 5, '#9ad4ff');
+        t.rect(Math.round(hx), my - 1, 3, 3, '#e8f6ff');
+        t.set(Math.round(hx + 1), my, '#ffffff');
+      } else {
+        for (const s of [-1, 1]) {
+          const mx = Math.round(hx + s * r);
+          t.vline(mx, topY + 1, my - topY, '#7cc6fe');
+          t.rect(mx - 2, my - 2, 4, 5, '#9ad4ff');
+          t.rect(mx - 1, my - 1, 3, 3, '#e8f6ff');
+          t.set(mx, my, '#ffffff');
+        }
+      }
+      break;
+    }
+    case 'lumi_crown': {
+      const ky = topY - 2;
+      const kx = Math.round(hx + (side ? -1 : 0));
+      t.rect(kx - 4, ky + 2, 9, 3, '#c98a1e');
+      t.rect(kx - 3, ky + 2, 7, 2, '#ffd23f');
+      for (const dx of [-3, 0, 3]) {
+        t.rect(kx + dx - 1, ky, 2, 2, '#ffd23f');
+        t.set(kx + dx, ky - 1, '#fff6a8');
+      }
+      t.rect(kx - 1, ky + 2, 2, 2, '#ff4d6d');
+      t.set(kx - 3, ky + 3, '#56c2ff');
+      t.set(kx + 3, ky + 3, '#56c2ff');
+      break;
+    }
+  }
+}
+
+export function drawCreature(c, view, f, coordId = '') {
   const t = new Img(CF, CF);
   const bob = f ? 1 : 0;
   const r = c.head ?? 7, [bw, bh] = c.body ?? [6, 5];
@@ -180,6 +375,7 @@ export function drawCreature(c, view, f) {
   const bx = side ? 18 : 16, by = 22 + bob;
   const hx = side ? 13 : 16, hy = 13 + bob + (c.headY ?? 0);
   // 뒤쪽 레이어
+  drawCoordBehind(t, c, bx, by, bw, bh, hx, hy, r, view, f, coordId);
   extrasBehind(t, c, bx, by, bw, bh, view, f);
   if (view !== 'up') tail(t, c, bx, by, bw, view, f);
   if (view === 'up' || side) ears(t, c, hx, hy, r, view, f);
@@ -196,6 +392,7 @@ export function drawCreature(c, view, f) {
   if (view === 'down') ears(t, c, hx, hy, r, view, f);
   face(t, c, hx, hy, view, f, false);
   if (c.ears === 'cap' && view === 'down') ears(t, c, hx, hy, r, view, f);
+  drawCoordFront(t, c, bx, by, bw, bh, hx, hy, r, view, f, coordId);
   t.outline(O, 0.5);
   return t;
 }
@@ -222,8 +419,8 @@ export const SPECIES_ART = {
   astra: { pal: tone('#2a2a6a', '#4a5ab8', '#8a9ae8'), belly: '#e8e0ff', accent: tone('#c99a2a', '#ffd65a', '#fff4b0'), wingPal: tone('#6a5ab8', '#a8a0f0', '#e0dcff'), ears: 'horn', tail: 'star', extras: ['wings', 'stars'], head: 7, body: [6, 5], eyeColor: '#ffd65a', faceMask: true },
 };
 
-export function buildCreatureSheet(cfg) {
+export function buildCreatureSheet(cfg, coordId = '') {
   const img = new Img(CF * 6, CF);
-  CVIEWS.forEach((v, vi) => { for (let f = 0; f < 2; f++) img.blit(drawCreature(cfg, v, f), (vi * 2 + f) * CF, 0); });
+  CVIEWS.forEach((v, vi) => { for (let f = 0; f < 2; f++) img.blit(drawCreature(cfg, v, f, coordId), (vi * 2 + f) * CF, 0); });
   return img;
 }
