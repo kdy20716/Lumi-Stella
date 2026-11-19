@@ -180,7 +180,18 @@
     "tr_birdkeeper",
     "tr_sailor",
     "tr_camper_m",
-    "tr_camper_f"
+    "tr_camper_f",
+    "tr_collector",
+    "tr_blackbelt",
+    "tr_psychic",
+    "tr_dragon_tamer",
+    "tr_ranger_m",
+    "tr_ranger_f",
+    "tr_biker",
+    "tr_veteran_m",
+    "tr_veteran_f",
+    "tr_ruin_maniac",
+    "tr_artist"
   ],
   "files": {
     "mom": "mom.png",
@@ -363,8 +374,19 @@
     "tr_birdkeeper": "tr_birdkeeper.png",
     "tr_sailor": "tr_sailor.png",
     "tr_camper_m": "tr_camper_m.png",
-    "tr_camper_f": "tr_camper_f.png"
+    "tr_camper_f": "tr_camper_f.png",
+    "tr_collector": "tr_collector.png",
+    "tr_blackbelt": "tr_blackbelt.png",
+    "tr_psychic": "tr_psychic.png",
+    "tr_dragon_tamer": "tr_dragon_tamer.png",
+    "tr_ranger_m": "tr_ranger_m.png",
+    "tr_ranger_f": "tr_ranger_f.png",
+    "tr_biker": "tr_biker.png",
+    "tr_veteran_m": "tr_veteran_m.png",
+    "tr_veteran_f": "tr_veteran_f.png",
+    "tr_ruin_maniac": "tr_ruin_maniac.png",
+    "tr_artist": "tr_artist.png"
   },
   "model": "gemini-3.1-flash-image (Nano Banana)",
-  "updatedAt": "2026-11-15T13:14:58.140Z"
+  "updatedAt": "2026-11-19T04:57:45.287Z"
 }
