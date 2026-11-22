@@ -99,18 +99,18 @@ export const GRID = `
 /** 출구: 숫자 → 이어지는 맵 */
 export const EXITS = { 1: 'route20', 2: 'route11c', 3: 'route14c', 4: 'route9c', 5: 'amity' };
 
-/** 이름 있는 건물. type 이 기존 건물(center · shop_w · inn · gym)이면 원래 그림 · 실내를 그대로 쓰고,
+/** 이름 있는 건물. type 이 기존 건물(center · shop_w · casino · gym)이면 원래 그림 · 실내를 그대로 쓰고,
  *  tower(빌딩) · dept(백화점) · apart(아파트) 는 아직 그림 없이 3D 상자(블록아웃)로 보여요
  *  floors: 층수 · color: 벽 색 · label: 이름판 · enter: 'later' = 실내는 나중에 */
 export const BUILDINGS = {
   C: { type: 'center', interact: 'center', spawn: 'wp_center' },
   S: { type: 'shop_w', interact: 'shop:windvale', spawn: 'wp_shop' },
-  I: { type: 'inn', interact: 'inn', spawn: 'wp_inn' },
+  I: { type: 'casino', interact: 'casino', spawn: 'wp_casino' },
   G: { type: 'gym', interact: 'gym', interior: 'gym_lumina', spawn: 'wp_gym' },
-  D: { type: 'dept', label: '빛누리 백화점', floors: 6, color: '#e6d3ae', enter: 'later' },
-  B: { type: 'tower', label: '빛누리 방송국', floors: 12, color: '#c9d0dc', antenna: 1, enter: 'later' },
-  H: { type: 'tower', label: '성간단 빌딩', floors: 20, color: '#3d3852', enter: 'later' },
-  Q: { type: 'tower', label: '빛누리 타워', floors: 22, color: '#9fb0c2' },
+  D: { type: 'dept', interact: 'dept', label: '빛누리 백화점', floors: 6, color: '#e6d3ae', enter: 'later' },
+  B: { type: 'tower', interact: 'tower', label: '빛누리 방송국', floors: 12, color: '#c9d0dc', antenna: 1, enter: 'later' },
+  H: { type: 'tower', interact: 'tower', label: '성간단 빌딩', floors: 20, color: '#3d3852', enter: 'later' },
+  Q: { type: 'tower', interact: 'tower', label: '빛누리 타워', floors: 22, color: '#9fb0c2' },
 };
 
 /** 일반 빌딩 (@ 칸). x · y = 왼쪽 위 칸, w · h = 칸 수 */

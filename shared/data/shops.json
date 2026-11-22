@@ -3,33 +3,33 @@
     "id": "general",
     "name": "소라네 루미 마트",
     "owner": "sora",
-    "open": 900,
-    "close": 1700,
-    "greeting": "어서 와요, 트레이너님! 밭 일굴 도구랑 약초 씨앗, 볼까지 다 있어요.",
+    "open": 600,
+    "close": 2200,
+    "greeting": "어서 와요, 트레이너님! 농사·채광 도구랑 씨앗, 루미볼까지 다 있어요. 작물이나 광석도 바로 매입해 드려요!",
     "items": [
       {
         "itemId": "hoe",
-        "price": 150
+        "price": 80
       },
       {
         "itemId": "watering_can",
-        "price": 120
+        "price": 80
       },
       {
         "itemId": "axe",
-        "price": 200
-      },
-      {
-        "itemId": "pickaxe",
-        "price": 250
-      },
-      {
-        "itemId": "hammer",
         "price": 100
       },
       {
+        "itemId": "pickaxe",
+        "price": 100
+      },
+      {
+        "itemId": "hammer",
+        "price": 60
+      },
+      {
         "itemId": "rod",
-        "price": 180
+        "price": 120
       },
       {
         "itemId": "seeds_lumi_herb",
@@ -121,8 +121,8 @@
     "id": "windvale",
     "name": "바람골 루미 마트",
     "owner": "gureum",
-    "open": 800,
-    "close": 2000,
+    "open": 600,
+    "close": 2200,
     "greeting": "바람골 루미 마트예요. 먼 길 가기 전에 챙겨 가세요!",
     "items": [
       {
@@ -156,6 +156,30 @@
       {
         "itemId": "bread",
         "price": 80
+      },
+      {
+        "itemId": "hoe",
+        "price": 80
+      },
+      {
+        "itemId": "watering_can",
+        "price": 80
+      },
+      {
+        "itemId": "pickaxe",
+        "price": 100
+      },
+      {
+        "itemId": "axe",
+        "price": 100
+      },
+      {
+        "itemId": "hammer",
+        "price": 60
+      },
+      {
+        "itemId": "rod",
+        "price": 120
       }
     ]
   },
@@ -163,7 +187,7 @@
     "id": "mart2",
     "name": "루미 마트",
     "owner": null,
-    "open": 800,
+    "open": 600,
     "close": 2200,
     "greeting": "루미 마트예요. 먼 길 가기 전에 든든히 챙겨 가세요!",
     "items": [
@@ -217,23 +241,31 @@
       },
       {
         "itemId": "hoe",
-        "price": 150
+        "price": 80
       },
       {
         "itemId": "watering_can",
-        "price": 120
+        "price": 80
       },
       {
         "itemId": "pickaxe",
-        "price": 250
+        "price": 100
       },
       {
         "itemId": "rod",
-        "price": 180
+        "price": 120
       },
       {
         "itemId": "bread",
         "price": 80
+      },
+      {
+        "itemId": "axe",
+        "price": 100
+      },
+      {
+        "itemId": "hammer",
+        "price": 60
       }
     ]
   },
@@ -241,7 +273,7 @@
     "id": "mart3",
     "name": "루미 마트",
     "owner": null,
-    "open": 800,
+    "open": 600,
     "close": 2200,
     "greeting": "루미 마트예요. 먼 길 가기 전에 든든히 챙겨 가세요!",
     "items": [
@@ -311,23 +343,31 @@
       },
       {
         "itemId": "hoe",
-        "price": 150
+        "price": 80
       },
       {
         "itemId": "watering_can",
-        "price": 120
+        "price": 80
       },
       {
         "itemId": "pickaxe",
-        "price": 250
+        "price": 100
       },
       {
         "itemId": "rod",
-        "price": 180
+        "price": 120
       },
       {
         "itemId": "bread",
         "price": 80
+      },
+      {
+        "itemId": "axe",
+        "price": 100
+      },
+      {
+        "itemId": "hammer",
+        "price": 60
       }
     ]
   },
@@ -335,7 +375,7 @@
     "id": "mart4",
     "name": "루미 마트",
     "owner": null,
-    "open": 800,
+    "open": 600,
     "close": 2200,
     "greeting": "루미 마트예요. 먼 길 가기 전에 든든히 챙겨 가세요!",
     "items": [
@@ -405,23 +445,31 @@
       },
       {
         "itemId": "hoe",
-        "price": 150
+        "price": 80
       },
       {
         "itemId": "watering_can",
-        "price": 120
+        "price": 80
       },
       {
         "itemId": "pickaxe",
-        "price": 250
+        "price": 100
       },
       {
         "itemId": "rod",
-        "price": 180
+        "price": 120
       },
       {
         "itemId": "cake",
         "price": 150
+      },
+      {
+        "itemId": "axe",
+        "price": 100
+      },
+      {
+        "itemId": "hammer",
+        "price": 60
       }
     ]
   }

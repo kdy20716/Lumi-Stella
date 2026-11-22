@@ -7,7 +7,7 @@ import type { Surface } from '../audio/Sfx';
 import { paintUrban } from '../three/Proto3D';
 
 /** 실내에서 빛을 내는 물건 */
-const LIGHT_OBJECTS = new Set(['lamp_floor', 'forge', 'fireplace', 'lamp']);
+const LIGHT_OBJECTS = new Set(['lamp_floor', 'forge', 'fireplace', 'lamp', 'slot_machine']);
 
 export interface WorldObject {
   id: number;
@@ -46,6 +46,7 @@ const SHADOW: Record<string, [number, number, number]> = {
   stump: [0.5, 0.5, 0], log: [0.95, 0.6, 0], barrel: [0.5, 0.5, 0], crate: [0.5, 0.5, 0], hay: [0.5, 0.5, 0],
   scarecrow: [0.5, 0.5, 0], mailbox: [0.4, 0.45, 0], lamp: [0.35, 0.4, 0], sign: [0.45, 0.45, 0],
   bench: [0.9, 0.5, 0], planter: [0.5, 0.45, 0], board: [0.9, 0.5, 0], stall: [1.4, 0.7, -1], stall_b: [1.4, 0.7, -1], cafe_table: [0.6, 0.45, 0], anvil: [0.5, 0.4, 0],
+  slot_machine: [0.55, 0.45, 0], casino_table: [1.35, 0.75, -1], counter_casino: [1.8, 0.7, -1],
 };
 
 /** 바닥이 매끈한 타일인 실내 (나머지 실내는 나무 바닥) */

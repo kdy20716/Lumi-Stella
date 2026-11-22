@@ -410,6 +410,44 @@ function studyDesk() {
   t.rect(24, 5, 4, 4, '#e07a8a'); t.hline(25, 5, 2, '#fff8ec');
   return sheen(t);
 }
+function slotMachine() {
+  const t = new Img(16, 32);
+  t.rect(2, 4, 11, 27, '#8c1d40'); t.hline(2, 4, 11, '#d8475b'); t.rect(2, 29, 11, 2, '#4e1024');
+  t.rect(5, 1, 5, 3, P.gold.base); t.rect(6, 1, 3, 1, '#fff4c0'); // 상단 경광등
+  t.rect(3, 6, 9, 9, '#181826'); t.rect(3, 6, 9, 1, P.gold.l1); // 네온 릴 화면
+  for (let i = 0; i < 3; i++) {
+    t.rect(4 + i * 3, 8, 2, 5, '#fff8ec');
+    t.rect(4 + i * 3, 10, 2, 1, ['#e8475b', '#ffd65a', '#48d0ff'][i]);
+  }
+  t.rect(3, 17, 9, 4, '#2a1a2e'); t.rect(4, 18, 2, 2, '#ffd65a'); t.rect(7, 18, 2, 2, '#7cc45a'); t.rect(10, 18, 1, 2, '#ff6a4d');
+  t.rect(4, 24, 7, 3, '#1e1418'); // 코인 배출구
+  t.vline(13, 8, 9, P.metal.l1); t.circle(14, 7, 1.5, '#e8475b'); // 오른쪽 레버
+  return sheen(t);
+}
+function casinoTable() {
+  const t = new Img(48, 30);
+  t.rect(2, 4, 44, 18, W_.d1); t.hline(2, 4, 44, P.gold.base); t.rect(4, 6, 40, 14, '#246b45');
+  t.hline(4, 6, 40, '#348a5c'); t.rect(2, 22, 44, 3, W_.d2); t.hline(2, 22, 44, P.gold.d1);
+  t.rect(4, 25, 3, 5, W_.d1); t.rect(41, 25, 3, 5, W_.d1);
+  // 카드 · 주사위 · 칩 더미
+  t.rect(10, 9, 5, 7, '#fff8ec'); t.rect(11, 11, 2, 2, '#e8475b');
+  t.rect(16, 10, 5, 7, '#fff8ec'); t.rect(17, 12, 2, 2, '#2a2238');
+  t.rect(25, 11, 4, 4, '#ffffff'); t.set(26, 12, '#1e1418'); t.set(27, 13, '#1e1418');
+  t.rect(30, 10, 4, 4, '#ffffff'); t.set(31, 11, '#e8475b');
+  t.circle(38, 12, 2, '#ffd65a'); t.circle(41, 14, 2, '#e8475b'); t.circle(39, 15, 2, '#48c8ff');
+  return sheen(t);
+}
+function counterCasino() {
+  const t = new Img(64, 30);
+  t.rect(0, 12, 64, 18, '#5a1a2e'); for (let x = 0; x < 64; x += 8) t.vline(x, 14, 16, '#3a0e1d');
+  t.rect(0, 9, 64, 5, P.gold.base); t.hline(0, 9, 64, '#fff2a0'); t.hline(0, 13, 64, P.gold.d1);
+  t.rect(0, 28, 64, 2, '#2a0814');
+  // 금화 트레이 · 카드 덱 · 네온 명패
+  t.rect(6, 3, 12, 6, '#3a2448'); t.rect(7, 4, 10, 4, '#ffd65a');
+  t.rect(24, 4, 16, 5, '#1a1224'); t.hline(26, 6, 12, '#ffd65a');
+  t.rect(46, 4, 10, 5, '#e8475b'); t.rect(48, 2, 6, 2, '#fff8ec');
+  return sheen(t);
+}
 
 /** 가구 정의: w × h(막는 칸 수) */
 export const FURN = {
@@ -420,6 +458,7 @@ export const FURN = {
   sofa: { w: 3, h: 1, build: () => sofa() }, sofa_red: { w: 3, h: 1, build: () => sofa('#a83c34') }, lamp_floor: { w: 1, h: 1, build: lampFloor },
   counter: { w: 4, h: 1, build: () => counter('shop') }, counter_cafe: { w: 4, h: 1, build: () => counter('cafe') },
   counter_heal: { w: 4, h: 1, build: () => counter('heal') }, counter_lab: { w: 4, h: 1, build: () => counter('lab') },
+  counter_casino: { w: 4, h: 1, build: counterCasino }, slot_machine: { w: 1, h: 1, build: slotMachine }, casino_table: { w: 3, h: 2, build: casinoTable },
   shelf_goods: { w: 2, h: 1, build: () => shelfGoods(0) }, shelf_goods_b: { w: 2, h: 1, build: () => shelfGoods(3) },
   forge: { w: 2, h: 1, build: forge }, lab_machine: { w: 2, h: 1, build: labMachine }, starter_table: { w: 3, h: 1, build: starterTable },
   millstone: { w: 2, h: 2, build: millstone }, sacks: { w: 1, h: 1, build: sacks }, piano: { w: 2, h: 1, build: piano },
@@ -494,27 +533,27 @@ export const ROOMS = {
     decor: [['window', 3], ['painting', 5], ['clock', 8]],
     rugs: [[4, 4, 4, 2, '#7d5aa8']],
     furn: [['bed_pink', 1, 4, { interact: 'nbed' }], ['tv', 6, 3, { interact: 'tv' }], ['bookshelf', 9, 3], ['table_small', 5, 5], ['chair_l', 4, 5], ['plant', 10, 7], ['lamp_floor', 1, 7]],
-    spawns: [['entry', 6, 7]], lights: [[1, 6]],
+    spawns: [['wp_host', 8, 6], ['entry', 6, 7]], lights: [[1, 6]],
   },
   in_house_b: {
     name: '이웃집', W: 12, H: 9, door: 6, wall: { color: '#c8dce8', pattern: 'stripe', accent: '#a8c4d8', wainscot: '#6b4024' }, floor: { kind: 'wood', color: '#a07050' },
     decor: [['window', 4], ['painting', 6], ['window', 7], ['clock', 8]],
     rugs: [[3, 5, 6, 2, '#3f8a3e']],
     furn: [['bed_green', 9, 4, { interact: 'nbed' }], ['kitchen', 1, 3], ['tv', 5, 3, { interact: 'tv' }], ['sofa_red', 3, 6], ['plant_b', 10, 7], ['stool', 1, 6]],
-    spawns: [['entry', 6, 7]], lights: [[5, 6]],
+    spawns: [['wp_host', 7, 5], ['entry', 6, 7]], lights: [[5, 6]],
   },
   in_house_c: {
     name: '이웃집', W: 12, H: 9, door: 6, wall: { color: '#f0d8d8', pattern: 'dots', accent: '#e0b0b0', wainscot: '#8c5a33' }, floor: WOOD,
     decor: [['window', 3], ['window', 7], ['clock', 6]],
     rugs: [[3, 5, 5, 2, '#e0a43a']],
     furn: [['bed', 9, 4, { interact: 'nbed' }], ['piano', 1, 3, { interact: 'piano' }], ['bookshelf', 5, 3], ['table_small', 4, 6], ['plant', 1, 7], ['lamp_floor', 10, 7]],
-    spawns: [['entry', 6, 7]], lights: [[10, 6]],
+    spawns: [['wp_host', 7, 5], ['entry', 6, 7]], lights: [[10, 6]],
   },
   in_center: { // 루미 센터 (회복)
     name: '루미 센터', W: 14, H: 10, door: 7, wall: { color: '#fbe4ea', pattern: 'stripe', accent: '#f4c8d4', wainscot: '#e8a0b0' }, floor: { kind: 'tile', color: '#f4dce4', color2: '#fff4f8' },
     decor: [['heartsign', 6], ['window', 2], ['window', 10], ['poster', 12]],
     rugs: [[5, 7, 4, 2, '#e07a8a']],
-    furn: [['counter_heal', 5, 4, { interact: 'center' }], ['heal_pad', 1, 4], ['sofa_red', 2, 7], ['sofa', 9, 7], ['plant', 12, 4], ['plant_b', 1, 8]],
+    furn: [['counter_heal', 5, 4, { interact: 'center' }], ['lab_machine', 10, 4, { interact: 'pc' }], ['heal_pad', 1, 4], ['sofa_red', 2, 7], ['sofa', 9, 7], ['plant', 12, 4], ['plant_b', 1, 8]],
     spawns: [['wp_clerk', 7, 3], ['wp_gate', 7, 8], ['entry', 7, 8]], lights: [[7, 2]],
   },
   in_shop_w: {
@@ -548,6 +587,32 @@ export const ROOMS = {
     rugs: [],
     furn: [['millstone', 4, 6, { interact: 'windmill' }], ['sacks', 1, 4], ['sacks', 2, 4], ['sacks', 1, 8], ['barrel', 8, 8], ['crate', 8, 5]],
     spawns: [['entry', 5, 8]], lights: [[5, 4]],
+  },
+  in_casino: { // 별빛 카지노 (밤 18:00 ~ 02:00 전용)
+    name: '별빛 카지노', W: 16, H: 11, door: 8,
+    wall: { color: '#341d42', pattern: 'diamond', accent: '#d4a438', wainscot: '#4e1a2e' },
+    floor: { kind: 'carpet', color: '#6b1d32' },
+    trim: '#230e1c',
+    decor: [['stars', 2], ['stars', 6], ['stars', 10], ['clock', 13]],
+    rugs: [[2, 5, 12, 4, '#246644']],
+    furn: [
+      ['lamp_floor', 1, 4],
+      ['slot_machine', 2, 4, { interact: 'casino:slot' }],
+      ['slot_machine', 3, 4, { interact: 'casino:slot' }],
+      ['slot_machine', 4, 4, { interact: 'casino:slot' }],
+      ['counter_casino', 6, 4, { interact: 'casino:dealer' }],
+      ['slot_machine', 11, 4, { interact: 'casino:slot' }],
+      ['slot_machine', 12, 4, { interact: 'casino:slot' }],
+      ['slot_machine', 13, 4, { interact: 'casino:slot' }],
+      ['lamp_floor', 14, 4],
+      ['casino_table', 3, 7, { interact: 'casino:dice' }],
+      ['casino_table', 10, 7, { interact: 'casino:highlow' }],
+      ['plant_b', 1, 9],
+      ['sign', 6, 9, { text: '🎰 별빛 카지노 이용 안내\n· 영업시간: 밤 6시(18:00) ~ 새벽 2시\n· 슬롯머신 · 루미 주사위 · 하이로우 카드에 골드를 걸고 승부하세요!' }],
+      ['plant_b', 14, 9],
+    ],
+    spawns: [['wp_clerk', 8, 3], ['wp_guest1', 2, 5], ['wp_guest2', 13, 5], ['wp_gate', 8, 9], ['entry', 8, 9]],
+    lights: [[1, 4], [8, 3], [14, 4], [4, 7], [11, 7]],
   },
 };
 
@@ -787,4 +852,4 @@ Object.assign(ROOMS, {
   },
 });
 // 바깥 건물(오브젝트 타입) → 실내 맵
-export const INTERIOR_OF = { house: 'home', store: 'in_store', cafe: 'in_cafe', hall: 'in_lab', smithy: 'in_smithy', house_a: 'in_house_a', house_b: 'in_house_b', house_c: 'in_house_c', center: 'in_center', shop_w: 'in_shop_w', gym: 'in_gym', windmill: 'in_windmill' };
+export const INTERIOR_OF = { house: 'home', store: 'in_store', cafe: 'in_cafe', hall: 'in_lab', smithy: 'in_smithy', casino: 'in_casino', house_a: 'in_house_a', house_b: 'in_house_b', house_c: 'in_house_c', center: 'in_center', shop_w: 'in_shop_w', gym: 'in_gym', windmill: 'in_windmill' };

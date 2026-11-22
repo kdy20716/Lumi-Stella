@@ -9,25 +9,25 @@
     "schedule": [
       {
         "time": 600,
-        "map": "farm",
-        "to": "wp_field_in",
+        "map": "town",
+        "to": "wp_entrance",
         "idle": "work",
         "work": "water",
         "radius": 2
       },
       {
         "time": 1130,
-        "map": "farm",
-        "to": "wp_coop",
+        "map": "town",
+        "to": "wp_market",
         "idle": "wander",
         "radius": 2
       },
       {
         "time": 1400,
-        "map": "farm",
-        "to": "wp_meadow",
+        "map": "town",
+        "to": "wp_lake_w",
         "idle": "wander",
-        "radius": 3
+        "radius": 2
       },
       {
         "time": 1630,
@@ -122,10 +122,10 @@
       },
       {
         "time": 1700,
-        "map": "farm",
-        "to": "wp_well",
+        "map": "town",
+        "to": "wp_smithy",
         "idle": "stand",
-        "face": "up"
+        "face": "down"
       },
       {
         "time": 1830,
@@ -188,34 +188,13 @@
     "schedule": [
       {
         "time": 600,
-        "map": "town",
-        "to": "wp_lake_s",
-        "idle": "wander",
-        "radius": 2
-      },
-      {
-        "time": 900,
         "map": "in_store",
         "to": "wp_clerk",
         "idle": "stand",
         "face": "down"
       },
       {
-        "time": 1700,
-        "map": "town",
-        "to": "wp_market",
-        "idle": "wander",
-        "radius": 1
-      },
-      {
-        "time": 1830,
-        "map": "farm",
-        "to": "wp_cross",
-        "idle": "stand",
-        "face": "down"
-      },
-      {
-        "time": 2000,
+        "time": 2200,
         "map": "town",
         "to": "wp_home_sora",
         "idle": "leave"
@@ -228,7 +207,7 @@
         "…요즘 트레이너들은 다 직접 만들어 써서 장사가 좀 힘들지만요. 그래도 씨앗은 제가 제일 싱싱해요!"
       ],
       "morning": [
-        "마트는 9시부터 5시까지! 약초 씨앗은 아침에 들어온 게 제일 좋아요.",
+        "마트는 아침 6시부터 밤 10시까지 열려 있어요! 괭이·물뿌리개·곡괭이랑 씨앗을 언제든 사 가세요.",
         "오늘의 추천: 루미풀 씨앗! 4일이면 자라고 계속 다시 돋아나요."
       ],
       "afternoon": [
@@ -268,15 +247,15 @@
     "schedule": [
       {
         "time": 600,
-        "map": "farm",
-        "to": "wp_dock",
+        "map": "town",
+        "to": "wp_pier",
         "idle": "stand",
-        "face": "down"
+        "face": "up"
       },
       {
         "time": 1300,
         "map": "town",
-        "to": "wp_pier",
+        "to": "wp_lake_s",
         "idle": "stand",
         "face": "up"
       },
@@ -347,15 +326,15 @@
       },
       {
         "time": 900,
-        "map": "farm",
-        "to": "wp_coop",
+        "map": "town",
+        "to": "wp_entrance",
         "idle": "wander",
         "radius": 3
       },
       {
         "time": 1100,
-        "map": "farm",
-        "to": "wp_pond_e",
+        "map": "town",
+        "to": "wp_lake_s",
         "idle": "wander",
         "radius": 2
       },
@@ -600,8 +579,8 @@
       },
       {
         "time": 1600,
-        "map": "farm",
-        "to": "wp_meadow",
+        "map": "town",
+        "to": "wp_lake_w",
         "idle": "perform"
       },
       {
@@ -680,10 +659,10 @@
       },
       {
         "time": 1500,
-        "map": "farm",
-        "to": "wp_pond_e",
+        "map": "town",
+        "to": "wp_lake_s",
         "idle": "stand",
-        "face": "left"
+        "face": "up"
       },
       {
         "time": 1800,
@@ -755,10 +734,10 @@
       },
       {
         "time": 800,
-        "map": "farm",
-        "to": "wp_house",
+        "map": "town",
+        "to": "wp_entrance",
         "idle": "stand",
-        "face": "up"
+        "face": "down"
       },
       {
         "time": 900,
@@ -804,8 +783,8 @@
       },
       {
         "time": 1500,
-        "map": "farm",
-        "to": "wp_cross",
+        "map": "town",
+        "to": "wp_plaza_e",
         "idle": "stand",
         "face": "down"
       },
@@ -958,20 +937,13 @@
     "schedule": [
       {
         "time": 600,
-        "map": "windvale",
-        "to": "wp_plaza",
-        "idle": "wander",
-        "radius": 2
-      },
-      {
-        "time": 800,
         "map": "in_shop_w",
         "to": "wp_clerk",
         "idle": "stand",
         "face": "down"
       },
       {
-        "time": 2000,
+        "time": 2200,
         "map": "windvale",
         "to": "wp_home_v",
         "idle": "leave"

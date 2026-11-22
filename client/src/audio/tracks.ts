@@ -218,7 +218,7 @@ const T: Track[] = [
     drums: ['c...s...k.k.s...', 'k...s...k.k.s..s', 'k...s...k.k.s...', 'k...s...k.k.ssss', 'c...s...k.k.s...', 'k...s...k.k.s..s', 'k...s...k.k.s...', 'k.s.s.s.ksssssss'],
   },
   {
-    id: 'inn', title: '포근한 숙소의 밤', bpm: 84, bars: 8,
+    id: 'inn', title: '포근한 집의 밤', bpm: 84, bars: 8,
     chords: 'F:16 Dm:16 Bb:16 C:16 F:16 Am:16 Bb:16 C:16',
     parts: [
       { inst: 'flute', pan: -0.1, seq: 'C5:6 A4:2 F5:8 | E5:4 D5:4 A4:8 | D5:4 F5:4 Bb5:6 A5:2 | G5:8 E5:8 | F5:4 A5:4 C6:8 | A5:4 G5:4 E5:8 | D5:4 F5:4 G5:4 Bb5:4 | A5:4 G5:4 F5:8' },
@@ -381,7 +381,7 @@ const T: Track[] = [
     night: false,
   },
   {
-    id: 'battle_boss', title: '배틀! 총수 녹스', bpm: 190, bars: 8,
+    id: 'battle_boss', title: '배틀! 총수 흑야', bpm: 190, bars: 8,
     chords: 'F#m:16 D:16 E:16 C#:16 F#m:16 D:16 Bm:16 C#7:16',
     parts: [
       { inst: 'lead2', pan: -0.1, seq: 'F#5:2 A5:2 C#6:2 F#6:2 E6:4 C#6:4 | D6:4 A5:2 F#5:2 D5:4 F#5:4 | E5:2 G#5:2 B5:4 E6:2 D6:2 B5:4 | C#6:6 B5:2 G#5:8 | A5:2 C#6:2 F#6:4 G#6:2 F#6:2 E6:4 | F#6:4 D6:4 A5:4 F#5:4 | B5:2 D6:2 F#6:4 E6:2 D6:2 B5:4 | E#6:4 C#6:4 G#5:4 E#5:4' },

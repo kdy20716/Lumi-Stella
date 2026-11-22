@@ -483,3 +483,73 @@ html[data-ui-theme]:not([data-ui-theme="rural"]) .stage3d-badge {
   border-color: var(--ui-border-bright);
   color: var(--ui-text);
 }
+
+/* ── Phase 1: 모험 수첩 배너 · 목표 핀 · 별바람 택시 · 루미 상세/PC 보관함 ── */
+.ph-quest-banner {
+  width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 7px 10px; margin: 6px 0 8px; border-radius: 10px; cursor: pointer; text-align: left;
+  background: rgba(24, 34, 52, .82); border: 1.5px solid rgba(255, 229, 138, .65);
+  color: #fff8ec; box-shadow: 0 2px 6px rgba(0,0,0,.22); transition: transform .12s, background .12s;
+}
+.ph-quest-banner:hover { background: rgba(34, 48, 72, .94); transform: translateY(-1px); }
+.ph-qb-tag { font-size: 10px; color: #ffe58a; font-weight: 700; letter-spacing: .02em; }
+.ph-qb-title { font-size: 12px; font-weight: 700; color: #ffffff; line-height: 1.3; }
+
+.ph-pin.picked .dot { box-shadow: 0 0 0 3px #ffe58a, 0 0 10px #ffe58a; transform: scale(1.25); }
+.ph-pin.goal { z-index: 9; pointer-events: auto; }
+.ph-pin.goal .goal-star {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle, #fff7b8 0%, #f0b428 65%, #b86812 100%);
+  color: #3b2414; font-size: 14px; font-weight: 900; line-height: 1;
+  border: 2px solid #fffdf0; box-shadow: 0 0 12px rgba(255, 224, 96, .95);
+  animation: ph-goal-pulse 1.4s ease-in-out infinite;
+}
+@keyframes ph-goal-pulse {
+  0%, 100% { transform: translate(-50%, -135%) scale(1); }
+  50% { transform: translate(-50%, -155%) scale(1.18); }
+}
+
+.ph-flybar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 6px 8px; margin-top: 4px; border-radius: 8px;
+  background: #f5ebd4; border: 1.5px solid #d4b682; font-size: 12px; color: #3b2414;
+}
+.ph-flychips { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+.ph-flychip {
+  padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;
+  background: #fff9ec; border: 1.5px solid #c69f62; color: #5c3818; transition: background .12s;
+}
+.ph-flychip:hover { background: #ffe58a; border-color: #9e6a24; }
+.ph-flychip.cur { background: #dff4e4; border-color: #3f8a4a; color: #225c2c; }
+
+.ph-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 4px 0;
+}
+.ph-stats > div {
+  display: flex; flex-direction: column; align-items: center; padding: 4px 2px;
+  background: #f7eedc; border: 1.5px solid #d8bc8a; border-radius: 6px;
+}
+.ph-stats > div span { font-size: 10px; color: #7a5430; }
+.ph-stats > div b { font-size: 13px; color: #3b2414; }
+
+.ph-moves { display: flex; flex-direction: column; gap: 4px; }
+.ph-move {
+  padding: 5px 7px; border-radius: 6px;
+  background: #faf3e4; border: 1.5px solid #dcc292;
+}
+.ph-swapbox {
+  padding: 6px 8px; border-radius: 6px;
+  background: #f3e6cc; border: 1.5px dashed #b98a4a;
+}
+
+/* ── 상점/공방 AI 일러스트 초상 프레임 ── */
+.shop-ill {
+  width: 84px; height: 84px; overflow: hidden; border-radius: 10px;
+  background: radial-gradient(circle at 50% 35%, #fff8ec 0%, #e6cb93 75%, #b88a52 100%);
+  border: 3px solid #6e4024; box-shadow: inset 0 0 0 2px #f6e7c4;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.shop-ill img, .shop-ill svg {
+  width: 100%; height: 100%; object-fit: contain; object-position: center bottom; image-rendering: auto;
+}

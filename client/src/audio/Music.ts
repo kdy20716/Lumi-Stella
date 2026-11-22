@@ -381,6 +381,7 @@ export function trackFor(p: PlaceInfo): string {
   const id = p.id;
   if (id === 'farm' || id === 'town') return 'hometown';
   if (id === 'in_center') return 'center';
+  if (id === 'in_casino') return 'city';
   if (id === 'league') return 'league';
   if (id.startsWith('gym') || id === 'in_gym' || id === 'tower') return 'gym';
   if (id === 'origin' || id === 'chateau' || id === 'altar' || id === 'distortion') return 'legend';

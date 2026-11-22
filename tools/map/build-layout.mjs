@@ -73,7 +73,7 @@ export async function buildLayout(id) {
   for (const [c, box] of Object.entries(boxes)) {
     const def = L.BUILDINGS?.[c]; if (!def) { warn(`건물 '${c}' 설명이 BUILDINGS 에 없어요`); continue; }
     const w = box.x1 - box.x0 + 1, h = box.y1 - box.y0 + 1;
-    // 도시형 동네: 센터 · 상점 · 여관 · 체육관도 빌딩과 같은 상자 건물 (지붕 있는 시골집 그림을 쓰지 않음)
+    // 도시형 동네: 센터 · 상점 · 카지노 · 체육관도 빌딩과 같은 상자 건물 (지붕 있는 시골집 그림을 쓰지 않음)
     const cityFac = kit.facility === 'city' && CITY_FACILITY[def.type];
     const art = cityFac ? null : artCells(def.type);
     if (art && (art.w !== w || art.h !== h)) warn(`'${c}'(${def.type}) 는 ${art.w}×${art.h}칸이어야 하는데 ${w}×${h}칸이에요`);

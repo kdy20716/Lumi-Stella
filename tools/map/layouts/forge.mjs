@@ -72,7 +72,7 @@ export const EXITS = { 1: 'route15', 2: 'route4b', 3: 'route12' };
 export const BUILDINGS = {
   C: { type: 'center', interact: 'center', spawn: 'wp_center' },
   S: { type: 'shop_w', interact: 'shop:windvale', spawn: 'wp_shop' },
-  I: { type: 'inn', interact: 'inn', spawn: 'wp_inn' },
+  I: { type: 'casino', interact: 'casino', spawn: 'wp_casino' },
   G: { type: 'gym', interact: 'gym', interior: 'gym_forge', spawn: 'wp_gym' },
 };
 

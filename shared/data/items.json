@@ -36,7 +36,7 @@
     "sellPrice": 0,
     "maxStack": 1,
     "energyCost": 3,
-    "description": "농장 안쪽에 선 나무(5번)와 그루터기(2번)를 베어 나무 조각을 얻어요. 숲 테두리 나무와 쓰러진 통나무는 못 벱니다. (내구도 60)",
+    "description": "농장 안쪽에 선 나무(5번)와 그루터기(2번)를 베어 나무 조각을 얻어요. 쓰러진 통나무는 구리 도끼 이상으로 벨 수 있어요. (내구도 60)",
     "durability": 60,
     "tier": 0,
     "power": 1
@@ -709,7 +709,7 @@
     "sellPrice": 0,
     "maxStack": 1,
     "energyCost": 3,
-    "description": "구리로 만든 도끼. 나무를 5번 만에 베어요. (내구도 120)",
+    "description": "구리로 만든 도끼. 나무를 4번 만에 베고 쓰러진 통나무도 치울 수 있어요. (내구도 120)",
     "durability": 120,
     "tier": 1,
     "power": 1.5

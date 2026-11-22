@@ -69,12 +69,12 @@ export const GRID = `
 
 export const EXITS = {};
 
-/** 이름 있는 건물: 도시형 동네라 센터 · 마트 · 호텔도 빌딩 모양 (style-kit.mjs) */
+/** 이름 있는 건물: 도시형 동네라 센터 · 마트 · 카지노도 빌딩 모양 (style-kit.mjs) */
 export const BUILDINGS = {
   L: { type: 'tower', label: '루미 리그', floors: 16, color: '#efe6d0', accent: '#c99a2a', antenna: 1, interact: 'league', interior: 'league', spawn: 'wp_league' },
   C: { type: 'center', interact: 'center', spawn: 'wp_center' },
   S: { type: 'shop_w', interact: 'shop:windvale', spawn: 'wp_shop' },
-  I: { type: 'inn', label: '왕관 호텔', floors: 12, interact: 'inn', spawn: 'wp_inn' },
+  I: { type: 'casino', label: '왕관 카지노', floors: 10, color: '#3a2448', accent: '#e8b830', interact: 'casino', spawn: 'wp_casino' },
 };
 
 /** 일반 빌딩 (@ 칸): 위치 · 크기 · 층수 · 벽 색 */

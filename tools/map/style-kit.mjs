@@ -1,7 +1,7 @@
 // 지역 스타일 규칙 (스타일 키트): 마을마다 "어떤 동네인지" 하나만 정하고, 그 동네에 맞는 것만 놓는다.
 //   도심에 시골집 · 호수 · 다른 마을 주민이 섞이지 않게 하는 규칙. check-world.mjs 가 이 규칙으로 검사해요.
 //
-//   facility: 센터 · 상점 · 여관 · 체육관을 어떤 모양으로 세우는지
+//   facility: 센터 · 상점 · 카지노 · 체육관을 어떤 모양으로 세우는지
 //     'city'    = 도시형 (빌딩과 같은 상자 건물 + 색 띠 + 이름판)
 //     'cottage' = 마을형 (지붕 있는 기존 그림)
 //   deny:  이 동네에 있으면 안 되는 물건
@@ -55,6 +55,6 @@ export const CITY_FACILITY = {
   center: { label: '루미 센터', floors: 3, color: '#f1ece6', accent: '#e0475b' },
   shop_w: { label: '루미 마트', floors: 3, color: '#e8eef4', accent: '#3a6ab0' },
   store: { label: '루미 마트', floors: 3, color: '#e8eef4', accent: '#3a6ab0' },
-  inn: { label: '호텔', floors: 7, color: '#d9cdb8', accent: '#3a5a8a' },
+  casino: { label: '별빛 카지노', floors: 6, color: '#3a2448', accent: '#e8b830' },
   gym: { label: '체육관', floors: 4, color: '#c9d6d6', accent: '#2a7a7a' },
 };

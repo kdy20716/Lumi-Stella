@@ -51,10 +51,21 @@ export function buildRoute1() {
   trainer('yongsu', 38, 13, 'up');
   trainer('daecheol', 48, 15, 'left');
 
-  // 표지판 / 채집 후보지
+  // 표지판 / 모험 쉼터 / 숨은 보물 / 채집 후보지
   m.place('sign', 3, 14, { force: true, props: { interact: 'sign', text: '1번 도로 · 산들길\n→ 바람골 마을\n풀숲을 지나면 야생 루미가 나타나요!' } });
-  m.place('sign', 63, 14, { force: true, props: { interact: 'sign', text: '→ 바람골 마을' } });
+  m.place('sign', 63, 14, { force: true, props: { interact: 'sign', text: '→ 1번 도로 산들길 동쪽 · 바람골 마을 방면' } });
   m.place('sign', 30, 12, { force: true, props: { interact: 'sign', text: '산들 개울 · 낚시하기 좋은 곳\n(낚싯대를 들고 물을 바라보세요)' } });
+  // 다리 앞 모험가 쉼터 (가로등 · 모닥불 · 벤치) + 다리 양옆 가로등
+  m.place('lamp', 30, 8, { force: true }); m.place('lamp', 40, 8, { force: true });
+  m.place('lamp', 5, 14, { force: true }); m.place('lamp', 65, 14, { force: true });
+  m.reserve(26, 11, 29, 13);
+  m.place('bench', 26, 12, { w: 2, force: true, props: { interact: 'bench' } });
+  m.place('campfire', 28, 12, { w: 2, force: true, props: { interact: 'campfire' } });
+  // 오프로드 탐험 보상 (북쪽 숲속 보물 상자 · 남서 연못가 반짝이)
+  m.place('chest', 21, 3, { force: true, props: { interact: 'loot', loot: 'lumi_ball', qty: 3 } });
+  m.reserve(20, 2, 22, 4);
+  m.place('glint', 14, 27, { block: false, force: true, props: { interact: 'loot', loot: 'potion', qty: 2 } });
+  m.reserve(13, 26, 15, 28);
 
   // 숲 + 자연
   m.forest((x, y) => (x < 4 && y >= 14 && y <= 19) || (x > W - 5 && y >= 14 && y <= 19), 0.15);

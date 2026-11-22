@@ -95,6 +95,13 @@ export async function handleAdmin(me: Client, cmd: AdminCmd, sim: FarmSimulation
       log(`장소이동 ${cmd.uid} → ${cmd.map}`);
       return { ok: true, message: `${REGION_MAPS[cmd.map]?.name ?? cmd.map}(으)로 이동했어요` };
     }
+    case 'setTime': {
+      const m = Math.round(Number(cmd.minutes));
+      if (!Number.isFinite(m) || m < 360 || m > 1550) return { ok: false, message: '올바른 시각이 아니에요' };
+      sim.setTimeMinutes(m);
+      log(`시각변경 → ${m}분`);
+      return { ok: true, message: '게임 시각을 변경했어요' };
+    }
     default: return { ok: false, message: '모르는 명령' };
   }
 }

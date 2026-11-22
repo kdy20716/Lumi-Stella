@@ -24,7 +24,8 @@ export type AdminCmd =
   | { op: 'gold'; uid: string; amount: number }
   | { op: 'grantCash'; uid: string; amount: number; mode?: 'add' | 'ensureAll' }
   | { op: 'resetBm'; uid: string }
-  | { op: 'warp'; uid: string; map: MapId };
+  | { op: 'warp'; uid: string; map: MapId }
+  | { op: 'setTime'; minutes: number };
 export interface AdminUser { uid: string; name: string; look: string; map: MapId; mapName: string; gold: number; cash?: number; badges: number; party: string; online: boolean; world: string }
 export interface BugReport { id: string; uid: string; name: string; text: string; where: string; at: number; resolved?: boolean }
 

@@ -45,7 +45,7 @@ export interface NpcScheduleEntry {
   work?: 'water' | 'hoe';
 }
 export interface NpcDef {
-  id: string; name: string; title: string; sprite: string; speed: number; run?: boolean; color: string;
+  id: string; name: string; title: string; sprite: string; portrait?: string; speed: number; run?: boolean; color: string;
   schedule: NpcScheduleEntry[];
   dialogue: Record<'first' | 'morning' | 'afternoon' | 'evening' | 'rain' | 'random', string[]>;
   /** 친밀도(하트)별 대사: { "2": [...], "4": [...] } — 친해질수록 속마음을 털어놓음 */

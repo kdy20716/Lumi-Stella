@@ -9,7 +9,7 @@ import { FarmSimulation } from '../../shared/sim/FarmSimulation';
 import { MAP_IDS, INTERIOR_OF, BADGE_GATES, type MapId } from '../../shared/types';
 import { TRAINERS, SPECIES, MOVES, ENCOUNTERS, CHAPTERS, hasDone, SKILLS, skillFor, ITEMS } from '../../shared/data';
 import { DEEP_CAVES, PLACE_GATES } from '../map/region-spec.mjs';
-import { effectiveness, stats, alive } from '../../shared/sim/Battle';
+import { effectiveness, stats, alive, healAll } from '../../shared/sim/Battle';
 import { STORY } from '../../shared/story';
 
 const MAPS = Object.fromEntries(MAP_IDS.map((id) => [id, new MapInfo(JSON.parse(readFileSync(`client/public/assets/maps/${id}.json`, 'utf8')) as TiledMap)])) as Record<MapId, MapInfo>;
@@ -128,7 +128,7 @@ function fight(first: any, catchNew = false): string {
     // 잡으려는 상대는 약한 기술로 깎음
     up = sim.apply('bot', { kind: 'battleMove', index: bestMove(st) } as any).battle;
   }
-  sim.apply('bot', { kind: 'heal' } as any);
+  healAll(p.party);
   return up?.ended ?? 'stuck';
 }
 // ══ 준비: 본편을 모두 깬 챔피언 (만렙 파티) ══
@@ -179,10 +179,10 @@ for (const [d, sp] of Object.entries(QUESTS.spires)) {
   ok(flute(`top:${d}`).ok && p.flags.includes(`lit_${d}`), `${sp.name}: 꼭대기에서 오카리나 → 빛 활성화`);
 }
 
-say('\n## 3. 별의 제단: 총수 녹스 → 마지막 악보 → 제네시스');
+say('\n## 3. 별의 제단: 총수 흑야 → 마지막 악보 → 제네시스');
 go('altar');
 ok(!flute('altar').ok, '총수를 이기기 전에는 마지막 선율을 불 수 없음');
-{ const r = ev('side_nox'); ok(!!r.battle, '제단: 성간단 총수 녹스 등장'); const end = fight(r); ok(end === 'win', `총수 승부: ${end}`); }
+{ const r = ev('side_nox'); ok(!!r.battle, '제단: 성간단 총수 흑야 등장'); const end = fight(r); ok(end === 'win', `총수 승부: ${end}`); }
 ok(!sim.apply('bot', { kind: 'ocarina' } as any).ok, '오카리나를 불기 전에는 제네시스가 없음');
 ok(flute('altar').ok && p.flags.includes('genesis_awake'), '마지막 선율 → 제네시스가 깨어남');
 {

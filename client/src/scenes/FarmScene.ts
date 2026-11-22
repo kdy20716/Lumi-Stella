@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { ITEMS, NPCS, QUESTS, SHOPS, SKILLS, SPECIES, TRAINERS, martFor, nextEvent } from '@shared/data';
 import { MapInfo, type TiledMap, type WarpDef } from '@shared/sim/MapInfo';
-import { BADGE_GATES, BOND_ASK_AT, BOND_MAX, DIR_VEC, INTERIOR_OF, MAP_IDS, MAP_META, MAP_NAMES, isHomeMap, roomOf, type BattleUpdate, type MapId } from '@shared/types';
+import { BADGE_GATES, BOND_ASK_AT, BOND_MAX, DIR_VEC, INTERIOR_OF, MAP_IDS, MAP_META, MAP_NAMES, SoilState, isCasinoOpen, isHomeMap, roomOf, type BattleUpdate, type CasinoGame, type MapId } from '@shared/types';
 import type { RosterEntry } from '@shared/protocol';
 import { DEPTH, TILE, pickZoom, type Manifest } from '../config';
 import { Atmosphere } from '../fx/Atmosphere';
@@ -16,7 +16,7 @@ import { Player } from '../entities/Player';
 import { RemotePlayer } from '../entities/RemotePlayer';
 import { Authority, LocalAuthority, NetworkAuthority, type AuthorityEvent } from '../net/Authority';
 import { touch } from '../ui/Touch';
-import { ui, setIconIds } from '../ui/UI';
+import { ui, setIconIds, formatTime } from '../ui/UI';
 import { phone } from '../ui/Phone';
 import type { TitleHandle } from '../ui/UI';
 import { sfx } from '../audio/Sfx';
@@ -24,6 +24,7 @@ import { battleTrack, music, trackFor } from '../audio/Music';
 import { StoryDirector, clearStorySeen } from '../story/StoryDirector';
 import { applyUiTheme } from '../ui/Theme';
 import { pgCheckoutModal } from '../ui/PgCheckoutModal';
+import { casinoModal } from '../ui/Casino';
 import { purchaseAllWithAdminCash, purchaseBmItemWithCash, runPgSystemTest } from '../net/bmApi';
 import { EventDirector, VILLAIN_CAST } from '../story/EventDirector';
 import { captureMemory } from '../story/Memories';
@@ -32,6 +33,7 @@ import { LEGEND, MYTH, STELLA, dexComplete } from '@shared/sim/FarmSimulation';
 import { playFlute } from '../ui/Flute';
 import { stormFx, questClear } from '../fx/Storm';
 import { World, type WorldObject } from '../world/World';
+import { extraNpcsForMap, houseOwnerName, townCafeKeeper, townShopKeeper } from '../world/TownCast';
 import { Stage3D } from '../three/Stage3D';
 import ILLUST_SPEC from '@shared/data/illust.json';
 
@@ -55,7 +57,7 @@ const FLAVOR: Record<string, string> = {
   rock_big: '커다란 바위. 이끼가 소복하게 앉았다.',
   bush: '꽃이 핀 덤불.', bush_berry: '산딸기가 열린 덤불. 새들이 좋아할 것 같다.',
   lamp: '해가 지면 따뜻한 불빛을 밝히는 가로등.',
-  stump: '오래된 그루터기. 도끼로 치울 수 있다.', log: '쓰러진 통나무. 도끼로 치울 수 있다.',
+  stump: '오래된 그루터기. 도끼로 치울 수 있다.', log: '쓰러진 커다란 통나무. 구리 도끼 이상이면 치울 수 있을 것 같다.',
   planter: '마을 사람들이 정성껏 가꾼 꽃 화분.', cafe_table: '루나 카페의 야외 테이블. 커피 향이 은은하다.',
   stall: '광장의 무인 가판대.', stall_b: '광장의 무인 가판대.',
   oak_autumn: '붉게 물든 단풍나무. 사계절 내내 잎이 지지 않는다고 한다.', pine_snow: '눈을 소복이 뒤집어쓴 전나무.',
@@ -64,7 +66,6 @@ const FLAVOR: Record<string, string> = {
   cave_mouth: '서늘한 바람이 불어 나오는 동굴 입구.', portal: '일렁이는 보랏빛 틈. 저 너머는 위아래가 뒤집혀 있다…', stairs_up: '위로 이어지는 돌계단.',
 };
 const LETTER = ['[별빛 마을 이장님의 편지]\n\n열다섯 번째 생일을 진심으로 축하한다!\n이제 너도 어엿한 루미 트레이너란다.\n(우편함에서 친구에게 농장·집 초대장을 보낼 수 있어요)', '별빛 마을 트레이너의 전통을 잊지 말거라.\n밭에서 루미풀을 길러 회복약을, 바위에서 광석을 캐 루미볼을 —\n집 작업대에서 직접 만들어 길을 떠나는 것이란다.', '배지를 모을수록 민수의 볼 공방과 한별 박사의 연구소에서\n더 좋은 제작법을 배울 수 있을 게다.\n\n— 오 이장 드림'];
-const HOME_OWNER: Record<string, string> = { mayor: '오 이장', luna: '루나', teo: '태오', sora: '소라', mio: '미오', villager: '구름', leader: '세나' };
 const label = (t: string) => `<b class="text-[#ffe58a]">E</b> ${t}`;
 
 interface SceneData { authority?: Authority; map?: MapId; spawn?: string; pos?: { x: number; y: number }; fromRoom?: boolean }
@@ -72,7 +73,7 @@ interface SceneData { authority?: Authority; map?: MapId; spawn?: string; pos?: 
 let houseOwner = '';
 
 /** 방 이동 효과음: 실내 문(종류별) · 동굴 입구 · 계단 · 바깥 길(소리 없음) */
-const BELL_DOORS = new Set(['in_store', 'in_cafe', 'in_shop_w']);
+const BELL_DOORS = new Set(['in_store', 'in_cafe', 'in_shop_w', 'in_casino']);
 const AUTO_DOORS = new Set(['in_center', 'in_lab', 'league', 'tower']);
 function doorSound(from: string, to: string): string {
   const kind = (id: string) => MAP_META[id as MapId]?.kind;
@@ -144,7 +145,8 @@ export class FarmScene extends Phaser.Scene {
   private padLock = '';
   private arrowLock = '';
   private switchLock = '';
-  /** 손에 든 가방 칸 (핫바 대신 휴대폰 › 가방에서 고름) */
+  private npcActions = new Map<string, 'craft' | 'shop'>();
+  /** 손에 든 가방 칸 (핫바 대신 휴대폰 › 가방 또는 Q/1~6 으로 빠르게 고름) */
   private get slot() { return this.selected; }
 
   constructor() { super('Farm'); }
@@ -251,18 +253,42 @@ export class FarmScene extends Phaser.Scene {
     if (hub) this.blades = this.add.image(hub.x, hub.y, 'windmill_blades').setDepth(hub.y + 200);
 
     // 시작 지점(내 농장)은 나만의 밭: 마을 사람은 보이지 않음 (엄마 · 친구 · 우편부는 이야기 연출로만 찾아옴)
-    if (this.mapId !== 'farm') for (const base of Object.values(NPCS)) {
-      // 루미 센터는 마을마다 다른 간호사 (같은 실내 맵을 쓰지만 어느 마을 건물인지에 따라 사람이 바뀜)
-      const nurse = base.id === 'daon' && this.mapId === 'in_center' ? this.centerNurse() : null;
-      let def = nurse ? { ...base, name: nurse.name, title: nurse.title, sprite: nurse.sprite } : base;
-      if (!this.manifest.characters[def.sprite]) continue;
-      if (def.gen && def.schedule[0]?.map !== this.mapId) continue;   // 생성된 주민은 자기 마을에만
-      // 호감도를 다 쌓은 주민은 텃밭 도우미: 텃밭 곁에서 밭일을 함
-      const helper = !!def.hand && (this.auth.me.bonds?.[def.id] ?? 0) >= BOND_MAX && info.spawns.has('wp_hand');
-      if (helper) { const spot = this.npcs.some((q) => q.def.title.endsWith('텃밭 도우미')) ? 'wp_plot' : 'wp_hand'; Object.assign(def = { ...def }, { title: `${MAP_NAMES[this.mapId] ?? ''} 텃밭 도우미`, schedule: [{ time: 600, map: this.mapId, to: spot, idle: 'work', work: 'water', radius: 2 }] }); }
-      const n = new Npc(this, def, this.manifest.characters[def.sprite], this.world.grid, info.spawns, this.zoom, this.mapId);
-      n.resetForDay(this.auth.time.minutes);
-      this.npcs.push(n);
+    this.npcActions.clear();
+    if (this.mapId !== 'farm') {
+      const occupiedCells = new Set<string>();
+      for (const base of Object.values(NPCS)) {
+        // 루미 센터는 마을마다 다른 간호사, 루미 마트(in_shop_w)는 마을마다 다른 한국어 점주(shop_<마을>)
+        const nurse = base.id === 'daon' && this.mapId === 'in_center' ? this.centerNurse() : null;
+        const martKeeper = base.id === 'gureum' && this.mapId === 'in_shop_w' ? townShopKeeper(this.townOfRoom()) : null;
+        let def = nurse
+          ? { ...base, name: nurse.name, title: nurse.title, sprite: nurse.sprite, portrait: nurse.sprite }
+          : martKeeper
+            ? { ...base, name: martKeeper.name, title: martKeeper.title, sprite: this.manifest.characters[martKeeper.sprite] ? martKeeper.sprite : 'villager', portrait: martKeeper.portrait }
+            : base;
+        if (!this.manifest.characters[def.sprite]) continue;
+        if (def.gen && def.schedule[0]?.map !== this.mapId) continue;   // 생성된 주민은 자기 마을에만
+        // 호감도를 다 쌓은 주민은 텃밭 도우미: 텃밭 곁에서 밭일을 함
+        const helper = !!def.hand && (this.auth.me.bonds?.[def.id] ?? 0) >= BOND_MAX && info.spawns.has('wp_hand');
+        if (helper) { const spot = this.npcs.some((q) => q.def.title.endsWith('텃밭 도우미')) ? 'wp_plot' : 'wp_hand'; Object.assign(def = { ...def }, { title: `${MAP_NAMES[this.mapId] ?? ''} 텃밭 도우미`, schedule: [{ time: 600, map: this.mapId, to: spot, idle: 'work', work: 'water', radius: 2 }] }); }
+        const n = new Npc(this, def, this.manifest.characters[def.sprite], this.world.grid, info.spawns, this.zoom, this.mapId);
+        n.resetForDay(this.auth.time.minutes);
+        if (n.state !== 'gone') { const [cx, cy] = n.cell(); occupiedCells.add(`${cx},${cy}`); }
+        this.npcs.push(n);
+      }
+      // 마을 안내원(guide_*) · 공방장인(craft_*) · 지역 박사(prof_*) · 대도시 시민(city_*) · 이웃집 주민(extra_*) 동적 배치
+      const extras = extraNpcsForMap(this.mapId, this.auth.me.inst ?? '', info, this.manifest.characters, occupiedCells, houseOwner);
+      if (extras.length) {
+        const dynSpawns = new Map(info.spawns);
+        for (const ex of extras) {
+          const wpKey = ex.def.schedule[0]?.to;
+          if (wpKey && !dynSpawns.has(wpKey)) dynSpawns.set(wpKey, { x: ex.cell[0] * TILE + 8, y: ex.cell[1] * TILE + 8 });
+          if (!this.manifest.characters[ex.def.sprite]) continue;
+          const n = new Npc(this, ex.def, this.manifest.characters[ex.def.sprite], this.world.grid, dynSpawns, this.zoom, this.mapId);
+          n.resetForDay(this.auth.time.minutes);
+          if (ex.action) this.npcActions.set(ex.def.id, ex.action);
+          this.npcs.push(n);
+        }
+      }
     }
     this.spawnLegends();
     this.atmo = new Atmosphere(this, this.world);
@@ -414,7 +440,23 @@ export class FarmScene extends Phaser.Scene {
     ui.banner.show(title, sub);
     if (firstTime) ui.toast.push('루미 스텔라에 오신 걸 환영해요! (H: 조작법 · Esc: 메뉴)', 'heart');
     if (EventDirector.pendingEpilogue && this.mapId === 'farm') { this.playing = false; this.cameras.main.setAlpha(1); void this.plot.epilogue(); return; }
-    this.time.delayedCall(fromWarp ? 350 : 900, () => { this.story.begin(); this.plot.check(); });
+    // 씬 진입 직후 필수 스토리 컷신/사건이 대기 중이면 350~900ms 동안 워프 이탈하지 못하도록 조작 잠금
+    const me = this.auth.me, own = me.inst === me.id;
+    const willPrologue = !!me.look && me.story < STORY.DONE && (
+      (this.mapId === 'home_2f' && own && me.story === STORY.HOME) ||
+      (this.mapId === 'home' && own && me.story === STORY.HOME) ||
+      (this.mapId === 'town' && (me.story === STORY.RACE || me.story === STORY.HOME)) ||
+      (this.mapId === 'in_lab' && (me.story === STORY.MEET || me.story === STORY.HALL || me.story === STORY.PHONE || me.story === STORY.RACE))
+    );
+    const [px, py] = this.player.cell();
+    const willEvent = (me.mode ?? 'story') === 'story' && !!nextEvent({ ...me, map: this.mapId }, this.mapId, { x: px, y: py });
+    if (willPrologue || willEvent) this.playing = false;
+    this.time.delayedCall(fromWarp ? 350 : 900, () => {
+      this.story.begin();
+      this.plot.check();
+      // 만약 컷신 조건이 이미 소모(예: seen)되어 시작되지 않았다면 즉시 조작 복원
+      this.time.delayedCall(50, () => { if (!this.warping && !this.battling && !this.story.isBusy() && !this.plot.isBusy() && !ui.dialogue.open) this.playing = true; });
+    });
   }
 
   /** 지금 장소·시간에 맞는 배경음악 (같은 곡이면 이어서 재생) */
@@ -447,7 +489,60 @@ export class FarmScene extends Phaser.Scene {
       online: () => this.auth.online,
       storage: () => this.auth.storageKind,
       canSave: () => this.auth instanceof LocalAuthority,
-      setPartner: (i) => { void this.auth.request({ kind: 'setPartner', index: i }).then(() => phone.refresh()); },
+      setPartner: (i) => { void this.auth.request({ kind: 'setPartner', index: i }).then(() => { this.syncPartner(); phone.refresh(); }); },
+      partySwap: (a, b) => { void this.auth.request({ kind: 'partySwap', a, b }).then(() => { this.syncPartner(); phone.refresh(); }); },
+      boxSwap: async (partyIndex, boxIndex) => {
+        const r = await this.auth.request({ kind: 'boxSwap', partyIndex, boxIndex });
+        if (r.ok) { sfx.play('confirm'); this.syncPartner(); phone.refresh(); return true; }
+        sfx.play('error');
+        if (r.reason === 'need-alive') ui.toast.push('파티에는 싸울 수 있는 루미가 1마리 이상 있어야 해요!', 'lumi');
+        return false;
+      },
+      boxDeposit: async (partyIndex) => {
+        const r = await this.auth.request({ kind: 'boxDeposit', partyIndex });
+        if (r.ok) { sfx.play('confirm'); this.syncPartner(); phone.refresh(); return true; }
+        sfx.play('error');
+        if (r.reason === 'last-lumi') ui.toast.push('파티의 마지막 루미는 맡길 수 없어요.', 'lumi');
+        else if (r.reason === 'need-alive') ui.toast.push('파티에는 싸울 수 있는 루미가 1마리 이상 남아 있어야 해요!', 'lumi');
+        return false;
+      },
+      boxWithdraw: async (boxIndex) => {
+        const r = await this.auth.request({ kind: 'boxWithdraw', boxIndex });
+        if (r.ok) { sfx.play('confirm'); this.syncPartner(); phone.refresh(); return true; }
+        sfx.play('error');
+        if (r.reason === 'party-full') ui.toast.push('파티가 이미 6마리 가득 찼어요. [파티와 교체]를 써 보세요!', 'lumi');
+        return false;
+      },
+      boxRelease: async (boxIndex) => {
+        const r = await this.auth.request({ kind: 'boxRelease', boxIndex });
+        if (r.ok) { sfx.play('tap'); phone.refresh(); return true; }
+        sfx.play('error');
+        return false;
+      },
+      useBagItem: async (itemId, partyIndex) => {
+        const r = await this.auth.request({ kind: 'useBagItem', itemId, partyIndex });
+        if (r.ok) { sfx.play('heal_machine'); this.partner?.cheer(2); phone.refresh(); return true; }
+        sfx.play('error');
+        if (r.reason === 'full-hp') ui.toast.push('이미 체력이 가득 차 있어요!', 'heart');
+        else if (r.reason === 'fainted') ui.toast.push('기절한 루미는 루미 센터나 내 집 침대에서 회복해 주세요.', 'lumi');
+        return false;
+      },
+      fastTravel: async (to) => {
+        const r = await this.auth.request({ kind: 'fastTravel', to });
+        if (r.ok) { sfx.play('dash'); return true; }
+        sfx.play('error');
+        if (r.reason === 'in-cave') ui.toast.push('동굴 안에서는 택시를 부를 수 없어요. [동굴 탈출]을 써 주세요!', 'heart');
+        else if (r.reason === 'need-partner') ui.toast.push('프롤로그를 마친 뒤 빠른 이동을 쓸 수 있어요.', 'lumi');
+        else if (r.reason === 'not-visited') ui.toast.push('직접 가 본 마을로만 이동할 수 있어요.', 'heart');
+        return false;
+      },
+      escapeCave: async () => {
+        const r = await this.auth.request({ kind: 'escapeCave' });
+        if (r.ok) { sfx.play('dash'); return true; }
+        sfx.play('error');
+        return false;
+      },
+      inCave: () => this.world.info.props.cave === 'true',
       save: () => this.saveNow(),
       reset: () => void this.resetSave(),
       toTitle: () => this.toTitle(),
@@ -593,10 +688,16 @@ export class FarmScene extends Phaser.Scene {
   /** 키 하나 처리 (키보드 · 모바일 터치 버튼 공용) */
   private onKey(e: KeyboardEvent) {
       if (ui.chat.typing) return;
+      // 대화창 선택지: 숫자 1~4로 즉시 선택
+      if (ui.dialogue.waitingChoice && !this.battling && /^[1-4]$/.test(e.key)) {
+        e.preventDefault();
+        if (!e.repeat) ui.dialogue.pickChoice(Number(e.key) - 1);
+        return;
+      }
       // 대화창: 컷신 중(조작 잠김)에도 Space · E · Enter · 클릭으로 넘김
       if (ui.dialogue.open && !this.battling && [' ', 'e', 'E', 'x', 'X', 'c', 'C', 'Enter'].includes(e.key)) {
         e.preventDefault();
-        if (!e.repeat) ui.dialogue.advance();
+        if (!e.repeat && !ui.dialogue.waitingChoice) ui.dialogue.advance();
         return;
       }
       if (!this.playing) return;
@@ -610,21 +711,24 @@ export class FarmScene extends Phaser.Scene {
       }
       if (ui.emoteWheel.open && /^(w|a|s|d|arrow)/i.test(e.key)) ui.emoteWheel.close();
       if (e.key === 'Escape') {
-        if (pgCheckoutModal.open) pgCheckoutModal.close(); else if (ui.menu.open) ui.menu.close(); else if (ui.craft.open) ui.craft.close(); else if (phone.open) phone.back(); else if (ui.emoteWheel.open) ui.emoteWheel.close(); else if (ui.mailbox.open) ui.mailbox.close(); else if (ui.shop.open) ui.shop.close(); else if (ui.party.open) ui.party.close(); else if (ui.dialogue.open) ui.dialogue.close(); else if (this.hasPhone()) phone.show('home'); else this.openMenu();
+        if (pgCheckoutModal.open) pgCheckoutModal.close(); else if (casinoModal.open) { if (!casinoModal.busy) casinoModal.close(); } else if (ui.menu.open) ui.menu.close(); else if (ui.craft.open) ui.craft.close(); else if (phone.open) phone.back(); else if (ui.emoteWheel.open) ui.emoteWheel.close(); else if (ui.mailbox.open) ui.mailbox.close(); else if (ui.shop.open) ui.shop.close(); else if (ui.party.open) ui.party.close(); else if (ui.dialogue.open) ui.dialogue.close(); else if (this.hasPhone()) phone.show('home'); else this.openMenu();
         return;
       }
       if (ui.menu.open) return;
       if (e.key === 'r' || e.key === 'R') { this.openPhone('home', true); return; }
       if (e.key === 'm' || e.key === 'M') { this.openPhone('map'); return; }
-      if (pgCheckoutModal.open || ui.shop.open || ui.mailbox.open || ui.creator.open) return;
+      if (pgCheckoutModal.open || casinoModal.open || ui.shop.open || ui.mailbox.open || ui.creator.open) return;
       if (this.fishing && [' ', 'e', 'E', 'c', 'C', 'x', 'X'].includes(e.key)) { this.reel(); return; }
+      if (!ui.dialogue.open && (e.key === 'q' || e.key === 'Q')) { if (!e.repeat) this.cycleTool(); return; }
+      if (!ui.dialogue.open && /^[1-6]$/.test(e.key)) { if (!e.repeat) this.pickQuickTool(Number(e.key) - 1); return; }
+      if (!ui.dialogue.open && e.key === '0') { if (!e.repeat) { this.select(-1); sfx.play('tap'); } return; }
       if (e.key === 'b' || e.key === 'B') { if (this.playing && !this.battling) void this.toggleBike(); return; }
       if (e.key === 'p' || e.key === 'P') { if (this.hasPhone()) phone.toggle('party'); else ui.party.toggle(this.auth.me, (i) => void this.auth.request({ kind: 'setPartner', index: i })); return; }
       if (e.key === 'h' || e.key === 'H') { if (this.hasPhone()) phone.toggle('help'); else ui.help.toggle(); }
       if (e.key === 'l' || e.key === 'L') ui.roster.toggle();
       if (e.key === 'Enter') { ui.chat.toggle(true); e.preventDefault(); }
-      if (e.key === ' ' || e.key === 'c' || e.key === 'C') { if (ui.dialogue.open) ui.dialogue.advance(); else this.useItem(); }
-      if (e.key === 'e' || e.key === 'E' || e.key === 'x' || e.key === 'X') { if (ui.dialogue.open) ui.dialogue.advance(); else this.interact(); }
+      if (e.key === ' ' || e.key === 'c' || e.key === 'C') { if (ui.dialogue.open) { if (!ui.dialogue.waitingChoice) ui.dialogue.advance(); } else this.useItem(); }
+      if (e.key === 'e' || e.key === 'E' || e.key === 'x' || e.key === 'X') { if (ui.dialogue.open) { if (!ui.dialogue.waitingChoice) ui.dialogue.advance(); } else this.interact(); }
   }
 
   private setupInput() {
@@ -647,7 +751,7 @@ export class FarmScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (ui.emoteWheel.open) { ui.emoteWheel.close(); return; }
       if (ui.dialogue.open && !this.battling) { ui.dialogue.advance(); return; }
-      if (!this.playing || pgCheckoutModal.open || ui.shop.open || this.battling || ui.emoteWheel.open || ui.mailbox.open || ui.creator.open) return;
+      if (!this.playing || pgCheckoutModal.open || casinoModal.open || ui.shop.open || this.battling || ui.emoteWheel.open || ui.mailbox.open || ui.creator.open) return;
       if (this.fishing) { this.reel(); return; }
       if (ui.dialogue.open) { ui.dialogue.advance(); return; }
       if (p.rightButtonDown()) this.interact(this.pointerCell(p)); else this.useItem(this.pointerCell(p));
@@ -655,6 +759,45 @@ export class FarmScene extends Phaser.Scene {
   }
 
   private select(i: number) { this.selected = i; ui.hotbar.render(this.auth.me.inventory, i); phone.refresh(); }
+  /** 보유한 도구·씨앗 슬롯 인덱스 목록 (도구 우선 → 씨앗 순) */
+  private quickSlots(): number[] {
+    const tools: number[] = [], seeds: number[] = [];
+    this.auth.me.inventory.forEach((s, i) => {
+      const it = s.itemId ? ITEMS[s.itemId] : null;
+      if (!it || !s.quantity) return;
+      if (it.type === 'tool') tools.push(i);
+      else if (it.type === 'seed') seeds.push(i);
+    });
+    return [...tools, ...seeds];
+  }
+  /** 보유한 특정 종류 도구 중 가장 좋은 등급의 슬롯 (-1 = 없음) */
+  private bestToolSlot(kind: string): number {
+    let best = -1, bt = -1;
+    this.auth.me.inventory.forEach((s, i) => {
+      const d = s.itemId ? ITEMS[s.itemId] : null;
+      if (d?.tool === kind && (d.tier ?? 0) > bt) { bt = d.tier ?? 0; best = i; }
+    });
+    return best;
+  }
+  /** Q 키: 보유한 도구·씨앗을 순서대로 순환 */
+  private cycleTool() {
+    const list = this.quickSlots();
+    if (!list.length) { ui.toast.push('보유한 도구나 씨앗이 없어요. 별빛 마을 소라네 루미 마트에서 구매해 보세요!', 'hoe'); return; }
+    const pos = list.indexOf(this.selected);
+    const next = list[(pos + 1) % list.length];
+    this.select(next);
+    sfx.play('tap');
+    const it = ITEMS[this.auth.me.inventory[next].itemId!];
+    if (it) ui.toast.push(`${it.name} 장착! (Space 사용)`, it.icon);
+  }
+  /** 1~6 숫자 키: 보유한 도구·씨앗 중 해당 번째 바로 장착 */
+  private pickQuickTool(idx: number) {
+    const list = this.quickSlots();
+    const slot = list[idx];
+    if (slot == null) return;
+    this.select(slot);
+    sfx.play('tap');
+  }
   /** 손에 든 물건이 다 떨어졌거나 칸이 바뀌었으면 맞춰 줌 (다 쓰면 빈손). 자동으로 다른 걸 쥐어 주지 않음 */
   private ensureHeld() {
     const inv = this.auth.me.inventory, id = FarmScene.heldId;
@@ -682,7 +825,7 @@ export class FarmScene extends Phaser.Scene {
 
   // ── 도구/아이템 사용 ────────────────────────────────
   private useItem(cell?: [number, number]) {
-    if (this.player.busy || ui.dialogue.open || ui.shop.open) return;
+    if (this.player.busy || ui.dialogue.open || ui.shop.open || casinoModal.open) return;
     const slot = this.auth.me.inventory[this.slot];
     const item = slot?.itemId ? ITEMS[slot.itemId] : null;
     if (!item) { ui.toast.push('빈손이에요. 휴대폰(R) › 가방에서 도구를 손에 들어 보세요.', 'craft'); return; }
@@ -830,9 +973,39 @@ export class FarmScene extends Phaser.Scene {
     const tile = this.farm?.get(tx, ty);
     if (tile?.crop && tile.crop.stage >= 4) return { label: label('수확하기'), run: () => this.harvest(tx, ty) };
     const [px, py] = this.player.cell();
+    const standTile = this.farm?.get(px, py);
+    if (standTile?.crop && standTile.crop.stage >= 4) return { label: label('수확하기'), run: () => this.harvest(px, py) };
     const o = this.world.objectAt(tx, ty) ?? this.world.objectAt(px, py)
       ?? this.world.interactAt(tx, ty) ?? this.world.interactAt(px, py);
-    if (o) return this.gymObjectInteraction(o) ?? this.objectInteraction(o);
+    if (o) {
+      // 바위·광맥: 곡괭이가 있으면 E 한 번으로 자동 장착 + 즉시 채광!
+      const mk = this.world.mineKind(o);
+      if (mk) {
+        const pick = this.bestToolSlot('pickaxe');
+        if (pick >= 0) return { label: label(`채광하기 (${ITEMS[this.auth.me.inventory[pick].itemId!].name})`), run: () => { this.select(pick); this.useItem([tx, ty]); } };
+        return { label: label('바위·광맥 살펴보기'), run: () => this.say([mk === 'stone' ? '단단한 바위다. 소라네 루미 마트에서 곡괭이(100G)를 사 오면 깰 수 있다!' : '반짝이는 광맥이다! 곡괭이(100G)를 사 오면 귀한 광석을 캘 수 있다!']) };
+      }
+      // 농장 안쪽 나무 · 그루터기 · 통나무: 도끼가 있으면 E 한 번으로 자동 벌목!
+      const choppable = this.mapId === 'farm' && (o.type === 'stump' || o.type === 'log' || (['oak', 'oak_apple', 'pine'].includes(o.type) && !!this.objProp(o.id, 'chop')));
+      if (choppable) {
+        const axe = this.bestToolSlot('axe');
+        if (axe >= 0) return { label: label(`벌목하기 (${ITEMS[this.auth.me.inventory[axe].itemId!].name})`), run: () => { this.select(axe); this.useItem([tx, ty]); } };
+      }
+      const res = this.gymObjectInteraction(o) ?? this.objectInteraction(o);
+      if (res) return res;
+    }
+    // 갈아 둔 마른 밭 / 빈 밭: E 키로 물 주기 · 씨앗 심기 자동 지원
+    if (tile && this.fieldMap) {
+      if (tile.soil === SoilState.Plowed) {
+        const can = this.bestToolSlot('watering_can');
+        if (can >= 0) return { label: label('물 주기'), run: () => { this.select(can); this.useItem([tx, ty]); } };
+      }
+      if (!tile.crop) {
+        const heldSeed = this.auth.me.inventory[this.slot]?.itemId;
+        const seedSlot = heldSeed && ITEMS[heldSeed]?.type === 'seed' ? this.slot : this.auth.me.inventory.findIndex((s) => s.itemId && ITEMS[s.itemId]?.type === 'seed' && s.quantity > 0);
+        if (seedSlot >= 0) return { label: label(`${ITEMS[this.auth.me.inventory[seedSlot].itemId!].name} 심기`), run: () => { this.select(seedSlot); this.plantAround(seedSlot, [tx, ty]); } };
+      }
+    }
     const placed = this.mapId === 'farm' ? this.world.placedAt(tx, ty) : undefined;
     if (placed) { const po = this.auth.placed.get(placed); const it = po ? ITEMS[po.item] : null; return { label: label(`${it?.name ?? '설치물'} 살펴보기`), run: () => this.say([`${it?.name ?? '설치물'}${po && po.by !== this.auth.me.id ? ` (${this.auth.roster.get(po.by)?.name ?? '친구'}님이 설치)` : ''}.`, '망치를 들고 치면 부숴서 가방에 돌려받을 수 있다.']) }; }
     const weed = this.mapId === 'farm' ? this.world.weedAt(tx, ty) : undefined;
@@ -847,11 +1020,11 @@ export class FarmScene extends Phaser.Scene {
     return null;
   }
 
-  private say(pages: string[], name = '') {
+  private say(pages: string[], name = '', sprite?: string) {
     this.player.busy = false;
     this.player.play('idle');
-    const SPR: Record<string, string> = { '한별 박사': 'professor', '다온': 'nurse' };
-    ui.dialogue.show({ name, pages, sprite: SPR[name] });
+    const SPR: Record<string, string> = { '한별 박사': 'professor', '다온': 'nurse', '하나': 'hana', '민수': 'minsu' };
+    ui.dialogue.show({ name, pages, sprite: sprite ?? SPR[name] });
   }
 
   private objectInteraction(o: WorldObject): { label: string; run: () => void } | null {
@@ -859,7 +1032,22 @@ export class FarmScene extends Phaser.Scene {
     // 건물: 문 앞에서 E → 실내로
     const inside = o.interior ?? INTERIOR_OF[o.type];
     if (inside && !this.world.interior) {
-      const owner = it.startsWith('home:') ? HOME_OWNER[it.slice(5)] ?? '이웃' : '';
+      if (inside === 'in_casino') {
+        if (!isCasinoOpen(this.auth.time.minutes)) {
+          return {
+            label: label('별빛 카지노 (밤 18:00 개장)'),
+            run: () => {
+              sfx.play('error');
+              this.say([
+                `🌙 별빛 카지노는 밤(오후 6시 ~ 새벽 2시)에만 문을 엽니다!\n(현재 시각: ${formatTime(this.auth.time.minutes)})`,
+                '해가 지고 가로등이 켜지면 다시 찾아와 주세요!',
+              ]);
+            },
+          };
+        }
+        return { label: label('별빛 카지노 들어가기 (🌙 영업 중)'), run: () => this.enterBuilding(o, '') };
+      }
+      const owner = it.startsWith('home:') ? houseOwnerName(this.mapId, o.id, it.slice(5)) : '';
       const me = this.auth.me;
       const name = o.type === 'house' ? (me.inst && me.inst !== me.id ? `${this.auth.roster.get(me.inst)?.name ?? '친구'}님의 집` : '내 집') : owner ? `${owner}의 집` : MAP_NAMES[inside];
       const extra = it === 'hall' && !me.party.length ? ' — 파트너 루미 받기' : '';
@@ -895,8 +1083,15 @@ export class FarmScene extends Phaser.Scene {
       case 'mail': return { label: label('우편함 열기 — 편지 · 친구 초대'), run: () => { sfx.play('mailbox'); this.openMailbox(); } };
       case 'sign': return { label: label('표지판 읽기'), run: () => { sfx.play('page'); this.say([o.text ?? '...']); } };
       case 'board': return { label: label('마을 게시판 보기'), run: () => { sfx.play('page'); this.say(this.boardNotes()); } };
-      case 'inn': return { label: label('숙소 — 하룻밤 묵기 (500G)'), run: () => this.stayInn() };
-      case 'center': return { label: label('루미 센터에서 루미 회복하기'), run: () => this.healAt('다온', '맡겨 주신 루미들이 모두 건강해졌어요! 또 오세요♪') };
+      case 'casino:slot': return { label: label('별빛 슬롯머신 플레이'), run: () => this.openCasino('slot') };
+      case 'casino:dice': return { label: label('루미 주사위 테이블'), run: () => this.openCasino('dice') };
+      case 'casino:highlow': return { label: label('하이·로우 카드 테이블'), run: () => this.openCasino('highlow') };
+      case 'casino:dealer': return { label: label('카지노 지배인과 대화하기'), run: () => this.casinoDealerDialogue('extra_innkeeper') };
+      case 'center': {
+        const cn = this.centerNurse();
+        return { label: label('루미 센터에서 루미 회복하기'), run: () => this.healAt(cn?.name ?? '다온', '맡겨 주신 루미들이 모두 건강해졌어요! 또 오세요♪', undefined, cn?.sprite) };
+      }
+      case 'pc': return { label: label('루미 센터 PC 모니터 — 보관함 확인'), run: () => { sfx.play('phone_open'); phone.openBox(); } };
       case 'windmill': return { label: label('맷돌 살펴보기'), run: () => this.say(['풍차 날개가 돌면 이 커다란 맷돌도 함께 돌아간다.', '고소한 밀가루 냄새가 난다.']) };
       case 'smithy': return { label: label('볼 공방 화덕 — 루미볼 만들기'), run: () => this.openCraft('smithy') };
       case 'workbench': return { label: label('작업대 — 회복약 · 도핑약 · 루미볼 만들기'), run: () => this.openCraft('home') };
@@ -928,7 +1123,7 @@ export class FarmScene extends Phaser.Scene {
           const flags = this.auth.me.flags ?? [];
           if (!flags.includes('ch6_lumina')) return { label: label('빛누리 방송국'), run: () => this.say(['빛누리 방송국 건물.\n시내 입구 쪽 소란부터 확인해 보자.']) };
           if (!flags.includes('ch6_nebula')) return { label: label('빛누리 방송국 들어가기'), run: () => { void this.plot.check(); } };
-          return { label: label('빛누리 방송국'), run: () => this.say(['빛누리 방송국.\n관장 샛별과 함께 성간단 제4간부 네뷸라를 몰아내 방송이 정상으로 돌아왔다.']) };
+          return { label: label('빛누리 방송국'), run: () => this.say(['빛누리 방송국.\n관장 샛별과 함께 성간단 제4간부 성운을 몰아내 방송이 정상으로 돌아왔다.']) };
         }
         const desc: Record<string, string> = {
           '성간단 빌딩': (this.auth.me.flags ?? []).includes('ch7_altar')
@@ -975,38 +1170,130 @@ export class FarmScene extends Phaser.Scene {
     const t = this.auth.time;
     return [
       `[별빛 마을 게시판]\n오늘 날씨: ${t.weather === 'rain' ? '비 — 농장 작물에 물을 줄 필요가 없어요!' : '맑음 — 물 주는 것 잊지 마세요!'}`,
-      '· 소라네 루미 마트: 오전 9시 ~ 오후 5시 (약초 씨앗 · 볼 · 회복약)\n· 루나 카페: 오전 7시 30분 ~ 오후 10시 (커피·빵·케이크)\n· 광장 씨앗 가판대: 오전 9시 ~ 오후 6시\n· 민수의 볼 공방: 화덕 자유 이용 (배지를 따면 새 볼 제작법 전수!)',
-      '· 태오의 거리 공연: 오전엔 호수 북쪽, 오후엔 광장 동쪽!\n· 분실물: 준이의 모자 (찾으면 준이에게)',
+      '· 소라네 루미 마트: 오전 6시 ~ 밤 10시 (농사·채광 도구 · 씨앗 · 볼 · 작물/광석 매입)\n· 루나 카페: 오전 7시 30분 ~ 오후 10시 (커피·빵·케이크)\n· 광장 씨앗 가판대: 오전 9시 ~ 오후 6시\n· 민수의 볼 공방: 화덕 자유 이용 (배지를 따면 새 볼 제작법 전수!)\n· 별빛 카지노: 밤 6시 ~ 새벽 2시 (골드를 걸고 즐기는 슬롯 · 주사위 · 하이로우!)',
+      '· 태오의 거리 공연: 오전엔 호수 북쪽, 오후엔 광장 동쪽!\n· 팁: Q 키나 1~6 키로 보유한 도구·씨앗을 빠르게 바꿀 수 있어요!',
     ];
   }
 
   private openShop(id: string) {
     const shop = SHOPS[id];
+    const town = this.mapId === 'in_shop_w' ? this.townOfRoom() : this.mapId;
     const owner = shop.owner ? this.npcs.find((n) => n.def.id === shop.owner) : undefined;
-    if (shop.owner && (!owner || owner.state === 'gone' || Math.hypot(owner.x - this.player.x, owner.y - this.player.y) > 120)) {
+    if (shop.owner && this.mapId !== 'in_shop_w' && (!owner || owner.state === 'gone' || Math.hypot(owner.x - this.player.x, owner.y - this.player.y) > 140)) {
       ui.toast.push(`${shop.name}: 주인이 자리에 없어요. (영업 ${Math.floor(shop.open / 100)}시~${Math.floor(shop.close / 100)}시)`, 'sun');
       return;
     }
     this.player.play('idle');
-    ui.shop.show(shop, this.auth.gold, (itemId, qty) => { void this.auth.request({ kind: 'buy', shop: id, itemId, qty }).then((r) => sfx.play(r.ok ? 'shop_buy' : 'error')); },
-      owner ? { sprite: owner.def.sprite, name: owner.def.name } : undefined);
+    let keeper: { sprite: string; portrait?: string; name: string } | undefined = owner
+      ? { sprite: owner.def.sprite, portrait: owner.def.portrait ?? owner.def.sprite, name: owner.def.name }
+      : undefined;
+    let title: string | undefined;
+    let greeting: string | undefined;
+    if (this.mapId === 'in_shop_w') {
+      const mk = townShopKeeper(town);
+      keeper = { sprite: mk.sprite, portrait: mk.portrait, name: mk.name };
+      title = `${MAP_NAMES[town] ?? ''} 루미 마트`.trim();
+      greeting = mk.greeting;
+    } else if (id === 'cafe' && this.mapId !== 'in_cafe') {
+      const ck = townCafeKeeper(town);
+      keeper = { sprite: ck.sprite, portrait: ck.portrait, name: ck.name };
+      title = `${MAP_NAMES[town] ?? ''} 노천 카페`.trim();
+      greeting = ck.greeting;
+    } else if ((id === 'mart2' || id === 'mart3' || id === 'mart4') && !keeper) {
+      const mk = townShopKeeper(town);
+      keeper = { sprite: mk.sprite, portrait: mk.portrait, name: mk.name };
+      title = `${MAP_NAMES[town] ?? ''} 루미 마트`.trim();
+      greeting = mk.greeting;
+    }
+    ui.shop.show(
+      shop,
+      this.auth.gold,
+      (itemId, qty) => {
+        void this.auth.request({ kind: 'buy', shop: id, itemId, qty }).then((r) => {
+          sfx.play(r.ok ? 'shop_buy' : 'error');
+          if (r.ok) {
+            ui.shop.refresh();
+            // 빈손일 때 도구를 사면 바로 손에 쥐어 줌!
+            if (this.selected < 0 && ITEMS[itemId]?.type === 'tool') {
+              const sIdx = this.auth.me.inventory.findIndex((sl) => sl.itemId === itemId);
+              if (sIdx >= 0) this.select(sIdx);
+            }
+          }
+        });
+      },
+      keeper,
+      {
+        me: () => this.auth.me,
+        onSell: (slot, qty) => {
+          void this.auth.request({ kind: 'sell', shop: id, slot, qty }).then((r) => {
+            sfx.play(r.ok ? 'coin' : 'error');
+            if (r.ok) ui.shop.refresh();
+          });
+        },
+        title,
+        greeting,
+      },
+    );
   }
 
   private interact(cell?: [number, number]) {
-    if (this.player.busy || ui.dialogue.open || ui.shop.open) return;
+    if (this.player.busy || ui.dialogue.open || ui.shop.open || casinoModal.open) return;
     if (cell) this.faceCell(cell);
     this.findInteraction(cell)?.run();
   }
 
   private talk(npc: Npc) {
     if (npc.def.id === 'hanbyeol') { npc.beginTalk(this.player.x, this.player.y, this.auth.time.day); this.professor(() => npc.endTalk()); return; }
+    if (npc.def.id === 'casino_dealer') { npc.beginTalk(this.player.x, this.player.y, this.auth.time.day); this.casinoDealerDialogue(npc.def.portrait ?? 'extra_innkeeper', () => npc.endTalk()); return; }
     if (npc.def.hand) { void this.handTalk(npc); return; }
-    if (npc.def.id === 'daon') { this.healAt(npc.def.name, '맡겨 주신 루미들이 모두 건강해졌어요! 또 오세요♪', undefined, npc.def.sprite); return; }
+    const portrait = npc.def.portrait ?? npc.def.sprite;
     const dir = facingFromVector(npc.x - this.player.x, npc.y - this.player.y, this.player.dir);
     this.player.play('idle', dir);
+    // 루미 센터 간호사: 회복 · PC 보관함 · 인사 선택지
+    if (npc.def.id === 'daon') {
+      npc.beginTalk(this.player.x, this.player.y, this.auth.time.day);
+      ui.dialogue.show({
+        name: npc.def.name, title: npc.def.title, sprite: portrait, color: npc.def.color,
+        pages: ['루미 센터에 어서 오세요! 무엇을 도와드릴까요?'],
+        choices: [
+          { label: '💗 루미 회복하기 (무료)', primary: true, run: () => this.healAt(npc.def.name, '맡겨 주신 루미들이 모두 건강해졌어요! 또 오세요♪', undefined, portrait) },
+          { label: '💻 PC 보관함 열기', run: () => { sfx.play('phone_open'); phone.openBox(); } },
+          { label: '💬 이야기 나누기', run: () => ui.dialogue.show({ name: npc.def.name, title: npc.def.title, sprite: portrait, color: npc.def.color, pages: npc.pickLines(this.auth.time.minutes, this.auth.time.weather), hearts: npc.hearts }) },
+        ],
+      }, () => npc.endTalk());
+      return;
+    }
+    // 상점 · 카페 주인에게 직접 말 걸면 [상점 열기] / [이야기 나누기] 선택지 제공!
+    if ((npc.def.id === 'sora' && this.mapId === 'in_store') || (npc.def.id === 'luna' && this.mapId === 'in_cafe') || (npc.def.id === 'gureum' && this.mapId === 'in_shop_w')) {
+      const shopId = npc.def.id === 'sora' ? 'general' : npc.def.id === 'luna' ? 'cafe' : (this.townOfRoom() !== 'windvale' && MAP_META[this.townOfRoom()]?.kind === 'town' ? martFor(this.townOfRoom()) : 'windvale');
+      const shopLabel = npc.def.id === 'luna' ? '☕ 카페 메뉴 보기 · 팔기' : '🛒 상점 열기 (사기 · 팔기)';
+      npc.beginTalk(this.player.x, this.player.y, this.auth.time.day);
+      ui.dialogue.show({
+        name: npc.def.name, title: npc.def.title, sprite: portrait, color: npc.def.color,
+        pages: [`어서 오세요! ${npc.def.name}입니다. 필요한 물건이 있으신가요?`],
+        choices: [
+          { label: shopLabel, primary: true, run: () => this.openShop(shopId) },
+          { label: '💬 이야기 나누기', run: () => ui.dialogue.show({ name: npc.def.name, title: npc.def.title, sprite: portrait, color: npc.def.color, pages: npc.pickLines(this.auth.time.minutes, this.auth.time.weather), hearts: npc.hearts }) },
+        ],
+      }, () => npc.endTalk());
+      return;
+    }
+    // 마을 공방장인(craft_*): 휴대용 작업대 이용 / 이야기 나누기
+    if (this.npcActions.get(npc.def.id) === 'craft') {
+      npc.beginTalk(this.player.x, this.player.y, this.auth.time.day);
+      ui.dialogue.show({
+        name: npc.def.name, title: npc.def.title, sprite: portrait, color: npc.def.color,
+        pages: [`반갑네, 트레이너! ${npc.def.title} ${npc.def.name}일세. 작업대가 필요한가?`],
+        choices: [
+          { label: '🔨 공방 작업대 쓰기 (볼·약·도구 제작)', primary: true, run: () => this.openCraft('home', { sprite: npc.def.sprite, portrait, name: npc.def.name, title: `${MAP_NAMES[this.mapId] ?? ''} 공방 · ${npc.def.name}` }) },
+          { label: '💬 이야기 나누기', run: () => ui.dialogue.show({ name: npc.def.name, title: npc.def.title, sprite: portrait, color: npc.def.color, pages: npc.pickLines(this.auth.time.minutes, this.auth.time.weather), hearts: npc.hearts }) },
+        ],
+      }, () => npc.endTalk());
+      return;
+    }
     const pages = npc.pickLines(this.auth.time.minutes, this.auth.time.weather);
     npc.beginTalk(this.player.x, this.player.y, this.auth.time.day);
-    ui.dialogue.show({ name: npc.def.name, title: npc.def.title, sprite: npc.def.sprite, color: npc.def.color, pages, hearts: npc.hearts }, () => { npc.endTalk(); if (TEACHERS[npc.def.id]) void this.learnFrom(npc.def.id); });
+    ui.dialogue.show({ name: npc.def.name, title: npc.def.title, sprite: portrait, color: npc.def.color, pages, hearts: npc.hearts }, () => { npc.endTalk(); if (TEACHERS[npc.def.id]) void this.learnFrom(npc.def.id); });
   }
 
   private harvest(tx: number, ty: number) {
@@ -1016,12 +1303,43 @@ export class FarmScene extends Phaser.Scene {
     this.player.playOnce('interact', dir, () => { void this.auth.request({ kind: 'harvest', tx, ty }).then((r) => r.ok && sfx.play('harvest')); }, 1);
   }
 
-  /** 출하 상자: 손에 든 게 팔 수 있는 물건이면 바로 넣고, 아니면 휴대폰 가방을 열어 고르게 함 */
+  /** 출하 상자: 손에 든 게 팔 수 있는 물건이면 바로 넣고, 아니면 한 번에 출하 / 가방에서 고르기 선택 */
   private ship() {
     const it = ITEMS[this.auth.me.inventory[this.slot]?.itemId ?? ''];
-    if (it && it.sellPrice > 0 && it.type !== 'tool') { this.shipSlot(this.slot); return; }
-    if (this.hasPhone()) { phone.show('bag'); ui.toast.push('가방에서 출하할 물건을 눌러 "출하하기"를 고르세요.', 'gold'); }
-    else ui.toast.push('출하할 작물을 손에 들고 상자를 눌러 주세요.', 'gold');
+    if (it && it.sellPrice > 0 && it.type !== 'tool' && it.type !== 'key') { this.shipSlot(this.slot); return; }
+    const sellSlots = this.auth.me.inventory
+      .map((s, idx) => ({ s, idx, d: s.itemId ? ITEMS[s.itemId] : null }))
+      .filter((x) => x.d && x.s.quantity > 0 && x.d.sellPrice > 0 && x.d.type !== 'tool' && x.d.type !== 'key' && x.d.type !== 'seed');
+    if (sellSlots.length) {
+      const total = sellSlots.reduce((sum, x) => sum + x.d!.sellPrice * x.s.quantity, 0);
+      ui.dialogue.show({
+        name: '출하 상자',
+        pages: [`수확한 작물·광석·물고기 ${sellSlots.length}종이 가방에 있어요.\n(내일 아침 총 ${total.toLocaleString()}G 정산 · 상점에 직접 팔면 즉시 골드를 받을 수도 있어요!)`],
+        choices: [
+          {
+            label: `📦 작물·광석·물고기 모두 출하 (+${total.toLocaleString()}G 예정)`,
+            primary: true,
+            run: async () => {
+              let shipped = 0;
+              for (const x of sellSlots) {
+                const r = await this.auth.request({ kind: 'ship', slot: x.idx });
+                if (r.ok) shipped++;
+              }
+              if (shipped) {
+                sfx.play('ship');
+                const bin = this.world.objects.find((o) => o.interact === 'ship');
+                if (bin) this.tweens.add({ targets: bin.sprite, scaleY: { from: 0.9, to: 1 }, scaleX: { from: 1.08, to: 1 }, duration: 260, ease: 'Back.Out' });
+              }
+            },
+          },
+          ...(this.hasPhone() ? [{ label: '🎒 가방에서 하나씩 고르기', run: () => { phone.show('bag'); ui.toast.push('가방에서 출하할 물건을 눌러 "출하하기"를 고르세요.', 'gold'); } }] : []),
+          { label: '닫기', run: () => {} },
+        ],
+      });
+      return;
+    }
+    if (this.hasPhone()) { phone.show('bag'); ui.toast.push('지금 출하할 작물·광석·물고기가 없어요. 밭에서 수확하거나 채광해 보세요!', 'gold'); }
+    else ui.toast.push('출하할 작물이나 광석을 손에 들고 상자를 눌러 주세요.', 'gold');
   }
   private shipSlot(slot: number) {
     this.auth.sendAnim('interact', this.player.dir);
@@ -1486,10 +1804,16 @@ export class FarmScene extends Phaser.Scene {
     this.time.delayedCall(120, () => { this.warping = false; });
   }
   private warp(w: WarpDef) {
-    if (w.to === 'route1' && (!this.auth.me.party.length || this.auth.me.story < STORY.DONE)) {
-      this.player.setPosition(this.player.x - TILE, this.player.y); this.player.stopStep();
+    if ((w.to === 'route1' || w.to === 'route31') && (!this.auth.me.party.length || this.auth.me.story < STORY.DONE)) {
+      const [dx, dy] = DIR_VEC[this.player.dir];
+      this.player.setPosition(this.player.x - dx * TILE, this.player.y - dy * TILE); this.player.stopStep();
       sfx.play('error');
-      this.say([this.auth.me.story < STORY.MEET ? '저 너머는 1번 도로… 오늘은 먼저 마을에서 할 일이 있다!' : '아직은 갈 수 없어. 마을회관에서 이장님을 만나고 루미를 받아야 해!']);
+      const msg = this.auth.me.story < STORY.MEET
+        ? '마을 바깥 도로다… 오늘은 먼저 별빛 마을에서 할 일이 있어!'
+        : this.auth.me.party.length > 0
+          ? '아직은 갈 수 없어. 마을회관에서 소꿉친구와 첫 승부를 마쳐야 해!'
+          : '아직은 갈 수 없어. 마을회관에서 오 이장님을 만나 파트너 루미를 받아야 해!';
+      this.say([msg]);
       return;
     }
     const gate = BADGE_GATES[w.to] ?? 0;
@@ -1528,7 +1852,7 @@ export class FarmScene extends Phaser.Scene {
     if (this.warping) return;
     this.warping = true; this.playing = false;
     if (sound) sfx.play(sound);
-    ui.shop.close(); ui.dialogue.close(false); ui.mailbox.close();
+    ui.shop.close(); ui.dialogue.close(false); ui.mailbox.close(); casinoModal.close(false);
     this.cancelFishing();
     this.cameras.main.fadeOut(300, 10, 14, 18);
     this.cameras.main.once('camerafadeoutcomplete', async () => {
@@ -1537,8 +1861,10 @@ export class FarmScene extends Phaser.Scene {
         this.warping = false; this.playing = true; onFail?.();
         this.cameras.main.fadeIn(250);
         if (r.reason === 'far') ui.toast.push('문 앞에 바짝 서서 눌러 주세요.', 'heart');
+        else if (r.reason === 'casino-closed') ui.toast.push('🌙 별빛 카지노는 밤(오후 6시 이후)에만 입장할 수 있어요!', 'sun');
         else if (r.reason === 'need-partner') ui.toast.push('먼저 마을회관에서 파트너 루미를 받아 오세요!', 'lumi');
-        else if (r.reason?.startsWith('event:')) ui.toast.push(EventDirector.gateMessage(r.reason), 'heart');
+        else if (r.reason?.startsWith('event:')) ui.toast.push(EventDirector.gateMessage(r.reason, this.auth.me), 'heart');
+        else if (r.reason?.startsWith('gate:')) ui.toast.push(QUESTS.gates[r.reason.slice(5)]?.msg ?? '지금은 들어갈 수 없어요.', 'heart');
         else if (r.reason?.startsWith('need-badges:')) ui.toast.push(`배지 ${r.reason.slice(12)}개를 모은 트레이너만 들어갈 수 있어요. (지금 ${this.auth.me.badges.length}개)`, 'badge_wind');
       }
     });
@@ -1562,9 +1888,9 @@ export class FarmScene extends Phaser.Scene {
       case 'sim': {
         const ev = e.event;
         if (ev.type === 'tile') { if ((ev.map ?? 'farm') === this.mapId && ev.owner === this.auth.farmOwner) { this.farm?.apply(ev.tile); this.stage3d?.markSoilDirty(); } }
-        else if (ev.type === 'time') { ui.hud.time(ev.time); phone.tick(ev.time); if (ev.time.minutes === 18 * 60) ui.toast.push('해가 지고 있어요. 가로등이 켜집니다.', 'sun'); if (ev.time.minutes === 24 * 60) ui.toast.push('자정이 넘었어요! 곧 자러 가야 해요.', 'energy'); }
-        else if (ev.type === 'gold') { if (ev.playerId === me.id) { ui.hud.gold(ev.gold); ui.shop.gold(ev.gold); phone.refresh(); if (ev.delta > 0) ui.toast.push(`+${ev.delta}G`, 'gold'); } }
-        else if (ev.type === 'player' && ev.id === me.id) { ui.hud.energy(ev.energy, me.maxEnergy); this.ensureHeld(); ui.craft.refresh(); phone.refresh(); }
+        else if (ev.type === 'time') { ui.hud.time(ev.time); phone.tick(ev.time); if (ev.time.minutes === 18 * 60) ui.toast.push('🌙 해가 지고 가로등이 켜져요. 별빛 카지노도 영업을 시작합니다!', 'sun'); if (ev.time.minutes === 24 * 60) ui.toast.push('자정이 넘었어요! 곧 자러 가야 해요.', 'energy'); }
+        else if (ev.type === 'gold') { if (ev.playerId === me.id) { ui.hud.gold(ev.gold); ui.shop.gold(ev.gold); casinoModal.refreshGold(ev.gold); phone.refresh(); if (ev.delta > 0) ui.toast.push(`+${ev.delta}G`, 'gold'); } }
+        else if (ev.type === 'player' && ev.id === me.id) { ui.hud.energy(ev.energy, me.maxEnergy); this.ensureHeld(); ui.craft.refresh(); ui.shop.refresh(); phone.refresh(); }
         else if (ev.type === 'objectRemoved') { const [m, id] = ev.key.split(':'); if (m === this.mapId && (!ev.owner || ev.owner === this.auth.farmOwner)) this.world.removeObject(Number(id)); }
         else if (ev.type === 'opened' && ev.playerId === me.id) { const [m, id] = ev.key.split(':'); if (m === this.mapId) this.world.removeObject(Number(id)); }
         else if (ev.type === 'cleared' && ev.playerId === me.id) {
@@ -1825,7 +2151,7 @@ export class FarmScene extends Phaser.Scene {
     // 싱글플레이는 타이틀 화면/화면 전환 중에는 시간이 흐르지 않음 (멀티는 서버 시계)
     if (this.playing || this.auth.online) this.auth.update(dt);
     const k = this.keys;
-    const canMove = this.playing && !ui.confirm.open && !ui.dialogue.open && !ui.chat.typing && !ui.shop.open && !this.battling && !this.fishing && !ui.party.open;
+    const canMove = this.playing && !ui.confirm.open && !ui.dialogue.open && !ui.chat.typing && !ui.shop.open && !casinoModal.open && !this.battling && !this.fishing && !ui.party.open;
     // 키보드(-1/0/1) + 모바일 조이스틱(연속값) → 합쳐서 -1~1 로. 대각선은 Player.move 에서 속도를 맞춤
     const clamp1 = (n: number) => Math.max(-1, Math.min(1, n));
     const vx = canMove ? clamp1((k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0) + touch.vx) : 0;
@@ -1906,7 +2232,7 @@ export class FarmScene extends Phaser.Scene {
   }
 
   private updateCursor() {
-    if (!this.playing || ui.dialogue.open || ui.shop.open || this.battling || this.fishing) { this.cursor.setVisible(false); ui.hint.set(null); return; }
+    if (!this.playing || ui.dialogue.open || ui.shop.open || casinoModal.open || this.battling || this.fishing) { this.cursor.setVisible(false); ui.hint.set(null); return; }
     const p = this.input.activePointer;
     const cell = this.time.now - this.lastPointerMove < 2500 ? this.pointerCell(p) : undefined;
     const [tx, ty] = cell ?? this.player.facingCell();
@@ -1941,35 +2267,56 @@ export class FarmScene extends Phaser.Scene {
     const r = await this.auth.request({ kind: 'learn', npc });
     const n = r.data?.qty ?? 0; const t = TEACHERS[npc];
     if (!t) return;
-    if (n > 0) { sfx.play('item'); this.say(t.teach, t.name); }
+    if (n > 0) { sfx.play('item'); this.say(t.teach, t.name, NPCS[npc]?.sprite); }
   }
 
-  /** 작업대 창: 집(전부) · 볼 공방(민수) · 연구소(한별 박사) */
-  private openCraft(where: 'home' | 'smithy' | 'lab') {
+  /** 작업대 창: 집(전부) · 볼 공방(민수) · 연구소(한별 박사) · 마을 공방장인 */
+  private openCraft(where: 'home' | 'smithy' | 'lab', custom?: { sprite: string; portrait?: string; name: string; title: string }) {
     this.player.play('idle');
-    const keeper = where === 'smithy' ? NPCS.minsu : where === 'lab' ? NPCS.hanbyeol : undefined;
-    const title = where === 'home' ? '나의 작업대' : where === 'smithy' ? '민수의 볼 공방' : '한별 연구소 · 약품 조합기';
-    const sub = where === 'home' ? '밭에서 키운 약초와 캐 온 광석으로 직접 만들어요.' : where === 'smithy' ? '"화덕은 마음껏 써. 배운 대로만 하면 볼은 절대 안 깨져."' : '"조합 비율만 지키면 누구나 좋은 약을 만들 수 있다네."';
-    ui.craft.show({ title, sub, keeper: keeper ? { sprite: keeper.sprite, name: keeper.name } : undefined, teacher: where === 'home' ? undefined : keeper?.id,
-      me: () => this.auth.me, onCraft: (id, times) => { void this.auth.request({ kind: 'craft', recipe: id, times }).then((res) => { if (res.ok) sfx.play(where === 'smithy' ? 'craft_fire' : where === 'lab' ? 'craft_lab' : 'craft_bench'); else sfx.play('error'); ui.craft.refresh(); }); } });
+    const keeper = custom ?? (where === 'smithy' ? NPCS.minsu : where === 'lab' ? NPCS.hanbyeol : undefined);
+    const title = custom?.title ?? (where === 'home' ? '나의 작업대' : where === 'smithy' ? '민수의 볼 공방' : '한별 연구소 · 약품 조합기');
+    const sub = custom
+      ? '"재료만 있으면 볼이든 회복약이든 강화 도구든 마음껏 만들어 보게!"'
+      : where === 'home' ? '밭에서 키운 약초와 캐 온 광석으로 직접 만들어요.' : where === 'smithy' ? '"화덕은 마음껏 써. 배운 대로만 하면 볼은 절대 안 깨져."' : '"조합 비율만 지키면 누구나 좋은 약을 만들 수 있다네."';
+    ui.craft.show({
+      title, sub,
+      keeper: keeper ? { sprite: keeper.sprite, portrait: 'portrait' in keeper ? keeper.portrait : keeper.sprite, name: keeper.name } : undefined,
+      teacher: where === 'home' || custom ? undefined : where === 'smithy' ? 'minsu' : 'hanbyeol',
+      me: () => this.auth.me,
+      onCraft: (id, times) => { void this.auth.request({ kind: 'craft', recipe: id, times }).then((res) => { if (res.ok) sfx.play(where === 'smithy' ? 'craft_fire' : where === 'lab' ? 'craft_lab' : 'craft_bench'); else sfx.play('error'); ui.craft.refresh(); }); },
+    });
   }
 
-  /** 마을 숙소: 혼자면 다음 날 아침까지 · 멀티는 시간은 그대로(서버 시계) 회복만 */
-  private stayInn() {
-    const online = this.auth.online;
-    ui.confirm.show(`숙소 주인: "어서 오세요! 하룻밤 500G예요."\n${online ? '(멀티: 시간은 그대로, 루미와 체력만 회복)' : '(아침까지 푹 자고 루미와 체력을 모두 회복)'}`, () => {
-      void this.auth.request({ kind: 'inn' }).then((r) => {
-        if (!r.ok) { sfx.play('error'); return; }
-        sfx.play('bed');
-        this.cameras.main.fadeOut(500, 0, 0, 0);
-        this.time.delayedCall(700, () => {
-          this.cameras.main.fadeIn(600, 0, 0, 0);
-          music.jingle('jingle_heal');
-          this.partner?.cheer(2);
-          ui.toast.push(r.reason === 'slept' ? '푹 자고 일어났어요! 상쾌한 아침이에요. (루미 · 체력 완전 회복)' : '잠깐 눈을 붙였어요. 루미와 체력이 모두 회복됐어요!', 'heart');
-        });
-      });
-    }, { yes: '묵을게요 (500G)', no: '괜찮아요' });
+  /** 별빛 카지노(밤 18:00~02:00 전용): 골드를 걸고 슬롯 · 주사위 · 하이로우 플레이 */
+  private openCasino(initialGame: CasinoGame = 'slot') {
+    if (!isCasinoOpen(this.auth.time.minutes)) {
+      sfx.play('error');
+      ui.toast.push('🌙 별빛 카지노는 밤(오후 6시 ~ 새벽 2시)에만 이용할 수 있어요!', 'sun');
+      return;
+    }
+    this.player.play('idle');
+    casinoModal.show({
+      initialGame,
+      gold: () => this.auth.gold,
+      onBet: (game, bet, pick) => this.auth.request({ kind: 'casinoBet', game, bet, pick }),
+    });
+  }
+
+  private casinoDealerDialogue(sprite = 'extra_innkeeper', onDone?: () => void) {
+    this.player.play('idle');
+    ui.dialogue.show({
+      name: '순자',
+      title: '별빛 카지노 지배인',
+      sprite,
+      color: '#d87090',
+      pages: ['🌙 별빛 카지노에 어서 오세요! 보유한 골드를 걸고 한 판 승부를 즐겨 보시겠어요?'],
+      choices: [
+        { label: '🎰 별빛 슬롯 (최대 10배)', primary: true, run: () => this.openCasino('slot') },
+        { label: '🎲 루미 주사위 (2~5배)', run: () => this.openCasino('dice') },
+        { label: '🃏 하이·로우 카드 (2~8배)', run: () => this.openCasino('highlow') },
+        { label: '📖 규칙 듣기', run: () => ui.dialogue.show({ name: '순자', title: '별빛 카지노 지배인', sprite, color: '#d87090', pages: ['별빛 카지노는 매일 밤 6시(18:00)부터 새벽 2시까지만 운영됩니다.', '승리하면 베팅금의 2배~10배 골드를 즉시 지급해 드리며, 패배 시 베팅한 골드를 잃게 돼요. 건전하게 즐겨 주세요!'] }) },
+      ],
+    }, onDone);
   }
 
   /** 지금 있는 공용 실내(센터 · 마트)가 어느 마을 건물인지 — 방 이름(inst)이 '바깥맵:건물번호' */
@@ -2010,9 +2357,10 @@ export class FarmScene extends Phaser.Scene {
 
   private talkTrainer(t: Trainer) {
     t.faceTo(this.player.x, this.player.y);
+    const portrait = t.def.portrait ?? t.def.sprite;
     if (t.def.id === 'champion' && this.auth.me.defeated.includes('champion')) { this.masterTalk(t); return; }
-    if (this.auth.me.defeated.includes(t.def.id)) { this.say(t.def.after.map((l) => `${t.def.name}: "${l}"`), t.def.name); return; }
-    if (!this.auth.me.party.some((c) => c.hp > 0)) { this.say([`${t.def.name}: "싸울 수 있는 루미가 없잖아! 먼저 쉬게 해 줘."`]); return; }
+    if (this.auth.me.defeated.includes(t.def.id)) { this.say(t.def.after.map((l) => `${t.def.name}: "${l}"`), t.def.name, portrait); return; }
+    if (!this.auth.me.party.some((c) => c.hp > 0)) { this.say([`${t.def.name}: "싸울 수 있는 루미가 없잖아! 먼저 쉬게 해 줘."`], t.def.name, portrait); return; }
     this.challenge(t);
   }
 
@@ -2035,7 +2383,7 @@ export class FarmScene extends Phaser.Scene {
     const me = this.auth.me;
     const need = Object.keys(SPECIES).filter((id) => id !== MYTH);
     const have = need.filter((id) => me.caught.includes(id)).length;
-    if (!dexComplete(me)) { this.say([`${t.def.name}: "챔피언 자리는 네 거야. 그래도 루미나 지방의 루미를 전부 만나 봤어?"`, `${t.def.name}: "루미 도감을 다 채우면(${have}/${need.length}) 다시 와. 그땐 내 진짜 팀으로 상대해 줄게."`], t.def.name); return; }
+    if (!dexComplete(me)) { this.say([`${t.def.name}: "챔피언 자리는 네 거야. 그래도 루미나 지방의 루미를 전부 만나 봤어?"`, `${t.def.name}: "루미 도감을 다 채우면(${have}/${need.length}) 다시 와. 그땐 내 진짜 팀으로 상대해 줄게."`], t.def.name, t.def.sprite); return; }
     this.playing = false;
     ui.dialogue.show({ name: `루미 마스터 ${t.def.name}`, sprite: t.def.sprite, color: '#e0a43a', pages: ['…도감을 전부 채웠구나. 하나 누나 밭에서 시작한 아이가.', '좋아. 루미 마스터의 시련이다. 전원 만렙(Lv.100) — 이번엔 봐주지 않아!'] }, async () => {
       const r = await this.auth.request({ kind: 'rematch' });
@@ -2273,7 +2621,8 @@ export class FarmScene extends Phaser.Scene {
 
   private challenge(t: Trainer) {
     this.playing = false;
-    ui.dialogue.show({ name: `${t.def.title} ${t.def.name}`, sprite: t.def.sprite, color: '#c8453c', pages: t.def.intro }, async () => {
+    const portrait = t.def.portrait ?? t.def.sprite;
+    ui.dialogue.show({ name: `${t.def.title} ${t.def.name}`, sprite: portrait, color: '#c8453c', pages: t.def.intro }, async () => {
       const r = await this.auth.request({ kind: 'trainer', trainerId: t.def.id });
       if (r.battle) this.startBattle(r.battle, () => { if (t.def.sight > 0) t.returnHome(); });
       else {

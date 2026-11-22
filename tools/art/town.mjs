@@ -87,7 +87,14 @@ export function buildBuilding(o) {
   // ── 간판 ──
   if (o.sign) {
     const sx = o.signX ?? dx0 - 5, sy = dy0 - 16, sw = 24;
-    t.rect(sx, sy, sw, 12, P.wood.base); t.rect(sx, sy, sw, 1, P.wood.l2); t.rect(sx, sy + 11, sw, 1, P.wood.d2); t.rect(sx + sw - 1, sy, 1, 12, P.wood.d1);
+    if (o.sign === 'casino') {
+      t.rect(sx, sy, sw, 12, '#341448'); t.rect(sx, sy, sw, 1, '#ffd65a'); t.rect(sx, sy + 11, sw, 1, '#c9881a');
+      t.vline(sx, sy, 12, '#ffd65a'); t.vline(sx + sw - 1, sy, 12, '#c9881a');
+      glow.rect(sx + 1, sy + 1, sw - 2, 10, '#ffcf6e');
+      glow.rect(sx + 4, sy + 3, sw - 8, 6, '#ffe7a6');
+    } else {
+      t.rect(sx, sy, sw, 12, P.wood.base); t.rect(sx, sy, sw, 1, P.wood.l2); t.rect(sx, sy + 11, sw, 1, P.wood.d2); t.rect(sx + sw - 1, sy, 1, 12, P.wood.d1);
+    }
     drawSignIcon(t, sx + sw / 2, sy + 6, o.sign);
   }
   // ── 지붕 ──
@@ -136,6 +143,11 @@ function drawSignIcon(t, cx, cy, kind) {
   if (kind === 'star') { const c = '#ffd65a'; t.vline(cx, cy - 4, 9, c); t.hline(cx - 4, cy, 9, c); t.rect(cx - 2, cy - 2, 5, 5, c); }
   if (kind === 'moon') { const c = '#ffe58a'; t.circle(cx - 1, cy, 4, c); t.circle(cx + 1, cy - 1, 3.2, '#3a5a8a'); t.set(cx + 3, cy - 4, '#fff8ec'); t.set(cx + 4, cy - 2, '#fff8ec'); }
   if (kind === 'heart') { const h = '#e0475b'; t.rect(cx - 4, cy - 3, 3, 3, h); t.rect(cx + 1, cy - 3, 3, 3, h); t.rect(cx - 3, cy - 1, 7, 2, h); t.rect(cx - 2, cy + 1, 5, 1, h); t.set(cx, cy + 2, h); }
+  if (kind === 'casino') {
+    const g = '#ffd65a', r = '#e8475b';
+    t.rect(cx - 6, cy - 1, 5, 3, r); t.set(cx - 4, cy - 2, r); t.set(cx - 4, cy + 2, r); t.set(cx - 4, cy, '#fff8ec');
+    t.circle(cx + 3, cy, 3, g); t.circle(cx + 3, cy, 1, '#fff4c0'); t.set(cx, cy - 3, '#fff4c0');
+  }
 }
 
 export const BUILDINGS = {

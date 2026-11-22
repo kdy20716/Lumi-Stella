@@ -9,7 +9,7 @@ import { FarmSimulation } from '../../shared/sim/FarmSimulation';
 import { MAP_IDS, INTERIOR_OF, BADGE_GATES, type MapId } from '../../shared/types';
 import { TRAINERS, SPECIES, MOVES, ENCOUNTERS, CHAPTERS, hasDone, SKILLS, skillFor, ITEMS } from '../../shared/data';
 import { DEEP_CAVES, PLACE_GATES } from '../map/region-spec.mjs';
-import { effectiveness, stats, alive } from '../../shared/sim/Battle';
+import { effectiveness, stats, alive, healAll } from '../../shared/sim/Battle';
 import { STORY } from '../../shared/story';
 
 const MAPS = Object.fromEntries(MAP_IDS.map((id) => [id, new MapInfo(JSON.parse(readFileSync(`client/public/assets/maps/${id}.json`, 'utf8')) as TiledMap)])) as Record<MapId, MapInfo>;
@@ -128,7 +128,7 @@ function fight(first: any, catchNew = false): string {
     // 잡으려는 상대는 약한 기술로 깎음
     up = sim.apply('bot', { kind: 'battleMove', index: bestMove(st) } as any).battle;
   }
-  sim.apply('bot', { kind: 'heal' } as any);
+  healAll(p.party);
   return up?.ended ?? 'stuck';
 }
 const top = () => Math.max(...p.party.map((c) => c.level));

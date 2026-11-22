@@ -173,7 +173,14 @@ export class BattleEngine {
         log.push({ t: 'text', text: `신난다! ${name}을(를) 붙잡았다!` });
         if (!p.caught.includes(foe.species)) { p.caught.push(foe.species); log.push({ t: 'text', text: `${name}의 정보가 루미 도감에 새로 등록되었다!` }); }
         foe.uid = `${foe.species}-${Date.now().toString(36)}-${(uidSeq++).toString(36)}`;
-        if (p.party.length < 6) p.party.push(foe); else { p.box.push(foe); log.push({ t: 'text', text: `파티가 가득 차서 ${name}은(는) 보관함으로 보내졌다.` }); }
+        if (p.party.length < 6) {
+          p.party.push(foe);
+        } else {
+          foe.hp = stats(foe).maxHp;
+          restorePp(foe);
+          p.box.push(foe);
+          log.push({ t: 'text', text: `파티가 가득 차서 ${name}은(는) PC 보관함으로 보내졌다! (루미 센터 PC 모니터에서 확인 가능)` });
+        }
         st.over = true;
         return { ok: true as const, update: { view: this.view(p, st), log, ended: 'caught' as const } };
       }

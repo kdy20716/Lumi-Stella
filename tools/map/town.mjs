@@ -48,7 +48,7 @@ export function buildTown() {
   const hallDoor = build('hall', 24, 12, 'hall');
   const smithDoor = build('smithy', 35, 12, 'smithy');
   const homeA = build('house_a', 43, 12, 'home:mayor');
-  const innDoor = build('inn', 52, 12, 'inn');   // 마을 숙소
+  const casinoDoor = build('casino', 52, 12, 'casino');   // 별빛 카지노 (밤 18시 개장)
   // 남쪽 주택가 (문 앞 셀 = y 37)
   const homeB = build('house_b', 12, 36, 'home:luna');
   const homeC = build('house_c', 20, 36, 'home:teo');
@@ -59,12 +59,13 @@ export function buildTown() {
   m.place('anvil', smithDoor + 2, 15, { force: true, props: { interact: 'smithy' } });
   m.place('cafe_table', cafeDoor - 3, 15, { w: 2, force: true }); m.place('cafe_table', cafeDoor + 2, 15, { w: 2, force: true });
   m.place('board', 2, 15, { w: 2, force: true, props: { interact: 'board' } });
-  m.place('sign', 1, 23, { force: true, props: { interact: 'sign', text: '← 별빛 농장' } });
+  m.place('sign', 1, 23, { force: true, props: { interact: 'sign', text: '← 별빛 농장\n↑ 소라네 마트 · 마을회관 · 민수의 볼 공방\n→ 1번 도로 산들길' } });
+  m.place('sign', 28, 19, { force: true, props: { interact: 'sign', text: '별빛 마을 중앙 호수\n↑ 북쪽 상점가 · 마을회관(파트너 루미)\n↓ 남쪽 주택가 · → 1번 도로 산들길' } });
   m.place('stall', 52, 19, { w: 3, force: true, props: { interact: 'shop:market' } });
   m.place('stall_b', 52, 24, { w: 3, force: true, props: { interact: 'shop:market' } });
   for (const [x, y] of [[24, 16], [37, 16], [22, 30], [38, 30]]) m.place('bench', x, y, { w: 2, force: true, props: { interact: 'bench' } });
-  for (const [x, y] of [[19, 22], [43, 22], [27, 16], [34, 16], [27, 31], [34, 31], [12, 19], [47, 19], [10, 36], [48, 36]]) m.place('lamp', x, y, { force: true });
-  for (const [x, y] of [[storeDoor - 3, 15], [storeDoor + 2, 15], [hallDoor - 3, 15], [hallDoor + 3, 15], [homeA + 2, 15], [homeB + 2, 39], [homeC - 2, 39], [homeD + 2, 39], [homeE + 2, 39]]) m.place('planter', x, y, { force: true });
+  for (const [x, y] of [[4, 19], [19, 22], [43, 22], [27, 16], [34, 16], [27, 31], [34, 31], [12, 19], [47, 19], [10, 36], [48, 36]]) m.place('lamp', x, y, { force: true });
+  for (const [x, y] of [[storeDoor - 3, 15], [storeDoor + 2, 15], [hallDoor - 3, 15], [hallDoor + 3, 15], [homeA + 2, 15], [homeB + 2, 39], [homeC - 2, 39], [homeD + 2, 39], [homeE + 2, 39], [29, 31], [33, 31]]) m.place('planter', x, y, { force: true });
   m.place('barrel', smithDoor - 3, 12, { force: true }); m.place('crate', smithDoor - 2, 12, { force: true });
 
   // 2.5D: 북쪽 상점가는 한 단 높은 언덕 — 16·17번 줄이 절벽, 가운데 큰길만 계단 (호수와 겹치지 않음)
@@ -95,7 +96,7 @@ export function buildTown() {
   m.spawn('player', 3, 20); m.spawn('from_farm', 2, 20); m.spawn('wp_gate', 0, 20);
   m.spawn('wp_store', storeDoor + 1, 14); m.spawn('wp_cafe', cafeDoor + 1, 14); m.spawn('wp_hall', hallDoor, 15);
   m.spawn('wp_smithy', smithDoor + 1, 15); m.spawn('wp_market', 53, 22); m.spawn('wp_board', 4, 14);
-  m.spawn('wp_inn', innDoor, 13); m.spawn('wp_lake_n', 31, 19); m.spawn('wp_lake_s', 30, 31); m.spawn('wp_lake_w', 19, 24); m.spawn('wp_lake_e', 43, 24);
+  m.spawn('wp_casino', casinoDoor, 13); m.spawn('wp_lake_n', 31, 19); m.spawn('wp_lake_s', 30, 31); m.spawn('wp_lake_w', 19, 24); m.spawn('wp_lake_e', 43, 24);
   m.spawn('wp_pier', 31, bottom - 3); m.spawn('wp_bench_n', 26, 15); m.spawn('wp_bench_s', 23, 31);
   m.spawn('wp_plaza_e', 46, 21); m.spawn('wp_south', 30, 38); m.spawn('wp_entrance', 6, 21);
   m.spawn('wp_home_mayor', homeA, 13); m.spawn('wp_home_luna', homeB, 37); m.spawn('wp_home_teo', homeC, 37);

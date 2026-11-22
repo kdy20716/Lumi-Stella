@@ -191,7 +191,24 @@
     "tr_veteran_m",
     "tr_veteran_f",
     "tr_ruin_maniac",
-    "tr_artist"
+    "tr_artist",
+    "tr_ninja",
+    "extra_grandma",
+    "extra_toddler",
+    "extra_farmer_m",
+    "extra_farmer_f",
+    "extra_miner_chief",
+    "extra_diver",
+    "extra_astronomer",
+    "extra_librarian",
+    "extra_innkeeper",
+    "extra_mechanic",
+    "extra_student_m",
+    "extra_student_f",
+    "extra_musician",
+    "extra_monk",
+    "extra_reporter",
+    "extra_cameraman"
   ],
   "files": {
     "mom": "mom.png",
@@ -385,8 +402,25 @@
     "tr_veteran_m": "tr_veteran_m.png",
     "tr_veteran_f": "tr_veteran_f.png",
     "tr_ruin_maniac": "tr_ruin_maniac.png",
-    "tr_artist": "tr_artist.png"
+    "tr_artist": "tr_artist.png",
+    "tr_ninja": "tr_ninja.png",
+    "extra_grandma": "extra_grandma.png",
+    "extra_toddler": "extra_toddler.png",
+    "extra_farmer_m": "extra_farmer_m.png",
+    "extra_farmer_f": "extra_farmer_f.png",
+    "extra_miner_chief": "extra_miner_chief.png",
+    "extra_diver": "extra_diver.png",
+    "extra_astronomer": "extra_astronomer.png",
+    "extra_librarian": "extra_librarian.png",
+    "extra_innkeeper": "extra_innkeeper.png",
+    "extra_mechanic": "extra_mechanic.png",
+    "extra_student_m": "extra_student_m.png",
+    "extra_student_f": "extra_student_f.png",
+    "extra_musician": "extra_musician.png",
+    "extra_monk": "extra_monk.png",
+    "extra_reporter": "extra_reporter.png",
+    "extra_cameraman": "extra_cameraman.png"
   },
   "model": "gemini-3.1-flash-image (Nano Banana)",
-  "updatedAt": "2026-11-19T04:57:45.287Z"
+  "updatedAt": "2026-11-22T13:25:11.383Z"
 }

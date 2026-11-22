@@ -31,15 +31,20 @@ const BATTLE_BG = { meadow: 'grass', forest: 'grass', swamp: 'grass', beach: 'wa
 // ── 야생 루미 ───────────────────────────────────────────
 // 야생 루미: 바이옴마다 어울리는 종 (진화 1단계 위주, 2단계는 깊은 곳에서 가끔)
 const POOLS = {
-  meadow: ['kongkong', 'poreureu', 'posil', 'n1a', 'n2a', 'n4a', 'a1a', 'g2a', 'l3a'], forest: ['posil', 'ikkigom', 'poreureu', 'g1a', 'g3a', 'g4a', 'n2a', 'a3a', 'f5a'],
-  beach: ['pongpong', 'mallang', 'poreureu', 'kongkong', 'w1a', 'w2a', 'w5a', 'a1a'], rocky: ['jagal', 'ikkigom', 'busit', 'kongkong', 'e2a', 'e3a', 'e5a', 'f2a', 'l4a'],
-  snow: ['kongkong', 'ikkigom', 'mallang', 'l3a', 'a2a', 'n1a', 'l4a'], desert: ['jagal', 'busit', 'poreureu', 'e1a', 'e5a', 'f4a', 'l5a'],
-  swamp: ['pongpong', 'mallang', 'posil', 'w3a', 'w4a', 'e4a', 'g5a'], volcano: ['busit', 'jagal', 'f1a', 'f2a', 'f4a', 'e3a'], city: ['kongkong', 'poreureu', 'n3a', 'n5a', 'a5a', 'f3a'],
+  meadow: ['kongkong', 'poreureu', 'posil', 'n1a', 'n2a', 'n3a', 'n4a', 'n5a', 'a1a', 'a4a', 'g2a', 'l3a'],
+  forest: ['posil', 'ikkigom', 'poreureu', 'g1a', 'g3a', 'g4a', 'g5a', 'n2a', 'n3a', 'a3a', 'f5a'],
+  beach: ['pongpong', 'mallang', 'poreureu', 'kongkong', 'w1a', 'w2a', 'w3a', 'w5a', 'a1a'],
+  rocky: ['jagal', 'ikkigom', 'busit', 'kongkong', 'e1a', 'e2a', 'e3a', 'e4a', 'e5a', 'f2a', 'f3a', 'a4a', 'l4a'],
+  snow: ['kongkong', 'ikkigom', 'mallang', 'l2a', 'l3a', 'a2a', 'a4a', 'n1a', 'n5a', 'l4a'],
+  desert: ['jagal', 'busit', 'poreureu', 'e1a', 'e5a', 'f1a', 'f2a', 'f3a', 'f4a', 'l5a', 'n5a'],
+  swamp: ['pongpong', 'mallang', 'posil', 'w3a', 'w4a', 'e4a', 'g5a'],
+  volcano: ['busit', 'jagal', 'f1a', 'f2a', 'f3a', 'f4a', 'e3a'],
+  city: ['kongkong', 'poreureu', 'n3a', 'n5a', 'a5a', 'f3a', 'l1a'],
   distortion: ['astra', 'banjjak', 'l2a', 'a5a', 'l1a'],
   // 동굴 테마
-  rock: ['jagal', 'ikkigom', 'banjjak', 'e2a', 'e3a', 'a5a'], crystal: ['banjjak', 'jagal', 'l4a', 'l2a'], lava: ['busit', 'jagal', 'f2a', 'f1a'], ice: ['mallang', 'kongkong', 'ikkigom', 'l3a', 'a2a'],
+  rock: ['jagal', 'ikkigom', 'banjjak', 'e2a', 'e3a', 'a5a'], crystal: ['banjjak', 'jagal', 'l4a', 'l2a', 'l1a'], lava: ['busit', 'jagal', 'f2a', 'f1a', 'f3a'], ice: ['mallang', 'kongkong', 'ikkigom', 'l3a', 'a2a'],
   ruin: ['astra', 'banjjak', 'l2a', 'l5a', 'e5a', 'a5a'],
-  dark: ['banjjak', 'ikkigom', 'a5a', 'l1a', 'f3a'], mine: ['jagal', 'ikkigom', 'busit', 'e2a', 'e3a', 'n1a'], sea: ['pongpong', 'mallang', 'w1a', 'w4a', 'w2a'],
+  dark: ['banjjak', 'ikkigom', 'a5a', 'l1a', 'f3a'], mine: ['jagal', 'ikkigom', 'busit', 'e2a', 'e3a', 'n1a'], sea: ['pongpong', 'mallang', 'w1a', 'w3a', 'w4a', 'w2a'],
 };
 const RARE = { forest: 'saerok', swamp: 'saerok', beach: 'chalang', sea: 'chalang', volcano: 'morak', lava: 'morak' };
 const CREATURES = JSON.parse(readFileSync(new URL('../../shared/data/creatures.json', import.meta.url), 'utf8'));
@@ -50,8 +55,21 @@ function encounterTable(pool, tier, rareKey, seed = 0) {
   // 맵마다 조금씩 다른 조합 (풀숲마다 새 루미를 만나는 재미)
   const rot = pool.length ? seed % pool.length : 0;
   const pick = [...pool.slice(rot), ...pool.slice(0, rot)].slice(0, 6);
-  const day = pick.map((sp, i) => [grown(sp, base), Math.max(2, base - 2), base + 2, Math.max(5, 30 - i * 5)]);
-  const night = [['banjjak', Math.max(2, base - 1), base + 2, 22], ...pick.slice(1, 5).map((sp, i) => [grown(sp, base), Math.max(2, base - 2), base + 2, Math.max(5, 22 - i * 4)])];
+  // 고티어 지역에서도 기본(1단계) 루미를 포획해 도감을 채울 수 있도록 일부 슬롯은 미진화 원종을 유지
+  const pickStage = (sp, i) => (i >= 3 && CREATURES[sp]?.evolves ? sp : grown(sp, base));
+  const day = pick.map((sp, i) => {
+    const chosen = pickStage(sp, i);
+    const lvLo = chosen === sp && CREATURES[sp]?.evolves ? Math.max(2, Math.min(base - 2, CREATURES[sp].evolves.level - 2)) : Math.max(2, base - 2);
+    const lvHi = chosen === sp && CREATURES[sp]?.evolves ? Math.max(lvLo + 1, Math.min(base, CREATURES[sp].evolves.level)) : base + 2;
+    return [chosen, lvLo, lvHi, Math.max(5, 30 - i * 4)];
+  });
+  const nightExtra = pick.slice(0, 5).map((sp, i) => {
+    const chosen = (seed + i) % 2 === 0 ? sp : grown(sp, base);
+    const lvLo = chosen === sp && CREATURES[sp]?.evolves ? Math.max(2, Math.min(base - 2, CREATURES[sp].evolves.level - 2)) : Math.max(2, base - 2);
+    const lvHi = chosen === sp && CREATURES[sp]?.evolves ? Math.max(lvLo + 1, Math.min(base, CREATURES[sp].evolves.level)) : base + 2;
+    return [chosen, lvLo, lvHi, Math.max(5, 22 - i * 3)];
+  });
+  const night = [['banjjak', Math.max(2, base - 1), base + 2, 18], ...nightExtra];
   if (RARE[rareKey] && tier >= 5) { day.push([RARE[rareKey], base, base + 2, 3]); night.push([RARE[rareKey], base, base + 2, 3]); }
   if (tier >= 7) night.push(['astra', base + 2, base + 4, 2]);
   return { day, night };
@@ -59,11 +77,48 @@ function encounterTable(pool, tier, rareKey, seed = 0) {
 const FISH_ITEMS = (tier) => [['fish_crucian', 30], ['fish_trout', 25], ['fish_catfish', 15 + tier], ['fish_rainbow', 5 + tier * 2]];
 
 // ── 트레이너 / 주민 ─────────────────────────────────────
+// [직함, 필드 도트 시트, 대화창 AI 일러스트 id]
 const CLASSES = {
-  meadow: [['소녀', 'lass'], ['소년', 'juni'], ['곤충소년', 'bugkid']], forest: [['곤충소년', 'bugkid'], ['나무꾼', 'woodcutter'], ['소녀', 'lass']],
-  beach: [['수영선수', 'swimmer'], ['낚시꾼', 'fisher'], ['소녀', 'lass']], rocky: [['등산가', 'hiker'], ['광부', 'miner'], ['소년', 'juni']],
-  snow: [['스키어', 'skier'], ['등산가', 'hiker']], desert: [['탐험가', 'explorer'], ['등산가', 'hiker']], swamp: [['낚시꾼', 'fisher'], ['연구원', 'researcher']],
-  volcano: [['불꽃쟁이', 'explorer'], ['광부', 'miner']], city: [['신사', 'gentleman'], ['숙녀', 'lady']], cave: [['등산가', 'hiker'], ['광부', 'miner'], ['탐험가', 'explorer']],
+  meadow: [
+    ['조련사', 'lass', 'tr_birdkeeper'], ['캠퍼', 'hiker', 'tr_camper_m'],
+    ['피크닉걸', 'lass', 'tr_camper_f'], ['화가', 'mio', 'tr_artist'], ['곤충소년', 'bugkid', 'bugkid'],
+  ],
+  forest: [
+    ['레인저', 'woodcutter', 'tr_ranger_m'], ['레인저', 'lass', 'tr_ranger_f'],
+    ['닌자', 'ace_m', 'tr_ninja'], ['나무꾼', 'woodcutter', 'woodcutter'], ['곤충소년', 'bugkid', 'bugkid'],
+  ],
+  beach: [
+    ['선원', 'fisher', 'tr_sailor'], ['수영선수', 'swimmer', 'swimmer'],
+    ['낚시꾼', 'fisher', 'fisher'], ['피크닉걸', 'lass', 'tr_camper_f'],
+  ],
+  rocky: [
+    ['격투가', 'hiker', 'tr_blackbelt'], ['유적광', 'explorer', 'tr_ruin_maniac'],
+    ['광부', 'miner', 'miner'], ['등산가', 'hiker', 'hiker'],
+  ],
+  snow: [
+    ['스키어', 'skier', 'skier'], ['베테랑', 'ace_f', 'tr_veteran_f'],
+    ['레인저', 'lass', 'tr_ranger_f'], ['등산가', 'hiker', 'hiker'],
+  ],
+  desert: [
+    ['유적광', 'explorer', 'tr_ruin_maniac'], ['라이더', 'ace_m', 'tr_biker'],
+    ['탐험가', 'explorer', 'explorer'], ['베테랑', 'ace_m', 'tr_veteran_m'],
+  ],
+  swamp: [
+    ['초능력자', 'researcher', 'tr_psychic'], ['수집가', 'researcher', 'tr_collector'],
+    ['연구원', 'researcher', 'researcher'], ['낚시꾼', 'fisher', 'fisher'],
+  ],
+  volcano: [
+    ['용조련사', 'ace_m', 'tr_dragon_tamer'], ['베테랑', 'ace_m', 'tr_veteran_m'],
+    ['격투가', 'hiker', 'tr_blackbelt'], ['광부', 'miner', 'miner'],
+  ],
+  city: [
+    ['라이더', 'ace_m', 'tr_biker'], ['화가', 'mio', 'tr_artist'],
+    ['신사', 'gentleman', 'gentleman'], ['숙녀', 'lady', 'lady'],
+  ],
+  cave: [
+    ['유적광', 'explorer', 'tr_ruin_maniac'], ['초능력자', 'researcher', 'tr_psychic'],
+    ['용조련사', 'ace_m', 'tr_dragon_tamer'], ['베테랑', 'ace_m', 'tr_veteran_m'], ['광부', 'miner', 'miner'],
+  ],
 };
 /** 도장 속성 말투: 별마루 도장은 새 속성 없이 여러 속성 혼합 팀 */
 const typeTalk = (t) => (t === '혼합' ? '여러 속성을 섞은' : `${t ?? ''} 타입`);
@@ -246,17 +301,35 @@ export function buildRegion() {
     m.reserve(hx - 2, hy - 2, hx + 2, hy + 2);
   }
 
-  /** 비전 기술 관문: 도로 A 쪽 입구에서 6칸 안쪽 길을 막는 장애물 한 줄 (풀베기 = 가시덩굴) */
+  /** 비전 기술 관문: 도로 A 쪽 입구 포켓을 옆 울타리/바위와 장애물 한 줄로 완전히 막아 비전 기술 없이 우회 불가하게 함 */
   function skillGate(m, n) {
     const OBST = { cut: 'vine', smash: 'crack_rock', climb: 'climb_wall', strength: 'boulder', surf: 'water_gate' };
     const w = m.warps.find((x) => x.properties.find((p) => p.name === 'to')?.value === n.ends[0]); if (!w) return;
     const x0 = w.x / 16, y0 = w.y / 16, ww = w.width / 16, hh = w.height / 16;
     const horiz = hh > ww;   // 동 · 서 가장자리 출구 → 길은 가로로 뻗음
     const d = 6;
-    const cells = horiz ? Array.from({ length: hh + 2 }, (_, i) => [x0 === 0 ? d : m.W - 1 - d, y0 - 1 + i]) : Array.from({ length: ww + 2 }, (_, i) => [x0 - 1 + i, y0 === 0 ? d : m.H - 1 - d]);
-    for (const [x, y] of cells) {
+    const gateCells = horiz
+      ? Array.from({ length: hh + 2 }, (_, i) => [x0 === 0 ? d : m.W - 1 - d, y0 - 1 + i])
+      : Array.from({ length: ww + 2 }, (_, i) => [x0 - 1 + i, y0 === 0 ? d : m.H - 1 - d]);
+    const sideWalls = [];
+    if (horiz) {
+      const gx = x0 === 0 ? d : m.W - 1 - d;
+      const sx0 = x0 === 0 ? 1 : gx, sx1 = x0 === 0 ? gx : m.W - 2;
+      for (let x = sx0; x <= sx1; x++) { sideWalls.push([x, y0 - 2], [x, y0 + hh + 1]); }
+    } else {
+      const gy = y0 === 0 ? d : m.H - 1 - d;
+      const sy0 = y0 === 0 ? 1 : gy, sy1 = y0 === 0 ? gy : m.H - 2;
+      for (let y = sy0; y <= sy1; y++) { sideWalls.push([x0 - 2, y], [x0 + ww + 1, y]); }
+    }
+    const clearAt = (x, y) => { m.objects = m.objects.filter((o) => !(o.properties.find((p) => p.name === 'cellX')?.value === x && o.properties.find((p) => p.name === 'cellY')?.value === y)); };
+    for (const [x, y] of sideWalls) {
       if (!m.inb(x, y) || m.terrain[y][x] === Wt) continue;
-      m.objects = m.objects.filter((o) => !(o.properties.find((p) => p.name === 'cellX')?.value === x && o.properties.find((p) => p.name === 'cellY')?.value === y));
+      clearAt(x, y);
+      m.place('rock', x, y, { force: true });
+    }
+    for (const [x, y] of gateCells) {
+      if (!m.inb(x, y) || m.terrain[y][x] === Wt) continue;
+      clearAt(x, y);
       m.place(OBST[n.need] ?? 'vine', x, y, { force: true, props: { skill: n.need, interact: `skill:${n.need}` } });
     }
   }
@@ -495,12 +568,12 @@ export function buildRegion() {
   }
   function addTrainer(m, node, R, cls, k, x, y, face, pool, tier) {
     {
-      const [title, sprite] = cls[Math.floor(R() * cls.length)];
+      const [title, sprite, portrait] = cls[Math.floor(R() * cls.length)];
       const id = `${m.name}_t${k}`;
       const n = 1 + Math.floor(R() * Math.min(3, 1 + tier / 3));
       const lv = 3 + tier * 5;
       data.trainers[id] = {
-        id, name: nextName(), title, sprite, map: m.name, sight: 4,
+        id, name: nextName(), title, sprite, ...(portrait && portrait !== sprite ? { portrait } : {}), map: m.name, sight: 4,
         team: Array.from({ length: n }, (_, i) => [pool[Math.floor(R() * pool.length)], Math.max(2, lv - 2 + i)]), reward: 30 * lv,
         intro: LINES.intro[Math.floor(R() * LINES.intro.length)], defeat: LINES.defeat[Math.floor(R() * LINES.defeat.length)], after: LINES.after[Math.floor(R() * LINES.after.length)],
       };
@@ -585,7 +658,7 @@ export function buildRegion() {
     for (const ex of exits) { const inner = edgeExit(m, ex, S); m.path(inner[0], inner[1], cx, inner[1], 2, S); m.path(cx, Math.min(inner[1], cy), cx, Math.max(inner[1], cy), 2, S); }
     // 건물: 북쪽 줄 (쉼터·상점·도장·리그) / 남쪽 줄 (집)
     const north = ['center', 'shop_w', ...(n.gym && !gymSide ? ['gym'] : []), ...(n.league ? ['hall'] : [])];
-    const south = n.city ? ['inn', 'house_a', 'house_b', 'house_c'] : ['inn', 'house_b', 'house_c'];
+    const south = n.city ? ['casino', 'house_a', 'house_b', 'house_c'] : ['casino', 'house_b', 'house_c'];
     const rowN = cy - (arch === 'highland' ? 7 : 6), rowS = coastal ? Math.min(cy + 9, seaTop - 4) : cy + (arch === 'highland' ? 9 : 8);
     const placeRow = (list, row) => {
       let lft = cx - 3, right = cx + 3, side = 0;
@@ -596,12 +669,12 @@ export function buildRegion() {
         side++;
         if (row - c.h < 3) continue;
         const interior = key === 'gym' ? `gym_${n.id}` : key === 'hall' ? 'league' : undefined;
-        const interact = key === 'center' ? 'center' : key === 'shop_w' ? 'shop:windvale' : key === 'gym' ? 'gym' : key === 'hall' ? 'league' : key === 'inn' ? 'inn' : `home:${n.id}`;
+        const interact = key === 'center' ? 'center' : key === 'shop_w' ? 'shop:windvale' : key === 'gym' ? 'gym' : key === 'hall' ? 'league' : key === 'casino' ? 'casino' : `home:${n.id}`;
         const doorX = x0 + c.door;
         m.place(key, x0, row, { w: c.w, h: c.h, force: true, props: { interact, doorCellX: doorX, ...(interior ? { interior } : {}) } });
         m.reserve(x0 - 1, row - c.h - 2, x0 + c.w, row);
         m.path(doorX, Math.min(row + 1, cy), doorX, Math.max(row + 1, cy), 1, S);
-        m.spawn(key === 'center' ? 'wp_center' : key === 'shop_w' ? 'wp_shop' : key === 'gym' ? 'wp_gym' : key === 'inn' ? 'wp_inn' : `wp_${key}_${doorX}`, doorX, row + 1);
+        m.spawn(key === 'center' ? 'wp_center' : key === 'shop_w' ? 'wp_shop' : key === 'gym' ? 'wp_gym' : key === 'casino' ? 'wp_casino' : `wp_${key}_${doorX}`, doorX, row + 1);
       }
     };
     placeRow(north, rowN); placeRow(south, rowS);
@@ -611,10 +684,23 @@ export function buildRegion() {
     if (coastal) m.path(cx, cy, cx, seaTop - 2, 2, S);
     // 동굴 입구 / 옆길
     for (const l of n.links.filter((x) => x.type === 'mouth')) caveMouth(m, l, [cx, cy], R);
-    // 소품
+    // 소품 · 입구 가로등 및 이정표 (모험 방향 감각 강화)
     for (const [dx, dy] of [[-10, -3], [10, -3], [-10, 3], [10, 3]]) if (m.inb(cx + dx, cy + dy)) m.place('lamp', cx + dx, cy + dy, { force: true });
     m.place('bench', cx - 5, cy + 3, { w: 2, force: true, props: { interact: 'bench' } });
+    if (m.inb(cx + 5, cy - 3) && !m.blocked[cy - 3][cx + 5]) m.place('planter', cx + 5, cy - 3, { force: true });
+    if (m.inb(cx - 5, cy - 3) && !m.blocked[cy - 3][cx - 5]) m.place('planter', cx - 5, cy - 3, { force: true });
     signAt(m, cx + 4, cy + 3, `${n.name}\n${n.desc ?? ''}`);
+    for (const ex of exits) {
+      const [ix, iy] = inward(W, H, ex.side, ex.p, 3);
+      const sx = ix + (ex.side === 'N' || ex.side === 'S' ? 2 : 0);
+      const sy = iy + (ex.side === 'E' || ex.side === 'W' ? 2 : 0);
+      const lx = ix + (ex.side === 'N' || ex.side === 'S' ? -2 : 0);
+      const ly = iy + (ex.side === 'E' || ex.side === 'W' ? -2 : 0);
+      const arrow = ({ N: '↑', S: '↓', E: '→', W: '←' })[ex.side] ?? '→';
+      const target = nodes[ex.link.to];
+      if (target && canSafeBlock(m, sx, sy)) signAt(m, sx, sy, `${arrow} ${target.name}${target.desc ? `\n${target.desc}` : ''}`);
+      if (canSafeBlock(m, lx, ly)) m.place('lamp', lx, ly, { force: true });
+    }
     m.spawn('wp_npc1', cx - 4, cy); m.spawn('wp_npc2', cx + 5, cy - 1); m.spawn('wp_plaza', cx, cy + 1);
     const maxH = Math.max(...north.map((k) => cells(k).h));
     const backY = rowN - maxH - 2;
@@ -804,11 +890,35 @@ export function buildRegion() {
       }
     }
 
-    // 풀숲 · 트레이너 · 소품
+    // 풀숲 · 트레이너 · 채광 광맥 · 모험가 쉼터 & 랜드마크 소품
     grassPatches(m, R, biome === 'city' ? 2 : 8, path);
     trainers(m, n, R, path, 2 + (n.tier >= 4 ? 1 : 0) + (R() < 0.4 ? 1 : 0), CLASSES[biome] ?? CLASSES.meadow);
     if (biome === 'rocky' || biome === 'volcano') ores(m, R, 7, n.tier);
-    for (const ex of exits) { const [x, y] = inward(W, H, ex.side, ex.p, 4); signAt(m, x + (ex.side === 'N' || ex.side === 'S' ? 2 : 0), y + (ex.side === 'E' || ex.side === 'W' ? 2 : 0), `${n.name}\n→ ${nodes[ex.link.to].name}`); }
+    else if (['snow', 'desert', 'forest', 'beach'].includes(biome)) ores(m, R, 3, n.tier);
+    // 도로 출구 방향 표지판 + 입구 가로등
+    for (const ex of exits) {
+      const [x, y] = inward(W, H, ex.side, ex.p, 4);
+      const sx = x + (ex.side === 'N' || ex.side === 'S' ? 2 : 0), sy = y + (ex.side === 'E' || ex.side === 'W' ? 2 : 0);
+      const lx = x + (ex.side === 'N' || ex.side === 'S' ? -2 : 0), ly = y + (ex.side === 'E' || ex.side === 'W' ? -2 : 0);
+      const dest = nodes[ex.link.to];
+      signAt(m, sx, sy, `${n.name}\n→ ${dest.name}${dest.gym ? ' (도장 있음)' : ''}`);
+      if (canSafeBlock(m, lx, ly)) m.place('lamp', lx, ly, { force: true });
+    }
+    // 길 중간 모험가 쉼터 (가로등 + 모닥불/벤치) & 고대 유적 기둥 랜드마크
+    if (biome !== 'city') {
+      const campSpot = [[hub[0] - 3, hub[1] - 3], [hub[0] + 3, hub[1] - 3], [hub[0] - 3, hub[1] + 3], [hub[0] + 3, hub[1] + 3]]
+        .find(([cx, cy]) => canSafeBlock(m, cx, cy) && canSafeBlock(m, cx + 1, cy) && m.terrain[cy]?.[cx] === G);
+      if (campSpot) {
+        m.place('lamp', campSpot[0], campSpot[1], { force: true });
+        if (canSafeBlock(m, campSpot[0] + 1, campSpot[1])) m.place(R2() < 0.55 ? 'campfire' : 'bench', campSpot[0] + 1, campSpot[1], { force: true, props: { interact: R2() < 0.55 ? 'campfire' : 'bench' } });
+        m.reserve(campSpot[0] - 1, campSpot[1] - 1, campSpot[0] + 2, campSpot[1] + 1);
+      }
+      if (['rocky', 'desert', 'snow', 'volcano'].includes(biome)) {
+        for (const [rx, ry] of farSpots(m, R2, 2, 4)) {
+          if (canSafeBlock(m, rx, ry)) m.place(R2() < 0.5 ? 'ruin_pillar' : 'ruin_broken', rx, ry, { force: true });
+        }
+      }
+    }
     farSpots(m, R2, 3).forEach(([x, y], i) => stash(m, n, R2, i === 0 ? 'chest' : 'glint', x, y));
     nature(m, biome, R, exits);
     // 2.5D 턱: 아래로만 뛰어내릴 수 있는 짧은 턱 (길 · 풀숲 · 물 · 기믹 피함)
@@ -951,6 +1061,13 @@ export function buildRegion() {
       m.place(t, x, y, { force: true, props: { mine: t.slice(4) } }); m.reserve(x, y, x, y); k++;
     }
     if (!n.safe) {
+      // 동굴 분위기 장식 (수정/고대 기둥 — 통로를 절대 막지 않는 곳에만)
+      const decoKind = ['crystal', 'ice', 'sea'].includes(n.theme) ? 'crystal' : 'ruin_pillar';
+      for (let d = 0; d < 4 && floor.length;) {
+        const [dx, dy] = floor.splice(Math.floor(R2() * floor.length), 1)[0];
+        if (!canSafeBlock(m, dx, dy)) continue;
+        m.place(decoKind, dx, dy, { force: true }); m.reserve(dx, dy, dx, dy); d++;
+      }
       // 보물 상자: 출입구에서 가장 먼 막다른 곳 2군데 (통로를 막지 않는 자리만)
       const far = (q) => Math.min(...lay.points.map((p) => Math.hypot(p.x - q[0], p.y - q[1])));
       const sorted = [...floor].filter(([x, y]) => canSafeBlock(m, x, y)).sort((a, b) => far(b) - far(a)), got = [];
@@ -982,7 +1099,13 @@ export function buildRegion() {
           intro: [`관장님께 가려면 나부터 넘어야 해! ${typeTalk(g.type)} 힘을 보여 주지!`], defeat: ['관장님은 나보다 훨씬 강해!'], after: [g.type === '혼합' ? '관장님은 여러 속성을 섞어 써. 파티를 고르게 꾸려 와!' : `관장님은 ${g.type} 타입이야. 상성을 잘 생각해 봐.`] };
       });
     });
-    const elites = [['elite1', '바람결', '사천왕', ['poreureu', 'busit', 'jagal'], 50], ['elite2', '물안개', '사천왕', ['mallang', 'pongpong', 'chalang'], 51], ['elite3', '화톳불', '사천왕', ['busit', 'morak', 'jagal'], 52], ['elite4', '숲그늘', '사천왕', ['posil', 'saerok', 'ikkigom'], 53], ['champion', '하람', '챔피언', ['astra', 'ikkigom', 'mallang', 'busit', 'banjjak'], 56]];
+    const elites = [
+      ['elite1', '현우', '바람의 사천왕', ['poreureu', 'busit', 'jagal'], 50],
+      ['elite2', '미란', '물의 사천왕', ['mallang', 'pongpong', 'chalang'], 51],
+      ['elite3', '강혁', '불꽃의 사천왕', ['busit', 'morak', 'jagal'], 52],
+      ['elite4', '세라', '숲의 사천왕', ['posil', 'saerok', 'ikkigom'], 53],
+      ['champion', '하람', '챔피언', ['astra', 'ikkigom', 'mallang', 'busit', 'banjjak'], 56],
+    ];
     elites.forEach(([id, name, title, team, lv], i) => {
       data.trainers[id] = { id, name, title, sprite: id, map: 'league', sight: 0, team: team.map((s, k) => [s, lv + k]), reward: 2000 + i * 500,
         requires: i === 0 ? [] : [elites[i - 1][0]],

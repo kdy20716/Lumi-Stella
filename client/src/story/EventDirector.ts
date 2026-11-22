@@ -3,7 +3,8 @@
 //  - 진행(깃발) · 보상 · 막힌 길은 권한자(서버/로컬 시뮬레이션)가 검증하고, 여기서는 연출만
 import { CHAPTERS, nextEvent, type CastDef, type StoryEvent } from '@shared/data';
 import { rivalOf } from '@shared/story';
-import { DIR_VEC } from '@shared/types';
+import { explainGate } from '@shared/storyGuide';
+import { DIR_VEC, type PlayerState } from '@shared/types';
 import { TILE } from '../config';
 import { music } from '../audio/Music';
 import { ui } from '../ui/UI';
@@ -23,6 +24,7 @@ export class EventDirector {
   private actors: Actor[] = [];
   constructor(private h: StoryHost) {}
   getActors() { return this.actors; }
+  isBusy() { return this.busy; }
 
   private get me() { return this.h.auth.me; }
   private fill(s: string) { return s.replaceAll('{me}', this.me.name).replaceAll('{rival}', rivalOf(this.me.look).name); }
@@ -81,7 +83,7 @@ export class EventDirector {
   update(dt: number) {
     for (const a of this.actors) if (a.sprite.active) a.tick(dt);
     this.actors = this.actors.filter((a) => a.sprite.active);
-    if (!this.busy && !ui.dialogue.open && !ui.shop.open && !this.h.player.busy && CHAPTERS.events.some((e) => e.map === this.h.mapId && e.spot && !this.me.flags?.includes(e.id))) {
+    if ((this.me.mode ?? 'story') === 'story' && !this.busy && !ui.dialogue.open && !ui.shop.open && !this.h.player.busy && CHAPTERS.events.some((e) => e.map === this.h.mapId && e.spot && !this.me.flags?.includes(e.id))) {
       this.spotTick += dt;
       if (this.spotTick >= 220) { this.spotTick = 0; this.check(); }
     }
@@ -89,7 +91,7 @@ export class EventDirector {
 
   /** 맵에 들어왔을 때 · 사건이나 승부가 끝났을 때 */
   check() {
-    if (this.busy) return;
+    if (this.busy || (this.me.mode ?? 'story') !== 'story') return;
     const [x, y] = this.h.player.cell();
     const ev = nextEvent({ ...this.me, map: this.h.mapId }, this.h.mapId, { x, y });
     if (ev) void this.run(ev);
@@ -175,8 +177,9 @@ export class EventDirector {
   }
 
   /** 막힌 길 안내 (권한자가 'event:<id>' 로 거절했을 때) */
-  static gateMessage(reason: string) {
+  static gateMessage(reason: string, me?: PlayerState) {
     const id = reason.slice(6);
+    if (me) return explainGate(me, id);
     return CHAPTERS.events.find((e) => e.id === id)?.gate?.msg ?? '지금은 들어갈 수 없다.';
   }
 }

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T06:58:42.813Z",
+  "generatedAt": "2026-11-22T16:38:01.438Z",
   "tileSize": 16,
   "images": {
     "water0": {
@@ -494,14 +494,14 @@
       "h": 104,
       "originY": 0.7884615384615384
     },
-    "inn": {
-      "path": "assets/buildings/inn.png",
+    "casino": {
+      "path": "assets/buildings/casino.png",
       "w": 96,
       "h": 104,
       "originY": 0.9903846153846154
     },
-    "inn_glow": {
-      "path": "assets/buildings/inn_glow.png",
+    "casino_glow": {
+      "path": "assets/buildings/casino_glow.png",
       "w": 96,
       "h": 104,
       "originY": 0.7884615384615384
@@ -962,6 +962,12 @@
       "h": 160,
       "originY": 1
     },
+    "room_in_casino": {
+      "path": "assets/interiors/in_casino.png",
+      "w": 256,
+      "h": 176,
+      "originY": 1
+    },
     "room_gym_harbor": {
       "path": "assets/interiors/gym_harbor.png",
       "w": 288,
@@ -1139,6 +1145,24 @@
     "counter_lab": {
       "path": "assets/objects/counter_lab.png",
       "w": 64,
+      "h": 30,
+      "originY": 1
+    },
+    "counter_casino": {
+      "path": "assets/objects/counter_casino.png",
+      "w": 64,
+      "h": 30,
+      "originY": 1
+    },
+    "slot_machine": {
+      "path": "assets/objects/slot_machine.png",
+      "w": 16,
+      "h": 32,
+      "originY": 1
+    },
+    "casino_table": {
+      "path": "assets/objects/casino_table.png",
+      "w": 48,
       "h": 30,
       "originY": 1
     },
@@ -36430,11 +36454,11 @@
       "w": 96,
       "h": 104
     },
-    "inn": {
+    "casino": {
       "cellW": 6,
       "cellH": 4,
       "doorCell": 3,
-      "chimneyX": 72,
+      "chimneyX": null,
       "w": 96,
       "h": 104
     },

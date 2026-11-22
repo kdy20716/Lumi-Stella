@@ -44,6 +44,7 @@ export class StoryDirector {
   private busy = false;
   constructor(private h: StoryHost) {}
   getActors() { return this.actors; }
+  isBusy() { return this.busy; }
 
   private get me() { return this.h.auth.me; }
   private get rival() { const r = rivalOf(this.me.look); return { ...r, sprite: r.look, color: r.look === 'rival_f' ? '#3fb07a' : '#2f68c0' }; }
@@ -125,7 +126,7 @@ export class StoryDirector {
   private async wakeTvScene() {
     const key = `wake2f:${this.me.id}`;
     if (seenNow.has(key) || seen(key)) return;
-    seenNow.add(key); markSeen(key);
+    seenNow.add(key);
     this.busy = true; this.h.lock();
     const r = this.rival, name = this.me.name;
     const [px, py] = this.h.player.cell();
@@ -152,6 +153,7 @@ export class StoryDirector {
     await a.vanish();
     sfx.play('stairs');
     await this.step(STORY.RACE);
+    markSeen(key);
     ui.toast.push('오른쪽 아래 계단으로 1층에 내려가 밖으로 나가자! 마을은 농장 동쪽 길 끝에 있어요.', 'heart');
     this.busy = false; this.h.unlock();
   }

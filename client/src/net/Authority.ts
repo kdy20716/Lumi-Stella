@@ -85,7 +85,7 @@ export abstract class Authority {
         if ((!e.playerId || e.playerId === me.id) && me.cleared) me.cleared = me.cleared.filter((k) => !e.keys.includes(k));
         break;
       case 'forage': this.forage = [...e.spots]; break;
-      case 'party': if (e.id === me.id) Object.assign(me, { party: e.party.map((c) => ({ ...c, moves: [...c.moves] })), bag: { ...e.bag }, badges: [...e.badges], defeated: [...e.defeated], seen: [...e.seen], caught: [...e.caught], visited: [...e.visited], recipes: [...(e.recipes ?? [])], flags: [...(e.flags ?? [])], bonds: { ...(e.bonds ?? me.bonds ?? {}) }, asks: { ...(e.asks ?? me.asks ?? {}) }, stock: JSON.parse(JSON.stringify(e.stock ?? me.stock ?? {})), opened: [...(e.opened ?? me.opened ?? [])] }); break;
+      case 'party': if (e.id === me.id) Object.assign(me, { party: e.party.map((c) => ({ ...c, moves: [...c.moves], pp: c.pp ? [...c.pp] : undefined })), box: (e.box ?? me.box ?? []).map((c) => ({ ...c, moves: [...c.moves], pp: c.pp ? [...c.pp] : undefined })), bag: { ...e.bag }, badges: [...e.badges], defeated: [...e.defeated], seen: [...e.seen], caught: [...e.caught], visited: [...e.visited], recipes: [...(e.recipes ?? [])], flags: [...(e.flags ?? [])], bonds: { ...(e.bonds ?? me.bonds ?? {}) }, asks: { ...(e.asks ?? me.asks ?? {}) }, stock: JSON.parse(JSON.stringify(e.stock ?? me.stock ?? {})), opened: [...(e.opened ?? me.opened ?? [])] }); break;
       case 'room': if (e.playerId === me.id) { Object.assign(me, { map: e.map, inst: e.inst, world: e.world, x: e.x, y: e.y }); this.applySnapshot(e.snapshot); } break;
       case 'look': { if (e.id === me.id) { me.look = e.look; me.name = e.name; } const r = this.roster.get(e.id); if (r) { r.look = e.look; r.name = e.name; } break; }
       case 'dish': if (e.room === this.room) this.dish = e.dish; break;
@@ -147,7 +147,7 @@ export class LocalAuthority extends Authority {
     this.storageKind = '이 브라우저 (혼자하기)';
     this.sim.on((event) => {
       this.emit({ type: 'sim', event });
-      if (event.type === 'room' || event.type === 'newDay' || event.type === 'story' || event.type === 'look' || event.type === 'bmState') this.save();
+      if (event.type === 'room' || event.type === 'newDay' || event.type === 'story' || event.type === 'look' || event.type === 'bmState' || event.type === 'party') this.save();
     });
     this.saveTimer = window.setInterval(() => this.save(), 30_000);
     window.addEventListener('beforeunload', () => this.save());
@@ -216,6 +216,12 @@ export class LocalAuthority extends Authority {
         if (!t || !this.sim.warpTo(t, cmd.map)) return { ok: false, message: '이동 실패' };
         this.save();
         return { ok: true, message: `${REGION_MAPS[cmd.map]?.name ?? cmd.map}(으)로 이동했어요` };
+      }
+      case 'setTime': {
+        this.sim.setTimeMinutes(cmd.minutes);
+        this.save();
+        const hh = Math.floor(cmd.minutes / 60) % 24, mm = cmd.minutes % 60;
+        return { ok: true, message: `시각을 ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}(으)로 바꿨어요` };
       }
       default:
         return { ok: false, message: '멀티플레이 서버에서 사용할 수 있는 명령이에요' };

@@ -5,8 +5,8 @@
 import { dexComplete, SKILLS, skillFor, CHAPTERS, CROPS, ENCOUNTERS, EVENTS, HANDS, ITEMS, MOVES, NPCS, QUESTS, RECIPES, REGION_MAPS, SHOPS, SPECIES, TRAINERS, gateFor, hhmmToMinutes, nextEvent } from '../data';
 import { BattleEngine, MAX_LEVEL, healAll, makeCreature, stats, syncPp, type BattleState } from './Battle';
 import {
-  SoilState, INTERIOR_OF, isHomeMap, isInterior, roomOf, BADGE_GATES, BOND_MAX, BOND_WATER, BOND_ASK_AT,
-  type ActionIntent, type ActionResult, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type MailGift, type MapId,
+  SoilState, INTERIOR_OF, isHomeMap, isInterior, isCasinoOpen, roomOf, BADGE_GATES, BOND_MAX, BOND_WATER, BOND_ASK_AT,
+  type ActionIntent, type ActionResult, type CasinoGame, type CasinoOutcome, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type MailGift, type MapId,
   type PlacedObject, type PlayerState, type SaveData, type TrainerDef, type WorldTime, type Weather, type BattleUpdate,
 } from '../types';
 import { ADMIN_DEFAULT_CASH_KRW, BM_ALL_TOTAL_KRW, BM_LOOK_IDS, BM_PRODUCT_MAP, CHAT_BUBBLES, LUMI_COORDS, UI_THEMES, isBmUnlocked, isValidPlayerLook, remainingBmCostKrw } from '../bmShop';
@@ -43,7 +43,7 @@ export type SimEvent =
   | { type: 'cleared'; playerId: string; key: string }
   | { type: 'opened'; playerId: string; key: string }
   | { type: 'forage'; spots: ForageSpot[] }
-  | { type: 'party'; id: string; party: PlayerState['party']; bag: PlayerState['bag']; badges: string[]; defeated: string[]; seen: string[]; caught: string[]; visited: string[]; recipes: string[]; flags: string[]; bonds?: Record<string, number>; asks?: Record<string, number>; stock?: Record<string, Record<string, number>>; opened?: string[] }
+  | { type: 'party'; id: string; party: PlayerState['party']; box?: PlayerState['box']; bag: PlayerState['bag']; badges: string[]; defeated: string[]; seen: string[]; caught: string[]; visited: string[]; recipes: string[]; flags: string[]; bonds?: Record<string, number>; asks?: Record<string, number>; stock?: Record<string, Record<string, number>>; opened?: string[] }
   | { type: 'help'; playerId: string; species: string; text: string }
   | { type: 'toast'; playerId?: string; room?: string; text: string; icon?: string }
   | { type: 'room'; playerId: string; map: MapId; inst: string; world: string; x: number; y: number; snapshot: FarmSnapshot }
@@ -61,7 +61,7 @@ export type SimEvent =
 type Listener = (e: SimEvent) => void;
 interface FarmState { owner: string; /** 마을 텃밭이면 그 마을 */ map?: MapId; tiles: Map<string, FarmTile>; removed: Set<number>; placed: Map<string, PlacedObject>; dish: Dish | null }
 /** 농장 맵 배치 버전: 바뀌면 옛 세이브의 '치운 오브젝트' 목록은 맞지 않으므로 비움 (경작지는 유지) */
-const FARM_VER = 2;
+const FARM_VER = 3;
 /** 지나갈 수 있는 오브젝트 (충돌 없음) */
 const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'attic_stairs_up', 'attic_stairs_down', 'portal', 'glint', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gatehouse', 'cycle_gate', 'pair_card', 'rail_switch', 'quiz_pad', 'prism', 'rune_pad', 'rune_demo', 'snow_reset']);
 const TREES = new Set(['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm', 'dead_tree']);
@@ -107,7 +107,7 @@ export class FarmSimulation {
   private weedCache = new Map<number, number[]>();
   private placeSeq = 0;
 
-  /** 멀티 서버면 true: 숙소에서 자도 시간이 흐르지 않음 (서버 시계를 모두가 공유) */
+  /** 멀티 서버면 true: 서버 시계를 모두가 공유 */
   readonly multiplayer: boolean;
   constructor(maps: Record<MapId, MapInfo>, opts: { multiplayer?: boolean } = {}) {
     this.multiplayer = !!opts.multiplayer;
@@ -209,7 +209,18 @@ export class FarmSimulation {
         isAdmin: false,
       });
       migrateBag(p.bag);
-      if (save.inventory?.length) p.inventory = Array.from({ length: INVENTORY_SIZE }, (_, i) => { const id = save.inventory[i]?.itemId ?? null; const ok = !!id && !!ITEMS[id]; return { slotIndex: i, itemId: ok ? id : null, quantity: ok ? save.inventory[i]?.quantity ?? 0 : 0 }; });
+      if (save.inventory?.length) {
+        const len = Math.max(INVENTORY_SIZE, save.inventory.length);
+        p.inventory = Array.from({ length: len }, (_, i) => {
+          const raw = save.inventory[i];
+          const itemId = raw?.itemId ?? null;
+          const ok = !!itemId && !!ITEMS[itemId];
+          const dur = ok && typeof raw?.dur === 'number' ? raw.dur : undefined;
+          return dur !== undefined
+            ? { slotIndex: i, itemId: itemId!, quantity: raw?.quantity ?? 0, dur }
+            : { slotIndex: i, itemId: ok ? itemId : null, quantity: ok ? raw?.quantity ?? 0 : 0 };
+        });
+      }
     }
     this.players.set(id, p);
     this.ensureFarm(id, save?.farm);
@@ -217,10 +228,20 @@ export class FarmSimulation {
     // 마지막 위치에서 이어서: 내 농장 · 집이거나 공용 장소일 때만 (친구 농장 등은 그 친구가 없을 수 있어 내 농장으로)
     const at = save?.pos;
     if (at && p.story !== STORY.HOME && this.maps[at.map]) {
-      const own = at.map === 'farm' || isHomeMap(at.map) ? at.inst === id : !(at.inst && this.players.has(at.inst));
-      const next = { ...p, map: at.map, inst: own && (at.map === 'farm' || isHomeMap(at.map)) ? id : at.inst };
-      if (own && Number.isFinite(at.x) && Number.isFinite(at.y) && this.canStand(next, at.x, at.y)) {
-        Object.assign(p, { map: next.map, inst: next.inst, x: at.x, y: at.y, dir: at.dir ?? p.dir, ret: at.ret });
+      if (at.map === 'in_casino' && !isCasinoOpen(this.time.minutes)) {
+        const ret = at.ret && this.maps[at.ret.map] && !isInterior(at.ret.map) ? at.ret : null;
+        if (ret) Object.assign(p, { map: ret.map, inst: ret.inst ?? '', x: ret.x, y: ret.y, dir: 'down' as const });
+        else {
+          const nt = this.nearestTown(p);
+          const sp = this.maps[nt.map].spawns.get(nt.spawn) ?? this.maps[nt.map].spawns.get('player')!;
+          Object.assign(p, { map: nt.map, inst: '', x: sp.x, y: sp.y + 5, dir: 'down' as const });
+        }
+      } else {
+        const own = at.map === 'farm' || isHomeMap(at.map) ? at.inst === id : !(at.inst && this.players.has(at.inst));
+        const next = { ...p, map: at.map, inst: own && (at.map === 'farm' || isHomeMap(at.map)) ? id : at.inst };
+        if (own && Number.isFinite(at.x) && Number.isFinite(at.y) && this.canStand(next, at.x, at.y)) {
+          Object.assign(p, { map: next.map, inst: next.inst, x: at.x, y: at.y, dir: at.dir ?? p.dir, ret: at.ret });
+        }
       }
     }
     // 아직 프롤로그 첫 장면이면 2층 다락방 내 방(TV 앞)에서 시작
@@ -349,18 +370,36 @@ export class FarmSimulation {
       if (earned) { p.gold += earned; this.emit({ type: 'gold', playerId: p.id, gold: p.gold, delta: earned }); this.emit({ type: 'toast', playerId: p.id, text: `어제 출하한 물건이 ${earned}G에 팔렸어요!`, icon: 'gold' }); }
       if (SPECIES[p.party[0]?.species]?.helps === 'farm' && weather !== 'rain') {
         let n = 0;
-        for (const t of this.ensureFarm(p.id).tiles.values()) { if (n >= 6) break; if (t.crop && t.soil !== SoilState.Watered) { t.soil = SoilState.Watered; n++; } }
+        const myFarm = this.ensureFarm(p.id);
+        for (const t of myFarm.tiles.values()) { if (n >= 6) break; if (t.crop && t.soil !== SoilState.Watered) { t.soil = SoilState.Watered; this.tileEmit(myFarm, t); n++; } }
         if (n) this.emit({ type: 'help', playerId: p.id, species: p.party[0].species, text: `${SPECIES[p.party[0].species].name}이(가) 아침 일찍 작물 ${n}칸에 물을 줬어요!` });
       }
     }
     this.helpersWork(weather);
-    // 채석장 바위·채집물 다시 생성
+    // 채석장 바위·채집물 다시 생성 (농장 채광 바위터의 광맥도 매일 복원)
     const restored = [...this.removed].filter((k) => { const [m, id] = k.split(':'); return this.maps[m as MapId]?.objects.some((o) => String(o.id) === id && o.properties?.some((pp) => pp.name === 'mine')); });
     for (const k of restored) this.removed.delete(k);
     if (restored.length) this.emit({ type: 'objectRestored', keys: restored });
+    const farmMineIds = new Set(this.map.objects.filter((o) => o.properties?.some((pp) => pp.name === 'mine')).map((o) => o.id));
+    for (const f of this.farms.values()) {
+      const farmBack: string[] = [];
+      for (const id of [...f.removed]) {
+        if (farmMineIds.has(id)) { f.removed.delete(id); farmBack.push(`farm:${id}`); }
+      }
+      if (farmBack.length) this.emit({ type: 'objectRestored', playerId: f.owner, keys: farmBack });
+    }
     this.spawnForage();
     this.emit({ type: 'forage', spots: [...this.forage] });
     this.emit({ type: 'newDay', time: { ...this.time } });
+    // 새벽 6시가 되면 밤 전용 카지노 영업 종료 → 안에 있던 손님은 바깥으로 안내
+    for (const p of this.players.values()) {
+      if (p.map === 'in_casino' && !isCasinoOpen(this.time.minutes)) {
+        const ret = p.ret && this.maps[p.ret.map] && !isInterior(p.ret.map) ? p.ret : null;
+        if (ret) this.relocate(p, ret.map, ret.inst, ret.x, ret.y);
+        else { const nt = this.nearestTown(p); this.toSpawn(p, nt.map, '', nt.spawn); }
+        this.emit({ type: 'toast', playerId: p.id, text: '🌅 새벽이 밝아 별빛 카지노가 영업을 마쳤어요! 내일 밤 6시에 다시 만나요.', icon: 'sun' });
+      }
+    }
     // 새 날: 모두 자기 농장 집 앞에서 시작 (루미도 푹 쉼)
     const home = this.homeSpot();
     if (!rest) return;
@@ -391,8 +430,19 @@ export class FarmSimulation {
     switch (a.kind) {
       case 'chooseStarter': return this.chooseStarter(p, a.species);
       case 'setPartner': return this.setPartner(p, a.index);
-      case 'heal': healAll(p.party); this.emitParty(p); return { ok: true };
-      case 'inn': return this.inn(p);
+      case 'heal': {
+        if (p.map !== 'in_center' && p.map !== 'in_lab' && !isHomeMap(p.map)) return { ok: false, reason: 'no-heal-spot' };
+        healAll(p.party); this.emitParty(p); return { ok: true };
+      }
+      case 'partySwap': return this.partySwap(p, a.a, a.b);
+      case 'boxSwap': return this.boxSwap(p, a.partyIndex, a.boxIndex);
+      case 'boxDeposit': return this.boxDeposit(p, a.partyIndex);
+      case 'boxWithdraw': return this.boxWithdraw(p, a.boxIndex);
+      case 'boxRelease': return this.boxRelease(p, a.boxIndex);
+      case 'useBagItem': return this.useBagItem(p, a.itemId, a.partyIndex);
+      case 'fastTravel': return this.fastTravel(p, a.to);
+      case 'escapeCave': return this.escapeCave(p);
+      case 'casinoBet': return this.casinoBet(p, a.game, a.bet, a.pick);
       case 'encounter': return this.encounter(p);
       case 'trainer': return this.trainerBattle(p, a.trainerId);
       case 'battleMove': return this.battleStep(p, (st) => this.engine.move(p, st, a.index));
@@ -408,6 +458,7 @@ export class FarmSimulation {
       case 'mine': return this.mine(p, a.objectId);
       case 'forage': return this.pickForage(p, a.key);
       case 'buy': return this.buy(p, a.shop, a.itemId, a.qty);
+      case 'sell': return this.sell(p, a.shop, a.slot, a.qty);
       case 'eat': return this.eat(p, a.slot);
       case 'useTool': return this.useTool(p, a.slot, a.tx, a.ty);
       case 'plant': return this.plant(p, a.slot, a.tx, a.ty);
@@ -481,9 +532,9 @@ export class FarmSimulation {
     }
     const to = w.to as MapId;
     if (!this.maps[to]) return { ok: false, reason: 'no-map' };
-    if (to === 'route1' && (!p.party.length || p.story < STORY.DONE)) return { ok: false, reason: 'need-partner' };
+    if ((to === 'route1' || to === 'route31') && (!p.party.length || p.story < STORY.DONE)) return { ok: false, reason: 'need-partner' };
     if ((BADGE_GATES[to] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[to]}` };
-    const gw = gateFor(p, to); if (gw) return { ok: false, reason: `event:${gw.id}` };
+    const gw = (p.mode ?? 'story') === 'story' ? gateFor(p, to) : undefined; if (gw) return { ok: false, reason: `event:${gw.id}` };
     const qg = QUESTS.gates[to]; if (qg && !p.flags.includes(qg.flag)) return { ok: false, reason: `gate:${to}` };
     // 집 1층 <-> 2층 다락방 계단 이동 시 집 주인과 귀환 좌표를 그대로 유지
     if ((p.map === 'home' && to === 'home_2f') || (p.map === 'home_2f' && to === 'home')) {
@@ -503,8 +554,9 @@ export class FarmSimulation {
     const o = m.objects.find((ob) => ob.id === objectId);
     const target = o ? String(prop(o, 'interior', '') || INTERIOR_OF[o.type] || '') : '';
     if (!o || !target || !this.maps[target]) return { ok: false, reason: 'no-door' };
+    if (target === 'in_casino' && !isCasinoOpen(this.time.minutes)) return { ok: false, reason: 'casino-closed' };
     if ((BADGE_GATES[target] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[target]}` };
-    const ge = gateFor(p, target); if (ge) return { ok: false, reason: `event:${ge.id}` };
+    const ge = (p.mode ?? 'story') === 'story' ? gateFor(p, target) : undefined; if (ge) return { ok: false, reason: `event:${ge.id}` };
     const qg = QUESTS.gates[target]; if (qg && !p.flags.includes(qg.flag)) return { ok: false, reason: `gate:${target}` };
     const T = m.tile;
     const cellX = Number(prop(o, 'cellX', 0)), cellY = Number(prop(o, 'cellY', 0)), cellW = Number(prop(o, 'cellW', 1));
@@ -697,6 +749,7 @@ export class FarmSimulation {
   }
   /** 본편 사건 (chapters.json): 장소 · 순서 검증 → 승부가 있으면 시작, 없으면 바로 완료 */
   private storyEvent(p: PlayerState, id: string): ActionResult {
+    if ((p.mode ?? 'story') !== 'story') return { ok: false, reason: 'multi' };
     const ev = EVENTS[id];
     if (!ev || p.flags.includes(id)) return { ok: false, reason: 'done' };
     if (nextEvent(p)?.id !== id) return { ok: false, reason: 'story' };
@@ -1217,18 +1270,20 @@ export class FarmSimulation {
     const T = this.map.tile; if (Math.hypot(o.x / T - p.x / T, o.y / T - 0.5 - (p.y - 4) / T) > 2.8) return { ok: false, reason: 'far' };
     const tree = TREES.has(o.type) && !!oprop(o, 'chop');
     const stump = o.type === 'stump';
-    if (o.type === 'log') { this.emit({ type: 'toast', playerId: p.id, text: '쓰러진 커다란 통나무다. 도끼로는 꿈쩍도 안 한다.', icon: 'axe' }); return { ok: false, reason: 'too-big', anim: 'axe' }; }
-    if (!tree && !stump) { if (TREES.has(o.type)) this.emit({ type: 'toast', playerId: p.id, text: '농장을 둘러싼 숲의 나무는 베지 않기로 했다.', icon: 'axe' }); return { ok: true, anim: 'axe', reason: 'shake' }; }
+    const log = o.type === 'log';
+    if (log && (axeDef.power ?? 1) < 1.5) { this.emit({ type: 'toast', playerId: p.id, text: '단단한 통나무다. 구리 도끼 이상으로 업그레이드하면 벨 수 있을 것 같다!', icon: 'axe' }); return { ok: false, reason: 'too-big', anim: 'axe' }; }
+    if (!tree && !stump && !log) { if (TREES.has(o.type)) this.emit({ type: 'toast', playerId: p.id, text: '농장을 둘러싼 숲의 나무는 베지 않기로 했다.', icon: 'axe' }); return { ok: true, anim: 'axe', reason: 'shake' }; }
     if (!this.spend(p, axeDef.energyCost ?? 2)) return { ok: false, reason: 'tired' };
     const key = `${f.owner}:${objectId}`, hits = (this.chopHits.get(key) ?? 0) + 1;
     this.changed(p); this.wear(p, axe);
-    if (hits < Math.max(1, Math.ceil((tree ? TREE_HITS : STUMP_HITS) / (axeDef.power ?? 1)))) { this.chopHits.set(key, hits); return { ok: true, anim: 'axe', reason: 'shake' }; }
+    const needHits = log ? Math.max(1, Math.ceil(6 / (axeDef.power ?? 1))) : Math.max(1, Math.ceil((tree ? TREE_HITS : STUMP_HITS) / (axeDef.power ?? 1)));
+    if (hits < needHits) { this.chopHits.set(key, hits); return { ok: true, anim: 'axe', reason: 'shake' }; }
     this.chopHits.delete(key);
     f.removed.add(objectId);
     this.emit({ type: 'objectRemoved', key: `farm:${objectId}`, owner: f.owner });
-    const wood = tree ? 5 + Math.floor(this.rand() * 3) : 2;
+    const wood = log ? 8 : tree ? 5 + Math.floor(this.rand() * 3) : 2;
     this.addItem(p, 'wood', wood); this.changed(p);
-    this.emit({ type: 'toast', playerId: p.id, text: `${tree ? '나무가 쓰러졌다!' : '그루터기를 치웠다.'} 나무 조각 +${wood}`, icon: 'wood' });
+    this.emit({ type: 'toast', playerId: p.id, text: `${log ? '커다란 통나무를 치웠다!' : tree ? '나무가 쓰러졌다!' : '그루터기를 치웠다.'} 나무 조각 +${wood}`, icon: 'wood' });
     return { ok: true, anim: 'axe', reason: 'felled' };
   }
 
@@ -1348,6 +1403,31 @@ export class FarmSimulation {
     return { ok: true };
   }
 
+  /** 상점에서 작물·광석·물고기·재료를 즉시 판매해 골드를 얻음 */
+  private sell(p: PlayerState, shopId: string, slot: number, qty?: number): ActionResult {
+    const shop = SHOPS[shopId];
+    if (!shop) return { ok: false, reason: 'no-shop' };
+    if (p.map === 'farm' || p.map === 'home') return { ok: false, reason: 'wrong-map' };
+    const m = this.time.minutes;
+    if (m < hhmmToMinutes(shop.open) || m >= hhmmToMinutes(shop.close)) {
+      this.emit({ type: 'toast', playerId: p.id, text: `${shop.name}은(는) 지금 문을 닫았어요.` });
+      return { ok: false, reason: 'closed' };
+    }
+    const s = p.inventory[slot];
+    const item = ITEMS[s?.itemId ?? ''];
+    if (!s || !item || item.type === 'tool' || item.type === 'key' || item.sellPrice <= 0) {
+      return { ok: false, reason: 'not-sellable' };
+    }
+    const n = Math.max(1, Math.min(s.quantity, Math.floor(qty ?? s.quantity)));
+    const gain = item.sellPrice * n;
+    s.quantity -= n;
+    if (s.quantity <= 0) { s.itemId = null; s.quantity = 0; }
+    this.setGold(p, gain);
+    this.changed(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${item.name} ×${n} 판매 (+${gain}G)`, icon: 'gold' });
+    return { ok: true, data: { item: item.id, qty: n } };
+  }
+
   private eat(p: PlayerState, slot: number): ActionResult {
     const s = p.inventory[slot]; const item = ITEMS[s?.itemId ?? ''];
     if (!item || item.type !== 'food') return { ok: false, reason: 'not-food' };
@@ -1360,7 +1440,7 @@ export class FarmSimulation {
 
   // ── 루미 모험 ──────────────────────────────────────
   private emitParty(p: PlayerState) {
-    this.emit({ type: 'party', id: p.id, party: p.party, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, visited: p.visited, recipes: p.recipes, flags: p.flags, bonds: p.bonds, asks: p.asks, stock: p.stock, opened: p.opened });
+    this.emit({ type: 'party', id: p.id, party: p.party, box: p.box, bag: p.bag, badges: p.badges, defeated: p.defeated, seen: p.seen, caught: p.caught, visited: p.visited, recipes: p.recipes, flags: p.flags, bonds: p.bonds, asks: p.asks, stock: p.stock, opened: p.opened });
   }
   private help(p: PlayerState, text: string) { const sp = p.party[0]?.species; if (sp) this.emit({ type: 'help', playerId: p.id, species: sp, text }); }
   private helps(p: PlayerState) { return SPECIES[p.party[0]?.species]?.helps; }
@@ -1386,6 +1466,103 @@ export class FarmSimulation {
     const c = p.party[index]; if (!c || index === 0) return { ok: false };
     p.party.splice(index, 1); p.party.unshift(c);
     this.emitParty(p);
+    return { ok: true };
+  }
+
+  private partySwap(p: PlayerState, a: number, b: number): ActionResult {
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a === b || !p.party[a] || !p.party[b]) return { ok: false, reason: 'bad-index' };
+    [p.party[a], p.party[b]] = [p.party[b], p.party[a]];
+    this.emitParty(p);
+    return { ok: true };
+  }
+
+  private boxSwap(p: PlayerState, partyIndex: number, boxIndex: number): ActionResult {
+    const pc = p.party[partyIndex], bc = p.box[boxIndex];
+    if (!pc || !bc) return { ok: false, reason: 'bad-index' };
+    const aliveAfter = p.party.some((c, i) => (i === partyIndex ? bc.hp > 0 : c.hp > 0));
+    if (!aliveAfter) return { ok: false, reason: 'need-alive' };
+    p.party[partyIndex] = bc;
+    p.box[boxIndex] = pc;
+    this.emitParty(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${SPECIES[bc.species]?.name ?? '루미'}을(를) 파티에 데려왔어요!`, icon: 'lumi' });
+    return { ok: true };
+  }
+
+  private boxDeposit(p: PlayerState, partyIndex: number): ActionResult {
+    if (p.party.length <= 1) return { ok: false, reason: 'last-lumi' };
+    const pc = p.party[partyIndex]; if (!pc) return { ok: false, reason: 'bad-index' };
+    if (!p.party.some((c, i) => i !== partyIndex && c.hp > 0)) return { ok: false, reason: 'need-alive' };
+    p.party.splice(partyIndex, 1);
+    p.box.push(pc);
+    this.emitParty(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${SPECIES[pc.species]?.name ?? '루미'}을(를) PC 보관함에 맡겼어요.`, icon: 'lumi' });
+    return { ok: true };
+  }
+
+  private boxWithdraw(p: PlayerState, boxIndex: number): ActionResult {
+    if (p.party.length >= 6) return { ok: false, reason: 'party-full' };
+    const bc = p.box[boxIndex]; if (!bc) return { ok: false, reason: 'bad-index' };
+    p.box.splice(boxIndex, 1);
+    p.party.push(bc);
+    this.emitParty(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${SPECIES[bc.species]?.name ?? '루미'}이(가) 파티에 합류했어요!`, icon: 'lumi' });
+    return { ok: true };
+  }
+
+  private boxRelease(p: PlayerState, boxIndex: number): ActionResult {
+    const bc = p.box[boxIndex]; if (!bc) return { ok: false, reason: 'bad-index' };
+    p.box.splice(boxIndex, 1);
+    this.emitParty(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${SPECIES[bc.species]?.name ?? '루미'}에게 작별 인사를 했어요. 잘 가!`, icon: 'heart' });
+    return { ok: true };
+  }
+
+  /** 전투 밖(휴대폰 가방)에서 회복약 사용 */
+  private useBagItem(p: PlayerState, itemId: string, partyIndex: number): ActionResult {
+    const def = ITEMS[itemId];
+    if (!def || !def.heal || (p.bag[itemId] ?? 0) < 1) return { ok: false, reason: 'no-item' };
+    const c = p.party[partyIndex];
+    if (!c) return { ok: false, reason: 'bad-index' };
+    const max = stats(c).maxHp;
+    if (c.hp <= 0) return { ok: false, reason: 'fainted' };
+    if (c.hp >= max) return { ok: false, reason: 'full-hp' };
+    const before = c.hp;
+    c.hp = Math.min(max, c.hp + def.heal);
+    const healed = c.hp - before;
+    p.bag[itemId] = (p.bag[itemId] ?? 1) - 1;
+    if (p.bag[itemId] <= 0) delete p.bag[itemId];
+    this.emitParty(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `${SPECIES[c.species]?.name ?? '루미'}의 체력이 ${healed} 회복됐어요! (${c.hp}/${max})`, icon: def.icon });
+    return { ok: true, data: { item: itemId, qty: healed } };
+  }
+
+  /** 별바람 택시(빠른 이동): 가 본 마을이나 내 농장으로 즉시 이동 (동굴 안에서는 탈출 사용) */
+  private fastTravel(p: PlayerState, to: MapId): ActionResult {
+    if (p.story < STORY.DONE || !p.party.length) return { ok: false, reason: 'need-partner' };
+    if (this.maps[p.map]?.props.cave === 'true') return { ok: false, reason: 'in-cave' };
+    const meta = REGION_MAPS[to];
+    if (!meta || !this.maps[to]) return { ok: false, reason: 'no-map' };
+    if (to !== 'farm' && !(meta.kind === 'town' && p.visited.includes(to))) return { ok: false, reason: 'not-visited' };
+    if (p.riding) { p.riding = false; this.emit({ type: 'bike', id: p.id, riding: false }); }
+    if (to === 'farm') {
+      p.world = p.homeWorld;
+      const h = this.homeSpot();
+      this.relocate(p, 'farm', p.id, h.x, h.y);
+    } else {
+      const sp = this.maps[to].spawns;
+      const spawn = sp.has('wp_center') ? 'wp_center' : sp.has('wp_hall') ? 'wp_hall' : sp.has('wp_casino') ? 'wp_casino' : 'player';
+      this.toSpawn(p, to, '', spawn);
+    }
+    this.emit({ type: 'toast', playerId: p.id, text: `🕊️ 별바람 택시를 타고 ${meta.name}(으)로 이동했어요!`, icon: 'lumi' });
+    return { ok: true };
+  }
+
+  /** 동굴 탈출: 깊은 동굴 안에서 가장 가까운 방문 마을로 즉시 귀환 */
+  private escapeCave(p: PlayerState): ActionResult {
+    if (this.maps[p.map]?.props.cave !== 'true') return { ok: false, reason: 'not-cave' };
+    const to = this.nearestTown(p);
+    this.toSpawn(p, to.map, '', to.spawn);
+    this.emit({ type: 'toast', playerId: p.id, text: `🪢 동굴에서 벗어나 ${REGION_MAPS[to.map]?.name ?? '마을'}(으)로 돌아왔어요!`, icon: 'heart' });
     return { ok: true };
   }
 
@@ -1588,7 +1765,7 @@ export class FarmSimulation {
     return { ...tr, team, reward: Math.max(tr.reward, 30 * lv) };
   }
 
-  /** 지금 있는 곳에서 가장 가까운 마을 (지도 좌표 기준) → 숙소/센터 앞 */
+  /** 지금 있는 곳에서 가장 가까운 마을 (지도 좌표 기준) → 센터/광장 앞 */
   nearestTown(p: PlayerState): { map: MapId; spawn: string } {
     let here = REGION_MAPS[p.map];
     if (!here || here.interior || here.kind === 'room') {
@@ -1603,20 +1780,92 @@ export class FarmSimulation {
       if (d < bd) { bd = d; best = id as MapId; }
     }
     const sp = this.maps[best].spawns;
-    return { map: best, spawn: sp.has('wp_inn') ? 'wp_inn' : sp.has('wp_center') ? 'wp_center' : 'player' };
+    return { map: best, spawn: sp.has('wp_center') ? 'wp_center' : sp.has('wp_hall') ? 'wp_hall' : sp.has('wp_casino') ? 'wp_casino' : 'player' };
   }
 
-  /** 숙소: 500G → 루미 · 체력 완전 회복. 혼자 할 때는 다음 날 아침까지 잠 / 멀티는 시간 그대로 */
-  private inn(p: PlayerState): ActionResult {
-    const COST = 500;
-    if (p.gold < COST) { this.emit({ type: 'toast', playerId: p.id, text: `숙박비가 모자라요. (${COST}G 필요)`, icon: 'gold' }); return { ok: false, reason: 'gold' }; }
-    p.gold -= COST;
-    this.emit({ type: 'gold', playerId: p.id, gold: p.gold, delta: -COST });
-    if (!this.multiplayer) this.newDay(false, false);
-    p.energy = p.maxEnergy; healAll(p.party);
-    this.emit({ type: 'player', id: p.id, energy: p.energy, inventory: p.inventory });
-    this.emitParty(p);
-    return { ok: true, reason: this.multiplayer ? 'rested' : 'slept' };
+  /** 별빛 카지노 (밤 18:00 ~ 02:00 / 06:00 미만 전용): 골드 베팅 미니게임 3종 (슬롯 · 주사위 · 하이로우) */
+  private casinoBet(p: PlayerState, game: CasinoGame, bet: number, pick?: string): ActionResult {
+    if (p.map !== 'in_casino') return { ok: false, reason: 'wrong-map' };
+    if (!isCasinoOpen(this.time.minutes)) return { ok: false, reason: 'casino-closed' };
+    if (!Number.isInteger(bet) || bet < 10 || bet > 10000) return { ok: false, reason: 'bad-bet' };
+    if (p.gold < bet) {
+      this.emit({ type: 'toast', playerId: p.id, text: `골드가 부족해요! (${bet.toLocaleString()}G 필요)`, icon: 'gold' });
+      return { ok: false, reason: 'gold' };
+    }
+
+    let multiplier = 0;
+    let summary = '아쉽네요! 다음 기회에 다시 도전해 보세요.';
+    let reels: string[] | undefined;
+    let dice: [number, number] | undefined;
+    let cards: [number, number] | undefined;
+
+    if (game === 'slot') {
+      const pool = ['🍒', '🍒', '🍒', '🍋', '🍋', '🍋', '🔔', '🔔', '🍀', '🍀', '💎', '⭐'];
+      const r0 = pool[Math.floor(this.rand() * pool.length)];
+      const r1 = pool[Math.floor(this.rand() * pool.length)];
+      const r2 = pool[Math.floor(this.rand() * pool.length)];
+      reels = [r0, r1, r2];
+      if (r0 === '⭐' && r1 === '⭐' && r2 === '⭐') {
+        multiplier = 10; summary = '🌟 별빛 잭팟! 10배 대박 당첨!';
+      } else if (r0 === '💎' && r1 === '💎' && r2 === '💎') {
+        multiplier = 7; summary = '💎 다이아 잭팟! 7배 당첨!';
+      } else if (r0 === r1 && r1 === r2) {
+        multiplier = 4; summary = '🎰 트리플 매치! 4배 당첨!';
+      } else if (
+        (r0 === r1 && (r0 === '⭐' || r0 === '💎' || r0 === '🍒')) ||
+        (r1 === r2 && (r1 === '⭐' || r1 === '💎')) ||
+        (r0 === r2 && (r0 === '⭐' || r0 === '💎'))
+      ) {
+        multiplier = 2; summary = '✨ 투 페어 보너스! 2배 당첨!';
+      }
+    } else if (game === 'dice') {
+      const choice = pick && ['odd', 'even', 'seven', 'double'].includes(pick) ? pick : 'odd';
+      const d1 = 1 + Math.floor(this.rand() * 6);
+      const d2 = 1 + Math.floor(this.rand() * 6);
+      const sum = d1 + d2;
+      dice = [d1, d2];
+      if (choice === 'odd' && sum % 2 === 1) {
+        multiplier = 2; summary = `🎲 합계 ${sum}(홀수) 적중! 2배 당첨!`;
+      } else if (choice === 'even' && sum % 2 === 0) {
+        multiplier = 2; summary = `🎲 합계 ${sum}(짝수) 적중! 2배 당첨!`;
+      } else if (choice === 'seven' && sum === 7) {
+        multiplier = 5; summary = '🎯 행운의 7 적중! 5배 당첨!';
+      } else if (choice === 'double' && d1 === d2) {
+        multiplier = 5; summary = `🎲 ${d1}-${d2} 더블 적중! 5배 당첨!`;
+      } else {
+        summary = `🎲 주사위 결과 ${d1} + ${d2} = ${sum}… 아쉽게 빗나갔어요!`;
+      }
+    } else if (game === 'highlow') {
+      const choice = pick && ['high', 'low', 'same'].includes(pick) ? pick : 'high';
+      const c1 = 1 + Math.floor(this.rand() * 13);
+      const c2 = 1 + Math.floor(this.rand() * 13);
+      const cardName = (v: number) => (v === 1 ? 'A' : v === 11 ? 'J' : v === 12 ? 'Q' : v === 13 ? 'K' : String(v));
+      cards = [c1, c2];
+      if (choice === 'high' && c2 > c1) {
+        multiplier = 2; summary = `🃏 ${cardName(c1)} → ${cardName(c2)} (HIGH) 적중! 2배 당첨!`;
+      } else if (choice === 'low' && c2 < c1) {
+        multiplier = 2; summary = `🃏 ${cardName(c1)} → ${cardName(c2)} (LOW) 적중! 2배 당첨!`;
+      } else if (choice === 'same' && c2 === c1) {
+        multiplier = 8; summary = `🃏 ${cardName(c1)} = ${cardName(c2)} (SAME) 대박! 8배 당첨!`;
+      } else {
+        summary = `🃏 딜러 ${cardName(c1)} → 내 카드 ${cardName(c2)}… 패배했어요!`;
+      }
+    } else {
+      return { ok: false, reason: 'bad-game' };
+    }
+
+    const payout = bet * multiplier;
+    const net = payout - bet;
+    const win = payout > 0;
+    this.setGold(p, net);
+    const outcome: CasinoOutcome = { game, bet, payout, net, win, multiplier, summary, reels, dice, cards };
+    this.emit({
+      type: 'toast',
+      playerId: p.id,
+      text: win ? `🎰 ${summary} (+${payout.toLocaleString()}G)` : `💸 ${bet.toLocaleString()}G를 잃었어요…`,
+      icon: 'gold',
+    });
+    return { ok: true, data: { casino: outcome } };
   }
 
   private trainerBattle(p: PlayerState, trainerId: string): ActionResult {
@@ -1639,8 +1888,13 @@ export class FarmSimulation {
   private afterBattle(p: PlayerState, st: BattleState, up: BattleUpdate): ActionResult {
     if (up.ended) {
       this.battles.delete(p.id);
-      // 제네시스를 붙잡으면 사이드 퀘스트 완료
-      if (up.ended === 'caught' && st.foes[st.foeIdx]?.species === MYTH) { if (!p.flags.includes('side_genesis')) p.flags.push('side_genesis'); }
+      if (up.ended === 'caught') {
+        const foe = st.foes[st.foeIdx];
+        if (foe?.species === MYTH && !p.flags.includes('side_genesis')) p.flags.push('side_genesis');
+        if (foe && p.box[p.box.length - 1] === foe) {
+          this.emit({ type: 'toast', playerId: p.id, text: `💻 파티가 가득 차서 ${SPECIES[foe.species]?.name ?? foe.species}을(를) PC 보관함으로 보냈어요!`, icon: 'lumi' });
+        }
+      }
       if (up.ended === 'win' && st.trainerId) {
         const tr = st.tr ?? TRAINERS[st.trainerId];
         if (st.script === 'rival') this.setStory(p, STORY.DONE);
@@ -1668,7 +1922,7 @@ export class FarmSimulation {
         const to = this.nearestTown(p);
         up.log.push({ t: 'text', text: '눈앞이 캄캄해졌다...' }, { t: 'text', text: `정신을 차려 보니 ${REGION_MAPS[to.map]?.name ?? '마을'}이었다. (${lost}G를 잃어버렸다)` });
         this.emit({ type: 'gold', playerId: p.id, gold: p.gold, delta: -lost });
-        // 가장 가까운 마을 숙소/센터 앞으로 (클라이언트는 배틀 연출이 끝난 뒤 방 이동을 처리)
+        // 가장 가까운 마을 센터/광장 앞으로 (클라이언트는 배틀 연출이 끝난 뒤 방 이동을 처리)
         this.battles.delete(p.id);
         p.world = p.homeWorld;
         this.toSpawn(p, to.map, '', to.spawn);
@@ -1717,12 +1971,18 @@ export class FarmSimulation {
     const pick = this.bestTool(p, 'pickaxe');
     if (pick < 0) return { ok: false, reason: 'no-pickaxe' };
     const pickPower = ITEMS[p.inventory[pick].itemId!].power ?? 1;
-    const T = m.tile; if (Math.hypot(o.x / T - p.x / T, o.y / T - 0.5 - (p.y - 4) / T) > 2.6) return { ok: false, reason: 'far' };
+    const T = m.tile; if (Math.hypot(o.x / T - p.x / T, o.y / T - 0.5 - (p.y - 4) / T) > 2.85) return { ok: false, reason: 'far' };
+    const table = ENCOUNTERS.ore[kind] ?? [];
+    const primary = table[0]?.[0];
+    if (primary && !p.inventory.some((s) => !s.itemId || (s.itemId === primary && s.quantity < (ITEMS[primary]?.maxStack ?? 99)))) {
+      this.emit({ type: 'toast', playerId: p.id, text: '가방이 가득 찼어요! 출하 상자나 상점에서 정리해 주세요.' });
+      return { ok: false, reason: 'full' };
+    }
     const mineHelp = this.helps(p) === 'mine';
     if (!this.spend(p, Math.max(1, (mineHelp ? 2 : 3) - (pickPower >= 3 ? 1 : 0)))) return { ok: false, reason: 'tired' };
     this.wear(p, pick);
     const got: string[] = [];
-    for (const [item, lo, hi, chance] of ENCOUNTERS.ore[kind] ?? []) {
+    for (const [item, lo, hi, chance] of table) {
       if (this.rand() * 100 > chance) continue;
       const qty = lo + Math.floor(this.rand() * (hi - lo + 1)) + (mineHelp && item !== 'stone' ? 1 : 0) + (pickPower >= 2 && item !== 'stone' && this.rand() < 0.3 * (pickPower - 1) ? 1 : 0);
       if (this.addItem(p, item, qty)) got.push(`${ITEMS[item].name} ×${qty}`);
@@ -1781,6 +2041,21 @@ export class FarmSimulation {
     this.emit({ type: 'gold', playerId: p.id, gold: p.gold, delta: n });
     return true;
   }
+  setTimeMinutes(minutes: number) {
+    const clamped = Math.max(DAY_START, Math.min(DAY_END - 10, Math.round(minutes / 10) * 10));
+    this.time = { ...this.time, minutes: clamped };
+    this.acc = 0;
+    this.emit({ type: 'time', time: { ...this.time } });
+    if (!isCasinoOpen(this.time.minutes)) {
+      for (const p of this.players.values()) {
+        if (p.map !== 'in_casino') continue;
+        const ret = p.ret && this.maps[p.ret.map] && !isInterior(p.ret.map) ? p.ret : null;
+        if (ret) this.relocate(p, ret.map, ret.inst, ret.x, ret.y);
+        else { const nt = this.nearestTown(p); this.toSpawn(p, nt.map, '', nt.spawn); }
+        this.emit({ type: 'toast', playerId: p.id, text: '☀️ 낮 시간이 되어 별빛 카지노가 영업을 마쳤어요.', icon: 'sun' });
+      }
+    }
+  }
 
   /** 그 종류 도구 중 가장 좋은 것 (가방 칸 번호, 없으면 -1) */
   bestTool(p: PlayerState, kind: string) {
@@ -1803,10 +2078,20 @@ export class FarmSimulation {
 
   addItem(p: PlayerState, itemId: string, qty: number) {
     const def = ITEMS[itemId];
+    if (!def) return false;
     if (def.type === 'battle') { p.bag[itemId] = (p.bag[itemId] ?? 0) + qty; this.emitParty(p); return true; }
+    if (def.type === 'key' && this.countItem(p, itemId) > 0) return true;
     let slot = p.inventory.find((s) => s.itemId === itemId && s.quantity + qty <= def.maxStack);
     if (!slot) slot = p.inventory.find((s) => !s.itemId);
-    if (!slot) return false;
+    if (!slot) {
+      // 중요한 키 아이템(오카리나·자전거 등)은 가방이 꽉 차도 절대 유실되지 않도록 예비 슬롯 확장
+      if (def.type === 'key') {
+        slot = { slotIndex: p.inventory.length, itemId: null, quantity: 0 };
+        p.inventory.push(slot);
+      } else {
+        return false;
+      }
+    }
     slot.itemId = itemId; slot.quantity += qty;
     if (def.durability && slot.dur === undefined) slot.dur = def.durability;
     return true;

@@ -150,7 +150,7 @@ for (const id of region.ids) {
   const isPath = (x, y) => x >= 0 && y >= 0 && x < W && y < H && (terr[y][x] === '1' || terr[y][x] === '3');
   const cave = m.properties.some((p) => p.name === 'cave');
   const badWarps = L('Warps').objects.filter((w) => !near(w.x / 16, w.y / 16, (w.x + w.width) / 16 - 1, (w.y + w.height) / 16 - 1)).map((w) => P(w, 'to'));
-  const doors = L('Objects').objects.filter((o) => P(o, 'doorCellX') != null && !P(o, 'blockout') || ['center', 'gym', 'inn', 'shop_w', 'store'].includes(o.type));
+  const doors = L('Objects').objects.filter((o) => P(o, 'doorCellX') != null && !P(o, 'blockout') || ['center', 'gym', 'casino', 'shop_w', 'store'].includes(o.type));
   const badDoors = doors.filter((o) => { const dx = P(o, 'doorCellX') ?? P(o, 'cellX'), cy = P(o, 'cellY'); return !seen[(cy + 1) * W + dx]; }).map((o) => o.type);
   // 길 덩어리
   const comp = new Int32Array(W * H).fill(-1), comps = [];

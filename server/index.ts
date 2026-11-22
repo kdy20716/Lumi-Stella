@@ -32,7 +32,7 @@ import { handleShopHttp } from './payment';
 // ── 준비: 맵 · 시뮬레이션 · 저장소 ────────────────────
 const loadMap = (id: MapId) => new MapInfo(JSON.parse(readFileSync(fileURLToPath(new URL(`../client/public/assets/maps/${id}.json`, import.meta.url)), 'utf8')) as TiledMap);
 const MAPS = Object.fromEntries(MAP_IDS.map((id) => [id, loadMap(id)])) as Record<MapId, MapInfo>;
-const sim = new FarmSimulation(MAPS, { multiplayer: true });   // 멀티: 숙소에서 자도 서버 시계는 그대로
+const sim = new FarmSimulation(MAPS, { multiplayer: true });   // 멀티: 서버 시계를 모두가 공유
 const storage = await createStorage();
 const world = await storage.loadWorld().catch(() => null);
 if (world?.time) sim.setWorld(world.time);

@@ -112,23 +112,28 @@ const hud = {
   },
 };
 
-// 손에 든 도구 표시 (아래 핫바 대신 — 도구는 휴대폰 › 가방에서 고름)
+// 손에 든 도구 표시 (핫바 대신 — Q · 1~6 으로 빠르게 전환하거나 휴대폰 › 가방에서 선택)
 const hotbar = {
   node: null as HTMLDivElement | null,
   onClick: () => {},
   mount() {
     if (this.node) return;
     this.node = el('div', 'held-badge');
-    this.node.title = '휴대폰(R) › 가방에서 바꾸기';
+    this.node.title = '클릭: 휴대폰 가방 열기 · Q: 도구 순환 · 1~6: 빠른 선택';
     this.node.onclick = () => this.onClick();
     root().appendChild(this.node);
   },
   render(all: InventorySlot[], selected: number) {
     if (!this.node) return;
     const s = all[selected]; const it = s?.itemId ? ITEMS[s.itemId] : null;
+    const durTag = it?.durability
+      ? ` <span class="q">${s.dur ?? it.durability}/${it.durability}</span>`
+      : it && it.type !== 'tool'
+        ? ` <span class="q">×${s.quantity}</span>`
+        : '';
     this.node.innerHTML = it
-      ? `<span class="px-icon" style="${iconStyle(it.icon, 32)}"></span><div><div class="nm">${it.name}${it.type !== 'tool' ? ` <span class="q">×${s.quantity}</span>` : ''}</div><div class="sub">Space 사용 · R › 가방에서 바꾸기</div></div>`
-      : '<span class="px-icon" style="opacity:.4;' + iconStyle('craft', 32) + '"></span><div><div class="nm">빈손</div><div class="sub">R › 가방에서 골라 손에 들기</div></div>';
+      ? `<span class="px-icon" style="${iconStyle(it.icon, 32)}"></span><div><div class="nm">${it.name}${durTag}</div><div class="sub">Space 사용 · Q 전환 · 1~6 빠른선택 · R 가방</div></div>`
+      : '<span class="px-icon" style="opacity:.4;' + iconStyle('craft', 32) + '"></span><div><div class="nm">빈손</div><div class="sub">Q 도구 들기 · E 채광/벌목/수확 · R 가방</div></div>';
   },
 };
 
@@ -149,16 +154,19 @@ export const confirmBox = {
 };
 
 // ── 대화창 ─────────────────────────────────────────────
+export interface DialogueChoice { label: string; run: () => void; primary?: boolean }
 const dialogue = {
   node: null as HTMLDivElement | null, pages: [] as string[], page: 0, typing: 0, full: '', shown: 0, onClose: null as (() => void) | null,
+  choices: [] as DialogueChoice[], choicesShown: false,
   get open() { return !!this.node; },
-  /** 하단 대화창. sprite(=인물 id)가 있으면 오른쪽에 흉상 일러스트 + 이름표 */
-  show(o: { name: string; title?: string; sprite?: string; color?: string; pages: string[]; hearts?: number }, onClose?: () => void) {
+  get waitingChoice() { return !!this.node && this.choicesShown && this.choices.length > 0; },
+  /** 하단 대화창. sprite(=인물 id)가 있으면 오른쪽에 흉상 일러스트 + 이름표, choices 가 있으면 마지막 페이지에서 선택지 버튼 표시 */
+  show(o: { name: string; title?: string; sprite?: string; color?: string; pages: string[]; hearts?: number; choices?: DialogueChoice[] }, onClose?: () => void) {
     this.close(false);
     this.pages = o.pages.map(josa); this.page = 0; this.onClose = onClose ?? null;
+    this.choices = o.choices ?? []; this.choicesShown = false;
     const n = el('div', 'fixed left-1/2 -translate-x-1/2 bottom-3 w-[min(980px,97cqw)] z-30 pointer-events-auto dlg-in');
     const hearts = o.hearts !== undefined ? `<div class="flex gap-0.5 justify-center mt-1">${Array.from({ length: 5 }, (_, i) => `<span class="px-icon" style="${iconStyle('heart', 14)};${i < o.hearts! ? '' : 'filter:grayscale(1) opacity(.45)'}"></span>`).join('')}</div>` : '';
-    // 오른쪽 위: 성격에 맞는 포즈의 벡터 일러스트 (대화창 뒤에서 상반신이 올라옴) + 이름표
     const ill = o.sprite ? illustHtml(o.sprite) : '';
     const portrait = o.sprite ? `<div class="dlg-ill" style="--pc:${o.color ?? '#a8683a'}">${ill || `<img src="assets/portraits/${o.sprite}.png" alt="" onerror="this.style.display='none'">`}</div>` : '';
     const tag = o.sprite ? `<div class="dlg-tag"><div class="dlg-name" style="background:${o.color ?? '#a8683a'}">${o.name}</div>${hearts}</div>` : '';
@@ -167,9 +175,10 @@ const dialogue = {
         ${!o.sprite && o.name ? `<div class="self-start -mt-1 mb-1 px-3 py-0.5 text-white text-base px-outline" style="background:${o.color ?? '#a8683a'}">${o.name}</div>` : ''}
         ${o.title ? `<div class="text-sm text-[#8a5a32]">${o.title}</div>` : ''}
         <div data-d="text" class="text-[22px] leading-relaxed whitespace-pre-wrap flex-1"></div>
-        <div class="self-end text-[#a8683a] bob text-lg">▼</div>
+        <div data-d="choices" class="hidden flex-wrap gap-2 mt-2"></div>
+        <div data-d="caret" class="self-end text-[#a8683a] bob text-lg">▼</div>
       </div>${tag}</div>`;
-    n.onclick = () => this.advance();
+    n.onclick = () => { if (!this.waitingChoice) this.advance(); };
     root().appendChild(n);
     this.node = n;
     this.type();
@@ -178,20 +187,52 @@ const dialogue = {
   say(o: { name: string; title?: string; sprite?: string; color?: string; pages: string[]; hearts?: number }): Promise<void> {
     return new Promise((res) => this.show(o, res));
   },
+  showChoices() {
+    if (!this.node || !this.choices.length || this.choicesShown) return;
+    this.choicesShown = true;
+    const box = this.node.querySelector<HTMLElement>('[data-d=choices]')!;
+    const caret = this.node.querySelector<HTMLElement>('[data-d=caret]');
+    if (caret) caret.style.display = 'none';
+    box.classList.remove('hidden');
+    box.classList.add('flex');
+    box.innerHTML = this.choices.map((c, i) => `<button data-ch="${i}" class="px-btn ${c.primary ? 'green' : ''} text-base !py-1.5 !px-4"><span class="opacity-75 mr-1">${i + 1}.</span>${c.label}</button>`).join('');
+    box.querySelectorAll<HTMLButtonElement>('[data-ch]').forEach((b) => {
+      b.onclick = (e) => { e.stopPropagation(); this.pickChoice(Number(b.dataset.ch)); };
+    });
+  },
+  pickChoice(idx: number) {
+    const c = this.choices[idx];
+    if (!c) return;
+    sfx.play('confirm');
+    this.close(true);
+    c.run();
+  },
   type() {
     this.full = this.pages[this.page] ?? ''; this.shown = 0;
     clearInterval(this.typing);
     const t = this.node!.querySelector('[data-d=text]') as HTMLElement;
+    const onDone = () => {
+      clearInterval(this.typing);
+      if (this.page >= this.pages.length - 1 && this.choices.length > 0) this.showChoices();
+    };
+    if (!this.full.length) { t.textContent = ''; onDone(); return; }
     this.typing = window.setInterval(() => {
       this.shown++; t.textContent = this.full.slice(0, this.shown);
       if (this.shown % 3 === 1 && this.full[this.shown - 1]?.trim()) sfx.play('talk');
-      if (this.shown >= this.full.length) clearInterval(this.typing);
-    }, 30);
+      if (this.shown >= this.full.length) onDone();
+    }, 28);
   },
   /** 반환값: 대화가 끝났으면 true */
   advance(): boolean {
     if (!this.node) return true;
-    if (this.shown < this.full.length) { this.shown = this.full.length; (this.node.querySelector('[data-d=text]') as HTMLElement).textContent = this.full; clearInterval(this.typing); return false; }
+    if (this.shown < this.full.length) {
+      this.shown = this.full.length;
+      (this.node.querySelector('[data-d=text]') as HTMLElement).textContent = this.full;
+      clearInterval(this.typing);
+      if (this.page >= this.pages.length - 1 && this.choices.length > 0) this.showChoices();
+      return false;
+    }
+    if (this.waitingChoice) return false;
     sfx.play('blip');
     this.page++;
     if (this.page >= this.pages.length) { this.close(); return true; }
@@ -200,6 +241,7 @@ const dialogue = {
   close(fire = true) {
     clearInterval(this.typing);
     this.node?.remove(); this.node = null;
+    this.choices = []; this.choicesShown = false;
     const cb = this.onClose; this.onClose = null;
     if (fire) cb?.();
   },
@@ -274,52 +316,123 @@ const help = {
     const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-panel text-lg leading-relaxed pointer-events-auto min-w-[420px]');
     n.innerHTML = `<div class="text-2xl mb-2 text-[#8a5a32]">조작법</div>
       <table class="w-full"><tbody>
-      ${[['WASD / 방향키', '이동 (Shift 달리기)'], ['Space / 좌클릭', '손에 든 도구 사용 · 씨앗 · 낚시'], ['E / 우클릭', '대화 · 수확 · 출하 · 잡초 뽑기 · 조사'], ['R', '휴대폰 홈 화면 (가방에서 도구 바꾸기)'], ['M', '지도 바로 열기'], ['P', '휴대폰 › 나의 루미'], ['H', '도움말'], ['Esc', '휴대폰 뒤로 · 닫기 / 일시정지'], ['Enter', '채팅'], ['Tab', '감정표현 휠 (톡 누르고 클릭 · 누른 채 고르고 떼기)'], ['L', '접속자 목록 접기']]
+      ${[['WASD / 방향키', '이동 (Shift 달리기)'], ['Space / 좌클릭', '손에 든 도구 사용 · 씨앗 심기 · 낚시'], ['E / 우클릭', '대화 · 채광 · 벌목 · 수확 · 물 주기 · 출하 · 조사'], ['Q / 1~6 / 0', '보유 도구·씨앗 빠르게 전환 (0: 빈손)'], ['R', '휴대폰 홈 화면 (가방 · 모험 수첩 · 도감)'], ['M', '지도 바로 열기 (별바람 택시 빠른 이동)'], ['P', '휴대폰 › 나의 루미 & PC 보관함'], ['B', '고속 자전거 타고 내리기'], ['H', '도움말'], ['Esc', '휴대폰 뒤로 · 닫기 / 일시정지'], ['Enter', '채팅'], ['Tab', '감정표현 휠']]
         .map(([k, v]) => `<tr><td class="pr-6 text-[#a8683a]">${k}</td><td>${v}</td></tr>`).join('')}
       </tbody></table>
-      <div class="mt-3 text-sm text-[#8a5a32]">모험: 마을회관 한별 박사님께 파트너 루미를 받고, 풀숲에서 야생 루미를 만나 루미볼로 잡아요. 트레이너와 눈이 마주치면 배틀! 도장 8곳을 돌아 배지를 모으면 루미나 리그로.<br>자급자족: 밭에 <b>루미풀·불꽃고추·단단콩</b>을 키우고, 채석장에서 <b>돌·구리·철</b>을 캐서 집 <b>작업대</b>에서 회복약 · 도핑약 · 루미볼을 직접 만들어요. 배지를 모을수록 민수(볼 공방)와 한별 박사(연구소)가 새 제작법을 가르쳐 줘요.<br>집: 옷장에서 외형 변경, 침대에서 잠, 식탁에 음식을 차려 친구와 같이 먹기. 농장 우편함에서 친구 초대!</div>`;
+      <div class="mt-3 text-sm text-[#8a5a32]">모험: 별빛 마을 <b>마을회관</b>에서 오 이장님께 파트너 루미를 받고, 풀숲에서 야생 루미를 만나 루미볼로 잡아요. 트레이너와 눈이 마주치면 배틀! 도장 8곳을 돌아 배지를 모으면 루미 리그로.<br>자급자족: 밭에 <b>루미풀·불꽃고추·단단콩</b>을 키우고, 채석장에서 <b>돌·구리·철</b>을 캐서 집 <b>작업대</b>에서 회복약 · 도핑약 · 루미볼을 직접 만들어요. 배지를 모을수록 민수(볼 공방)와 한별 박사(연구소)가 새 제작법을 가르쳐 줘요.<br>편의: 루미 센터의 <b>PC 단말기</b>나 휴대폰 › 나의 루미에서 보관함을 관리하고, 지도 앱에서 <b>별바람 택시(빠른 이동)</b>로 가 본 마을에 바로 이동할 수 있어요!</div>`;
     n.onclick = () => this.toggle();
     root().appendChild(n); this.node = n;
   },
 };
 
-// ── 상점 ───────────────────────────────────────────────
+// ── 상점 (사기 + 작물/광석 즉시 팔기 + AI 일러스트 초상) ───────
+interface ShopState {
+  def: ShopDef;
+  gold: number;
+  tab: 'buy' | 'sell';
+  onBuy: (itemId: string, qty: number) => void;
+  onSell?: (slot: number, qty: number) => void;
+  me?: () => PlayerState;
+  keeper?: { sprite: string; portrait?: string; name: string };
+}
+const shopPortraitHtml = (k?: { sprite: string; portrait?: string; name: string }) => {
+  if (!k) return '';
+  const pid = k.portrait ?? k.sprite;
+  const ill = illustHtml(pid);
+  if (ill) return `<div class="shop-ill shrink-0">${ill}</div>`;
+  return `<div class="portrait shrink-0" style="width:84px;height:84px;background-image:url(assets/characters/${k.sprite}.png);background-size:${384 * 3}px auto;background-position:-${9 * 3}px -${8 * 3}px"></div>`;
+};
 const shop = {
   node: null as HTMLDivElement | null,
+  st: null as ShopState | null,
   /** 상점 또는 작업대 창이 열려 있으면 true (둘 다 이동·도구를 막는 창) */
   get open() { return !!this.node || craft.open; },
-  show(def: ShopDef, gold: number, onBuy: (itemId: string, qty: number) => void, keeper?: { sprite: string; name: string }) {
+  show(
+    def: ShopDef,
+    gold: number,
+    onBuy: (itemId: string, qty: number) => void,
+    keeper?: { sprite: string; portrait?: string; name: string },
+    opts?: { me?: () => PlayerState; onSell?: (slot: number, qty: number) => void; tab?: 'buy' | 'sell'; title?: string; greeting?: string },
+  ) {
     this.close();
-    const n = el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(640px,94cqw)] pointer-events-auto toast-in');
+    const patched: ShopDef = { ...def, name: opts?.title ?? def.name, greeting: opts?.greeting ?? def.greeting };
+    this.st = { def: patched, gold, tab: opts?.tab ?? 'buy', onBuy, onSell: opts?.onSell, me: opts?.me, keeper };
+    this.render();
+  },
+  render() {
+    const st = this.st;
+    if (!st) return;
+    const { def, gold, tab, keeper } = st;
+    const inv = st.me?.().inventory ?? [];
+    const ownedIds = new Set(inv.map((s) => s.itemId).filter(Boolean) as string[]);
+    const sellables = inv
+      .map((s, idx) => ({ s, idx, d: s.itemId ? ITEMS[s.itemId] : null }))
+      .filter((x): x is { s: InventorySlot; idx: number; d: NonNullable<typeof x.d> } => !!x.d && x.s.quantity > 0 && x.d.sellPrice > 0 && x.d.type !== 'tool' && x.d.type !== 'key');
+
+    const buyRows = def.items.map((it) => {
+      const d = ITEMS[it.itemId];
+      if (!d) return '';
+      const isTool = d.type === 'tool';
+      const hasIt = isTool && ownedIds.has(d.id);
+      return `<div class="flex items-center gap-3 bg-[#fff8ec]/75 border-2 border-[#d8b67c] px-2 py-1">
+        <span class="px-icon shrink-0" style="${iconStyle(d.icon, 40)}"></span>
+        <div class="flex-1 min-w-0">
+          <div class="text-lg flex items-center gap-1.5"><span>${d.name}</span>${hasIt ? '<span class="text-[11px] px-1.5 py-0.5 rounded bg-[#dff4e4] text-[#2f7a3a] border border-[#8ac89a]">보유 중</span>' : ''}</div>
+          <div class="text-xs text-[#8a5a32] truncate">${d.description}</div>
+        </div>
+        <div class="text-lg tabular-nums w-16 text-right">${it.price}G</div>
+        ${isTool
+          ? `<button data-buy="${it.itemId}" data-q="1" class="px-btn green text-sm !px-3 !py-1">${hasIt ? '추가 구매' : '구매'}</button>`
+          : `<button data-buy="${it.itemId}" data-q="1" class="px-btn text-sm !px-3 !py-1">1개</button>
+             <button data-buy="${it.itemId}" data-q="5" class="px-btn green text-sm !px-3 !py-1">5개</button>`}
+      </div>`;
+    }).join('');
+
+    const sellRows = sellables.length
+      ? sellables.map(({ s, idx, d }) => `<div class="flex items-center gap-3 bg-[#fff8ec]/75 border-2 border-[#d8b67c] px-2 py-1">
+          <span class="px-icon shrink-0" style="${iconStyle(d.icon, 40)}"></span>
+          <div class="flex-1 min-w-0">
+            <div class="text-lg">${d.name} <span class="text-sm text-[#8a5a32]">×${s.quantity}</span></div>
+            <div class="text-xs text-[#8a5a32]">개당 ${d.sellPrice}G · 전부 팔면 ${(d.sellPrice * s.quantity).toLocaleString()}G</div>
+          </div>
+          <button data-sell="${idx}" data-q="1" class="px-btn text-sm !px-3 !py-1">1개</button>
+          <button data-sell="${idx}" data-q="${s.quantity}" class="px-btn green text-sm !px-3 !py-1">모두 팔기</button>
+        </div>`).join('')
+      : `<div class="text-center py-8 text-base text-[#8a5a32]">지금 팔 수 있는 작물·광석·물고기가 가방에 없어요.<br><span class="text-xs">농장 밭에서 작물을 수확하거나 바위터에서 광석을 캐 와 보세요!</span></div>`;
+
+    const tabs = st.onSell
+      ? `<div class="flex gap-2 mb-2">
+          <button data-tab="buy" class="px-btn ${tab === 'buy' ? 'green' : ''} text-sm !py-1 !px-4 flex-1">🛒 물건 사기</button>
+          <button data-tab="sell" class="px-btn ${tab === 'sell' ? 'green' : ''} text-sm !py-1 !px-4 flex-1">💰 작물 · 광석 팔기 (${sellables.length})</button>
+        </div>`
+      : '';
+
+    const n = this.node ?? el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(680px,95cqw)] pointer-events-auto toast-in');
     n.innerHTML = `<div class="px-panel">
       <div class="flex items-center gap-4 mb-3">
-        ${keeper ? `<div class="portrait shrink-0" style="width:84px;height:84px;background-image:url(assets/characters/${keeper.sprite}.png);background-size:${384 * 3}px auto;background-position:-${9 * 3}px -${8 * 3}px"></div>` : ''}
-        <div class="flex-1"><div class="text-2xl text-[#8a5a32]">${def.name}</div><div class="text-base">${def.greeting}</div></div>
-        <div class="flex items-center gap-1 bg-[#e6cb93] px-2 py-1 border-2 border-[#a8683a]"><span class="px-icon" style="${iconStyle('gold', 24)}"></span><span data-s="gold" class="text-xl">${gold.toLocaleString()}G</span></div>
+        ${shopPortraitHtml(keeper)}
+        <div class="flex-1 min-w-0"><div class="text-2xl text-[#8a5a32]">${def.name}${keeper ? ` <span class="text-sm text-[#5e3620]">· ${keeper.name}</span>` : ''}</div><div class="text-sm leading-snug">${def.greeting}</div></div>
+        <div class="flex items-center gap-1 bg-[#e6cb93] px-2 py-1 border-2 border-[#a8683a] shrink-0"><span class="px-icon" style="${iconStyle('gold', 24)}"></span><span data-s="gold" class="text-xl">${gold.toLocaleString()}G</span></div>
       </div>
-      <div class="flex flex-col gap-2 max-h-[46cqh] overflow-y-auto pr-1">
-        ${def.items.map((it) => { const d = ITEMS[it.itemId]; return `<div class="flex items-center gap-3 bg-[#fff8ec]/70 border-2 border-[#d8b67c] px-2 py-1">
-          <span class="px-icon shrink-0" style="${iconStyle(d.icon, 40)}"></span>
-          <div class="flex-1 min-w-0"><div class="text-lg">${d.name}</div><div class="text-xs text-[#8a5a32] truncate">${d.description}</div></div>
-          <div class="text-lg tabular-nums w-16 text-right">${it.price}G</div>
-          <button data-buy="${it.itemId}" data-q="1" class="px-btn text-sm !px-3 !py-1">1개</button>
-          <button data-buy="${it.itemId}" data-q="5" class="px-btn green text-sm !px-3 !py-1">5개</button>
-        </div>`; }).join('')}
-      </div>
+      ${tabs}
+      <div class="flex flex-col gap-2 max-h-[45cqh] overflow-y-auto pr-1">${tab === 'buy' ? buyRows : sellRows}</div>
       <div class="mt-3 flex justify-between items-center text-sm text-[#8a5a32]"><span>영업시간 ${String(def.open).replace(/(\d+)(\d\d)$/, '$1:$2')} ~ ${String(def.close).replace(/(\d+)(\d\d)$/, '$1:$2')}</span><button data-close class="px-btn text-base !py-1">닫기 (Esc)</button></div>
     </div>`;
-    n.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); onBuy(b.dataset.buy!, Number(b.dataset.q)); }; });
+    n.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx.play('tap'); st.tab = b.dataset.tab as 'buy' | 'sell'; this.render(); }; });
+    n.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); st.onBuy(b.dataset.buy!, Number(b.dataset.q)); }; });
+    n.querySelectorAll<HTMLButtonElement>('[data-sell]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); st.onSell?.(Number(b.dataset.sell), Number(b.dataset.q)); }; });
     n.querySelector<HTMLButtonElement>('[data-close]')!.onclick = () => this.close();
-    root().appendChild(n); this.node = n;
+    if (!this.node) { root().appendChild(n); this.node = n; }
   },
-  gold(g: number) { const e = this.node?.querySelector('[data-s=gold]'); if (e) e.textContent = `${g.toLocaleString()}G`; },
-  close() { this.node?.remove(); this.node = null; craft.close(); },
+  gold(g: number) { if (this.st) this.st.gold = g; const e = this.node?.querySelector('[data-s=gold]'); if (e) e.textContent = `${g.toLocaleString()}G`; },
+  refresh() { if (this.node && this.st) this.render(); },
+  close() { this.node?.remove(); this.node = null; this.st = null; craft.close(); },
 };
 
 
 // ── 작업대 제작 ─────────────────────────────────────────
 // 작물·채집물·광석 → 루미볼 · 회복약 · 도핑약. 배우지 않은 제작법은 누구에게 배우는지 알려 줌
-interface CraftArgs { title: string; sub: string; me: () => PlayerState; onCraft: (id: string, times: number) => void; keeper?: { sprite: string; name: string }; teacher?: string }
+interface CraftArgs { title: string; sub: string; me: () => PlayerState; onCraft: (id: string, times: number) => void; keeper?: { sprite: string; portrait?: string; name: string }; teacher?: string }
 const craft = {
   node: null as HTMLDivElement | null,
   args: null as CraftArgs | null,
@@ -347,7 +460,7 @@ const craft = {
     const n = this.node ?? el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(680px,94cqw)] pointer-events-auto toast-in');
     n.innerHTML = `<div class="px-panel">
       <div class="flex items-center gap-4 mb-3">
-        ${a.keeper ? `<div class="portrait shrink-0" style="width:84px;height:84px;background-image:url(assets/characters/${a.keeper.sprite}.png);background-size:${384 * 3}px auto;background-position:-${9 * 3}px -${8 * 3}px"></div>` : `<span class="px-icon shrink-0" style="${iconStyle('craft', 64)}"></span>`}
+        ${a.keeper ? shopPortraitHtml(a.keeper) : `<span class="px-icon shrink-0" style="${iconStyle('craft', 64)}"></span>`}
         <div class="flex-1"><div class="text-2xl text-[#8a5a32]">${a.title}</div><div class="text-base">${a.sub}</div></div>
       </div>
       <div class="flex flex-col gap-2 max-h-[52cqh] overflow-y-auto pr-1">${rows}</div>
@@ -425,7 +538,7 @@ const party = {
     n.innerHTML = `<div class="px-panel">
       <div class="flex items-center justify-between mb-2"><span class="text-2xl text-[#8a5a32]">나의 루미</span>
         <span class="text-sm">도감: 본 루미 ${p.seen.length} · 잡은 루미 ${p.caught.length} / ${Object.keys(SPECIES).length}</span></div>
-      ${p.party.length ? '' : '<div class="text-center py-6">아직 파트너가 없어요. 별빛 마을 <b>마을회관</b>의 한별 박사님을 찾아가 보세요!</div>'}
+      ${p.party.length ? '' : '<div class="text-center py-6">아직 파트너가 없어요. 별빛 마을 <b>마을회관</b>의 오 이장님을 찾아가 보세요!</div>'}
       <div class="grid grid-cols-2 gap-2">${p.party.map((c, i) => { const sp = SPECIES[c.species], max = statsOf(c).maxHp, r = c.hp / max; return `
         <div class="flex items-center gap-2 p-2 bg-[#fff8ec] border-2 ${i === 0 ? 'border-[#e0a43a]' : 'border-[#d8b67c]'}">
           <span class="lumi-icon lg" style="background-image:url(assets/lumi/${c.species}.png);width:64px;height:64px;background-size:384px 64px"></span>

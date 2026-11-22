@@ -11,8 +11,8 @@ import { ROW, TILESET_COLS } from '../art/tiles.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const MAPS = join(ROOT, 'client/public/assets/maps');
 const region = JSON.parse(readFileSync(join(ROOT, 'shared/data/region.json'), 'utf8'));
-const INTERIOR_OF = { house: 'home', store: 'in_store', cafe: 'in_cafe', hall: 'in_lab', smithy: 'in_smithy', house_a: 'in_house_a', house_b: 'in_house_b', house_c: 'in_house_c', center: 'in_center', shop_w: 'in_shop_w', gym: 'in_gym', windmill: 'in_windmill' };
-const BUILDINGS = new Set(Object.keys(INTERIOR_OF).concat(['inn', 'tower', 'dept', 'apart', 'factory']));   // tower · dept · apart = 그림 없는 블록아웃 건물
+const INTERIOR_OF = { house: 'home', store: 'in_store', cafe: 'in_cafe', hall: 'in_lab', smithy: 'in_smithy', casino: 'in_casino', house_a: 'in_house_a', house_b: 'in_house_b', house_c: 'in_house_c', center: 'in_center', shop_w: 'in_shop_w', gym: 'in_gym', windmill: 'in_windmill' };
+const BUILDINGS = new Set(Object.keys(INTERIOR_OF).concat(['tower', 'dept', 'apart', 'factory']));   // tower · dept · apart = 그림 없는 블록아웃 건물
 
 const meta = region.maps;
 const name = (id) => meta[id]?.name ?? id;

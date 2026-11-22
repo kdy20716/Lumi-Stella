@@ -12,8 +12,10 @@ export const MAP_META = REGION.maps as unknown as Record<MapId, MapMeta>;
 export const MAP_NAMES: Record<MapId, string> = Object.fromEntries(Object.entries(MAP_META).map(([id, m]) => [id, m.name]));
 const INTERIOR_SET = new Set<string>(REGION.interior);
 /** 바깥 건물(오브젝트 타입) → 실내 맵 */
-export const INTERIOR_OF: Record<string, MapId> = { house: 'home', store: 'in_store', cafe: 'in_cafe', hall: 'in_lab', smithy: 'in_smithy', house_a: 'in_house_a', house_b: 'in_house_b', house_c: 'in_house_c', center: 'in_center', shop_w: 'in_shop_w', gym: 'in_gym', windmill: 'in_windmill' };
+export const INTERIOR_OF: Record<string, MapId> = { house: 'home', store: 'in_store', cafe: 'in_cafe', hall: 'in_lab', smithy: 'in_smithy', casino: 'in_casino', house_a: 'in_house_a', house_b: 'in_house_b', house_c: 'in_house_c', center: 'in_center', shop_w: 'in_shop_w', gym: 'in_gym', windmill: 'in_windmill' };
 export const isInterior = (m: MapId) => INTERIOR_SET.has(m);
+/** 별빛 카지노 영업 시간: 밤(18:00 ~ 02:00 / 06:00 미만) */
+export const isCasinoOpen = (minutes: number) => minutes >= 18 * 60 || minutes < 6 * 60;
 /** 배지가 있어야 들어갈 수 있는 곳 */
 export const BADGE_GATES: Record<string, number> = { league: 8, origin: 8, distortion: 8 };
 /** 주인별로 따로 존재하는 공간 (초대받은 친구만 함께 보임) */
@@ -186,7 +188,7 @@ export interface SpeciesDef {
   evolves?: { to: string; level: number };
 }
 export interface MoveDef { id: string; name: string; type: LumiType; power: number; accuracy: number; /** 사용 횟수 (0 = 무제한) */ pp?: number; category: 'atk' | 'heal' | 'debuffAtk' | 'debuffDef' | 'buffDef'; priority: number; description: string }
-export interface TrainerDef { id: string; name: string; title: string; sprite: string; map: MapId; sight: number; team: [string, number][]; reward: number; badge?: string; requires?: string[]; intro: string[]; defeat: string[]; after: string[] }
+export interface TrainerDef { id: string; name: string; title: string; sprite: string; portrait?: string; map: MapId; sight: number; team: [string, number][]; reward: number; badge?: string; requires?: string[]; intro: string[]; defeat: string[]; after: string[] }
 
 export interface CreatureView { uid: string; species: string; name: string; type: LumiType; level: number; hp: number; maxHp: number; exp: number; expNext: number; moves: { id: string; name: string; type: LumiType; power: number; category: string; pp: number; maxPp: number }[] }
 export interface BattleView {
@@ -251,6 +253,20 @@ export interface SaveData {
   savedAt: number;
 }
 
+export type CasinoGame = 'slot' | 'dice' | 'highlow';
+export interface CasinoOutcome {
+  game: CasinoGame;
+  bet: number;
+  payout: number;
+  net: number;
+  win: boolean;
+  multiplier: number;
+  summary: string;
+  reels?: string[];
+  dice?: [number, number];
+  cards?: [number, number];
+}
+
 /** 클라이언트 → 권한자(로컬 시뮬레이션 또는 서버)로 보내는 행동 의도 */
 export type ActionIntent =
   | { kind: 'useTool'; slot: number; tx: number; ty: number }
@@ -259,6 +275,7 @@ export type ActionIntent =
   | { kind: 'ship'; slot: number }
   | { kind: 'chop'; objectId: number }
   | { kind: 'buy'; shop: string; itemId: string; qty: number }
+  | { kind: 'sell'; shop: string; slot: number; qty?: number }
   | { kind: 'eat'; slot: number }
   | { kind: 'sleep' }
   | { kind: 'debugDay' }                              // 테스트용: 자리 그대로 다음 날 (혼자일 때만, 키는 없음)
@@ -277,7 +294,7 @@ export type ActionIntent =
   | { kind: 'chooseStarter'; species: string }
   | { kind: 'setPartner'; index: number }
   | { kind: 'heal' }
-  | { kind: 'inn' }                                   // 마을 숙소 (500G)
+  | { kind: 'casinoBet'; game: CasinoGame; bet: number; pick?: string } // 별빛 카지노 (밤 전용 골드 베팅)
   | { kind: 'encounter' }
   | { kind: 'trainer'; trainerId: string }
   | { kind: 'battleMove'; index: number }
@@ -313,9 +330,17 @@ export type ActionIntent =
   | { kind: 'switch'; gateId: string }                // 바닥 스위치로 전자문 열기
   | { kind: 'gymClear'; gateId?: string; objectId?: number } // 체육관 퍼즐 관문 해제 · 눈덩이 파괴
   | { kind: 'gymReset' }                              // 체육관 눈덩이 등 퍼즐 초기화
-  | { kind: 'toggleBike'; force?: boolean };          // 자전거 탑승/하차 토글 (force: 자전거 도로 자동 탑승)
+  | { kind: 'toggleBike'; force?: boolean }           // 자전거 탑승/하차 토글 (force: 자전거 도로 자동 탑승)
+  | { kind: 'partySwap'; a: number; b: number }       // 파티 내 루미 순서 교체
+  | { kind: 'boxSwap'; partyIndex: number; boxIndex: number } // 파티 루미 ↔ PC 보관함 루미 교체
+  | { kind: 'boxDeposit'; partyIndex: number }        // 파티 루미 → PC 보관함 맡기기
+  | { kind: 'boxWithdraw'; boxIndex: number }         // PC 보관함 루미 → 파티 데려오기
+  | { kind: 'boxRelease'; boxIndex: number }          // PC 보관함 루미 놓아주기
+  | { kind: 'useBagItem'; itemId: string; partyIndex: number } // 전투 밖에서 모험 가방 회복약 사용
+  | { kind: 'fastTravel'; to: MapId }                 // 방문한 마을 / 농장으로 빠른 이동 (별바람 택시)
+  | { kind: 'escapeCave' };                           // 동굴 안에서 가까운 마을로 탈출
 
-export interface ActionResult { ok: boolean; reason?: string; anim?: string; battle?: BattleUpdate; data?: { item?: string; qty?: number } }
+export interface ActionResult { ok: boolean; reason?: string; anim?: string; battle?: BattleUpdate; data?: { item?: string; qty?: number; casino?: CasinoOutcome } }
 
 export interface ShopDef {
   id: string; name: string; owner: string | null; open: number; close: number; greeting: string;

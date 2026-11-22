@@ -2,7 +2,9 @@
 //   - 폰이 열려 있어도 걸어 다닐 수 있음 (지도만 가로 화면으로 넓어짐)
 //   - Esc: 앱 → 홈 → 닫기 / M: 열기·닫기 / P: 나의 루미 / H: 도움말
 import { BM_ALL_TOTAL_KRW, BM_CASH_PACK_MAP, BM_CASH_PACKS, BM_PRODUCT_MAP, BM_PRODUCTS, CHAT_BUBBLES, STARTER_LUMI_IDS, STARTER_LUMI_SET, UI_THEMES, formatCash, formatKrw, formatUsd, isBmUnlocked, remainingBmCostKrw, type BmCashPack, type BmCategory, type BmProduct } from '@shared/bmShop';
-import { ITEMS, RECIPES, REGION_MAPS, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
+import { ITEMS, MOVES, RECIPES, REGION_MAPS, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
+import { expToNext, maxPp, ppLeft, stats } from '@shared/sim/Battle';
+import { getStoryGuide } from '@shared/storyGuide';
 import { MAP_META, type CreatureInst, type MapId, type MapMeta, type PlayerState, type WorldTime } from '@shared/types';
 import { sfx } from '../audio/Sfx';
 import { music } from '../audio/Music';
@@ -13,7 +15,7 @@ import type { AdminCmd } from '@shared/protocol';
 import type { AdminReply } from '../net/Authority';
 import type { PgSystemTestResult } from '../net/bmApi';
 
-export type PhoneApp = 'home' | 'map' | 'party' | 'bag' | 'dex' | 'shop' | 'recipes' | 'badges' | 'friends' | 'settings' | 'help' | 'bug' | 'admin';
+export type PhoneApp = 'home' | 'journal' | 'map' | 'party' | 'bag' | 'dex' | 'shop' | 'recipes' | 'badges' | 'friends' | 'settings' | 'help' | 'bug' | 'admin';
 
 export interface PhoneCtx {
   me(): PlayerState;
@@ -26,6 +28,15 @@ export interface PhoneCtx {
   storage(): string;
   canSave(): boolean;
   setPartner(index: number): void;
+  partySwap?(a: number, b: number): void;
+  boxSwap?(partyIndex: number, boxIndex: number): Promise<boolean>;
+  boxDeposit?(partyIndex: number): Promise<boolean>;
+  boxWithdraw?(boxIndex: number): Promise<boolean>;
+  boxRelease?(boxIndex: number): Promise<boolean>;
+  useBagItem?(itemId: string, partyIndex: number): Promise<boolean>;
+  fastTravel?(to: MapId): Promise<boolean>;
+  escapeCave?(): Promise<boolean>;
+  inCave?(): boolean;
   save(): void;
   reset(): void;
   toTitle(): void;
@@ -49,6 +60,7 @@ export interface PhoneCtx {
 }
 
 const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: () => string }[] = [
+  { id: 'journal', name: '모험 수첩', bg: 'linear-gradient(160deg,#7ec89a,#2d7a54)', glyph: () => '<span class="ph-emoji">🧭</span>' },
   { id: 'map', name: '지도', bg: 'linear-gradient(160deg,#6fc3e8,#2f7ab8)', glyph: () => '<span class="ph-emoji">🗺️</span>' },
   { id: 'party', name: '나의 루미', bg: 'linear-gradient(160deg,#ffd27a,#e8892e)', glyph: () => `<span class="px-icon" style="${iconStyle('lumi', 40)}"></span>` },
   { id: 'bag', name: '가방', bg: 'linear-gradient(160deg,#e8a86a,#a8683a)', glyph: () => `<span class="px-icon" style="${iconStyle('lumi_ball', 40)}"></span>` },
@@ -62,7 +74,7 @@ const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: ()
   { id: 'bug', name: '버그 신고', bg: 'linear-gradient(160deg,#ffb27a,#d8573a)', glyph: () => '<span class="ph-emoji">🐞</span>' },
 ];
 const ADMIN_APP = { id: 'admin' as const, name: '관리자', bg: 'linear-gradient(160deg,#4a4a5a,#14141c)', glyph: () => '<span class="ph-emoji">🛡️</span>' };
-const TITLE: Record<PhoneApp, string> = { home: '', map: '루미나 지방 지도', party: '나의 루미', bag: '가방', dex: '루미 도감', shop: '캐쉬 상점', recipes: '제작 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말', bug: '버그 신고', admin: '관리자 (admin)' };
+const TITLE: Record<PhoneApp, string> = { home: '', journal: '모험 수첩', map: '루미나 지방 지도', party: '나의 루미 · PC 보관함', bag: '가방', dex: '루미 도감', shop: '캐쉬 상점', recipes: '제작 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말', bug: '버그 신고', admin: '관리자 (admin)' };
 
 /** 도장 순서 */
 const BADGES: [string, string, string, string][] = [
@@ -84,6 +96,11 @@ export const phone = {
   ctx: null as PhoneCtx | null,
   confirmReset: false,
   bagPick: '' as string,
+  partyTab: 'party' as 'party' | 'box',
+  inspectTarget: null as null | { where: 'party' | 'box'; index: number },
+  swapBoxIdx: null as number | null,
+  releaseConfirmIdx: null as number | null,
+  mapPick: '' as string,
   shopTab: 'theme' as 'cash' | BmCategory,
   shopPreviewId: '' as string,
   shopDetailId: '' as string,
@@ -92,6 +109,13 @@ export const phone = {
   get open() { return !!this.node; },
   setCtx(c: PhoneCtx) { this.ctx = c; },
 
+  openBox() {
+    this.partyTab = 'box';
+    this.inspectTarget = null;
+    this.swapBoxIdx = null;
+    this.releaseConfirmIdx = null;
+    this.show('party');
+  },
   toggle(app?: PhoneApp) { if (this.node && (!app || app === this.app)) this.close(); else this.show(app ?? this.app); },
   show(app: PhoneApp = 'home') {
     if (!this.ctx) return;
@@ -105,6 +129,8 @@ export const phone = {
     const isFoldable = app === 'map' || app === 'shop';
     this.unfold = isFoldable && (fresh || this.app !== app);
     if (app === 'admin') this.adminData = null;
+    if (app !== 'party') { this.inspectTarget = null; this.swapBoxIdx = null; this.releaseConfirmIdx = null; }
+    if (app !== 'map') this.mapPick = '';
     this.app = app; this.confirmReset = false; this.bagPick = '';
     if (fresh) {
       sfx.play('phone_open');
@@ -115,12 +141,20 @@ export const phone = {
     this.render();
   },
   go(app: PhoneApp) { this.show(app); },
-  /** Esc: 상점 상세 탭이면 상점 목록으로, 앱이면 홈으로, 홈이면 닫기 */
+  /** Esc: 상세 탭이면 목록으로, 앱이면 홈으로, 홈이면 닫기 */
   back() {
     if (!this.node) return false;
     if (this.app === 'shop' && this.shopDetailId) {
       sfx.play('tap');
       this.shopDetailId = '';
+      this.render();
+      return true;
+    }
+    if (this.app === 'party' && (this.inspectTarget || this.swapBoxIdx !== null)) {
+      sfx.play('tap');
+      this.inspectTarget = null;
+      this.swapBoxIdx = null;
+      this.releaseConfirmIdx = null;
       this.render();
       return true;
     }
@@ -179,6 +213,7 @@ export const phone = {
   body(me: PlayerState): string {
     switch (this.app) {
       case 'home': return this.home(me);
+      case 'journal': return this.journalApp(me);
       case 'map': return this.mapApp(me);
       case 'party': return this.partyApp(me);
       case 'bag': return this.bagApp(me);
@@ -269,6 +304,11 @@ export const phone = {
     const searchBar = `<div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
       <input data-usearch class="ph-input sm" type="text" placeholder="🔍 닉네임 검색 (예: 민초맛츄르, 민초맛츄르2)" value="${esc(this.adminUserQuery)}" style="flex:1">
       <span class="ph-small">${filtered.length}/${allUsers.length}명</span>
+    </div>
+    <div style="display:flex;gap:4px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+      <span class="ph-small">🕒 시각 조절:</span>
+      <button data-atime="600" class="ph-btn sm ghost">☀️ 낮 10:00</button>
+      <button data-atime="1200" class="ph-btn sm">🌙 밤 20:00</button>
     </div>`;
 
     const nameList = filtered.length
@@ -319,44 +359,99 @@ export const phone = {
     const lead = me.party[0];
     const sp = lead ? SPECIES[lead.species] : null;
     const leadSheet = lead ? lumiSheetUrl(lead.species, me.lumiCoord) : '';
+    const guide = getStoryGuide(me);
     return `<div class="ph-hello">
         ${sp ? `<span class="lumi-icon lumi-bounce" style="background-image:url(${leadSheet});width:56px;height:56px;background-size:336px 56px"></span>` : '<span class="ph-emoji" style="font-size:34px">✨</span>'}
         <div><div class="ph-name">${esc(me.name)}</div><div class="ph-sub">${sp ? `파트너 ${sp.name} · Lv.${lead!.level}` : '아직 파트너가 없어요'} · 배지 ${me.badges.length}/8</div></div>
       </div>
+      <button data-app="journal" class="ph-quest-banner" title="모험 수첩 열기">
+        <span class="ph-qb-tag">🧭 ${esc(guide.chapter)}</span>
+        <span class="ph-qb-title">${esc(guide.title)} ›</span>
+      </button>
       <div class="ph-grid">${[...APPS, ...(this.ctx!.isAdmin() ? [ADMIN_APP] : [])].map((a) => `<button data-app="${a.id}" class="ph-app"><span class="ph-tile" style="background:${a.bg}">${a.glyph()}</span><span class="ph-label">${a.name}</span>${a.id === 'admin' && this.newReports ? `<i class="ph-badge">${this.newReports}</i>` : ''}</button>`).join('')}</div>
-      <div class="ph-foot">R 닫기 · M 지도 · Esc 뒤로</div>`;
+      <div class="ph-foot">R 닫기 · M 지도 · P 나의 루미 · Esc 뒤로</div>`;
   },
 
-  // ── 지도 ──
+  // ── 모험 수첩 (스토리 · 퀘스트 가이드) ──
+  journalApp(me: PlayerState) {
+    const g = getStoryGuide(me);
+    const targetName = MAP_META[g.targetMap]?.name ?? g.targetMap;
+    const pct = Math.round((g.mainDone / Math.max(1, g.mainTotal)) * 100);
+    const renderStep = (s: typeof g.steps[number]) => `<div class="ph-card ph-col ${s.current ? 'lead' : s.done ? 'ph-dim' : ''}" style="padding:7px 9px;gap:3px">
+      <div class="ph-row" style="gap:6px">
+        <span style="font-size:13px">${s.done ? '✅' : s.current ? '🧭' : '🔒'}</span>
+        <b style="font-size:12px">${esc(s.chapter)}</b>
+        ${s.current ? '<span class="ml-auto ph-ok" style="font-size:10px;font-weight:700">진행 중</span>' : s.done ? '<span class="ml-auto ph-small">완료</span>' : ''}
+      </div>
+      <div style="font-size:12px;font-weight:600;color:#4a2f1a">${esc(s.title)}</div>
+      ${s.current ? `<div class="ph-small" style="line-height:1.4">${esc(s.detail)}</div>` : ''}
+    </div>`;
+    const mainList = g.steps.filter((s) => !s.side);
+    const sideList = g.steps.filter((s) => s.side);
+    return `<div class="ph-card ph-col lead" style="gap:5px">
+        <div class="ph-row"><b>🧭 ${esc(g.chapter)}</b><span class="ml-auto ph-small">본편 ${g.mainDone}/${g.mainTotal} (${pct}%)</span></div>
+        <div style="font-size:13px;font-weight:700;color:#2f6b3a">${esc(g.title)}</div>
+        <div class="ph-small" style="line-height:1.45">${esc(g.detail)}</div>
+        <div class="ph-progress" style="margin-top:2px"><i style="width:${pct}%"></i><span>${pct}%</span></div>
+        <div class="ph-acts" style="margin-top:4px">
+          ${this.ctx!.mapUnlocked() ? `<button data-app="map" class="ph-btn sm">🗺️ 지도에서 [${esc(targetName.split(' · ')[0])}] 보기</button>` : '<span class="ph-small">마을회관에서 지도 앱을 받으면 목표 핀이 보여요!</span>'}
+        </div>
+      </div>
+      <div class="ph-sec">본편 여정 <span>${g.mainDone}/${g.mainTotal}</span></div>
+      <div class="ph-list">${mainList.map(renderStep).join('')}</div>
+      <div class="ph-sec" style="margin-top:8px">포스트게임 · 전설 여정 <span>${sideList.filter((s) => s.done).length}/${sideList.length}</span></div>
+      <div class="ph-list">${sideList.map(renderStep).join('')}</div>`;
+  },
+
+  // ── 지도 (목표 ★ 핀 + 별바람 택시 빠른 이동 + 동굴 탈출) ──
   mapApp(me: PlayerState) {
     if (!this.ctx!.mapUnlocked()) return '<div class="ph-empty">아직 지도 앱이 없어요.<br>마을회관에서 이장님을 만나면 설치해 주실 거예요!</div>';
     const { id: here, owner } = this.ctx!.here();
+    const guide = getStoryGuide(me);
     const seen = new Set([...(me.visited ?? []), here]);
     const places = Object.entries(MAP_META).filter(([id, m]) => (!m.interior && m.kind !== 'room') || (id === here && m.x > 0));
     const known = places.filter(([id]) => seen.has(id));
     const towns = places.filter(([, m]) => m.kind === 'town').length, knownTowns = known.filter(([, m]) => m.kind === 'town').length;
     const gymType: Record<string, string> = { windvale: '바람', harbor: '물', maple: '풀', forge: '땅', ember: '불', lumina: '빛', summit: '혼합', frost: '노말' };
+    const inCave = !!this.ctx!.inCave?.();
+    const flyable = (id: string, m: MapMeta) => id === 'farm' || (m.kind === 'town' && seen.has(id));
     const pin = (id: string, m: MapMeta) => {
       const cur = id === here;
       const town = m.kind === 'town' || m.kind === 'farm';
+      const canFly = flyable(id, m);
+      const picked = this.mapPick === id;
       const name = m.name.split(' · ')[0];
       if (m.kind === 'route' && !cur) return '';
       const style = `left:${(m.x / 360) * 100}%;top:${(m.y / 240) * 100}%`;
       if (town) {
         const ring = id === 'crown' ? '#f0c84a' : gymType[id] ? (TYPE_COLORS[gymType[id] as keyof typeof TYPE_COLORS] ?? '#a88ad8') : '#fff8ec';
-        return `<div class="ph-pin town ${cur ? 'cur' : ''}" style="${style}" data-tip="${esc(name)}${gymType[id] ? ` · ${gymType[id]} 도장` : id === 'crown' ? ' · 루미 리그' : ''}">
+        return `<div class="ph-pin town ${cur ? 'cur' : ''} ${picked ? 'picked' : ''}" ${canFly ? `data-mappick="${id}"` : ''} style="${style};${canFly ? 'cursor:pointer' : ''}" data-tip="${esc(name)}${gymType[id] ? ` · ${gymType[id]} 도장` : id === 'crown' ? ' · 루미 리그' : ''}${canFly ? ' (클릭: 빠른 이동)' : ''}">
           <span class="dot" style="--ring:${ring}"></span><span class="lbl">${esc(name)}</span>${cur ? '<span class="here">▼</span>' : ''}</div>`;
       }
       return `<div class="ph-pin spot ${m.kind} ${cur ? 'cur' : ''}" style="${style}" data-tip="${esc(name)}"><span class="dot"></span>${cur ? `<span class="lbl">${esc(name)}</span><span class="here">▼</span>` : ''}</div>`;
     };
+    const goalMeta = MAP_META[guide.targetMap];
+    const goalPin = goalMeta && goalMeta.x > 0
+      ? `<div class="ph-pin goal" style="left:${(goalMeta.x / 360) * 100}%;top:${(goalMeta.y / 240) * 100}%" data-tip="★ 다음 목표: ${esc(guide.title)} (${esc(goalMeta.name.split(' · ')[0])})"><span class="goal-star">★</span></div>`
+      : '';
+    const pickMeta = this.mapPick ? MAP_META[this.mapPick] : null;
+    const travelList = known.filter(([id, m]) => flyable(id, m)).sort((a, b) => (a[0] === 'farm' ? -1 : b[0] === 'farm' ? 1 : (a[1].tier ?? 0) - (b[1].tier ?? 0)));
     return `<div class="ph-map">
         <img src="assets/ui/worldmap.png" alt="">
         <canvas class="ph-map-bg" width="720" height="480"></canvas>
         <canvas class="ph-map-fog" width="360" height="240"></canvas>
         ${known.map(([id, m]) => pin(id, m)).join('')}
+        ${goalPin}
         <div class="ph-tip" hidden></div>
       </div>
-      <div class="ph-mapbar"><span>📍 <b>${esc(MAP_META[here as keyof typeof MAP_META]?.name ?? '?')}${esc(owner)}</b></span><span>마을 ${knownTowns}/${towns} · 가 본 곳 ${known.length}/${places.length}</span></div>`;
+      <div class="ph-mapbar"><span>📍 <b>${esc(MAP_META[here as keyof typeof MAP_META]?.name ?? '?')}${esc(owner)}</b> · ★ ${esc(goalMeta?.name.split(' · ')[0] ?? '')}</span><span>마을 ${knownTowns}/${towns} · 탐험 ${known.length}/${places.length}</span></div>
+      <div class="ph-flybar">
+        ${inCave
+          ? `<span class="ph-small">동굴 안에서는 택시를 부를 수 없어요.</span><button data-escape-cave class="ph-btn sm">🪢 동굴 탈출 (가까운 마을로)</button>`
+          : pickMeta
+            ? `<span>🕊️ <b>${esc(pickMeta.name.split(' · ')[0])}</b></span><div class="ph-acts"><button data-flyto="${this.mapPick}" class="ph-btn sm">별바람 택시로 이동</button><button data-mappick="" class="ph-btn sm ghost">취소</button></div>`
+            : `<span class="ph-small">🕊️ 빠른 이동:</span><div class="ph-flychips">${travelList.map(([id, m]) => `<button data-flyto="${id}" class="ph-flychip ${id === here ? 'cur' : ''}" title="${esc(m.name)}으로 즉시 이동">${esc(m.name.split(' · ')[0])}</button>`).join('')}</div>`}
+      </div>`;
   },
   /** 안개: 구름 무늬(3단 + 디더 가장자리), 가 본 곳 주변만 걷힘 */
   drawFog(n: HTMLElement, me: PlayerState) {
@@ -396,27 +491,113 @@ export const phone = {
     g.putImageData(img, 0, 0);
   },
 
-  // ── 나의 루미 ──
+  // ── 나의 루미 · PC 보관함 · 상세 정보 ──
+  lumiSummary(me: PlayerState, c: CreatureInst, where: 'party' | 'box', idx: number) {
+    const sp = SPECIES[c.species];
+    if (!sp) return '<div class="ph-empty">루미 정보를 불러올 수 없어요.</div>';
+    const st = stats(c), r = Math.max(0, Math.min(1, c.hp / st.maxHp));
+    const nextExp = expToNext(c.level), expPct = c.level >= 100 ? 100 : Math.max(0, Math.min(100, Math.round((c.exp / nextExp) * 100)));
+    const sheetUrl = lumiSheetUrl(c.species, where === 'party' && idx === 0 ? me.lumiCoord : '');
+    const evo = sp.evolves ? `Lv.${sp.evolves.level} → ${SPECIES[sp.evolves.to]?.name ?? sp.evolves.to}` : '최종 단계';
+    const catKo: Record<string, string> = { atk: '공격', heal: '회복', debuffAtk: '공격↓', debuffDef: '방어↓', buffDef: '방어↑' };
+    const movesHtml = c.moves.map((mid, mi) => {
+      const m = MOVES[mid]; if (!m) return '';
+      const pp = ppLeft(c, mi), mp = maxPp(mid);
+      return `<div class="ph-move">
+        <div class="ph-row" style="gap:5px"><b>${esc(m.name)}</b>${typeChip(m.type)}<span class="ph-small">${catKo[m.category] ?? m.category}${m.power ? ` · 위력 ${m.power}` : ''}</span><span class="ml-auto ph-small">PP ${pp}/${mp}</span></div>
+        <div class="ph-small" style="opacity:.82">${esc(m.description)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="ph-card ph-col lead" style="gap:6px">
+      <div class="ph-row" style="gap:10px">
+        <span class="lumi-icon lumi-bounce" style="background-image:url(${sheetUrl});width:60px;height:60px;background-size:360px 60px;flex-shrink:0"></span>
+        <div class="flex-1 min-w-0">
+          <div class="ph-row"><b>${esc(sp.name)}</b>${typeChip(sp.type)}<span class="ml-auto"><b>Lv.${c.level}</b></span></div>
+          <div class="ph-small">${esc(sp.kind)} · ${where === 'party' ? `파티 ${idx + 1}번` : `PC 보관함 #${idx + 1}`}</div>
+          <div class="ph-hp" style="margin-top:4px"><i style="width:${r * 100}%;background:${r > 0.5 ? '#5fc04a' : r > 0.2 ? '#f0c84a' : '#e0473b'}"></i></div>
+          <div class="ph-row ph-small"><span>HP ${c.hp}/${st.maxHp}</span><span class="ml-auto">EXP ${c.level >= 100 ? 'MAX' : `${c.exp}/${nextExp}`}</span></div>
+          <div class="ph-hp" style="height:4px;margin-top:2px;background:#2a3248"><i style="width:${expPct}%;background:#5aa8e8"></i></div>
+        </div>
+      </div>
+      <div class="ph-stats">
+        <div><span>체력</span><b>${st.maxHp}</b></div>
+        <div><span>공격</span><b>${st.atk}</b></div>
+        <div><span>방어</span><b>${st.def}</b></div>
+        <div><span>스피드</span><b>${st.spd}</b></div>
+      </div>
+      <div class="ph-small">✨ <b>진화:</b> ${esc(evo)} · 🌱 <b>특기:</b> ${esc(HELPS[sp.helps] ?? '')}</div>
+      <div class="ph-small" style="line-height:1.4;opacity:.9">${esc(sp.description)}</div>
+      <div class="ph-sec" style="margin:2px 0 0">배운 기술 (${c.moves.length}/4)</div>
+      <div class="ph-moves">${movesHtml || '<div class="ph-small">배운 기술 없음</div>'}</div>
+      <div class="ph-acts" style="margin-top:4px"><button data-insp-close class="ph-btn sm ghost">‹ 목록으로</button></div>
+    </div>`;
+  },
+
   partyApp(me: PlayerState) {
-    if (!me.party.length) return '<div class="ph-empty">아직 파트너가 없어요.<br>별빛 마을 <b>마을회관</b>의 한별 박사님을 찾아가 보세요!</div>';
+    if (!me.party.length && !me.box.length) return '<div class="ph-empty">아직 파트너가 없어요.<br>별빛 마을 <b>마을회관</b>의 오 이장님을 찾아가 보세요!</div>';
+    if (this.inspectTarget) {
+      const list = this.inspectTarget.where === 'party' ? me.party : me.box;
+      const target = list[this.inspectTarget.index];
+      if (target) return this.lumiSummary(me, target, this.inspectTarget.where, this.inspectTarget.index);
+      this.inspectTarget = null;
+    }
+    const tabs = `<div class="ph-tabs">
+      <button data-ptab="party" class="${this.partyTab === 'party' ? 'on' : ''}">파티 (${me.party.length}/6)</button>
+      <button data-ptab="box" class="${this.partyTab === 'box' ? 'on' : ''}">💻 PC 보관함 (${me.box.length})</button>
+    </div>`;
+    if (this.partyTab === 'box') {
+      const boxHeader = `<div class="ph-heldbar">💻 PC 보관함 <b>${me.box.length}마리</b><span>파티 ${me.party.length}/6 · 상세/교체/꺼내기</span></div>`;
+      if (!me.box.length) {
+        return `${tabs}${boxHeader}<div class="ph-empty">PC 보관함이 비어 있어요.<br>파티가 6마리 가득 찬 상태에서 새 루미를 잡거나,<br>파티에서 <b>[보관]</b>을 누르면 여기에 안전하게 보관돼요!</div>`;
+      }
+      return `${tabs}${boxHeader}<div class="ph-list">${me.box.map((c, i) => {
+        const sp = SPECIES[c.species], max = maxHpOf(c), r = Math.max(0, c.hp / max);
+        const swapping = this.swapBoxIdx === i;
+        const releasing = this.releaseConfirmIdx === i;
+        return `<div class="ph-card ph-col" style="gap:5px">
+          <div class="ph-row" style="gap:8px">
+            <span class="lumi-icon" style="background-image:url(assets/lumi/${c.species}.png);width:44px;height:44px;background-size:264px 44px;flex-shrink:0"></span>
+            <div class="flex-1 min-w-0">
+              <div class="ph-row"><b>${sp?.name ?? c.species}</b>${sp ? typeChip(sp.type) : ''}<span class="ml-auto">Lv.${c.level}</span></div>
+              <div class="ph-hp"><i style="width:${r * 100}%;background:${r > 0.5 ? '#5fc04a' : r > 0.2 ? '#f0c84a' : '#e0473b'}"></i></div>
+              <div class="ph-row ph-small"><span>HP ${c.hp}/${max}</span><span class="ml-auto">${sp?.kind ?? ''}</span></div>
+            </div>
+          </div>
+          <div class="ph-acts" style="flex-wrap:wrap">
+            <button data-insp="box:${i}" class="ph-btn sm ghost">상세</button>
+            ${me.party.length < 6 ? `<button data-box-out="${i}" class="ph-btn sm">파티로 꺼내기</button>` : ''}
+            <button data-box-swapopen="${i}" class="ph-btn sm ${swapping ? '' : 'ghost'}">${swapping ? '교체 취소' : '파티와 교체'}</button>
+            ${releasing
+              ? `<button data-box-relyes="${i}" class="ph-btn sm" style="background:#c8453c;border-color:#7a201a">정말 놓아주기</button><button data-box-relno class="ph-btn sm ghost">취소</button>`
+              : `<button data-box-rel="${i}" class="ph-btn sm ghost">놓아주기</button>`}
+          </div>
+          ${swapping ? `<div class="ph-swapbox"><div class="ph-small" style="margin-bottom:3px">어느 파티 루미와 바꿀까요?</div><div class="ph-acts" style="flex-wrap:wrap">${me.party.map((pc, pi) => `<button data-box-swap="${pi}:${i}" class="ph-btn sm ghost">${pi + 1}. ${esc(SPECIES[pc.species]?.name ?? pc.species)} Lv.${pc.level}</button>`).join('')}</div></div>` : ''}
+        </div>`;
+      }).join('')}</div>
+      <div class="ph-foot">루미 센터 PC 단말기 · 휴대폰에서 언제든 관리할 수 있어요</div>`;
+    }
     const candyCount = countItem(me, 'star_candy');
-    return `<div class="ph-list">${me.party.map((c, i) => {
+    return `${tabs}<div class="ph-list">${me.party.map((c, i) => {
       const sp = SPECIES[c.species], max = maxHpOf(c), r = Math.max(0, c.hp / max);
       const sheetUrl = lumiSheetUrl(c.species, i === 0 ? me.lumiCoord : '');
       return `<div class="ph-card ${i === 0 ? 'lead' : ''}">
-        <span class="lumi-icon" style="background-image:url(${sheetUrl});width:48px;height:48px;background-size:288px 48px"></span>
+        <span class="lumi-icon" style="background-image:url(${sheetUrl});width:48px;height:48px;background-size:288px 48px;cursor:pointer" data-insp="party:${i}" title="눌러서 상세 정보 보기"></span>
         <div class="flex-1 min-w-0">
           <div class="ph-row"><b>${i === 0 ? '★ ' : ''}${sp.name}</b>${typeChip(sp.type)}<span class="ml-auto">Lv.${c.level}</span></div>
           <div class="ph-hp"><i style="width:${r * 100}%;background:${r > 0.5 ? '#5fc04a' : r > 0.2 ? '#f0c84a' : '#e0473b'}"></i></div>
           <div class="ph-row ph-small"><span>HP ${c.hp}/${max}</span><span class="ml-auto">${sp.kind}</span></div>
           <div class="ph-small ph-help1">🌱 ${HELPS[sp.helps] ?? ''}</div>
-          <div class="ph-acts" style="margin-top:3px">
-            ${i > 0 ? `<button data-partner="${i}" class="ph-btn sm">함께 걷기</button>` : '<span class="ph-small ph-ok">함께 걷는 중</span>'}
-            ${candyCount > 0 && c.level < 100 ? `<button data-usecandy="${i}" class="ph-btn sm">🍬 별빛 사탕 Lv.+1 (${candyCount})</button>` : ''}
+          <div class="ph-acts" style="margin-top:3px;flex-wrap:wrap">
+            <button data-insp="party:${i}" class="ph-btn sm ghost">상세</button>
+            ${i > 0 ? `<button data-partner="${i}" class="ph-btn sm">대표</button>` : '<span class="ph-small ph-ok">★ 파트너</span>'}
+            ${i > 0 ? `<button data-pswap="${i}:${i - 1}" class="ph-btn sm ghost" title="위로">▲</button>` : ''}
+            ${i < me.party.length - 1 ? `<button data-pswap="${i}:${i + 1}" class="ph-btn sm ghost" title="아래로">▼</button>` : ''}
+            ${me.party.length > 1 ? `<button data-box-in="${i}" class="ph-btn sm ghost">보관</button>` : ''}
+            ${candyCount > 0 && c.level < 100 ? `<button data-usecandy="${i}" class="ph-btn sm">🍬 Lv.+1 (${candyCount})</button>` : ''}
           </div>
         </div></div>`;
     }).join('')}</div>
-    <div class="ph-foot">보관함 ${me.box.length}마리 · 파티는 최대 6마리</div>`;
+    <div class="ph-foot">보관함 ${me.box.length}마리 · 파티는 최대 6마리 (상세 버튼으로 기술 · 능력치 확인)</div>`;
   },
 
   // ── 가방 ──
@@ -444,8 +625,15 @@ export const phone = {
       if (it) {
         const acts = kind === 's' ? c.bagActions(Number(v)) : [];
         const dur = kind === 's' && it.durability ? ` · 내구도 ${me.inventory[Number(v)]?.dur ?? it.durability}/${it.durability}` : '';
+        const fieldHealHtml = kind === 'b' && it.heal && me.party.length
+          ? `<div class="ph-small" style="margin-top:6px;font-weight:700">💚 필드에서 바로 회복할 루미 선택:</div>
+            <div class="ph-acts" style="flex-wrap:wrap;margin-top:4px">${me.party.map((pc, pi) => {
+              const sp = SPECIES[pc.species], max = maxHpOf(pc), full = pc.hp >= max, ko = pc.hp <= 0;
+              return `<button data-bagheal="${it.id}:${pi}" class="ph-btn sm ${full || ko ? 'ghost' : ''}" ${full || ko ? 'disabled' : ''}>${esc(sp?.name ?? pc.species)} ${pc.hp}/${max}${ko ? ' (기절)' : full ? ' (가득)' : ''}</button>`;
+            }).join('')}</div>`
+          : '';
         detail = `<b>${it.name}</b> <span class="ph-small">보유 ${countItem(me, it.id)}개${it.sellPrice ? ` · 출하 ${it.sellPrice}G` : ''}${dur}</span><br>${esc(it.description)}
-          ${acts.length ? `<div class="ph-acts">${acts.map((a, k) => `<button data-act="${k}" class="ph-btn sm ${a.primary ? '' : 'ghost'}">${esc(a.label)}</button>`).join('')}</div>` : kind === 'b' ? '<div class="ph-small" style="margin-top:4px">배틀 중 가방에서 써요</div>' : ''}`;
+          ${acts.length ? `<div class="ph-acts">${acts.map((a, k) => `<button data-act="${k}" class="ph-btn sm ${a.primary ? '' : 'ghost'}">${esc(a.label)}</button>`).join('')}</div>` : fieldHealHtml || (kind === 'b' ? '<div class="ph-small" style="margin-top:4px">배틀 중 가방에서 써요</div>' : '')}`;
       } else this.bagPick = '';
     }
     const h = me.inventory[held]?.itemId ? ITEMS[me.inventory[held].itemId!] : null;
@@ -856,6 +1044,12 @@ export const phone = {
           this.render();
         };
       });
+      n.querySelectorAll<HTMLButtonElement>('[data-atime]').forEach((b) => {
+        b.onclick = () => {
+          sfx.play('tap');
+          void this.adminRun({ op: 'setTime', minutes: Number(b.dataset.atime ?? 1200) });
+        };
+      });
       n.querySelectorAll<HTMLButtonElement>('[data-aop]').forEach((b) => {
         b.onclick = () => {
           const op = b.dataset.aop!, uid = b.dataset.uid!;
@@ -1004,6 +1198,47 @@ export const phone = {
       });
     });
     n.querySelectorAll<HTMLButtonElement>('[data-partner]').forEach((b) => { b.onclick = () => { sfx.play('confirm'); c.setPartner(Number(b.dataset.partner)); }; });
+    n.querySelectorAll<HTMLButtonElement>('[data-ptab]').forEach((b) => {
+      b.onclick = () => { sfx.play('tap'); this.partyTab = b.dataset.ptab as 'party' | 'box'; this.inspectTarget = null; this.swapBoxIdx = null; this.releaseConfirmIdx = null; this.render(); };
+    });
+    n.querySelectorAll<HTMLElement>('[data-insp]').forEach((b) => {
+      b.onclick = () => { const [w, idx] = b.dataset.insp!.split(':'); sfx.play('tap'); this.inspectTarget = { where: w as 'party' | 'box', index: Number(idx) }; this.render(); };
+    });
+    n.querySelector<HTMLButtonElement>('[data-insp-close]')?.addEventListener('click', () => { sfx.play('tap'); this.inspectTarget = null; this.render(); });
+    n.querySelectorAll<HTMLButtonElement>('[data-pswap]').forEach((b) => {
+      b.onclick = () => { const [a, bb] = b.dataset.pswap!.split(':').map(Number); sfx.play('tap'); c.partySwap?.(a, bb); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-box-in]').forEach((b) => {
+      b.onclick = () => { void c.boxDeposit?.(Number(b.dataset.boxIn)).then(() => this.render()); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-box-out]').forEach((b) => {
+      b.onclick = () => { void c.boxWithdraw?.(Number(b.dataset.boxOut)).then(() => this.render()); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-box-swapopen]').forEach((b) => {
+      b.onclick = () => { const idx = Number(b.dataset.boxSwapopen); sfx.play('tap'); this.swapBoxIdx = this.swapBoxIdx === idx ? null : idx; this.releaseConfirmIdx = null; this.render(); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-box-swap]').forEach((b) => {
+      b.onclick = () => { const [pi, bi] = b.dataset.boxSwap!.split(':').map(Number); void c.boxSwap?.(pi, bi).then((ok) => { if (ok) this.swapBoxIdx = null; this.render(); }); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-box-rel]').forEach((b) => {
+      b.onclick = () => { sfx.play('tap'); this.releaseConfirmIdx = Number(b.dataset.boxRel); this.swapBoxIdx = null; this.render(); };
+    });
+    n.querySelector<HTMLButtonElement>('[data-box-relno]')?.addEventListener('click', () => { sfx.play('tap'); this.releaseConfirmIdx = null; this.render(); });
+    n.querySelectorAll<HTMLButtonElement>('[data-box-relyes]').forEach((b) => {
+      b.onclick = () => { void c.boxRelease?.(Number(b.dataset.boxRelyes)).then(() => { this.releaseConfirmIdx = null; this.render(); }); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-bagheal]').forEach((b) => {
+      b.onclick = () => { const [itemId, pi] = b.dataset.bagheal!.split(':'); void c.useBagItem?.(itemId, Number(pi)).then(() => this.render()); };
+    });
+    n.querySelectorAll<HTMLElement>('[data-mappick]').forEach((el) => {
+      el.onclick = () => { sfx.play('tap'); this.mapPick = el.dataset.mappick ?? ''; this.render(); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-flyto]').forEach((b) => {
+      b.onclick = () => { const to = b.dataset.flyto!; void c.fastTravel?.(to).then((ok) => { if (ok) this.close(); }); };
+    });
+    n.querySelector<HTMLButtonElement>('[data-escape-cave]')?.addEventListener('click', () => {
+      void c.escapeCave?.().then((ok) => { if (ok) this.close(); });
+    });
     n.querySelectorAll<HTMLButtonElement>('[data-item]').forEach((b) => { b.onclick = () => { sfx.play('tap'); this.bagPick = this.bagPick === b.dataset.item ? '' : b.dataset.item!; this.render(); }; });
     n.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) => {
       b.onclick = () => {

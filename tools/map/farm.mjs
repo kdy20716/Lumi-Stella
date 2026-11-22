@@ -30,11 +30,27 @@ export function buildFarm() {
   m.place('shipping_bin', 28, 11, { w: 2, force: true, props: { interact: 'ship' } }); m.reserve(27, 10, 30, 12);
   m.place('mailbox', 21, 13, { force: true, props: { interact: 'mail' } });
   m.place('lamp', 26, 13, { force: true }); m.place('lamp', 25, 18, { force: true }); m.place('lamp', 40, 19, { force: true });
+  m.place('lamp', 49, 19, { force: true }); m.place('lamp', 14, 21, { force: true });
   m.place('barrel', 18, 11, { force: true }); m.place('crate', 18, 10, { force: true });
   m.place('hay', 30, 10, { force: true });
   m.place('sign', 51, 18, { force: true, props: { interact: 'sign', text: '→ 별빛 마을\n(길을 따라 오른쪽으로 쭉 가세요)' } });
-  m.place('sign', 14, 19, { force: true, props: { interact: 'sign', text: '은빛 연못 · 낚시 금지 구역 아님!' } });
+  m.place('sign', 14, 19, { force: true, props: { interact: 'sign', text: '은빛 연못 · 낚시하기 좋은 곳!\n(상점에서 낚싯대를 사면 물가에서 낚시할 수 있어요)' } });
   m.setBridge(23, 12, ROW.WOOD, WOOD.STEP0);
+
+  // 4-b. 집 앞 초보자 텃밭 터 (돌·잡초 없이 바로 괭이질해 농사를 시작할 수 있는 아늑한 구역)
+  m.reserve(24, 14, 30, 18);
+  m.place('scarecrow', 31, 18, { force: true });
+  m.place('sign', 24, 13, { force: true, props: { interact: 'sign', text: '별빛 농장 텃밭\n소라네 마트에서 괭이·물뿌리개·씨앗을 사 와 바로 농사를 시작해 보세요!' } });
+  for (const fx of [26, 27, 28, 29]) m.place('fence', fx, 13, { force: true });
+
+  // 4-c. 북서쪽 농장 바위터 (첫날부터 집에서 바로 채광을 익힐 수 있는 광맥 — 매일 아침 복원)
+  m.path(11, 12, 19, 12, 2, D);
+  for (let y = 8; y <= 13; y++) for (let x = 6; x <= 12; x++) { m.setT(x, y, D); m.reserved[y][x] = true; }
+  for (const [t, x, y] of [['ore_stone', 7, 9], ['ore_copper', 9, 9], ['ore_stone', 11, 10], ['ore_copper', 7, 11], ['ore_stone', 10, 12]]) {
+    m.place(t, x, y, { force: true, props: { mine: t.slice(4) } });
+  }
+  m.place('rock_big', 6, 8, { w: 2, force: true });
+  m.place('sign', 13, 11, { force: true, props: { interact: 'sign', text: '농장 바위터\n곡괭이로 바위를 깨면 돌과 구리 광석을 캘 수 있어요!\n(광맥은 매일 아침 다시 생겨요)' } });
 
   // 5. 밭이 될 빈 땅: 농장 전체가 농지 (흙길 · 물 · 집 마당 제외는 시뮬레이션이 판정)
   //    잡초 · 돌 · 그루터기 · 안쪽 나무를 직접 치우고 괭이로 갈아 밭을 만든다
@@ -46,13 +62,14 @@ export function buildFarm() {
 
   // 7. 숲 (동쪽 출구 비움) + 흩뿌리기
   m.forest((x, y) => x > W - 6 && y >= 18 && y <= 22);
-  // 안쪽에 선 나무는 도끼로 벨 수 있음 (chop) — 숲 테두리 나무 · 쓰러진 통나무는 그대로
+  // 안쪽에 선 나무는 도끼로 벨 수 있음 (chop) — 숲 테두리 나무 · 쓰러진 통나무(구리 도끼+)는 그대로
   const cut = { props: { chop: 1 } };
-  m.scatter('oak', 16, cut); m.scatter('oak_apple', 5, cut); m.scatter('pine', 9, cut);
-  m.scatter('bush', 6, { w: 2 }); m.scatter('bush_berry', 4, { w: 2 });
-  m.scatter('rock', 26); m.scatter('rock_big', 5, { w: 2 }); m.scatter('stump', 12); m.scatter('log', 3, { w: 2 });
-  m.scatter('tuft', 170, { block: false });
-  m.flowers(26, (x, y) => x < 18 && y > 21);
+  m.scatter('oak', 15, cut); m.scatter('oak_apple', 5, cut); m.scatter('pine', 8, cut);
+  m.scatter('bush', 6, { w: 2 }); m.scatter('bush_berry', 5, { w: 2 });
+  m.scatter('rock', 22); m.scatter('rock_big', 4, { w: 2 }); m.scatter('stump', 10); m.scatter('log', 3, { w: 2 });
+  m.scatter('tuft', 145, { block: false });
+  m.flowers(36, (x, y) => x < 18 && y > 21);
+  m.flowers(18, (x, y) => x >= 22 && x <= 38 && y >= 14 && y <= 24);
   m.sprinkle(90);
 
   // 8. 스폰 / 웨이포인트 / 워프

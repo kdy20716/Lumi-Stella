@@ -500,7 +500,7 @@ export function applySpecialRoute(n, m) {
     connectWarps(m, exits, rx0, 0, 4, D);
     populateSafely(m, R, meta, {
       biome: 'swamp', trees: ['dead_tree', 'pine'],
-      signTexts: ['북쪽: 안개 마을 — 갈대 습지 목재 잔교', '습지 수풀 속 포켓몬에 주의하세요'],
+      signTexts: ['북쪽: 안개 마을 — 갈대 습지 목재 잔교', '습지 수풀 속 야생 루미에 주의하세요'],
     });
     return true;
   }
