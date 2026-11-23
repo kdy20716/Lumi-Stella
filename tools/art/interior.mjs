@@ -1,6 +1,7 @@
 // 건물 실내: 방 배경(벽지·바닥·벽 장식을 한 장으로) + Y-정렬 가구 스프라이트 + 방 레이아웃(맵 생성기와 공유)
 import { Img, mix, darken, lighten, hash2 } from './lib/img.mjs';
 import { P } from './lib/palette.mjs';
+import { buildWindvaleGym, BIG_GYM_LAYOUTS } from './gym-puzzles.mjs';
 
 const O = P.outline;
 const T = 16;
@@ -128,6 +129,36 @@ export function buildRoom(spec) {
     for (let y = ry * T + 2; y < (ry + rh) * T - 2; y++) for (let x = rx * T + 2; x < (rx + rw) * T - 2; x++) {
       const ex = Math.min(x - rx * T - 2, (rx + rw) * T - 3 - x), ey = Math.min(y - ry * T - 2, (ry + rh) * T - 3 - y), e = Math.min(ex, ey);
       t.set(x, y, e === 0 ? c.d1 : e === 2 ? c.l2 : e < 5 ? c.l1 : (Math.floor(x / 4) + Math.floor(y / 4)) % 2 ? c.base : mix(c.base, c.d1, 0.25));
+    }
+  }
+  // 바닥 발광 회로선 · 금장 테두리 라인 ([x0, y0, x1, y1, col])
+  for (const [lx0, ly0, lx1, ly1, col] of spec.circuits ?? []) {
+    const ax = Math.round((lx0 + 0.5) * T), ay = Math.round((ly0 + 0.5) * T);
+    const bx = Math.round((lx1 + 0.5) * T), by = Math.round((ly1 + 0.5) * T);
+    const glow = lighten(col, 0.35), dim = darken(col, 0.35);
+    if (ay === by) {
+      const s = Math.min(ax, bx), len = Math.abs(bx - ax) + 1;
+      t.hline(s, ay - 2, len, dim); t.hline(s, ay - 1, len, col); t.hline(s, ay, len, glow); t.hline(s, ay + 1, len, col); t.hline(s, ay + 2, len, dim);
+    } else if (ax === bx) {
+      const s = Math.min(ay, by), len = Math.abs(by - ay) + 1;
+      t.vline(ax - 2, s, len, dim); t.vline(ax - 1, s, len, col); t.vline(ax, s, len, glow); t.vline(ax + 1, s, len, col); t.vline(ax + 2, s, len, dim);
+    }
+  }
+  // 대형 체육관 바닥 문장/엠블럼 ([cx, cy, radCells, col1, col2])
+  for (const [ecx, ecy, rad, col1, col2 = '#fff4c0'] of spec.emblems ?? []) {
+    const px = Math.round((ecx + 0.5) * T), py = Math.round((ecy + 0.5) * T), r = Math.round(rad * T);
+    const rim = darken(col1, 0.3), hi = lighten(col1, 0.28);
+    for (let y = py - r - 2; y <= py + r + 2; y++) for (let x = px - r - 2; x <= px + r + 2; x++) {
+      const d = Math.hypot(x - px, y - py);
+      if (d > r + 1) continue;
+      if (d > r - 2) t.set(x, y, rim);
+      else if (d > r - 5) t.set(x, y, col2);
+      else if (d > r - 8) t.set(x, y, hi);
+      else {
+        const ang = Math.atan2(y - py, x - px);
+        const spoke = Math.abs(Math.sin(ang * 4)) < 0.14 || d < r * 0.28;
+        t.set(x, y, spoke ? col2 : d < r * 0.62 ? mix(col1, hi, 0.4) : col1);
+      }
     }
   }
   // 위쪽 벽
@@ -448,6 +479,132 @@ function counterCasino() {
   t.rect(46, 4, 10, 5, '#e8475b'); t.rect(48, 2, 6, 2, '#fff8ec');
   return sheen(t);
 }
+function prisonBars() {
+  const t = new Img(16, 28);
+  // 쇠창살 (상단·하단 가로대 + 세로 강철봉 4개)
+  t.rect(0, 2, 16, 3, '#3b4252'); t.hline(0, 2, 16, '#7a8499'); t.hline(0, 4, 16, '#1f2430');
+  t.rect(0, 22, 16, 4, '#3b4252'); t.hline(0, 22, 16, '#646e82'); t.hline(0, 25, 16, '#1b1f29');
+  for (const bx of [2, 6, 10, 13]) {
+    t.rect(bx, 1, 2, 24, '#4c566a');
+    t.vline(bx, 1, 24, '#9aa5bc');
+    t.vline(bx + 1, 1, 24, '#252b38');
+  }
+  return sheen(t);
+}
+function prisonCot() {
+  const t = new Img(32, 34);
+  // 철제 간이 침대 + 회색 담요
+  t.rect(1, 0, 30, 7, '#434c5e'); t.hline(1, 0, 30, '#818ca3');
+  t.rect(2, 6, 28, 25, '#c8ced8'); t.rect(4, 8, 24, 6, '#e5e9f0'); t.hline(4, 13, 24, '#9aa5bc');
+  t.rect(2, 15, 28, 16, '#5c677d'); t.hline(2, 15, 28, '#818ca3'); t.hline(2, 30, 28, '#343b4a');
+  t.rect(1, 30, 3, 4, '#2e3440'); t.rect(28, 30, 3, 4, '#2e3440');
+  return sheen(t);
+}
+function prisonOre() {
+  const t = new Img(16, 18);
+  // 감옥 탈옥용 채광 암석 (반짝이는 금·청옥 광맥이 박힌 부서지는 바위)
+  t.ellipse(8, 11, 7, 6, '#555c6e');
+  t.ellipse(7, 9, 6, 4, '#70798f');
+  t.rect(4, 6, 6, 3, '#8b95ad');
+  t.rect(3, 12, 10, 3, '#3b4252');
+  // 반짝이는 광맥(금색/청록색)으로 채광 대상 시인성 강조
+  t.rect(5, 7, 3, 2, '#ffd65a'); t.set(6, 7, '#fff7c2');
+  t.rect(10, 10, 3, 2, '#5ce1e6'); t.set(11, 10, '#cffafe');
+  t.rect(5, 11, 2, 2, '#ffaa3b');
+  return sheen(t);
+}
+function prisonHatch() {
+  const t = new Img(32, 18);
+  // 북동쪽 비밀 탈출 해치 (녹색 신호등 + 사다리 구멍)
+  t.rect(1, 1, 30, 16, '#3b4252'); t.hline(1, 1, 30, '#818ca3'); t.hline(1, 16, 30, '#1e2430');
+  t.rect(4, 3, 24, 12, '#11161f');
+  // 사다리 발판
+  t.vline(10, 4, 10, '#8b95ad'); t.vline(21, 4, 10, '#8b95ad');
+  for (const ry of [6, 9, 12]) t.hline(10, ry, 12, '#cbd5e1');
+  // 탈출 표시 녹색 네온 램프
+  t.rect(2, 2, 3, 3, '#22c55e'); t.set(3, 3, '#bbf7d0');
+  t.rect(27, 2, 3, 3, '#22c55e'); t.set(28, 3, '#bbf7d0');
+  t.hline(5, 2, 22, '#4ade80');
+  return sheen(t);
+}
+function crackedWall() {
+  const t = new Img(16, 26);
+  // 금이 간 감옥 벽돌벽 (부수고 지나갈 수 있는 균열 + 미세한 황금 틈새빛)
+  t.rect(0, 2, 16, 23, '#3c4354');
+  t.hline(0, 2, 16, '#646f87'); t.hline(0, 24, 16, '#1a1e28');
+  for (const y of [7, 13, 19]) t.hline(0, y, 16, '#232836');
+  t.vline(7, 2, 6, '#232836'); t.vline(3, 8, 5, '#232836'); t.vline(12, 8, 5, '#232836'); t.vline(8, 14, 5, '#232836');
+  // 굵은 지그재그 균열 + 부서진 모서리 강조
+  t.line(8, 3, 5, 9, '#0f121a'); t.line(5, 9, 11, 15, '#0f121a'); t.line(11, 15, 6, 22, '#0f121a');
+  t.line(9, 3, 6, 9, '#facc15'); t.line(6, 9, 12, 15, '#fbbf24'); t.line(12, 15, 7, 22, '#f59e0b');
+  t.line(6, 12, 2, 15, '#0f121a'); t.line(10, 10, 14, 12, '#0f121a');
+  return sheen(t);
+}
+function prisonExitWall() {
+  const t = new Img(32, 28);
+  // 1층 외벽 — 바깥 햇살·자유의 빛이 틈새로 쏟아져 들어오는 금이 간 외벽
+  t.rect(0, 2, 32, 25, '#475064');
+  t.hline(0, 2, 32, '#7b87a1'); t.hline(0, 26, 32, '#1d222e');
+  for (const y of [8, 14, 20]) t.hline(0, y, 32, '#282f3f');
+  // 중앙 큰 균열 + 눈부신 자유의 햇살/하늘빛
+  t.line(16, 3, 12, 11, '#fde047'); t.line(12, 11, 19, 17, '#fef08a'); t.line(19, 17, 14, 25, '#fde047');
+  t.line(15, 4, 11, 11, '#ffffff'); t.line(13, 11, 20, 17, '#ffffff'); t.line(18, 17, 15, 24, '#bae6fd');
+  t.line(12, 11, 7, 15, '#fef08a'); t.line(19, 16, 25, 12, '#fef08a');
+  t.rect(13, 11, 5, 5, '#fef9c3'); t.rect(14, 12, 3, 3, '#ffffff');
+  return sheen(t);
+}
+function prisonStairsUp() {
+  const t = new Img(16, 18);
+  // 위층으로 올라가는 철제 계단 (노란 안전선 + 상승 화살표)
+  t.rect(1, 1, 14, 16, '#2e3545');
+  t.vline(1, 1, 16, '#64748b'); t.vline(14, 1, 16, '#64748b');
+  for (let i = 0; i < 4; i++) {
+    const sy = 3 + i * 3;
+    t.rect(2, sy, 12, 2, i === 0 ? '#94a3b8' : '#64748b');
+    t.hline(2, sy, 12, '#cbd5e1');
+  }
+  t.hline(2, 15, 12, '#facc15');
+  // 상향 화살표
+  t.set(7, 4, '#fde047'); t.set(8, 4, '#fde047');
+  t.hline(6, 5, 4, '#fde047');
+  t.rect(7, 6, 2, 4, '#facc15');
+  return sheen(t);
+}
+function yardStone() {
+  const t = new Img(16, 18);
+  // 노역 채광장 대형 화강암 바위
+  t.ellipse(8, 11, 7, 6, '#646c7a');
+  t.ellipse(7, 9, 6, 4.5, '#8992a3');
+  t.rect(4, 6, 6, 3, '#b5becf');
+  t.rect(3, 13, 10, 3, '#434954');
+  t.set(6, 8, '#dce3f0'); t.set(10, 10, '#c8d0e0');
+  return sheen(t);
+}
+function yardWood() {
+  const t = new Img(16, 18);
+  // 노역장 통나무 더미
+  for (const [cx, cy] of [[5, 13], [11, 13], [8, 9]]) {
+    t.ellipse(cx, cy, 4, 3.5, '#7c4a24');
+    t.ellipse(cx, cy - 0.5, 3, 2.5, '#a86736');
+    t.ellipse(cx - 1, cy - 0.5, 1.5, 1.5, '#e2b582');
+    t.set(cx - 1, cy - 0.5, '#a86736');
+  }
+  return sheen(t);
+}
+function prisonDeliver() {
+  const t = new Img(32, 26);
+  // 노역 납품함 (철제 프레임 + 나무 상자 + 녹색 납품 표지)
+  t.rect(1, 5, 30, 20, '#6e4526'); t.hline(1, 5, 30, '#a86e40'); t.hline(1, 24, 30, '#3e2412');
+  t.rect(2, 7, 28, 15, '#8d5a32');
+  for (let y = 11; y < 22; y += 5) t.hline(2, y, 28, '#543218');
+  // 철제 테두리 + 납품 클립보드
+  t.rect(1, 4, 30, 2, '#475569'); t.hline(1, 4, 30, '#94a3b8');
+  t.rect(11, 8, 10, 10, '#f8fafc'); t.rect(13, 6, 6, 3, '#475569');
+  t.hline(13, 11, 6, '#16a34a'); t.hline(13, 14, 6, '#16a34a');
+  t.rect(3, 8, 4, 4, '#22c55e'); t.set(4, 9, '#bbf7d0');
+  t.rect(25, 8, 4, 4, '#f59e0b'); t.set(26, 9, '#fef08a');
+  return sheen(t);
+}
 
 /** 가구 정의: w × h(막는 칸 수) */
 export const FURN = {
@@ -464,6 +621,9 @@ export const FURN = {
   millstone: { w: 2, h: 2, build: millstone }, sacks: { w: 1, h: 1, build: sacks }, piano: { w: 2, h: 1, build: piano },
   pillar: { w: 1, h: 1, build: pillar }, crystal: { w: 1, h: 1, build: () => crystal() }, crystal_red: { w: 1, h: 1, build: () => crystal('#ff8a6a') }, pedestal: { w: 2, h: 1, build: pedestal }, candle: { w: 1, h: 1, build: candle }, statue: { w: 1, h: 1, build: () => statue() }, table_small: { w: 2, h: 1, build: tableSmall }, heal_pad: { w: 2, h: 1, build: healPad }, workbench: { w: 2, h: 1, build: workbench },
   attic_stairs_up: { w: 1, h: 1, build: atticStairsUp }, attic_stairs_down: { w: 1, h: 1, build: atticStairsDown }, desk: { w: 2, h: 1, build: studyDesk }, tv: { w: 2, h: 1, build: tvConsole },
+  prison_bars: { w: 1, h: 1, build: prisonBars }, prison_cot: { w: 2, h: 2, build: prisonCot }, prison_ore: { w: 1, h: 1, build: prisonOre }, prison_hatch: { w: 2, h: 1, build: prisonHatch },
+  cracked_wall: { w: 1, h: 1, build: crackedWall }, prison_exit_wall: { w: 2, h: 1, build: prisonExitWall }, prison_stairs_up: { w: 1, h: 1, build: prisonStairsUp },
+  yard_stone: { w: 1, h: 1, build: yardStone }, yard_wood: { w: 1, h: 1, build: yardWood }, prison_deliver: { w: 2, h: 1, build: prisonDeliver },
 };
 
 // ── 방 레이아웃 (아트 + 맵 생성기 공용) ─────────────────
@@ -563,24 +723,7 @@ export const ROOMS = {
     furn: [['shelf_goods_b', 1, 3], ['shelf_goods', 3, 3], ['counter', 6, 5, { interact: 'shop:windvale' }], ['sacks', 10, 7], ['plant', 1, 7]],
     spawns: [['wp_clerk', 8, 4], ['wp_gate', 6, 7], ['entry', 6, 7]], lights: [[8, 2]],
   },
-  in_gym: { // 바람골 도장 (듀얼 풍차 팬 스위치 + Y축 상승 돌풍 다리)
-    name: '바람골 도장', W: 16, H: 18, door: 8, wall: { color: '#c8d8e0', pattern: 'stone' }, floor: { kind: 'stone', color: '#9aa8b4' },
-    decor: [['banner', 2], ['banner', 7], ['banner', 12]],
-    elevs: [[4, 3, 11, 6, 0.9]],
-    ramps: [[6, 7, 9, 8, 'N', 0, 0.9]],
-    walls: [[1, 10, 6, 1], [9, 10, 6, 1], [3, 3, 1, 4], [12, 3, 1, 4], [4, 7, 2, 1], [10, 7, 2, 1]],
-    rugs: [[5, 3, 6, 4, '#2a8a8a']],
-    furn: [['pillar', 2, 5], ['pillar', 13, 5], ['pillar', 2, 14], ['pillar', 13, 14], ['plant', 1, 16], ['plant', 14, 16], ['sign', 5, 15, { text: '바람골 도장 시험!\n좌·우 바람개비 스위치를 모두 밟아 돌풍 다리를 여세요.' }]],
-    gimmicks: [
-      ['switch_btn', 3, 14, { gateId: 'wg1', color: '#38d0a8' }],
-      ['switch_btn', 12, 14, { gateId: 'wg2', color: '#ffd452' }],
-      ['gate_bar', 7, 10, { w: 2, h: 1, gateId: 'wg1', color: '#38d0a8' }],
-      ['gate_bar', 7, 9, { w: 2, h: 1, gateId: 'wg2', color: '#ffd452' }],
-      ['arrow_pad', 7, 8, { dir: 'up', steps: 2 }],
-      ['arrow_pad', 8, 8, { dir: 'up', steps: 2 }],
-    ],
-    spawns: [['trainer:sena', 8, 4, { face: 'down' }], ['wp_gate', 8, 16], ['entry', 8, 16]], lights: [[8, 5], [8, 13]],
-  },
+  in_gym: buildWindvaleGym(),
   in_windmill: {
     name: '풍차 안', W: 10, H: 10, door: 5, wall: { color: '#c8a070', pattern: 'plank' }, floor: { kind: 'wood', color: '#9a6a40' },
     decor: [['gear', 3], ['ladder', 7], ['window', 1]],
@@ -614,205 +757,253 @@ export const ROOMS = {
     spawns: [['wp_clerk', 8, 3], ['wp_guest1', 2, 5], ['wp_guest2', 13, 5], ['wp_gate', 8, 9], ['entry', 8, 9]],
     lights: [[1, 4], [8, 3], [14, 4], [4, 7], [11, 7]],
   },
+  in_prison: { // 별빛 교도소 · 지하 5층 (독방 시작: 금이 간 벽을 부수고 1층까지 탈옥 OR 독방에서 얌전히 대기해 노역 석방!)
+    name: '별빛 교도소 · 지하 5층', W: 24, H: 16, door: 12, noDoor: true,
+    wall: { color: '#2f3645', pattern: 'stone', accent: '#1b202b', wainscot: '#1f2430' },
+    floor: { kind: 'tile', color: '#424959', color2: '#4b5366' },
+    trim: '#12161f',
+    decor: [['clock', 4], ['chart', 11], ['clock', 19]],
+    rugs: [[2, 11, 4, 3, '#333b4a'], [20, 3, 2, 2, '#92400e']],
+    walls: [
+      // 남서 독방 벽 (동쪽 출구 (7, 12) 에 금이 간 벽 배치 — 쇠창살 겹침 없음!)
+      [1, 9, 7, 1],
+      [7, 10, 1, 2],
+      [7, 13, 1, 2],
+      // 중앙 보안 격벽 (y=6 금이 간 벽을 부숴 동쪽 계단 구역으로 돌파)
+      [14, 3, 1, 3],
+      [14, 7, 1, 8],
+      // 은신처 기둥 (경찰 감시관 시야 차단)
+      [10, 12, 1, 3],
+      [10, 3, 1, 2],
+      [18, 9, 1, 3],
+    ],
+    furn: [
+      ['prison_cot', 1, 11],
+      ['sign', 5, 10, { text: '⛓️ 별빛 교도소 (지하 5층)\n[탈옥 루트] 금이 간 벽(노란 균열)을 [E/Space]로 부수고 경찰 감시관을 피해 지상 1층 외벽까지 올라가 탈옥하세요!\n[성실 석방 루트] 벽을 부수지 않고 독방에 잠시 가만히 있으면 감시관이 노역 채광장으로 안내합니다.' }],
+      ['cracked_wall', 7, 12, { interact: 'prison_wall' }],
+      ['cracked_wall', 14, 6, { interact: 'prison_wall' }],
+      ['prison_bars', 2, 3], ['prison_bars', 3, 3],
+      ['crate', 11, 14], ['barrel', 17, 14],
+      ['sign', 19, 3, { text: '🪜 지하 4층으로 올라가는 계단' }],
+      ['prison_stairs_up', 21, 4, { interact: 'prison_up:in_prison_b4' }],
+    ],
+    spawns: [
+      ['player', 3, 12],
+      ['entry', 3, 12],
+      ['warden:0', 9, 6, { route: '9,6;12,6;12,11;9,11', speed: 38 }],
+      ['warden:1', 16, 12, { route: '16,12;21,12;21,7;16,7', speed: 42 }],
+    ],
+    lights: [[3, 11], [11, 8], [20, 5]],
+  },
+  in_prison_b4: { // 지하 4층
+    name: '별빛 교도소 · 지하 4층', W: 24, H: 16, door: 12, noDoor: true,
+    wall: { color: '#333b4d', pattern: 'stone', accent: '#1e2330', wainscot: '#222836' },
+    floor: { kind: 'tile', color: '#474f61', color2: '#50596e' },
+    trim: '#141822',
+    decor: [['clock', 5], ['chart', 14]],
+    rugs: [[1, 3, 3, 2, '#92400e']],
+    walls: [
+      [1, 9, 18, 1],
+      [21, 9, 2, 1],
+      [7, 12, 1, 3],
+      [13, 12, 1, 3],
+      [9, 3, 1, 3],
+      [15, 3, 1, 3],
+    ],
+    furn: [
+      ['cracked_wall', 19, 9, { interact: 'prison_wall' }],
+      ['cracked_wall', 20, 9, { interact: 'prison_wall' }],
+      ['crate', 8, 14], ['barrel', 14, 14],
+      ['prison_bars', 18, 3], ['prison_bars', 19, 3],
+      ['sign', 4, 3, { text: '🪜 지하 3층으로 올라가는 계단' }],
+      ['prison_stairs_up', 2, 4, { interact: 'prison_up:in_prison_b3' }],
+    ],
+    spawns: [
+      ['player', 2, 13],
+      ['entry', 2, 13],
+      ['warden:0', 6, 11, { route: '6,11;18,11', speed: 42 }],
+      ['warden:1', 19, 6, { route: '19,6;5,6', speed: 44 }],
+    ],
+    lights: [[3, 12], [12, 11], [19, 8], [4, 5]],
+  },
+  in_prison_b3: { // 지하 3층
+    name: '별빛 교도소 · 지하 3층', W: 24, H: 16, door: 12, noDoor: true,
+    wall: { color: '#374054', pattern: 'stone', accent: '#202636', wainscot: '#252c3d' },
+    floor: { kind: 'tile', color: '#4c5569', color2: '#566075' },
+    trim: '#161b26',
+    decor: [['chart', 6], ['clock', 17]],
+    rugs: [[20, 12, 2, 2, '#92400e']],
+    walls: [
+      [8, 3, 1, 9],
+      [8, 13, 1, 2],
+      [15, 3, 1, 1],
+      [15, 5, 1, 10],
+      [4, 8, 2, 1],
+      [11, 8, 2, 1],
+      [18, 8, 2, 1],
+    ],
+    furn: [
+      ['cracked_wall', 8, 12, { interact: 'prison_wall' }],
+      ['cracked_wall', 15, 4, { interact: 'prison_wall' }],
+      ['crate', 1, 13], ['barrel', 12, 14],
+      ['sign', 19, 14, { text: '🪜 지하 2층으로 올라가는 계단' }],
+      ['prison_stairs_up', 21, 13, { interact: 'prison_up:in_prison_b2' }],
+    ],
+    spawns: [
+      ['player', 2, 4],
+      ['entry', 2, 4],
+      ['warden:0', 6, 12, { route: '6,12;6,5', speed: 44 }],
+      ['warden:1', 10, 5, { route: '10,5;13,5;13,12;10,12', speed: 44 }],
+      ['warden:2', 17, 12, { route: '17,12;17,5', speed: 46 }],
+    ],
+    lights: [[3, 5], [11, 7], [20, 12]],
+  },
+  in_prison_b2: { // 지하 2층
+    name: '별빛 교도소 · 지하 2층', W: 24, H: 16, door: 12, noDoor: true,
+    wall: { color: '#3c465c', pattern: 'stone', accent: '#242b3c', wainscot: '#293144' },
+    floor: { kind: 'tile', color: '#515b70', color2: '#5c6780' },
+    trim: '#181e2b',
+    decor: [['clock', 4], ['chart', 11], ['clock', 19]],
+    rugs: [[1, 3, 3, 2, '#92400e']],
+    walls: [
+      [1, 8, 6, 1],
+      [8, 8, 8, 1],
+      [17, 8, 6, 1],
+      [5, 11, 1, 3],
+      [14, 11, 1, 3],
+      [6, 3, 1, 2],
+      [15, 3, 1, 2],
+    ],
+    furn: [
+      ['cracked_wall', 7, 8, { interact: 'prison_wall' }],
+      ['cracked_wall', 16, 8, { interact: 'prison_wall' }],
+      ['crate', 10, 14], ['barrel', 19, 3],
+      ['sign', 4, 3, { text: '🪜 지하 1층으로 올라가는 계단' }],
+      ['prison_stairs_up', 2, 4, { interact: 'prison_up:in_prison_b1' }],
+    ],
+    spawns: [
+      ['player', 21, 13],
+      ['entry', 21, 13],
+      ['warden:0', 4, 10, { route: '4,10;19,10', speed: 46 }],
+      ['warden:1', 19, 6, { route: '19,6;5,6', speed: 48 }],
+    ],
+    lights: [[20, 12], [11, 10], [11, 5], [3, 4]],
+  },
+  in_prison_b1: { // 지하 1층
+    name: '별빛 교도소 · 지하 1층', W: 24, H: 16, door: 12, noDoor: true,
+    wall: { color: '#424d66', pattern: 'stone', accent: '#283044', wainscot: '#2e374d' },
+    floor: { kind: 'tile', color: '#58627a', color2: '#636e88' },
+    trim: '#1a2130',
+    decor: [['clock', 5], ['chart', 12], ['clock', 19]],
+    rugs: [[20, 12, 2, 2, '#92400e']],
+    walls: [
+      [7, 3, 1, 9],
+      [7, 13, 1, 2],
+      [15, 3, 1, 1],
+      [15, 5, 1, 10],
+      [10, 8, 2, 1],
+      [18, 8, 2, 1],
+    ],
+    furn: [
+      ['cracked_wall', 7, 12, { interact: 'prison_wall' }],
+      ['cracked_wall', 15, 4, { interact: 'prison_wall' }],
+      ['prison_bars', 1, 13], ['crate', 12, 14],
+      ['sign', 19, 14, { text: '🪜 지상 1층 (탈출 로비) 계단' }],
+      ['prison_stairs_up', 21, 13, { interact: 'prison_up:in_prison_1f' }],
+    ],
+    spawns: [
+      ['player', 2, 4],
+      ['entry', 2, 4],
+      ['warden:0', 5, 12, { route: '5,12;5,5', speed: 46 }],
+      ['warden:1', 9, 5, { route: '9,5;13,5;13,12;9,12', speed: 46 }],
+      ['warden:2', 17, 12, { route: '17,12;17,5', speed: 48 }],
+    ],
+    lights: [[3, 5], [11, 7], [20, 12]],
+  },
+  in_prison_1f: { // 지상 1층: 북쪽 금이 간 외벽을 부수면 드디어 탈옥 성공!
+    name: '별빛 교도소 · 지상 1층', W: 24, H: 16, door: 12, noDoor: true,
+    wall: { color: '#4e5b78', pattern: 'stone', accent: '#313b52', wainscot: '#38435c' },
+    floor: { kind: 'tile', color: '#65708a', color2: '#737f9c' },
+    trim: '#1e2638',
+    decor: [['window', 3], ['chart', 8], ['window', 15], ['clock', 20]],
+    rugs: [[10, 3, 4, 2, '#1f6a46']],
+    walls: [
+      [1, 9, 10, 1],
+      [13, 9, 10, 1],
+      [6, 12, 1, 3],
+      [15, 12, 1, 3],
+      [6, 4, 1, 2],
+      [17, 4, 1, 2],
+    ],
+    furn: [
+      ['cracked_wall', 11, 9, { interact: 'prison_wall' }],
+      ['cracked_wall', 12, 9, { interact: 'prison_wall' }],
+      ['sign', 9, 3, { text: '☀️ 지상 1층 외벽!\n빛이 새어 들어오는 금이 간 외벽을 [E/Space]로 부수면 탈옥 성공!' }],
+      ['prison_exit_wall', 11, 3, { interact: 'prison_escape_wall' }],
+      ['crate', 2, 14], ['barrel', 21, 3],
+    ],
+    spawns: [
+      ['player', 21, 13],
+      ['entry', 21, 13],
+      ['warden:0', 4, 11, { route: '4,11;19,11', speed: 48 }],
+      ['warden:1', 19, 7, { route: '19,7;4,7', speed: 48 }],
+      ['warden:2', 9, 5, { route: '9,5;15,5', speed: 46 }],
+    ],
+    lights: [[11, 4], [5, 7], [18, 7], [12, 12]],
+  },
+  in_prison_yard: { // 별빛 교도소 노역 채광장: 성실하게 돌·나무 채집 → 석판·나무판 100개씩 제작·납품 → 정식 석방!
+    name: '별빛 교도소 · 노역 채광장', W: 28, H: 20, door: 14, noDoor: true,
+    wall: { color: '#545f75', pattern: 'stone', accent: '#363e4f', wainscot: '#3f485c' },
+    floor: { kind: 'stone', color: '#78726a' },
+    trim: '#232836',
+    decor: [['window', 3], ['clock', 13], ['window', 22]],
+    rugs: [[10, 4, 8, 5, '#595046']],
+    walls: [
+      [1, 15, 11, 1],
+      [16, 15, 11, 1],
+    ],
+    furn: [
+      // 중앙 작업대 + 납품함 + 안내 표지판
+      ['sign', 13, 4, { text: '⛏️ 성실 노역 석방 안내\n1. 서쪽에서 돌을 캐고, 동쪽에서 나무를 베세요 ([E/Space] 무한 채집).\n2. 중앙 작업대에서 석판·나무판을 제작하세요.\n3. 납품함에 석판 100개 + 나무판 100개를 납품하면 정식 석방됩니다!' }],
+      ['workbench', 10, 7, { interact: 'prison_craft' }],
+      ['prison_deliver', 16, 7, { interact: 'prison_deliver' }],
+      // 서쪽 돌 채광 구역 (8개)
+      ['yard_stone', 2, 5, { interact: 'yard_stone' }], ['yard_stone', 5, 5, { interact: 'yard_stone' }],
+      ['yard_stone', 3, 8, { interact: 'yard_stone' }], ['yard_stone', 7, 8, { interact: 'yard_stone' }],
+      ['yard_stone', 2, 11, { interact: 'yard_stone' }], ['yard_stone', 6, 11, { interact: 'yard_stone' }],
+      ['yard_stone', 4, 13, { interact: 'yard_stone' }], ['yard_stone', 8, 13, { interact: 'yard_stone' }],
+      // 동쪽 나무 벌목 구역 (8개)
+      ['yard_wood', 20, 5, { interact: 'yard_wood' }], ['yard_wood', 24, 5, { interact: 'yard_wood' }],
+      ['yard_wood', 19, 8, { interact: 'yard_wood' }], ['yard_wood', 23, 8, { interact: 'yard_wood' }],
+      ['yard_wood', 21, 11, { interact: 'yard_wood' }], ['yard_wood', 25, 11, { interact: 'yard_wood' }],
+      ['yard_wood', 19, 13, { interact: 'yard_wood' }], ['yard_wood', 24, 13, { interact: 'yard_wood' }],
+      // 남쪽 독방 귀환 계단
+      ['sign', 12, 17, { text: '🪜 지하 5층 독방으로 돌아가기' }],
+      ['prison_stairs_up', 14, 18, { interact: 'prison_back_cell' }],
+      ['crate', 1, 18], ['barrel', 26, 18],
+    ],
+    spawns: [
+      ['player', 14, 16],
+      ['entry', 14, 16],
+      ['yard_guard', 14, 6],
+    ],
+    lights: [[5, 8], [14, 6], [22, 8], [14, 16]],
+  },
 };
 
-// ── 루미나 지방 7대 도장: 각각 고유 퍼즐 · 미니게임 + Y축 입체 단상 ──
-const GYM_LAYOUTS = {
-  harbor: { // 3단계 수문 밸브 & 물 위 부교(Pontoon)
-    name: '물결항 도장', col: '#3f8fc8', W: 18, H: 22, door: 9,
-    floor: { kind: 'tile', color: '#9cc8e0', color2: '#c4e2f0' }, wall: { color: '#c8e4f2', pattern: 'tile' },
-    elevs: [[6, 3, 11, 5, 0.85]],
-    ramps: [[8, 6, 9, 6, 'N', 0, 0.85]],
-    pools: [[1, 7, 16, 10, 'water']],
-    walls: [
-      [1, 16, 2, 1], [6, 16, 11, 1], [1, 14, 2, 2], [6, 14, 11, 2],
-      [1, 13, 2, 1], [5, 13, 12, 1], [1, 11, 2, 2], [16, 11, 1, 2],
-      [1, 10, 13, 1], [16, 10, 1, 1], [1, 8, 7, 2], [16, 8, 1, 2],
-      [1, 7, 7, 1], [10, 7, 7, 1], [5, 3, 1, 4], [12, 3, 1, 4], [6, 6, 2, 1], [10, 6, 2, 1],
-    ],
-    rugs: [[3, 13, 3, 4, '#a67444'], [3, 11, 13, 2, '#b8844e'], [14, 9, 2, 2, '#a67444'], [8, 7, 8, 3, '#b8844e'], [6, 3, 6, 3, '#3f8fc8']],
-    furn: [['pillar', 2, 5], ['pillar', 15, 5], ['statue', 6, 19], ['statue', 11, 19], ['plant', 1, 20], ['plant', 16, 20], ['sign', 12, 18, { text: '수문 퍼즐!\n부교 위의 수문 스위치를 차례로 열어 관장 단상으로 건너가세요.' }]],
-    gimmicks: [
-      ['switch_btn', 4, 15, { gateId: 'hb1', color: '#38d8ff', style: 'valve' }],
-      ['gate_bar', 3, 13, { w: 2, h: 1, gateId: 'hb1', color: '#38d8ff' }],
-      ['switch_btn', 15, 11, { gateId: 'hb2', color: '#48e8a8', style: 'valve' }],
-      ['gate_bar', 14, 10, { w: 2, h: 1, gateId: 'hb2', color: '#48e8a8' }],
-      ['switch_btn', 12, 8, { gateId: 'hb3', color: '#ffd452', style: 'valve' }],
-      ['gate_bar', 8, 7, { w: 2, h: 1, gateId: 'hb3', color: '#ffd452' }],
-    ],
-    spawns: [['trainer:leader_harbor', 9, 4, { face: 'down' }], ['trainer:gym_harbor_t1', 5, 18, { face: 'right' }], ['trainer:gym_harbor_t2', 11, 11, { face: 'right' }]],
-    lights: [[9, 5], [9, 12], [9, 19]],
-  },
-  maple: { // 숲의 꽃봉오리 짝 맞추기(Memory Cards) 2스테이지
-    name: '단풍골 도장', col: '#5fae4a', W: 20, H: 20, door: 10,
-    floor: { kind: 'wood', color: '#a07848' }, wall: { color: '#d8e8c0', pattern: 'plank' },
-    elevs: [[7, 3, 12, 5, 0.85]],
-    ramps: [[9, 5, 10, 5, 'N', 0, 0.85]],
-    walls: [[1, 11, 8, 1], [11, 11, 8, 1], [1, 6, 8, 1], [11, 6, 8, 1], [6, 3, 1, 3], [13, 3, 1, 3]],
-    rugs: [[7, 3, 6, 3, '#5fae4a'], [6, 12, 8, 6, '#3e8438']],
-    furn: [['pillar', 2, 4], ['pillar', 17, 4], ['plant_b', 1, 18], ['plant_b', 18, 18], ['plant', 5, 5], ['plant', 14, 5], ['sign', 14, 17, { text: '꽃봉오리 짝 맞추기!\n같은 꽃 카드 2장을 연달아 뒤집어 덩굴 관문을 여세요.' }]],
-    gimmicks: [
-      ['pair_card', 7, 15, { gateId: 'mp1', pairKey: 'leaf_red', color: '#e8524a' }],
-      ['pair_card', 12, 15, { gateId: 'mp1', pairKey: 'sun_gold', color: '#ffd448' }],
-      ['pair_card', 7, 13, { gateId: 'mp1', pairKey: 'sun_gold', color: '#ffd448' }],
-      ['pair_card', 12, 13, { gateId: 'mp1', pairKey: 'leaf_red', color: '#e8524a' }],
-      ['gate_bar', 9, 11, { w: 2, h: 1, gateId: 'mp1', color: '#6ee060' }],
-      ['pair_card', 4, 9, { gateId: 'mp2', pairKey: 'sakura', color: '#ff88b8' }],
-      ['pair_card', 6, 9, { gateId: 'mp2', pairKey: 'violet', color: '#a870ff' }],
-      ['pair_card', 8, 9, { gateId: 'mp2', pairKey: 'bellflower', color: '#48b8ff' }],
-      ['pair_card', 11, 9, { gateId: 'mp2', pairKey: 'sakura', color: '#ff88b8' }],
-      ['pair_card', 13, 9, { gateId: 'mp2', pairKey: 'bellflower', color: '#48b8ff' }],
-      ['pair_card', 15, 9, { gateId: 'mp2', pairKey: 'violet', color: '#a870ff' }],
-      ['gate_bar', 9, 6, { w: 2, h: 1, gateId: 'mp2', color: '#ffd452' }],
-    ],
-    spawns: [['trainer:leader_maple', 10, 4, { face: 'down' }], ['trainer:gym_maple_t1', 4, 15, { face: 'right' }], ['trainer:gym_maple_t2', 17, 8, { face: 'left' }]],
-    lights: [[10, 5], [10, 9], [10, 15]],
-  },
-  forge: { // 용광로 컨베이어 벨트 방향 전환 레버 퍼즐
-    name: '쇳불 도장', col: '#b8864a', W: 16, H: 26, door: 8,
-    floor: { kind: 'stone', color: '#8a7a6a' }, wall: { color: '#8a7a70', pattern: 'stone' },
-    elevs: [[4, 3, 11, 5, 0.9]],
-    ramps: [[7, 6, 8, 7, 'N', 0, 0.9]],
-    pools: [[12, 19, 3, 2, 'lava']],
-    walls: [[1, 18, 11, 1], [4, 11, 11, 1], [3, 3, 1, 4], [12, 3, 1, 4], [4, 6, 3, 1], [9, 6, 3, 1]],
-    rugs: [[5, 3, 6, 3, '#c86e34']],
-    furn: [['anvil', 3, 20], ['forge', 1, 20], ['forge', 13, 13], ['anvil', 10, 8], ['pillar', 2, 5], ['pillar', 13, 5], ['statue', 5, 24], ['statue', 10, 24], ['sign', 6, 23, { text: '선로 전환 레버!\n왼쪽 노란 레버를 작동시켜 컨베이어 방향을 위로 전환하세요!' }]],
-    gimmicks: [
-      ['rail_switch', 3, 22, { railGroup: 'fg1', gateId: 'fg1', color: '#ffaa33' }],
-      ['arrow_pad', 13, 22, { dir: 'left', altDir: 'up', steps: 5, railGroup: 'fg1' }],
-      ['arrow_pad', 14, 22, { dir: 'left', altDir: 'up', steps: 5, railGroup: 'fg1' }],
-      ['gate_bar', 12, 18, { w: 3, h: 1, gateId: 'fg1', color: '#ffaa33' }],
-      ['rail_switch', 12, 13, { railGroup: 'fg2', gateId: 'fg2', color: '#48d0ff' }],
-      ['arrow_pad', 10, 15, { dir: 'down', altDir: 'left', steps: 7, railGroup: 'fg2' }],
-      ['arrow_pad', 2, 14, { dir: 'up', steps: 4 }],
-      ['gate_bar', 1, 11, { w: 3, h: 1, gateId: 'fg2', color: '#48d0ff' }],
-    ],
-    spawns: [['trainer:leader_forge', 8, 4, { face: 'down' }], ['trainer:gym_forge_t1', 9, 21, { face: 'left' }], ['trainer:gym_forge_t2', 7, 13, { face: 'right' }]],
-    lights: [[8, 5], [8, 14], [8, 22]],
-  },
-  ember: { // 홍련섬 스타일 3단계 불꽃 퀴즈 관문
-    name: '잿빛 도장', col: '#e8642e', W: 20, H: 22, door: 10,
-    floor: { kind: 'stone', color: '#7a5a50' }, wall: { color: '#a87060', pattern: 'stone' },
-    elevs: [[6, 3, 13, 4, 0.85]],
-    ramps: [[9, 5, 10, 5, 'N', 0, 0.85]],
-    pools: [[1, 16, 2, 4, 'lava'], [17, 16, 2, 4, 'lava'], [1, 11, 2, 3, 'lava'], [17, 11, 2, 3, 'lava']],
-    walls: [[1, 15, 8, 1], [11, 15, 8, 1], [1, 10, 8, 1], [11, 10, 8, 1], [1, 6, 8, 1], [11, 6, 8, 1], [5, 3, 1, 3], [14, 3, 1, 3]],
-    rugs: [[6, 3, 8, 2, '#e8642e'], [7, 16, 6, 4, '#9c3e24']],
-    furn: [
-      ['pillar', 4, 4], ['pillar', 15, 4], ['candle', 6, 19], ['candle', 13, 19],
-      ['sign', 12, 18, { text: '[1관문 퀴즈]\n물 타입에 약하고 풀 타입에 강한 속성은?\n① 얼음   ② 불꽃   ③ 바위' }],
-      ['sign', 7, 13, { text: '[2관문 퀴즈]\n14번 도로에서 자전거가 없을 때 대신 건너는 길은?\n① 구름길   ② 아래 자연 산책로   ③ 해저 동굴' }],
-      ['sign', 12, 9, { text: '[3관문 퀴즈]\n빙판 체육관에서 거대 눈덩이를 부수는 방법은?\n① 맨손으로 민다   ② 점프한다   ③ 2칸+ 미끄러져 부딪힌다' }],
-    ],
-    gimmicks: [
-      ['quiz_pad', 7, 17, { gateId: 'eq1', num: 1, correct: false, q: '물 타입에 약하고 풀 타입에 강한 속성은?\n① 얼음 ② 불꽃 ③ 바위', color: '#ff8a48' }],
-      ['quiz_pad', 10, 17, { gateId: 'eq1', num: 2, correct: true, q: '물 타입에 약하고 풀 타입에 강한 속성은?\n① 얼음 ② 불꽃 ③ 바위', color: '#ff8a48' }],
-      ['quiz_pad', 13, 17, { gateId: 'eq1', num: 3, correct: false, q: '물 타입에 약하고 풀 타입에 강한 속성은?\n① 얼음 ② 불꽃 ③ 바위', color: '#ff8a48' }],
-      ['gate_bar', 9, 15, { w: 2, h: 1, gateId: 'eq1', color: '#ff7040' }],
-      ['quiz_pad', 7, 12, { gateId: 'eq2', num: 1, correct: false, q: '14번 도로에서 자전거 없이 건너가는 길은?\n① 구름길 ② 아래 자연 산책로 ③ 해저 동굴', color: '#ff8a48' }],
-      ['quiz_pad', 10, 12, { gateId: 'eq2', num: 2, correct: true, q: '14번 도로에서 자전거 없이 건너가는 길은?\n① 구름길 ② 아래 자연 산책로 ③ 해저 동굴', color: '#ff8a48' }],
-      ['quiz_pad', 13, 12, { gateId: 'eq2', num: 3, correct: false, q: '14번 도로에서 자전거 없이 건너가는 길은?\n① 구름길 ② 아래 자연 산책로 ③ 해저 동굴', color: '#ff8a48' }],
-      ['gate_bar', 9, 10, { w: 2, h: 1, gateId: 'eq2', color: '#ffaa40' }],
-      ['quiz_pad', 7, 8, { gateId: 'eq3', num: 1, correct: false, q: '빙판 눈덩이를 부수는 방법은?\n① 맨손 ② 점프 ③ 2칸+ 미끄러져 충돌', color: '#ff8a48' }],
-      ['quiz_pad', 10, 8, { gateId: 'eq3', num: 2, correct: false, q: '빙판 눈덩이를 부수는 방법은?\n① 맨손 ② 점프 ③ 2칸+ 미끄러져 충돌', color: '#ff8a48' }],
-      ['quiz_pad', 13, 8, { gateId: 'eq3', num: 3, correct: true, q: '빙판 눈덩이를 부수는 방법은?\n① 맨손 ② 점프 ③ 2칸+ 미끄러져 충돌', color: '#ff8a48' }],
-      ['gate_bar', 9, 6, { w: 2, h: 1, gateId: 'eq3', color: '#ffd448' }],
-    ],
-    spawns: [['trainer:leader_ember', 10, 3, { face: 'down' }], ['trainer:gym_ember_t1', 4, 17, { face: 'right' }], ['trainer:gym_ember_t2', 16, 12, { face: 'left' }]],
-    lights: [[10, 4], [10, 8], [10, 13], [10, 18]],
-  },
-  lumina: { // 네온 레이저 광학 프리즘 퍼즐
-    name: '빛누리 도장', col: '#e0b830', W: 18, H: 24, door: 9,
-    floor: { kind: 'tile', color: '#242b3d', color2: '#2e3850' }, wall: { color: '#394662', pattern: 'diamond', accent: '#62d0ff' },
-    elevs: [[5, 3, 12, 5, 1.0]],
-    ramps: [[8, 6, 9, 6, 'N', 0, 1.0]],
-    walls: [[1, 14, 7, 1], [10, 14, 7, 1], [1, 7, 7, 1], [10, 7, 7, 1], [4, 3, 1, 4], [13, 3, 1, 4], [5, 6, 3, 1], [10, 6, 3, 1]],
-    rugs: [[6, 3, 6, 3, '#e0b830'], [6, 16, 6, 5, '#1d324c']],
-    furn: [['crystal', 1, 4], ['crystal_red', 16, 4], ['pillar', 2, 5], ['pillar', 15, 5], ['candle', 2, 22], ['candle', 15, 22], ['sign', 13, 21, { text: '빛누리 광학 회로!\n바닥 프리즘을 밟아 방향을 돌려 수신 크리스탈에 레이저를 연결하세요.' }]],
-    gimmicks: [
-      ['laser_src', 3, 19, { gateId: 'lm1', dir: 'right', color: '#48f0ff' }],
-      ['prism', 8, 19, { gateId: 'lm1', rot: 2, color: '#48f0ff' }],
-      ['prism', 8, 16, { gateId: 'lm1', rot: 3, color: '#48f0ff' }],
-      ['laser_dst', 14, 16, { gateId: 'lm1', color: '#48f0ff' }],
-      ['gate_bar', 8, 14, { w: 2, h: 1, gateId: 'lm1', color: '#48f0ff' }],
-      ['laser_src', 15, 12, { gateId: 'lm2', dir: 'left', color: '#ffd84d' }],
-      ['prism', 9, 12, { gateId: 'lm2', rot: 2, color: '#ffd84d' }],
-      ['prism', 9, 9, { gateId: 'lm2', rot: 1, color: '#ffd84d' }],
-      ['laser_dst', 3, 9, { gateId: 'lm2', color: '#ffd84d' }],
-      ['gate_bar', 8, 7, { w: 2, h: 1, gateId: 'lm2', color: '#ffd84d' }],
-    ],
-    spawns: [['trainer:leader_lumina', 9, 4, { face: 'down' }], ['trainer:gym_lumina_t1', 4, 11, { face: 'right' }], ['trainer:gym_lumina_t2', 14, 10, { face: 'left' }]],
-    lights: [[9, 5], [4, 9], [14, 9], [9, 19]],
-  },
-  frost: { // ★선단시티 오마주: 3단 입체 빙판 + 거대 눈덩이 파괴 퍼즐
-    name: '서리 도장', col: '#58b4e8', W: 18, H: 24, door: 9,
-    floor: { kind: 'tile', color: '#cde8f6', color2: '#ecf8ff' }, wall: { color: '#d8eefc', pattern: 'tile' },
-    elevs: [[1, 7, 2, 18, 0.8], [15, 7, 16, 18, 0.8], [6, 3, 11, 5, 1.2]],
-    ramps: [
-      [1, 19, 2, 20, 'N', 0, 0.8], [15, 19, 16, 20, 'N', 0, 0.8],
-      [3, 8, 4, 8, 'W', 0, 0.8], [13, 8, 14, 8, 'E', 0, 0.8],
-      [8, 6, 9, 6, 'N', 0, 1.2],
-    ],
-    walls: [
-      [3, 9, 1, 10], [14, 9, 1, 10],
-      [4, 7, 3, 1], [11, 7, 3, 1],
-      [6, 6, 2, 1], [10, 6, 2, 1],
-      [5, 3, 1, 3], [12, 3, 1, 3],
-    ],
-    rugs: [[6, 3, 6, 3, '#58b4e8'], [7, 20, 4, 3, '#88c8ea']],
-    furn: [
-      ['pillar', 6, 16], ['pillar', 11, 16], ['pillar', 12, 13],
-      ['pillar', 5, 10], ['pillar', 12, 10], ['pillar', 7, 8], ['pillar', 10, 8],
-      ['statue', 6, 4], ['statue', 11, 4],
-      ['sign', 6, 21, { text: '선단식 빙판 & 눈덩이 퍼즐!\n2칸 이상 떨어진 빙판에서 미끄러져 거대 눈덩이에 부딪히면 부술 수 있어요! (우측 파란 버튼으로 초기화)' }],
-    ],
-    gimmicks: [
-      ['ice_tile', 4, 19, { w: 10, h: 11 }],
-      ['ice_tile', 1, 17, { w: 2, h: 9 }],
-      ['ice_tile', 15, 17, { w: 2, h: 9 }],
-      ['snowball', 8, 16, {}],
-      ['snowball', 8, 12, {}],
-      ['snowball', 6, 14, {}],
-      ['snowball', 10, 11, {}],
-      ['snowball', 8, 8, {}],
-      ['snowball', 9, 8, {}],
-      ['snow_reset', 12, 21, { color: '#58d8ff' }],
-    ],
-    spawns: [['trainer:leader_frost', 9, 4, { face: 'down' }], ['trainer:gym_frost_t1', 2, 8, { face: 'right' }], ['trainer:gym_frost_t2', 15, 8, { face: 'left' }]],
-    lights: [[9, 5], [9, 13], [9, 20]],
-  },
-  summit: { // 별빛 리듬 시퀀스(Simon Says) + 시공간 워프 최종 전당
-    name: '별마루 도장', col: '#7d5aa8', W: 20, H: 26, door: 10,
-    floor: { kind: 'carpet', color: '#3a3058' }, wall: { color: '#4a4070', pattern: 'dots', accent: '#e0c870' },
-    elevs: [[6, 3, 13, 6, 1.1]],
-    ramps: [[9, 7, 10, 7, 'N', 0, 1.1]],
-    walls: [[1, 17, 8, 1], [11, 17, 8, 1], [6, 9, 1, 8], [13, 9, 1, 8], [1, 8, 8, 1], [11, 8, 8, 1], [5, 3, 1, 4], [14, 3, 1, 4]],
-    rugs: [[7, 3, 6, 4, '#7d5aa8'], [7, 19, 6, 5, '#4c3872']],
-    furn: [['crystal', 7, 4], ['crystal', 12, 4], ['pillar', 9, 11], ['pillar', 12, 14], ['candle', 2, 23], ['candle', 17, 23], ['sign', 14, 23, { text: '별빛 선율의 시험!\n중앙 별 제단(E)으로 빛 순서를 듣고 4색 룬 발판을 순서대로 밟으세요!' }]],
-    gimmicks: [
-      ['rune_demo', 10, 22, { gateId: 'sm_rune', seq: '1,3,0,2', color: '#ffe478' }],
-      ['rune_pad', 6, 20, { gateId: 'sm_rune', runeIdx: 0, seq: '1,3,0,2', color: '#ff5e78' }],
-      ['rune_pad', 8, 20, { gateId: 'sm_rune', runeIdx: 1, seq: '1,3,0,2', color: '#48c8ff' }],
-      ['rune_pad', 11, 20, { gateId: 'sm_rune', runeIdx: 2, seq: '1,3,0,2', color: '#ffd848' }],
-      ['rune_pad', 13, 20, { gateId: 'sm_rune', runeIdx: 3, seq: '1,3,0,2', color: '#b874ff' }],
-      ['gate_bar', 9, 17, { w: 2, h: 1, gateId: 'sm_rune', color: '#b874ff' }],
-      ['ice_tile', 7, 15, { w: 6, h: 4 }],
-      ['warp_pad', 7, 9, { toX: 3, toY: 15, color: '#48c8ff' }],
-      ['arrow_pad', 4, 15, { dir: 'up', steps: 4 }],
-      ['switch_btn', 3, 10, { gateId: 'sm1', color: '#ff6470' }],
-      ['warp_pad', 5, 10, { toX: 16, toY: 15, color: '#ff6470' }],
-      ['gate_bar', 14, 12, { w: 5, h: 1, gateId: 'sm1', color: '#ff6470' }],
-      ['warp_pad', 16, 10, { toX: 10, toY: 7, color: '#b478ff' }],
-    ],
-    spawns: [['trainer:leader_summit', 10, 4, { face: 'down' }], ['trainer:gym_summit_t1', 2, 13, { face: 'right' }], ['trainer:gym_summit_t2', 17, 11, { face: 'left' }]],
-    lights: [[10, 5], [3, 12], [16, 12], [10, 21]],
-  },
-};
-for (const [town, g] of Object.entries(GYM_LAYOUTS)) {
+// ── 루미나 지방 7대 도장: 기존 10배 면적 · 포켓몬 정통 퍼즐 맵 (tools/art/gym-puzzles.mjs) ──
+for (const [town, g] of Object.entries(BIG_GYM_LAYOUTS)) {
   ROOMS[`gym_${town}`] = {
     name: g.name, W: g.W, H: g.H, door: g.door, wall: g.wall, floor: g.floor, trim: darken(g.col, 0.55),
-    walls: g.walls, gimmicks: g.gimmicks, elevs: g.elevs, ramps: g.ramps,
-    decor: [['banner', 2, g.col], ['banner', Math.floor(g.W / 2), g.col], ['banner', g.W - 4, g.col]],
+    walls: g.walls, pools: g.pools, gimmicks: g.gimmicks, elevs: g.elevs, ramps: g.ramps,
+    emblems: g.emblems, circuits: g.circuits,
+    decor: [
+      ['banner', 4, g.col],
+      ['banner', Math.floor(g.W * 0.28), g.col],
+      ['banner', Math.floor(g.W / 2), g.col],
+      ['banner', Math.floor(g.W * 0.72), g.col],
+      ['banner', g.W - 6, g.col],
+    ],
     rugs: g.rugs, furn: g.furn,
     spawns: [...g.spawns, ['wp_gate', g.door, g.H - 2], ['entry', g.door, g.H - 2]],
     lights: g.lights,

@@ -4,6 +4,7 @@
 import { BM_ALL_TOTAL_KRW, BM_CASH_PACK_MAP, BM_CASH_PACKS, BM_PRODUCT_MAP, BM_PRODUCTS, CHAT_BUBBLES, STARTER_LUMI_IDS, STARTER_LUMI_SET, UI_THEMES, formatCash, formatKrw, formatUsd, isBmUnlocked, remainingBmCostKrw, type BmCashPack, type BmCategory, type BmProduct } from '@shared/bmShop';
 import { ITEMS, MOVES, RECIPES, REGION_MAPS, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
 import { expToNext, maxPp, ppLeft, stats } from '@shared/sim/Battle';
+import { formatBanUntil, formatMuteRemaining } from '@shared/sim/antiCheat';
 import { getStoryGuide } from '@shared/storyGuide';
 import { MAP_META, type CreatureInst, type MapId, type MapMeta, type PlayerState, type WorldTime } from '@shared/types';
 import { sfx } from '../audio/Sfx';
@@ -15,7 +16,7 @@ import type { AdminCmd } from '@shared/protocol';
 import type { AdminReply } from '../net/Authority';
 import type { PgSystemTestResult } from '../net/bmApi';
 
-export type PhoneApp = 'home' | 'journal' | 'map' | 'party' | 'bag' | 'dex' | 'shop' | 'recipes' | 'badges' | 'friends' | 'settings' | 'help' | 'bug' | 'admin';
+export type PhoneApp = 'home' | 'messages' | 'journal' | 'map' | 'party' | 'bag' | 'dex' | 'shop' | 'recipes' | 'badges' | 'friends' | 'settings' | 'help' | 'bug' | 'admin';
 
 export interface PhoneCtx {
   me(): PlayerState;
@@ -44,8 +45,9 @@ export interface PhoneCtx {
   held(): number;
   /** 가방 칸을 눌렀을 때 할 수 있는 일 */
   bagActions(slot: number): { label: string; run: () => void; primary?: boolean }[];
-  /** 버그 신고 (멀티 전용) · 관리자 (서버가 확인한 관리자만 화면에 나옴 — 실제 권한 검사는 서버) */
-  report(text: string): boolean;
+  /** 버그·유저 신고 · 관리자 (서버가 확인한 관리자만 화면에 나옴 — 실제 권한 검사는 서버) */
+  report(text: string, extra?: { kind?: 'bug' | 'user'; targetUid?: string; targetName?: string }): boolean;
+  markNoticesRead?(): void;
   isAdmin(): boolean;
   admin(cmd: AdminCmd): Promise<AdminReply>;
   /** 캐쉬 충전 외부 PG 이동 · 캐쉬로 상점 상품 구매 · 코스메틱 적용 · 어드민 PG 점검 */
@@ -60,6 +62,7 @@ export interface PhoneCtx {
 }
 
 const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: () => string }[] = [
+  { id: 'messages', name: '메시지', bg: 'linear-gradient(160deg,#ff8080,#c82838)', glyph: () => '<span class="ph-emoji">📨</span>' },
   { id: 'journal', name: '모험 수첩', bg: 'linear-gradient(160deg,#7ec89a,#2d7a54)', glyph: () => '<span class="ph-emoji">🧭</span>' },
   { id: 'map', name: '지도', bg: 'linear-gradient(160deg,#6fc3e8,#2f7ab8)', glyph: () => '<span class="ph-emoji">🗺️</span>' },
   { id: 'party', name: '나의 루미', bg: 'linear-gradient(160deg,#ffd27a,#e8892e)', glyph: () => `<span class="px-icon" style="${iconStyle('lumi', 40)}"></span>` },
@@ -71,10 +74,10 @@ const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: ()
   { id: 'friends', name: '친구', bg: 'linear-gradient(160deg,#ffb0c8,#d0547a)', glyph: () => `<span class="px-icon" style="${iconStyle('heart', 40)}"></span>` },
   { id: 'settings', name: '설정', bg: 'linear-gradient(160deg,#c8d0dc,#6a7486)', glyph: () => '<span class="ph-emoji">⚙️</span>' },
   { id: 'help', name: '도움말', bg: 'linear-gradient(160deg,#fff0a8,#d8b03a)', glyph: () => '<span class="ph-emoji">❔</span>' },
-  { id: 'bug', name: '버그 신고', bg: 'linear-gradient(160deg,#ffb27a,#d8573a)', glyph: () => '<span class="ph-emoji">🐞</span>' },
+  { id: 'bug', name: '신고하기', bg: 'linear-gradient(160deg,#ffb27a,#d8573a)', glyph: () => '<span class="ph-emoji">🚨</span>' },
 ];
 const ADMIN_APP = { id: 'admin' as const, name: '관리자', bg: 'linear-gradient(160deg,#4a4a5a,#14141c)', glyph: () => '<span class="ph-emoji">🛡️</span>' };
-const TITLE: Record<PhoneApp, string> = { home: '', journal: '모험 수첩', map: '루미나 지방 지도', party: '나의 루미 · PC 보관함', bag: '가방', dex: '루미 도감', shop: '캐쉬 상점', recipes: '제작 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말', bug: '버그 신고', admin: '관리자 (admin)' };
+const TITLE: Record<PhoneApp, string> = { home: '', messages: '메시지 · 벌금 고지서', journal: '모험 수첩', map: '루미나 지방 지도', party: '나의 루미 · PC 보관함', bag: '가방', dex: '루미 도감', shop: '캐쉬 상점', recipes: '제작 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말', bug: '유저 · 버그 신고', admin: '관리자 (admin)' };
 
 /** 도장 순서 */
 const BADGES: [string, string, string, string][] = [
@@ -129,6 +132,7 @@ export const phone = {
     const isFoldable = app === 'map' || app === 'shop';
     this.unfold = isFoldable && (fresh || this.app !== app);
     if (app === 'admin') this.adminData = null;
+    if (app === 'messages') this.ctx.markNoticesRead?.();
     if (app !== 'party') { this.inspectTarget = null; this.swapBoxIdx = null; this.releaseConfirmIdx = null; }
     if (app !== 'map') this.mapPick = '';
     this.app = app; this.confirmReset = false; this.bagPick = '';
@@ -213,6 +217,7 @@ export const phone = {
   body(me: PlayerState): string {
     switch (this.app) {
       case 'home': return this.home(me);
+      case 'messages': return this.messagesApp(me);
       case 'journal': return this.journalApp(me);
       case 'map': return this.mapApp(me);
       case 'party': return this.partyApp(me);
@@ -229,12 +234,67 @@ export const phone = {
     }
   },
 
-  // ── 버그 신고 ──
+  // ── 메시지 · 벌금 고지서 알림함 ──
+  messagesApp(me: PlayerState) {
+    const list = me.notices ?? [];
+    if (!list.length) {
+      return `<div class="ph-empty">도착한 메시지나 고지서가 없어요.<br><span class="ph-small">벌금 고지서나 관리자 안내가 오면 여기에 표시됩니다.</span></div>`;
+    }
+    return `<div class="ph-list">${list.map((ntc) => {
+      const dt = new Date(ntc.at).toLocaleString('ko-KR');
+      if (ntc.kind === 'fine') {
+        return `<div class="ph-card ph-col ph-notice-fine">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <b style="color:#b91c1c;font-size:13px">${esc(ntc.title)}</b>
+            <span class="ph-small" style="color:#7f1d1d">${esc(dt)}</span>
+          </div>
+          <div class="ph-fine-grid">
+            <div class="ph-fine-cell">
+              <div class="ph-small" style="color:#7f1d1d">보유 골드</div>
+              <b style="color:#dc2626;font-size:14px">0G</b>
+              ${typeof ntc.prevGold === 'number' ? `<div class="ph-small" style="opacity:.7">(기존 ${ntc.prevGold.toLocaleString('ko-KR')}G 몰수)</div>` : ''}
+            </div>
+            <div class="ph-fine-cell">
+              <div class="ph-small" style="color:#7f1d1d">보유 캐쉬</div>
+              <b style="color:#dc2626;font-size:14px">0원</b>
+              ${typeof ntc.prevCash === 'number' ? `<div class="ph-small" style="opacity:.7">(기존 ${ntc.prevCash.toLocaleString('ko-KR')}원 몰수)</div>` : ''}
+            </div>
+          </div>
+          <div class="ph-small" style="white-space:pre-wrap;color:#450a0a;line-height:1.45">${esc(ntc.body)}</div>
+        </div>`;
+      }
+      return `<div class="ph-card ph-col">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <b>${esc(ntc.title)}</b>
+          <span class="ph-small">${esc(dt)}</span>
+        </div>
+        <div class="ph-small" style="white-space:pre-wrap;line-height:1.45">${esc(ntc.body)}</div>
+      </div>`;
+    }).join('')}</div>`;
+  },
+
+  // ── 유저 · 버그 신고 ──
+  reportKind: 'user' as 'user' | 'bug',
   bugApp() {
-    if (!this.ctx!.online()) return '<div class="ph-empty">버그 신고는 멀티플레이(구글 로그인)에서 보낼 수 있어요.<br>혼자 하기 중이라면 개발자에게 직접 알려 주세요!</div>';
-    return `<div class="ph-card ph-col"><b>🐞 무엇이 이상했나요?</b><div class="ph-small">어디서 · 무엇을 하다가 · 어떻게 됐는지 적어 주면 고치기 쉬워요. (지금 위치는 자동으로 함께 보내져요)</div>
-      <textarea data-bug class="ph-input" rows="6" maxlength="500" placeholder="예) 바람골 도장 앞 계단에서 위로 올라가면 캐릭터가 멈춰요"></textarea>
-      <div class="ph-acts"><button data-bugsend class="ph-btn">신고 보내기</button></div>${this.bugSent ? '<div class="ph-small" style="color:#2f8a3a">✔ 신고를 보냈어요. 고마워요!</div>' : ''}</div>`;
+    if (!this.ctx!.online() && !this.ctx!.isAdmin()) return '<div class="ph-empty">신고 기능은 멀티플레이(구글 로그인)에서 보낼 수 있어요.<br>혼자 하기 중이라면 개발자에게 직접 알려 주세요!</div>';
+    const roster = this.ctx!.roster();
+    const userOpts = [
+      '<option value="">(직접 닉네임 입력 또는 대상 없음)</option>',
+      ...roster.map((r) => `<option value="${esc(r.id)}" data-rname="${esc(r.name)}">${esc(r.name)} (${esc(r.where)})</option>`),
+    ].join('');
+    return `<div class="ph-card ph-col">
+      <b>🚨 신고하기</b>
+      <div class="ph-tabs" style="margin:4px 0">
+        <button data-rkind="user" class="${this.reportKind === 'user' ? 'on' : ''}">유저 신고</button>
+        <button data-rkind="bug" class="${this.reportKind === 'bug' ? 'on' : ''}">버그 신고</button>
+      </div>
+      ${this.reportKind === 'user' ? `<div class="ph-col" style="gap:4px;margin-bottom:4px">
+        <div class="ph-small">신고할 유저를 고르거나 닉네임을 적어 주세요. (관리자가 확인 후 채팅 금지 · 접속 금지 · 감옥 수감을 결정합니다)</div>
+        <select data-bugtarget class="ph-input sm">${userOpts}</select>
+        <input data-bugtname class="ph-input sm" type="text" maxlength="24" placeholder="대상 닉네임 (목록에 없을 때 직접 입력)">
+      </div>` : '<div class="ph-small">어디서 · 무엇을 하다가 · 어떻게 됐는지 적어 주면 고치기 쉬워요. (지금 위치는 자동으로 함께 보내져요)</div>'}
+      <textarea data-bug class="ph-input" rows="5" maxlength="500" placeholder="${this.reportKind === 'user' ? '예) 욕설/도배 또는 비정상 치트 사용이 의심돼요' : '예) 바람골 도장 앞 계단에서 위로 올라가면 캐릭터가 멈춰요'}"></textarea>
+      <div class="ph-acts"><button data-bugsend class="ph-btn">신고 보내기</button></div>${this.bugSent ? '<div class="ph-small" style="color:#2f8a3a">✔ 신고를 보냈어요. 관리자가 확인 후 조치할 거예요!</div>' : ''}</div>`;
   },
   bugSent: false,
   newReports: 0,
@@ -253,7 +313,7 @@ export const phone = {
     const d = this.adminData;
     const tabs = `<div class="ph-tabs">
       <button data-atab="users" class="${this.adminTab === 'users' ? 'on' : ''}">접속 유저</button>
-      <button data-atab="reports" class="${this.adminTab === 'reports' ? 'on' : ''}">버그 신고${this.newReports ? ` (${this.newReports})` : ''}</button>
+      <button data-atab="reports" class="${this.adminTab === 'reports' ? 'on' : ''}">🚨 신고 내역${this.newReports ? ` (${this.newReports})` : ''}</button>
       <button data-atab="bm" class="${this.adminTab === 'bm' ? 'on' : ''}">💎 캐쉬·PG</button>
       <button data-arefresh>↻</button>
     </div>`;
@@ -290,8 +350,42 @@ export const phone = {
     }
     if (!d) return `${tabs}${msg}<div class="ph-empty">불러오는 중…</div>`;
     if (this.adminTab === 'reports') {
-      const list = (d.reports ?? []).map((r) => `<div class="ph-card ph-col ${r.resolved ? 'ph-dim' : ''}"><b>${esc(r.name)}</b> <span class="ph-small">${new Date(r.at).toLocaleString('ko-KR')}</span><div class="ph-small">${esc(r.where)}</div><div style="white-space:pre-wrap">${esc(r.text)}</div>${r.resolved ? '<span class="ph-small">✔ 처리됨</span>' : `<div class="ph-acts"><button data-resolve="${esc(r.id)}" class="ph-btn sm">처리 완료</button></div>`}</div>`).join('');
-      return `${tabs}${msg}${list || '<div class="ph-empty">신고가 없어요</div>'}`;
+      const list = (d.reports ?? []).map((r) => {
+        const key = `rep_${r.id}`;
+        const defaultUid = r.targetUid || r.uid;
+        const targetSelector = r.targetUid && r.targetUid !== r.uid
+          ? `<select data-rtarget="${esc(key)}" class="ph-input sm" style="flex:1">
+              <option value="${esc(r.targetUid)}">피신고자: ${esc(r.targetName || r.targetUid)}</option>
+              <option value="${esc(r.uid)}">신고자: ${esc(r.name)}</option>
+            </select>`
+          : `<input data-rtarget="${esc(key)}" type="hidden" value="${esc(defaultUid)}"><span class="ph-small">제재 대상: <b>${esc(r.targetName || r.name)}</b> (${esc(defaultUid)})</span>`;
+        return `<div class="ph-card ph-col ${r.resolved ? 'ph-dim' : ''}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+            <b>${r.kind === 'user' ? '🚨 유저 신고' : '🐞 버그 신고'} · ${esc(r.name)}</b>
+            <span class="ph-small">${new Date(r.at).toLocaleString('ko-KR')}</span>
+          </div>
+          ${r.targetName ? `<div class="ph-small" style="color:#b91c1c;font-weight:700">🎯 신고 대상: ${esc(r.targetName)}${r.targetUid ? ` (${esc(r.targetUid)})` : ''}</div>` : ''}
+          <div class="ph-small">${esc(r.where)}</div>
+          <div style="white-space:pre-wrap;padding:4px 6px;background:rgba(0,0,0,0.05);border-radius:6px">${esc(r.text)}</div>
+          <div class="ph-mod-box">
+            <div class="ph-mod-row">${targetSelector}</div>
+            <div class="ph-mod-row">
+              <input data-mm="${esc(key)}" class="ph-input sm" type="number" min="1" max="10080" value="10" style="width:54px" title="채팅 금지 시간(분) - 접속 중일 때만 감소">
+              <span class="ph-small">분</span>
+              <button data-rop="mute" data-rkey="${esc(key)}" data-rid="${esc(r.id)}" class="ph-btn sm">🔇 채팅 금지</button>
+              <button data-rop="unmute" data-rkey="${esc(key)}" data-rid="${esc(r.id)}" class="ph-btn sm ghost">해제</button>
+            </div>
+            <div class="ph-mod-row">
+              <input data-bd="${esc(key)}" class="ph-input sm" type="number" min="1" max="3650" value="3" style="width:54px" title="접속 금지 기간(일) - 세상시간 기준">
+              <span class="ph-small">일</span>
+              <button data-rop="ban" data-rkey="${esc(key)}" data-rid="${esc(r.id)}" class="ph-btn sm danger">⛔ 접속 금지</button>
+              <button data-rop="jail" data-rkey="${esc(key)}" data-rid="${esc(r.id)}" class="ph-btn sm" style="background:#7f1d1d;color:#fff">⛓️ 감옥 보내기</button>
+            </div>
+          </div>
+          ${r.resolved ? '<span class="ph-small" style="margin-top:4px;color:#2f8a3a">✔ 처리 완료됨</span>' : `<div class="ph-acts" style="margin-top:4px"><button data-resolve="${esc(r.id)}" class="ph-btn sm ghost">✔ 처리 완료</button></div>`}
+        </div>`;
+      }).join('');
+      return `${tabs}${msg}${list || '<div class="ph-empty">접수된 신고가 없어요</div>'}`;
     }
     const items = Object.values(ITEMS).map((it) => `<option value="${it.id}">${esc(it.name)}</option>`).join('');
     const maps = Object.entries(REGION_MAPS).map(([id, rm]) => `<option value="${esc(id)}">${esc(rm.name)} (${esc(id)})</option>`).join('');
@@ -315,8 +409,9 @@ export const phone = {
       ? `<div data-ulist style="max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;padding:3px;border:1px solid rgba(255,255,255,0.16);border-radius:6px;margin-bottom:6px">
           ${filtered.map((u) => {
             const on = sel?.uid === u.uid;
+            const tags = `${u.jailed ? ' <span class="ph-tag-jail">수감</span>' : ''}${(u.muteRemainingSec ?? 0) > 0 ? ` <span class="ph-tag-mute">채금 ${esc(formatMuteRemaining(u.muteRemainingSec!))}</span>` : ''}`;
             return `<button data-usel="${esc(u.uid)}" class="ph-btn sm ${on ? '' : 'ghost'}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:4px 8px;text-align:left">
-              <span style="font-weight:700">${esc(u.name)}</span>
+              <span style="font-weight:700">${esc(u.name)}${tags}</span>
               <span class="ph-small" style="opacity:.85">${esc(u.mapName)}</span>
             </button>`;
           }).join('')}
@@ -326,20 +421,46 @@ export const phone = {
     const selCard = sel
       ? `<div class="ph-card ph-col">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-            <b>👤 ${esc(sel.name)}</b>
+            <b>👤 ${esc(sel.name)}${sel.jailed ? ' <span class="ph-tag-jail">⛓️ 수감 중</span>' : ''}</b>
             <span class="ph-small">${esc(sel.mapName)} · ${esc(sel.world)}</span>
           </div>
           <div class="ph-small">${sel.gold.toLocaleString()}G · ${formatCash(sel.cash ?? 0)} · 배지 ${sel.badges} · ${esc(sel.party || '루미 없음')}</div>
+          ${(sel.muteRemainingSec ?? 0) > 0 ? `<div class="ph-small" style="color:#b45309;font-weight:700">🔇 채팅 금지 남음: ${esc(formatMuteRemaining(sel.muteRemainingSec!))} (접속 시간 기준)</div>` : ''}
           <div class="ph-small" style="opacity:.6">UID: ${esc(sel.uid)}</div>
-          <div class="ph-acts"><button data-aop="goto" data-uid="${esc(sel.uid)}" class="ph-btn sm">가기</button><button data-aop="bring" data-uid="${esc(sel.uid)}" class="ph-btn sm">데려오기</button><button data-aop="kick" data-uid="${esc(sel.uid)}" class="ph-btn sm ghost">강퇴</button><button data-aop="ban" data-uid="${esc(sel.uid)}" class="ph-btn sm ghost">밴</button></div>
+          <div class="ph-acts"><button data-aop="goto" data-uid="${esc(sel.uid)}" class="ph-btn sm">가기</button><button data-aop="bring" data-uid="${esc(sel.uid)}" class="ph-btn sm">데려오기</button><button data-aop="kick" data-uid="${esc(sel.uid)}" class="ph-btn sm ghost">강퇴</button></div>
+          <div class="ph-mod-box">
+            <b class="ph-small" style="color:#991b1b">⚖️ 제재 · 처벌 관리</b>
+            <div class="ph-mod-row">
+              <input data-mm="${esc(sel.uid)}" class="ph-input sm" type="number" min="1" max="10080" value="10" style="width:56px" title="접속 중일 때만 시간이 흐르는 채팅 금지(분)">
+              <span class="ph-small">분</span>
+              <button data-aop="mute" data-uid="${esc(sel.uid)}" class="ph-btn sm">🔇 채팅 금지</button>
+              <button data-aop="unmute" data-uid="${esc(sel.uid)}" class="ph-btn sm ghost">해제</button>
+            </div>
+            <div class="ph-mod-row">
+              <input data-bd="${esc(sel.uid)}" class="ph-input sm" type="number" min="0" max="3650" value="3" style="width:56px" title="세상시간 기준 접속 금지 일수 (0=영구)">
+              <span class="ph-small">일(0=영구)</span>
+              <button data-aop="ban" data-uid="${esc(sel.uid)}" class="ph-btn sm danger">⛔ 접속 금지</button>
+            </div>
+            <div class="ph-mod-row">
+              <button data-aop="jail" data-uid="${esc(sel.uid)}" class="ph-btn sm" style="background:#7f1d1d;color:#fff">⛓️ 감옥으로 보내기</button>
+              ${sel.jailed ? `<button data-aop="unjail" data-uid="${esc(sel.uid)}" class="ph-btn sm">🔓 석방</button>` : ''}
+            </div>
+          </div>
           <div class="ph-acts"><select data-gi="${esc(sel.uid)}" class="ph-input sm">${items}</select><input data-gq="${esc(sel.uid)}" class="ph-input sm" type="number" min="1" max="999" value="1" style="width:56px"><button data-aop="give" data-uid="${esc(sel.uid)}" class="ph-btn sm">지급</button></div>
           <div class="ph-acts"><input data-gg="${esc(sel.uid)}" class="ph-input sm" type="number" value="1000" style="width:84px"><button data-aop="gold" data-uid="${esc(sel.uid)}" class="ph-btn sm">골드 ±</button><button data-aop="grantCash" data-uid="${esc(sel.uid)}" class="ph-btn sm">캐쉬 +100만</button></div>
           <div class="ph-acts"><select data-gm="${esc(sel.uid)}" class="ph-input sm">${maps}</select><button data-aop="warp" data-uid="${esc(sel.uid)}" class="ph-btn sm">장소 이동</button></div>
         </div>`
       : '';
 
-    const bans = (d.bans ?? []).map((b) => `<div class="ph-card ph-col ph-dim"><b>${esc(b.name)}</b> <span class="ph-small">${esc(b.reason)}</span><div class="ph-acts"><button data-aop="unban" data-uid="${esc(b.uid)}" class="ph-btn sm">밴 해제</button></div></div>`).join('');
-    return `${tabs}${msg}${searchBar}${nameList}${selCard}${bans ? `<div class="ph-sec">정지된 계정</div>${bans}` : ''}`;
+    const bans = (d.bans ?? []).map((b) => `<div class="ph-card ph-col ph-dim">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+        <b>⛔ ${esc(b.name)}</b>
+        <span class="ph-small" style="color:#991b1b">${esc(formatBanUntil(b.until))}</span>
+      </div>
+      <span class="ph-small">${esc(b.reason || '사유 없음')}</span>
+      <div class="ph-acts"><button data-aop="unban" data-uid="${esc(b.uid)}" class="ph-btn sm">접속 금지 해제</button></div>
+    </div>`).join('');
+    return `${tabs}${msg}${searchBar}${nameList}${selCard}${bans ? `<div class="ph-sec">접속 금지된 계정 (${d.bans?.length ?? 0})</div>${bans}` : ''}`;
   },
   async adminLoad() {
     const r = await this.ctx!.admin(this.adminTab === 'reports' ? { op: 'reports' } : { op: 'users' });
@@ -360,15 +481,30 @@ export const phone = {
     const sp = lead ? SPECIES[lead.species] : null;
     const leadSheet = lead ? lumiSheetUrl(lead.species, me.lumiCoord) : '';
     const guide = getStoryGuide(me);
-    return `<div class="ph-hello">
+    const notices = me.notices ?? [];
+    const unreadNotices = notices.filter((x) => !x.read);
+    const latestUnread = unreadNotices[0];
+    const pushBanner = latestUnread
+      ? `<button data-app="messages" class="ph-push-banner" title="메시지함 열기">
+          <span style="font-size:20px">${latestUnread.kind === 'fine' ? '⚖️' : '📨'}</span>
+          <div style="min-width:0;flex:1">
+            <div style="font-size:12px;font-weight:700">${esc(latestUnread.title)}</div>
+            <div style="font-size:10px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${latestUnread.kind === 'fine' ? '벌금 집행으로 골드·캐쉬가 0원으로 초기화되었습니다 (눌러서 확인 ›)' : esc(latestUnread.body.split('\n')[0] ?? '')}</div>
+          </div>
+        </button>`
+      : '';
+    return `${pushBanner}<div class="ph-hello">
         ${sp ? `<span class="lumi-icon lumi-bounce" style="background-image:url(${leadSheet});width:56px;height:56px;background-size:336px 56px"></span>` : '<span class="ph-emoji" style="font-size:34px">✨</span>'}
-        <div><div class="ph-name">${esc(me.name)}</div><div class="ph-sub">${sp ? `파트너 ${sp.name} · Lv.${lead!.level}` : '아직 파트너가 없어요'} · 배지 ${me.badges.length}/8</div></div>
+        <div><div class="ph-name">${esc(me.name)}</div><div class="ph-sub">${sp ? `파트너 ${sp.name} · Lv.${lead!.level}` : '아직 파트너가 없어요'} · 배지 ${me.badges.length}/8${(me.evilStack ?? 0) > 0 ? ` · 😈 악행 ${me.evilStack}/100` : ''}</div></div>
       </div>
       <button data-app="journal" class="ph-quest-banner" title="모험 수첩 열기">
         <span class="ph-qb-tag">🧭 ${esc(guide.chapter)}</span>
         <span class="ph-qb-title">${esc(guide.title)} ›</span>
       </button>
-      <div class="ph-grid">${[...APPS, ...(this.ctx!.isAdmin() ? [ADMIN_APP] : [])].map((a) => `<button data-app="${a.id}" class="ph-app"><span class="ph-tile" style="background:${a.bg}">${a.glyph()}</span><span class="ph-label">${a.name}</span>${a.id === 'admin' && this.newReports ? `<i class="ph-badge">${this.newReports}</i>` : ''}</button>`).join('')}</div>
+      <div class="ph-grid">${[...APPS, ...(this.ctx!.isAdmin() ? [ADMIN_APP] : [])].map((a) => {
+        const badge = a.id === 'admin' && this.newReports ? this.newReports : a.id === 'messages' && unreadNotices.length ? unreadNotices.length : 0;
+        return `<button data-app="${a.id}" class="ph-app"><span class="ph-tile" style="background:${a.bg}">${a.glyph()}</span><span class="ph-label">${a.name}</span>${badge ? `<i class="ph-badge">${badge}</i>` : ''}</button>`;
+      }).join('')}</div>
       <div class="ph-foot">R 닫기 · M 지도 · P 나의 루미 · Esc 뒤로</div>`;
   },
 
@@ -1013,13 +1149,27 @@ export const phone = {
   },
 
   wire(n: HTMLElement, me: PlayerState) {
-    // 버그 신고
+    // 유저 · 버그 신고
+    n.querySelectorAll<HTMLButtonElement>('[data-rkind]').forEach((b) => {
+      b.onclick = () => { sfx.play('tap'); this.reportKind = b.dataset.rkind as 'user' | 'bug'; this.render(); };
+    });
     n.querySelector<HTMLButtonElement>('[data-bugsend]')?.addEventListener('click', () => {
       const ta = n.querySelector<HTMLTextAreaElement>('[data-bug]'); const text = ta?.value.trim() ?? '';
       if (!text) { sfx.play('error'); return; }
-      if (this.ctx!.report(text)) { sfx.play('confirm'); this.bugSent = true; this.render(); setTimeout(() => { this.bugSent = false; }, 30000); }
+      const sel = n.querySelector<HTMLSelectElement>('[data-bugtarget]');
+      const inpName = n.querySelector<HTMLInputElement>('[data-bugtname]');
+      const targetUid = this.reportKind === 'user' ? (sel?.value || undefined) : undefined;
+      const selName = sel?.selectedOptions?.[0]?.dataset.rname || '';
+      const targetName = this.reportKind === 'user' ? (selName || inpName?.value.trim() || undefined) : undefined;
+      if (this.ctx!.report(text, { kind: this.reportKind, targetUid, targetName })) {
+        sfx.play('confirm');
+        this.bugSent = true;
+        this.render();
+        setTimeout(() => { this.bugSent = false; }, 30000);
+      }
     });
     n.querySelector<HTMLTextAreaElement>('[data-bug]')?.addEventListener('keydown', (e) => e.stopPropagation());
+    n.querySelector<HTMLInputElement>('[data-bugtname]')?.addEventListener('keydown', (e) => e.stopPropagation());
     // 관리자
     if (this.app === 'admin') {
       if (this.adminTab !== 'bm' && !this.adminData && !this.adminLoading) { this.adminLoading = true; void this.adminLoad().finally(() => { this.adminLoading = false; }); }
@@ -1027,6 +1177,30 @@ export const phone = {
       n.querySelector<HTMLButtonElement>('[data-arefresh]')?.addEventListener('click', () => { this.adminMsg = ''; void this.adminLoad(); });
       n.querySelectorAll<HTMLButtonElement>('[data-resolve]').forEach((b) => { b.onclick = () => void this.adminRun({ op: 'resolve', id: b.dataset.resolve! }); });
       n.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.ph-input').forEach((el) => el.addEventListener('keydown', (e) => e.stopPropagation()));
+      // 신고 내역 카드 안의 직접 제재 버튼 (채팅 금지 분 · 접속 금지 일 · 감옥 보내기)
+      n.querySelectorAll<HTMLButtonElement>('[data-rop]').forEach((b) => {
+        b.onclick = () => {
+          const op = b.dataset.rop!, rkey = b.dataset.rkey!;
+          const targetEl = n.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-rtarget="${CSS.escape(rkey)}"]`);
+          const uid = targetEl?.value ?? '';
+          if (!uid) { this.adminMsg = '제재할 대상 UID가 없어요.'; this.render(); return; }
+          if (op === 'mute') {
+            const mins = Math.max(1, Number(n.querySelector<HTMLInputElement>(`[data-mm="${CSS.escape(rkey)}"]`)?.value ?? 10));
+            void this.adminRun({ op: 'mute', uid, minutes: mins, reason: '신고 접수에 따른 채팅 금지' });
+            return;
+          }
+          if (op === 'unmute') { void this.adminRun({ op: 'unmute', uid }); return; }
+          if (op === 'ban') {
+            const days = Math.max(1, Number(n.querySelector<HTMLInputElement>(`[data-bd="${CSS.escape(rkey)}"]`)?.value ?? 3));
+            void this.adminRun({ op: 'ban', uid, days, reason: `신고 접수에 따른 ${days}일 접속 금지` });
+            return;
+          }
+          if (op === 'jail') {
+            void this.adminRun({ op: 'jail', uid, reason: '신고 접수에 따른 교도소 수감', fine: true });
+            return;
+          }
+        };
+      });
       const uSearch = n.querySelector<HTMLInputElement>('[data-usearch]');
       if (uSearch) {
         uSearch.addEventListener('input', () => {
@@ -1053,12 +1227,27 @@ export const phone = {
       n.querySelectorAll<HTMLButtonElement>('[data-aop]').forEach((b) => {
         b.onclick = () => {
           const op = b.dataset.aop!, uid = b.dataset.uid!;
-          if ((op === 'kick' || op === 'ban') && !window.confirm(`${op === 'ban' ? '이용 정지' : '강퇴'}할까요?`)) return;
+          if (op === 'kick' && !window.confirm('강퇴할까요?')) return;
+          if (op === 'ban') {
+            const days = Math.max(0, Number(n.querySelector<HTMLInputElement>(`[data-bd="${CSS.escape(uid)}"]`)?.value ?? 3));
+            const label = days > 0 ? `${days}일 접속 금지` : '영구 이용 정지';
+            if (!window.confirm(`${label}를 적용할까요?`)) return;
+            void this.adminRun({ op: 'ban', uid, days, reason: `관리자 ${label}` });
+            return;
+          }
+          if (op === 'mute') {
+            const mins = Math.max(1, Number(n.querySelector<HTMLInputElement>(`[data-mm="${CSS.escape(uid)}"]`)?.value ?? 10));
+            void this.adminRun({ op: 'mute', uid, minutes: mins, reason: `관리자 ${mins}분 채팅 금지` });
+            return;
+          }
+          if (op === 'unmute') { void this.adminRun({ op: 'unmute', uid }); return; }
+          if (op === 'jail') { void this.adminRun({ op: 'jail', uid, reason: '관리자 교도소 수감', fine: true }); return; }
+          if (op === 'unjail') { void this.adminRun({ op: 'unjail', uid }); return; }
           if (op === 'give') { const it = n.querySelector<HTMLSelectElement>(`[data-gi="${CSS.escape(uid)}"]`)?.value ?? ''; const q = Number(n.querySelector<HTMLInputElement>(`[data-gq="${CSS.escape(uid)}"]`)?.value ?? 1); void this.adminRun({ op: 'give', uid, itemId: it, qty: q }); return; }
           if (op === 'gold') { const a = Number(n.querySelector<HTMLInputElement>(`[data-gg="${CSS.escape(uid)}"]`)?.value ?? 0); void this.adminRun({ op: 'gold', uid, amount: a }); return; }
           if (op === 'grantCash') { void this.adminRun({ op: 'grantCash', uid, amount: 1_000_000 }); return; }
           if (op === 'warp') { const mp = (n.querySelector<HTMLSelectElement>(`[data-gm="${CSS.escape(uid)}"]`)?.value ?? '') as MapId; void this.adminRun({ op: 'warp', uid, map: mp }); return; }
-          void this.adminRun({ op: op as 'goto' | 'bring' | 'kick' | 'ban' | 'unban', uid });
+          void this.adminRun({ op: op as 'goto' | 'bring' | 'kick' | 'unban', uid });
         };
       });
       n.querySelectorAll<HTMLButtonElement>('[data-admact]').forEach((b) => {

@@ -929,5 +929,33 @@
     "sellPrice": 0,
     "maxStack": 1,
     "description": "야외 어디서나 B키 또는 가방에서 꺼내 빠르게 달릴 수 있는 로드 자전거. 14번 자전거 도로에서는 자동으로 탑승한다!"
+  },
+  "tofu": {
+    "id": "tofu",
+    "name": "두부 한 모",
+    "type": "food",
+    "icon": "tofu",
+    "sellPrice": 0,
+    "maxStack": 99,
+    "energy": 120,
+    "description": "엄마가 정성껏 준비해 준 따뜻한 하얀 두부 한 모. 먹으면 마음이 포근해지고 기운이 가득 솟아난다."
+  },
+  "stone_slab": {
+    "id": "stone_slab",
+    "name": "석판",
+    "type": "material",
+    "icon": "stone_slab",
+    "sellPrice": 0,
+    "maxStack": 999,
+    "description": "교도소 노역장에서 돌 5개를 정성껏 다듬어 만든 반듯한 석판. 100개를 납품하면 성실 석방 조건을 채울 수 있다."
+  },
+  "wood_plank": {
+    "id": "wood_plank",
+    "name": "나무판",
+    "type": "material",
+    "icon": "wood_plank",
+    "sellPrice": 0,
+    "maxStack": 999,
+    "description": "교도소 노역장에서 나무 5개를 깎아 만든 매끈한 나무판. 100개를 납품하면 성실 석방 조건을 채울 수 있다."
   }
 }

@@ -683,25 +683,135 @@ export function buildGateBar() {
   return t;
 }
 
-/** 마을 모닥불 (파이어 캠프): 돌 테두리 + 장작 + 불씨 */
+/** 마을 모닥불 (파이어 캠프): 4프레임 2D 도트 애니메이션 (96x24 · 돌 테두리 + 장작 + 춤추는 불꽃) */
 export function buildCampfire() {
-  const t = new Img(24, 24), s = P.stone, w = P.wood;
-  t.ellipse(12, 17, 9, 5, '#3b2414');
-  // 둥근 돌 테두리
-  for (const [sx, sy] of [[4, 16], [7, 19], [12, 20], [17, 19], [20, 16], [18, 13], [12, 12], [6, 13]]) {
-    t.ellipse(sx, sy, 2.4, 1.8, s.base);
-    t.set(sx - 1, sy - 1, s.l1);
+  const sheet = new Img(24 * 4, 24), s = P.stone, w = P.wood;
+  const frames = [
+    { lean: 0, h: 0, tip: [12, 5], tip2: [9, 8], tip3: [15, 9], sparks: [[9, 4, '#ffe66a'], [16, 5, '#ff9a2e'], [12, 2, '#fff5a8']] },
+    { lean: -1, h: 1, tip: [11, 4], tip2: [8, 9], tip3: [14, 7], sparks: [[14, 3, '#fff08a'], [7, 6, '#ff7a24'], [10, 2, '#ffd654']] },
+    { lean: 1, h: -1, tip: [13, 5], tip2: [10, 7], tip3: [16, 8], sparks: [[10, 3, '#fff08a'], [17, 5, '#ffd048'], [13, 2, '#ffae38']] },
+    { lean: 0, h: 1, tip: [12, 4], tip2: [9, 7], tip3: [15, 7], sparks: [[11, 1, '#fff4a0'], [15, 3, '#ff8e28'], [8, 5, '#ffe058']] },
+  ];
+  frames.forEach((fr, i) => {
+    const t = new Img(24, 24);
+    // 숯불 바닥
+    t.ellipse(12, 18, 9, 4.8, '#3b2014');
+    t.ellipse(12, 17, 6, 3.2, '#8c2814');
+    // 둥근 돌 테두리
+    for (const [sx, sy] of [[4, 17], [7, 20], [12, 21], [17, 20], [20, 17], [18, 14], [12, 13], [6, 14]]) {
+      t.ellipse(sx, sy, 2.3, 1.7, s.base);
+      t.set(sx - 1, sy - 1, s.l1);
+      t.set(sx + 1, sy + 1, s.d1);
+    }
+    // 엇갈린 장작 (불빛 반사 하이라이트 포함)
+    t.line(6, 19, 18, 14, w.d1); t.line(6, 18, 18, 13, w.base);
+    t.line(6, 14, 18, 19, w.d1); t.line(6, 13, 18, 18, w.l1);
+    t.set(9, 16, '#ff7a28'); t.set(15, 16, '#ff7a28');
+    // 돌·장작에만 깔끔한 외곽선 적용 (불꽃은 발광 느낌을 살리기 위해 따뜻한 암적색 테두리)
+    t.outline(O, 0.55);
+
+    // 춤추는 2D 도트 불꽃 (4프레임 자연스러운 화염 혀)
+    const cx = 12 + fr.lean;
+    // 외곽 암적색·주황 불꽃 바디
+    t.ellipse(12, 15.5, 5.4, 3.8, '#c82a1a');
+    t.ellipse(cx, 13 - fr.h * 0.4, 4.4, 4.5 + fr.h * 0.4, '#e8481a');
+    t.ellipse(cx, 12.2 - fr.h * 0.3, 3.4, 3.9 + fr.h * 0.3, '#ff781f');
+    // 좌우·중앙 자연스럽게 꺾이는 불꽃 혀 (외곽선 없이 부드럽게 가늘어짐)
+    const [tx, ty] = fr.tip;
+    t.rect(tx - 1, ty + 3, 3, 4, '#ff681c');
+    t.rect(tx - (fr.lean < 0 ? 1 : 0), ty + 1, 2, 3, '#ffad2a');
+    t.set(tx, ty, '#ffe668');
+    const [l2x, l2y] = fr.tip2;
+    t.rect(l2x, l2y + 2, 2, 4, '#e8481a');
+    t.set(l2x + (i % 2), l2y + 1, '#ff9824');
+    const [r2x, r2y] = fr.tip3;
+    t.rect(r2x - 1, r2y + 2, 2, 4, '#e8481a');
+    t.set(r2x - (i % 2), r2y + 1, '#ff9824');
+    // 밝은 노랑·백열 중심 코어
+    t.ellipse(cx, 13.5, 2.3, 2.8, '#ffc838');
+    t.ellipse(12, 14.2, 1.5, 2.0, '#fff394');
+    t.set(12, 15, '#ffffff');
+    t.set(12 + fr.lean, 14, '#fffce6');
+    // 화염 위로 튀어오르는 2D 픽셀 불티
+    for (const [px, py, col] of fr.sparks) t.set(px, py, col);
+    sheet.blit(t, i * 24, 0);
+  });
+  return sheet;
+}
+
+/** 바다 소용돌이 (4프레임 회전 애니메이션, 24x24) */
+export function buildWhirlpool() {
+  const sheet = new Img(24 * 4, 24);
+  for (let f = 0; f < 4; f++) {
+    const t = new Img(24, 24);
+    const a0 = (f * Math.PI) / 2;
+    t.ellipse(12, 13, 10, 7.5, '#0b3564');
+    t.ellipse(12, 13, 7.5, 5.5, '#135492');
+    t.ellipse(12, 13, 4.2, 3.0, '#071c3a');
+    for (let arm = 0; arm < 3; arm++) {
+      for (let k = 0; k < 14; k++) {
+        const ang = a0 + arm * ((Math.PI * 2) / 3) + k * 0.34;
+        const r = 2.2 + k * 0.56;
+        const x = Math.round(12 + Math.cos(ang) * r);
+        const y = Math.round(13 + Math.sin(ang) * r * 0.72);
+        t.set(x, y, k > 9 ? '#d8f8ff' : k > 5 ? '#66dcff' : '#2ea0dc');
+        if (k > 7) t.set(x + 1, y, '#9eeeff');
+      }
+    }
+    t.ellipse(12, 13, 2.2, 1.5, '#030e24');
+    sheet.blit(t, f * 24, 0);
   }
-  // 엇갈린 장작
-  t.line(6, 18, 18, 13, w.d1); t.line(6, 17, 18, 12, w.base);
-  t.line(6, 13, 18, 18, w.d1); t.line(6, 12, 18, 17, w.l1);
-  // 가운데 타오르는 불꽃
-  t.ellipse(12, 14, 4.5, 4, '#e63928');
-  t.ellipse(12, 13, 3.2, 4.2, '#ff8a2b');
-  t.ellipse(12, 12, 2, 3.2, '#ffd65a');
-  t.rect(11, 7, 2, 3, '#ff8a2b');
-  t.set(12, 6, '#ffd65a');
-  t.set(12, 13, '#fff8d6');
+  return sheet;
+}
+
+/** 조류 비석 (해신의 바다 퍼즐 기믹 스위치 — 산호·사파이어 룬 오벨리스크) */
+export function buildTideSeal() {
+  const t = new Img(24, 32);
+  // 수면 위 돌 받침대
+  t.ellipse(12, 28, 9, 3.6, '#1f4f6e');
+  t.ellipse(12, 27, 8, 3.0, '#5a788c');
+  t.rect(7, 8, 10, 19, '#6a8498');
+  t.rect(8, 9, 3, 17, '#94b2c4');
+  t.rect(14, 9, 3, 17, '#486074');
+  // 뾰족한 상단 관
+  t.rect(8, 5, 8, 4, '#7e9cb0');
+  t.rect(10, 3, 4, 3, '#a4c4d8');
+  // 중앙 빛나는 해류 룬 문양
+  t.rect(10, 11, 4, 4, '#38d8ff');
+  t.rect(11, 12, 2, 2, '#e4ffff');
+  t.vline(12, 15, 8, '#38d8ff');
+  t.hline(9, 18, 7, '#6ef0ff');
+  t.set(9, 17, '#a8f6ff'); t.set(15, 17, '#a8f6ff');
+  // 붉은 산호 장식
+  t.rect(6, 22, 2, 4, '#e65878'); t.set(5, 23, '#ff98b0');
+  t.rect(16, 21, 2, 5, '#e65878'); t.set(18, 22, '#ff98b0');
+  t.outline(O, 0.55);
+  return t;
+}
+
+/** 해신의 제단 (전설 물 루미 해랑이 강림하는 48x36 산호·진주 성소 제단) */
+export function buildSeaAltar() {
+  const t = new Img(48, 36);
+  // 원형 대리석 수중 기단
+  t.ellipse(24, 28, 21, 7.2, '#2d5878');
+  t.ellipse(24, 26, 20, 6.4, '#88b4cc');
+  t.ellipse(24, 25, 16, 4.8, '#b6dce8');
+  // 중앙 제단석
+  t.rect(16, 14, 16, 12, '#6a96b2');
+  t.rect(17, 15, 14, 10, '#96c4dc');
+  t.rect(14, 12, 20, 3, '#c8ecf8');
+  // 황금 삼지창 문양 + 거대 진주 구체
+  t.ellipse(24, 9, 5, 5, '#38d8ff');
+  t.ellipse(23, 8, 3, 3, '#aef8ff');
+  t.set(22, 7, '#ffffff');
+  t.rect(17, 17, 14, 2, '#ffd65a');
+  t.rect(23, 16, 2, 7, '#ffd65a');
+  // 좌우 산호 기둥
+  for (const x of [9, 36]) {
+    t.rect(x, 12, 3, 14, '#7aa4bc');
+    t.rect(x - 1, 10, 5, 3, '#d8f4ff');
+    t.set(x + 1, 9, '#6ef0ff');
+  }
   t.outline(O, 0.55);
   return t;
 }

@@ -8,16 +8,19 @@ import { readFileSync } from 'node:fs';
 const DIR = new URL('../../client/public/assets/maps/', import.meta.url);
 const region = JSON.parse(readFileSync(new URL('../../shared/data/region.json', import.meta.url), 'utf8'));
 const only = process.argv[2];
-const SKILL = new Set(['vine', 'crack_rock', 'climb_wall']), PASS = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal', 'cave_hole', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gatehouse', 'cycle_gate', 'pair_card', 'rail_switch', 'quiz_pad', 'prism', 'rune_pad', 'rune_demo', 'snow_reset']);
+const SKILL = new Set(['vine', 'crack_rock', 'climb_wall']), PASS = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal', 'cave_hole', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gatehouse', 'cycle_gate', 'pair_card', 'rail_switch', 'quiz_pad', 'prism', 'rune_pad', 'rune_demo', 'snow_reset', 'stop_tile', 'water_switch', 'water_bridge', 'push_block', 'block_slot', 'puzzle_reset', 'cracked_tile', 'sea_current']);
 
 function runGimmickBfs(W, H, col, objs, startX, startY) {
   const P = (o, k) => o.properties?.find((p) => p.name === k)?.value;
   const objAt = new Map();
   const ice = new Uint8Array(W * H);
+  const stopTiles = new Uint8Array(W * H);
   const warps = new Map();
   const arrows = new Map();
   const switches = new Map();
   const railSwitches = new Map();
+  const waterSwitches = new Map(); // idx -> level
+  const waterBridges = new Map();  // idx -> reqLevel
   const snowballs = new Set();
   const gates = new Map();
   const puzzleNeeds = new Map(); // gateId -> Set<idx> (all must be seen; for quiz_pad any correct idx unlocks)
@@ -29,13 +32,16 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
       if (x < 0 || y < 0 || x >= W || y >= H) continue;
       const idx = y * W + x;
       if (o.type === 'ice_tile') ice[idx] = 1;
+      else if (o.type === 'stop_tile') stopTiles[idx] = 1;
       else if (o.type === 'warp_pad') warps.set(idx, [Number(P(o, 'toX') ?? x), Number(P(o, 'toY') ?? y)]);
-      else if (o.type === 'arrow_pad') arrows.set(idx, { dir: P(o, 'dir') ?? 'up', altDir: P(o, 'altDir') ?? '', railGroup: P(o, 'railGroup') ?? '', steps: Number(P(o, 'steps') ?? 3) });
+      else if (o.type === 'arrow_pad') arrows.set(idx, { dir: P(o, 'dir') ?? 'up', altDir: P(o, 'altDir') ?? '', railGroup: P(o, 'railGroup') ?? '', steps: Number(P(o, 'steps') ?? 3), spin: !!P(o, 'spin') });
       else if (o.type === 'switch_btn') switches.set(idx, String(P(o, 'gateId') ?? ''));
       else if (o.type === 'rail_switch') railSwitches.set(idx, { rg: String(P(o, 'railGroup') ?? ''), gid: String(P(o, 'gateId') ?? '') });
+      else if (o.type === 'water_switch') waterSwitches.set(idx, Number(P(o, 'level') ?? 0));
+      else if (o.type === 'water_bridge') waterBridges.set(idx, Number(P(o, 'reqLevel') ?? 0));
       else if (o.type === 'snowball') snowballs.add(idx);
       else if (o.type === 'quiz_pad' && P(o, 'correct')) quizCorrect.set(idx, String(P(o, 'gateId') ?? ''));
-      else if (o.type === 'pair_card' || o.type === 'prism' || o.type === 'rune_pad') {
+      else if (o.type === 'pair_card' || o.type === 'prism' || o.type === 'rune_pad' || o.type === 'block_slot' || o.type === 'cracked_tile') {
         const gid = String(P(o, 'gateId') ?? '');
         if (!puzzleNeeds.has(gid)) puzzleNeeds.set(gid, new Set());
         puzzleNeeds.get(gid).add(idx);
@@ -50,9 +56,11 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
   const openGates = new Set();
   const brokenSnow = new Set();
   const switchedRails = new Set();
+  const waterLevels = new Set([0]);
   const blocked = (x, y) => {
     if (x < 0 || y < 0 || x >= W || y >= H) return true;
     const i = y * W + x;
+    if (waterBridges.has(i) && !waterLevels.has(waterBridges.get(i))) return true;
     if (!col[i]) return false;
     const o = objAt.get(i);
     if (!o) return true;
@@ -76,6 +84,13 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
     if (warps.has(idx)) { const [tx, ty] = warps.get(idx); push(tx, ty); }
     if (switches.has(idx)) unlockGate(switches.get(idx));
     if (quizCorrect.has(idx)) unlockGate(quizCorrect.get(idx));
+    if (waterSwitches.has(idx)) {
+      const lv = waterSwitches.get(idx);
+      if (!waterLevels.has(lv)) {
+        waterLevels.add(lv);
+        for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) if (seen[yy * W + xx]) q.push([xx, yy]);
+      }
+    }
     if (railSwitches.has(idx)) {
       const { rg, gid } = railSwitches.get(idx);
       unlockGate(gid);
@@ -94,10 +109,18 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
       const useDir = (ap.railGroup && switchedRails.has(ap.railGroup) && ap.altDir) ? ap.altDir : ap.dir;
       const [dx, dy] = useDir === 'right' ? [1, 0] : useDir === 'down' ? [0, 1] : useDir === 'left' ? [-1, 0] : [0, -1];
       let cx = x, cy = y;
-      for (let s = 0; s < ap.steps; s++) {
+      const maxS = ap.spin ? Math.max(W, H) : ap.steps;
+      for (let s = 0; s < maxS; s++) {
         if (blocked(cx + dx, cy + dy)) break;
-        cx += dx; cy += dy; push(cx, cy);
+        cx += dx; cy += dy;
+        const cIdx = cy * W + cx;
+        if (ap.spin) {
+          if (stopTiles[cIdx] || arrows.has(cIdx)) { push(cx, cy); break; }
+        } else {
+          push(cx, cy);
+        }
       }
+      if (ap.spin) push(cx, cy);
       continue;
     }
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {

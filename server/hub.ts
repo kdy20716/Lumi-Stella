@@ -33,7 +33,8 @@ export class Hub {
     switch (event.type) {
       case 'player': case 'party': case 'story': case 'bmState': return this.sendTo(event.id, m);
       case 'bike': { const p = this.sim.players.get(event.id); return p ? this.toRoom(this.sim.room(p), m) : this.sendTo(event.id, m); }
-      case 'help': case 'gold': case 'cleared': case 'opened': return this.sendTo(event.playerId, m);
+      case 'surf': { const p = this.sim.players.get(event.id); return p ? this.toRoom(this.sim.room(p), m) : this.sendTo(event.id, m); }
+      case 'help': case 'gold': case 'cleared': case 'opened': case 'cheatFreeze': case 'prisonState': case 'prisonLabor': case 'karma': case 'notices': case 'mute': return this.sendTo(event.playerId, m);
       case 'room': this.rosterDirty = true; return this.sendTo(event.playerId, m);
       case 'invite': return this.sendTo(event.to, m);
       case 'toast': if (event.playerId) return this.sendTo(event.playerId, m); if (event.room) return this.toRoom(event.room, m); return this.broadcast(m);

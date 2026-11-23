@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import type { SaveData, WorldTime } from '../shared/types';
 import type { BugReport } from '../shared/protocol';
 
-export type BanList = Record<string, { name: string; reason: string; at: number }>;
+export type BanList = Record<string, { name: string; reason: string; at: number; until?: number }>;
 
 export interface Storage {
   readonly kind: string;
@@ -16,7 +16,7 @@ export interface Storage {
   saveWorld(w: { time: WorldTime }): Promise<void>;
   // 관리 · 신고 (서버만 읽고 씀 — 클라이언트는 직접 접근 불가)
   bans(): Promise<BanList>;
-  ban(uid: string, name: string, reason: string): Promise<void>;
+  ban(uid: string, name: string, reason: string, until?: number): Promise<void>;
   unban(uid: string): Promise<void>;
   reports(): Promise<BugReport[]>;
   addReport(r: BugReport): Promise<void>;
@@ -39,7 +39,7 @@ class FileStorage implements Storage {
   private readJ<T>(name: string, def: T): T { const f = `${this.dir}${name}`; try { return existsSync(f) ? (JSON.parse(readFileSync(f, 'utf8')) as T) : def; } catch { return def; } }
   private writeJ(name: string, v: unknown) { writeFileSync(`${this.dir}${name}`, JSON.stringify(v)); }
   async bans() { return this.readJ<BanList>('_bans.json', {}); }
-  async ban(uid: string, name: string, reason: string) { const b = await this.bans(); b[uid] = { name, reason, at: Date.now() }; this.writeJ('_bans.json', b); }
+  async ban(uid: string, name: string, reason: string, until?: number) { const b = await this.bans(); b[uid] = until ? { name, reason, at: Date.now(), until } : { name, reason, at: Date.now() }; this.writeJ('_bans.json', b); }
   async unban(uid: string) { const b = await this.bans(); delete b[uid]; this.writeJ('_bans.json', b); }
   async reports() { return this.readJ<BugReport[]>('_reports.json', []); }
   async addReport(r: BugReport) { const l = await this.reports(); l.push(r); this.writeJ('_reports.json', l.slice(-500)); }
@@ -62,7 +62,7 @@ class FirestoreStorage implements Storage {
   private async getJ<T>(doc: string, def: T): Promise<T> { const s = await this.db.collection('admin').doc(doc).get(); const d = s.exists ? s.data() : undefined; try { return d?.json ? (JSON.parse(String(d.json)) as T) : def; } catch { return def; } }
   private async setJ(doc: string, v: unknown) { await this.db.collection('admin').doc(doc).set({ json: JSON.stringify(v), updatedAt: new Date() }); }
   async bans() { return this.getJ<BanList>('bans', {}); }
-  async ban(uid: string, name: string, reason: string) { const b = await this.bans(); b[uid] = { name, reason, at: Date.now() }; await this.setJ('bans', b); }
+  async ban(uid: string, name: string, reason: string, until?: number) { const b = await this.bans(); b[uid] = until ? { name, reason, at: Date.now(), until } : { name, reason, at: Date.now() }; await this.setJ('bans', b); }
   async unban(uid: string) { const b = await this.bans(); delete b[uid]; await this.setJ('bans', b); }
   async reports() { return this.getJ<BugReport[]>('reports', []); }
   async addReport(r: BugReport) { const l = await this.reports(); l.push(r); await this.setJ('reports', l.slice(-500)); }

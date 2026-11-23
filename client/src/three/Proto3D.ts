@@ -104,8 +104,18 @@ async function buildMap(id: string, man: Manifest, maps: Record<string, MapWithP
       cx.drawImage(tilesetImg, sx, sy, T, T, (i % W) * T + o, Math.floor(i / W) * T + oy, T, T);
     });
   };
-  // 바닥 레이어는 반 칸 밀려 있어서(오토타일) 맨 왼쪽 · 위쪽 가장자리가 비므로 겹쳐 그려 메움
-  if (off) { drawLayer('Ground', off - T, off - T); drawLayer('Ground', off - T, off); drawLayer('Ground', off, off - T); }
+  // 바닥 레이어는 반 칸 밀려 있어서(오토타일) 맨 왼쪽 · 위쪽 가장자리(0..off)만 겹쳐 메움
+  if (off) {
+    cx.save();
+    cx.beginPath();
+    cx.rect(0, 0, off, H * T);
+    cx.rect(0, 0, W * T, off);
+    cx.clip();
+    drawLayer('Ground', off - T, off - T);
+    drawLayer('Ground', off - T, off);
+    drawLayer('Ground', off, off - T);
+    cx.restore();
+  }
   drawLayer('Ground', off); drawLayer('Decor', 0); drawLayer('Bridge', 0); drawLayer('Cliff', 0);
   // 도시: 차도 · 인도 · 횡단보도 · 광장 바닥을 칸마다 직접 그림 (2D 타일셋엔 없는 무늬)
   const surface = String(prop(raw, 'surface', ''));

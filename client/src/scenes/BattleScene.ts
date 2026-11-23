@@ -88,22 +88,38 @@ export class BattleScene extends Phaser.Scene {
     this.foeShadow.setScale(this.big ? 2.1 : 1, this.big ? 1.7 : 1);
     this.aura?.destroy(); this.aura = undefined;
     if (this.big && this.textures.exists('glow')) {
-      const tint = species === 'onnuri' ? 0xfff0c0 : 0x7ad8ff;
-      this.aura = this.add.image(FOE.x, FOE.y - 40, 'glow').setScale(0.85).setTint(tint).setAlpha(0.55).setBlendMode(Phaser.BlendModes.ADD).setDepth(-1);
+      const tint = species === 'onnuri' ? 0xfff0b0 : species === 'stella' ? 0xff92e4 : 0xffe066;
+      const pTint = species === 'onnuri' ? 0xd294ff : species === 'stella' ? 0x88f4ff : 0xffe878;
+      this.aura = this.add.image(FOE.x, FOE.y - 40, 'glow').setScale(0.95).setTint(tint).setAlpha(0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(-1);
       this.foe.setDepth(1);
-      this.tweens.add({ targets: this.aura, scale: 1.05, alpha: 0.3, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-      // 떠오르는 별빛
-      this.time.addEvent({ delay: 220, loop: true, callback: () => {
+      this.tweens.add({ targets: this.aura, scale: 1.15, alpha: 0.32, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      // 전설별 고유 별빛 파티클 (제네시스: 시공 성광 / 스텔라: 오로라 회전 입자 / 별무리: 상승 유성)
+      this.time.addEvent({ delay: 190, loop: true, callback: () => {
         if (!this.foe.visible || this.foe.alpha < 0.5) return;
-        const p = this.add.image(FOE.x + Phaser.Math.Between(-36, 36), FOE.y - Phaser.Math.Between(0, 20), 'sparkle').setAlpha(0.9).setScale(0.6).setDepth(2).setBlendMode(Phaser.BlendModes.ADD);
-        this.tweens.add({ targets: p, y: p.y - Phaser.Math.Between(30, 60), alpha: 0, duration: 1400, onComplete: () => p.destroy() });
+        const ox = Phaser.Math.Between(-38, 38), oy = Phaser.Math.Between(0, 26);
+        const p = this.add.image(FOE.x + ox, FOE.y - oy, 'sparkle').setTint(pTint).setAlpha(0.92).setScale(0.65).setDepth(2).setBlendMode(Phaser.BlendModes.ADD);
+        const dx = species === 'byeolmuri' ? -22 : species === 'stella' ? Math.sin(this.time.now / 250) * 24 : ox * 0.4;
+        this.tweens.add({ targets: p, x: p.x + dx, y: p.y - Phaser.Math.Between(28, 62), alpha: 0, duration: 1350, onComplete: () => p.destroy() });
       } });
     }
   }
-  /** 전설 등장: 화면 흔들림 · 포효 · 번쩍임 */
+  /** 전설별 고유 배틀장 등장 연출 (별무리: 황금 유성 / 스텔라: 오로라 링 / 제네시스: 태초 충격파) */
   private legendEntrance() {
     const cam = this.cameras.main;
-    this.time.delayedCall(900, () => { cam.shake(700, 0.012); cam.flash(400, 200, 230, 255); sfx.play('roar'); });
+    const sp = this.data_.update.view.foe.species;
+    const [r, g, b] = sp === 'onnuri' ? [255, 245, 200] : sp === 'stella' ? [255, 170, 240] : [255, 230, 130];
+    this.time.delayedCall(750, () => {
+      cam.shake(720, sp === 'onnuri' ? 0.016 : 0.012);
+      cam.flash(420, r, g, b);
+      sfx.play('roar');
+      // 방사형 링 파동 2회
+      for (let k = 0; k < 2; k++) {
+        this.time.delayedCall(k * 180, () => {
+          const ring = this.add.circle(FOE.x, FOE.y - 26, 8).setStrokeStyle(2, Phaser.Display.Color.GetColor(r, g, b), 0.9).setDepth(3);
+          this.tweens.add({ targets: ring, scale: 6.5, alpha: 0, duration: 600, ease: 'Cubic.Out', onComplete: () => ring.destroy() });
+        });
+      }
+    });
   }
 
   private popIn(s: Phaser.GameObjects.Sprite) {

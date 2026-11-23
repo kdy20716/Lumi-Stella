@@ -5,9 +5,9 @@
 import { dexComplete, SKILLS, skillFor, CHAPTERS, CROPS, ENCOUNTERS, EVENTS, HANDS, ITEMS, MOVES, NPCS, QUESTS, RECIPES, REGION_MAPS, SHOPS, SPECIES, TRAINERS, gateFor, hhmmToMinutes, nextEvent } from '../data';
 import { BattleEngine, MAX_LEVEL, healAll, makeCreature, stats, syncPp, type BattleState } from './Battle';
 import {
-  SoilState, INTERIOR_OF, isHomeMap, isInterior, isCasinoOpen, roomOf, BADGE_GATES, BOND_MAX, BOND_WATER, BOND_ASK_AT,
+  SoilState, INTERIOR_OF, isHomeMap, isInterior, isCasinoOpen, isPrisonMap, PRISON_FLOOR_LABEL, PRISON_NEXT_FLOOR, roomOf, BADGE_GATES, BOND_MAX, BOND_WATER, BOND_ASK_AT,
   type ActionIntent, type ActionResult, type CasinoGame, type CasinoOutcome, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type MailGift, type MapId,
-  type PlacedObject, type PlayerState, type SaveData, type TrainerDef, type WorldTime, type Weather, type BattleUpdate,
+  type PlacedObject, type PlayerNotice, type PlayerState, type SaveData, type TrainerDef, type WorldTime, type Weather, type BattleUpdate,
 } from '../types';
 import { ADMIN_DEFAULT_CASH_KRW, BM_ALL_TOTAL_KRW, BM_LOOK_IDS, BM_PRODUCT_MAP, CHAT_BUBBLES, LUMI_COORDS, UI_THEMES, isBmUnlocked, isValidPlayerLook, remainingBmCostKrw } from '../bmShop';
 import { MapInfo, prop } from './MapInfo';
@@ -29,6 +29,9 @@ export const DAY_END = 26 * 60;       // 다음날 02:00 → 날짜만 넘어감
 export const MS_PER_10_MIN = 7000;    // 실제 7초 = 게임 10분
 export const HOTBAR_SIZE = 12;
 export const INVENTORY_SIZE = 24;     // 소지품 칸 (휴대폰 › 가방)
+export const PRISON_MINE_GOAL = 3;    // (하위 호환 상수)
+export const PRISON_LABOR_GOAL = 100; // 노역 채광장 석판·나무판 각 100개 납품 시 정식 석방
+export const EVIL_STACK_MAX = 100;    // 불법 탈옥 시 부여되는 악행스택
 const REACH = 1.75;                   // 도구 사거리 (타일)
 const INVITE_TTL = 5 * 60_000;
 
@@ -56,23 +59,30 @@ export type SimEvent =
   | { type: 'placed'; owner: string; obj: PlacedObject }
   | { type: 'unplaced'; owner: string; id: string }
   | { type: 'bmState'; id: string; mailItems: MailGift[]; uiTheme: string; ownedThemes: string[]; ownedOutfits: string[]; lumiCoord: string; ownedLumiCoords: string[]; chatBubble: string; ownedBubbles: string[]; bmOrders: string[]; cash: number; isAdmin: boolean }
-  | { type: 'bike'; id: string; riding: boolean };
+  | { type: 'bike'; id: string; riding: boolean }
+  | { type: 'surf'; id: string; surfing: boolean }
+  | { type: 'cheatFreeze'; playerId: string; message: string; reason?: string }
+  | { type: 'prisonState'; playerId: string; jailed: boolean; mined: number; goal: number; reason?: string }
+  | { type: 'prisonLabor'; playerId: string; slabs: number; planks: number; goal: number }
+  | { type: 'karma'; playerId: string; evilStack: number; momLeft: boolean; pendingHomecoming?: 'honest' | 'mom_returned' | ''; lastHelpedNpc?: string }
+  | { type: 'notices'; playerId: string; notices: PlayerNotice[] }
+  | { type: 'mute'; playerId: string; muteRemainingSec: number };
 
 type Listener = (e: SimEvent) => void;
 interface FarmState { owner: string; /** 마을 텃밭이면 그 마을 */ map?: MapId; tiles: Map<string, FarmTile>; removed: Set<number>; placed: Map<string, PlacedObject>; dish: Dish | null }
 /** 농장 맵 배치 버전: 바뀌면 옛 세이브의 '치운 오브젝트' 목록은 맞지 않으므로 비움 (경작지는 유지) */
 const FARM_VER = 3;
 /** 지나갈 수 있는 오브젝트 (충돌 없음) */
-const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'attic_stairs_up', 'attic_stairs_down', 'portal', 'glint', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gatehouse', 'cycle_gate', 'pair_card', 'rail_switch', 'quiz_pad', 'prism', 'rune_pad', 'rune_demo', 'snow_reset']);
+const NON_BLOCKING = new Set(['tuft', 'tallgrass', 'stairs_up', 'attic_stairs_up', 'attic_stairs_down', 'portal', 'glint', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gatehouse', 'cycle_gate', 'pair_card', 'rail_switch', 'quiz_pad', 'prism', 'rune_pad', 'rune_demo', 'snow_reset', 'stop_tile', 'water_switch', 'water_bridge', 'push_block', 'block_slot', 'puzzle_reset', 'cracked_tile', 'sea_current', 'prison_hatch', 'prison_stairs_up']);
 const TREES = new Set(['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm', 'dead_tree']);
 const TREE_HITS = 5, STUMP_HITS = 2;
-/** 전설 · 환상 (별마루산 꼭대기 별의 제단) */
-export const LEGEND = 'byeolmuri', MYTH = 'onnuri', STELLA = 'stella';
+/** 전설 · 환상 (별마루산 꼭대기 별의 제단 · 별의 요람 · 해신의 바다) */
+export const LEGEND = 'byeolmuri', MYTH = 'onnuri', STELLA = 'stella', SEA_LEGEND = 'haerang';
 /** 레벨에 맞게 진화한 모습 (사건 상대 팀) */
 const grownAt = (sp: string, lv: number) => { let s = sp; for (let k = 0; k < 2; k++) { const e = SPECIES[s]?.evolves; if (e && lv >= e.level + 2) s = e.to; } return s; };
 /** 캔 광석이 다시 생기기까지 (실제 시간) */
 export const ORE_RESPAWN_MS = 3 * 60_000;
-const LEGEND_LV = 70, MYTH_LV = 150, STELLA_LV = 60, MASTER_LV = 100;
+const LEGEND_LV = 70, MYTH_LV = 150, STELLA_LV = 60, SEA_LEGEND_LV = 62, MASTER_LV = 100;
 export { dexComplete } from '../data';
 const oprop = (o: { properties?: { name: string; value: unknown }[] }, name: string) => o.properties?.find((pp) => pp.name === name)?.value;
 
@@ -106,6 +116,13 @@ export class FarmSimulation {
   private occCache = new Map<MapId, Map<number, number>>();
   private weedCache = new Map<number, number[]>();
   private placeSeq = 0;
+  /** 체육관 런타임 퍼즐 상태 (플레이어별: 맵을 떠나면 자동 초기화) */
+  private gymWater = new Map<string, number>();
+  private gymBlocks = new Map<string, Map<number, { x: number; y: number; group: string; gateId: string; locked: boolean }>>();
+  /** 온라인 채팅 금지 타이머 동기화 누적기 (초) */
+  private muteSyncAcc = new Map<string, number>();
+  /** 노역 채광장 자원 빠른 재생성 큐 (플레이어별) */
+  private yardRespawns: { playerId: string; key: string; at: number }[] = [];
 
   /** 멀티 서버면 true: 서버 시계를 모두가 공유 */
   readonly multiplayer: boolean;
@@ -185,6 +202,7 @@ export class FarmSimulation {
       party: [], box: [], bag: {}, badges: [], defeated: [], seen: [], caught: [], visited: ['farm'], recipes: STARTER_RECIPES(), flags: [],
       mailItems: [], uiTheme: 'rural', ownedThemes: ['rural'], ownedOutfits: [], lumiCoord: '', ownedLumiCoords: [], chatBubble: 'default', ownedBubbles: ['default'], bmOrders: [], cashOrders: [],
       isAdmin: false, cash: 0,
+      jailed: false, prisonMined: 0, prisonSlabs: 0, prisonPlanks: 0, evilStack: 0, momLeft: false, pendingHomecoming: '', muteRemainingSec: 0, notices: [],
     };
     if (save) {
       Object.assign(p, {
@@ -207,6 +225,20 @@ export class FarmSimulation {
         cashOrders: [...new Set(save.cashOrders ?? [])],
         cash: typeof save.cash === 'number' && Number.isFinite(save.cash) ? Math.max(0, Math.round(save.cash)) : 0,
         isAdmin: false,
+        jailed: !!save.jailed,
+        jailReason: save.jailReason,
+        jailFine: save.jailFine,
+        jailPrevGold: save.jailPrevGold,
+        jailPrevCash: save.jailPrevCash,
+        prisonMined: 0,
+        prisonSlabs: Math.max(0, Math.round(save.prisonSlabs ?? 0)),
+        prisonPlanks: Math.max(0, Math.round(save.prisonPlanks ?? 0)),
+        evilStack: Math.max(0, Math.min(EVIL_STACK_MAX, Math.round(save.evilStack ?? 0))),
+        momLeft: !!save.momLeft,
+        pendingHomecoming: save.pendingHomecoming ?? '',
+        lastHelpedNpc: save.lastHelpedNpc,
+        muteRemainingSec: typeof save.muteRemainingSec === 'number' && Number.isFinite(save.muteRemainingSec) ? Math.max(0, save.muteRemainingSec) : 0,
+        notices: Array.isArray(save.notices) ? save.notices.slice(0, 40) : [],
       });
       migrateBag(p.bag);
       if (save.inventory?.length) {
@@ -246,6 +278,16 @@ export class FarmSimulation {
     }
     // 아직 프롤로그 첫 장면이면 2층 다락방 내 방(TV 앞)에서 시작
     if (p.story === STORY.HOME) { const w = this.maps.home_2f.spawns.get('wake') ?? this.maps.home_2f.spawns.get('entry')!; Object.assign(p, { map: 'home_2f', inst: id, x: w.x, y: w.y + 5, dir: 'up' }); }
+    // 수감 중인 계정은 노역 채광장에 있었다면 노역장에서, 그 외에는 무조건 별빛 교도소 지하 5층 독방에서 시작
+    if (p.jailed && this.maps.in_prison) {
+      if (save?.pos?.map === 'in_prison_yard' && this.maps.in_prison_yard) {
+        const ysp = this.maps.in_prison_yard.spawns.get('entry') ?? { x: 232, y: 264 };
+        Object.assign(p, { map: 'in_prison_yard', inst: '', x: ysp.x, y: ysp.y + 5, dir: 'up' as const, ret: undefined, cleared: [], prisonMined: 0 });
+      } else {
+        const cell = this.maps.in_prison.spawns.get('entry') ?? this.maps.in_prison.spawns.get('player') ?? { x: 56, y: 200 };
+        Object.assign(p, { map: 'in_prison', inst: '', x: cell.x, y: cell.y + 5, dir: 'right' as const, ret: undefined, cleared: [], prisonMined: 0 });
+      }
+    }
     return p;
   }
 
@@ -261,6 +303,19 @@ export class FarmSimulation {
       mailItems: p.mailItems, uiTheme: p.uiTheme, ownedThemes: p.ownedThemes, ownedOutfits: p.ownedOutfits,
       lumiCoord: p.lumiCoord, ownedLumiCoords: p.ownedLumiCoords, chatBubble: p.chatBubble, ownedBubbles: p.ownedBubbles, bmOrders: p.bmOrders, cashOrders: p.cashOrders,
       cash: p.cash ?? 0,
+      jailed: !!p.jailed,
+      jailReason: p.jailReason,
+      jailFine: p.jailFine,
+      jailPrevGold: p.jailPrevGold,
+      jailPrevCash: p.jailPrevCash,
+      prisonSlabs: p.prisonSlabs ?? 0,
+      prisonPlanks: p.prisonPlanks ?? 0,
+      evilStack: p.evilStack ?? 0,
+      momLeft: !!p.momLeft,
+      pendingHomecoming: p.pendingHomecoming ?? '',
+      lastHelpedNpc: p.lastHelpedNpc,
+      muteRemainingSec: Math.max(0, Math.round(p.muteRemainingSec ?? 0)),
+      notices: p.notices ?? [],
       plots: Object.fromEntries([...this.plots.values()].filter((pl) => pl.owner === id && pl.tiles.size).map((pl) => [pl.map!, [...pl.tiles.values()]])),
       pos: { map: p.map, inst: p.inst, x: p.x, y: p.y, dir: p.dir, ret: p.ret }, savedAt: Date.now(),
     } satisfies SaveData)) as SaveData;
@@ -279,6 +334,10 @@ export class FarmSimulation {
       }
     }
     this.farms.delete(id);
+    this.gymWater.delete(id);
+    this.gymBlocks.delete(id);
+    this.muteSyncAcc.delete(id);
+    this.yardRespawns = this.yardRespawns.filter((r) => r.playerId !== id);
     for (const k of [...this.plots.keys()]) if (k.startsWith(`${id}|`)) this.plots.delete(k);
     return save;
   }
@@ -290,9 +349,24 @@ export class FarmSimulation {
   private relocate(p: PlayerState, map: MapId, inst: string, x: number, y: number) {
     p.map = map; p.inst = inst; p.x = x; p.y = y; p.sleeping = false;
     p.cleared = [];   // 비전 기술로 치운 장애물은 맵을 떠나면 다시 생김
+    this.gymWater.delete(p.id);
+    this.gymBlocks.delete(p.id);
     if (p.riding && (isInterior(map) || this.maps[map]?.props.cave)) {
       p.riding = false;
       this.emit({ type: 'bike', id: p.id, riding: false });
+    }
+    if (p.surfing) {
+      p.surfing = false;
+      this.emit({ type: 'surf', id: p.id, surfing: false });
+    }
+    // 해신의 바다: 이미 3개의 조류 비석을 모두 해제했다면 소용돌이 장벽을 열린 상태로 유지
+    if (map === 'ocean_shrine' && p.flags.includes('sea_shrine_open')) {
+      const m = this.maps[map];
+      if (m) for (const o of m.objects) {
+        if (o.type === 'whirlpool' && String(oprop(o, 'gateId') ?? '') === 'sea_main') {
+          p.cleared.push(`${map}:${o.id}`);
+        }
+      }
     }
     if (!isHomeMap(map) && !isInterior(map)) p.ret = undefined;
     if (!isInterior(map) && !p.visited.includes(map)) { p.visited.push(map); this.emitParty(p); }
@@ -320,6 +394,25 @@ export class FarmSimulation {
   tick(dtMs: number) {
     this.acc += dtMs;
     this.respawnOres();
+    // 채팅 금지(인게임 접속 시간 기준): 현재 접속 중인 플레이어만 남은 시간 감소
+    const dtSec = Math.max(0, dtMs) / 1000;
+    if (dtSec > 0) {
+      for (const p of this.players.values()) {
+        if ((p.muteRemainingSec ?? 0) <= 0) continue;
+        p.muteRemainingSec = Math.max(0, (p.muteRemainingSec ?? 0) - dtSec);
+        const acc = (this.muteSyncAcc.get(p.id) ?? 0) + dtSec;
+        if (p.muteRemainingSec <= 0) {
+          this.muteSyncAcc.delete(p.id);
+          this.emit({ type: 'mute', playerId: p.id, muteRemainingSec: 0 });
+          this.emit({ type: 'toast', playerId: p.id, text: '🔊 채팅 금지 시간이 모두 지나 해제되었어요!', icon: 'heart' });
+        } else if (acc >= 5) {
+          this.muteSyncAcc.set(p.id, 0);
+          this.emit({ type: 'mute', playerId: p.id, muteRemainingSec: Math.ceil(p.muteRemainingSec) });
+        } else {
+          this.muteSyncAcc.set(p.id, acc);
+        }
+      }
+    }
     while (this.acc >= MS_PER_10_MIN) {
       this.acc -= MS_PER_10_MIN;
       this.time.minutes += 10;
@@ -329,6 +422,19 @@ export class FarmSimulation {
   }
   /** 캔 광석은 몇 분 뒤 그 자리에 다시 생김 (동굴 파밍) */
   private respawnOres(now = Date.now()) {
+    if (this.yardRespawns.length) {
+      const keep: typeof this.yardRespawns = [];
+      for (const item of this.yardRespawns) {
+        if (item.at <= now) {
+          const pl = this.players.get(item.playerId);
+          if (pl?.cleared) pl.cleared = pl.cleared.filter((k) => k !== item.key);
+          this.emit({ type: 'objectRestored', playerId: item.playerId, keys: [item.key] });
+        } else {
+          keep.push(item);
+        }
+      }
+      this.yardRespawns = keep;
+    }
     if (!this.oreBack.size) return;
     const back: string[] = [];
     for (const [k, t] of this.oreBack) if (t <= now) { this.oreBack.delete(k); if (this.removed.delete(k)) back.push(k); }
@@ -409,7 +515,7 @@ export class FarmSimulation {
       this.battles.delete(p.id);
       this.emit({ type: 'player', id: p.id, energy: p.energy, inventory: p.inventory });
       this.emitParty(p);
-      if (!relocate) continue;
+      if (!relocate || p.jailed) continue;
       p.world = p.homeWorld;
       this.relocate(p, 'farm', p.id, home.x, home.y);
     }
@@ -419,6 +525,12 @@ export class FarmSimulation {
   apply(playerId: string, a: ActionIntent): ActionResult {
     const p = this.players.get(playerId);
     if (!p) return { ok: false, reason: 'no-player' };
+    if (a.kind === 'cheatCaught') return this.flagCheater(p, a.reason);
+    if (a.kind === 'markNoticesRead') return this.markNoticesRead(p);
+    // 수감 중에는 탈옥/감옥 채광/감정표현 외 이동·빠른이동·귀환 전면 차단
+    if (p.jailed && ['fastTravel', 'escapeCave', 'goHome', 'warp', 'enter', 'invite', 'acceptInvite', 'sleep', 'debugDay'].includes(a.kind)) {
+      return { ok: false, reason: 'jailed' };
+    }
     if (!p.look && a.kind !== 'setLook') return { ok: false, reason: 'no-character' };
     // 농사 관련 행동은 농장 맵에서만
     if (['ship', 'chop', 'pull', 'place', 'hammer'].includes(a.kind) && p.map !== 'farm') return { ok: false, reason: 'wrong-map' };
@@ -504,8 +616,26 @@ export class FarmSimulation {
       case 'pad': return this.usePad(p, a.objectId);
       case 'switch': return this.triggerSwitch(p, a.gateId);
       case 'gymClear': return this.gymClear(p, a.gateId, a.objectId);
-      case 'gymReset': return this.gymReset(p);
+      case 'gymReset': return this.gymReset(p, a.group);
+      case 'gymWater': return this.setGymWater(p, a.level);
+      case 'gymPush': return this.pushGymBlock(p, a.objectId, a.dx, a.dy);
+      case 'gymFall': return this.gymFall(p, a.toX, a.toY);
       case 'toggleBike': return this.toggleBike(p, a.force);
+      case 'toggleSurf': return this.toggleSurf(p, a.on, a.tx, a.ty);
+      case 'tideSeal': return this.activateTideSeal(p, a.objectId);
+      case 'seaLegend': return this.seaLegendBattle(p);
+      case 'prisonMine': return this.prisonMine(p, a.objectId);
+      case 'prisonBreakWall': return this.prisonBreakWall(p, a.objectId);
+      case 'prisonAscend': return this.prisonAscend(p, a.to);
+      case 'prisonEnterYard': return this.prisonEnterYard(p);
+      case 'prisonBackCell': return this.prisonBackCell(p);
+      case 'yardGather': return this.yardGather(p, a.objectId, a.resource);
+      case 'yardCraft': return this.yardCraft(p, a.out, a.qty);
+      case 'yardDeliver': return this.yardDeliver(p);
+      case 'prisonCaught': return this.prisonCaught(p);
+      case 'prisonEscape': return this.prisonEscape(p);
+      case 'completeHomecoming': return this.completeHomecoming(p);
+      case 'goodDeed': return this.goodDeed(p, a.npc);
     }
     return { ok: false, reason: 'unknown' };
   }
@@ -533,6 +663,7 @@ export class FarmSimulation {
     const to = w.to as MapId;
     if (!this.maps[to]) return { ok: false, reason: 'no-map' };
     if ((to === 'route1' || to === 'route31') && (!p.party.length || p.story < STORY.DONE)) return { ok: false, reason: 'need-partner' };
+    if (to === 'ocean_shrine' && !p.badges.includes('badge_water') && !p.isAdmin) return { ok: false, reason: 'need-surf' };
     if ((BADGE_GATES[to] ?? 0) > p.badges.length) return { ok: false, reason: `need-badges:${BADGE_GATES[to]}` };
     const gw = (p.mode ?? 'story') === 'story' ? gateFor(p, to) : undefined; if (gw) return { ok: false, reason: `event:${gw.id}` };
     const qg = QUESTS.gates[to]; if (qg && !p.flags.includes(qg.flag)) return { ok: false, reason: `gate:${to}` };
@@ -645,6 +776,66 @@ export class FarmSimulation {
     p.riding = false;
     this.emit({ type: 'bike', id: p.id, riding: false });
     return { ok: true, data: { qty: 0 } };
+  }
+
+  /** 파도타기 탑승 · 하차 전환 (물결 배지 소지 또는 관리자, 실내/동굴 불가) */
+  private toggleSurf(p: PlayerState, on?: boolean, tx?: number, ty?: number): ActionResult {
+    if (this.battles.has(p.id)) return { ok: false, reason: 'battle' };
+    const want = on ?? !p.surfing;
+    const m = this.maps[p.map];
+    if (!m) return { ok: false, reason: 'no-map' };
+    if (want) {
+      if (isInterior(p.map) || m.props.cave === 'true') return { ok: false, reason: 'indoor' };
+      if (!p.badges.includes('badge_water') && !p.isAdmin) {
+        return { ok: false, reason: 'need-surf' };
+      }
+      if (p.riding) { p.riding = false; this.emit({ type: 'bike', id: p.id, riding: false }); }
+      p.surfing = true;
+      if (tx != null && ty != null && m.isOpenWater(tx, ty)) {
+        const T = m.tile;
+        const nx = tx * T + 8, ny = ty * T + 12;
+        if (Math.hypot(nx - p.x, ny - p.y) <= T * 2.5) { p.x = nx; p.y = ny; }
+      }
+      this.emit({ type: 'surf', id: p.id, surfing: true });
+      return { ok: true, data: { qty: 1 } };
+    }
+    if (!p.surfing) return { ok: true, data: { qty: 0 } };
+    p.surfing = false;
+    this.emit({ type: 'surf', id: p.id, surfing: false });
+    return { ok: true, data: { qty: 0 } };
+  }
+
+  /** 해신의 바다 조류 비석 활성화 (3개 모두 공명하면 북쪽 소용돌이 장벽 영구 해제) */
+  private activateTideSeal(p: PlayerState, objectId: number): ActionResult {
+    const m = this.maps[p.map];
+    if (!m) return { ok: false, reason: 'no-map' };
+    const o = m.objects.find((ob) => ob.id === objectId && ob.type === 'tide_seal');
+    if (!o) return { ok: false, reason: 'no-seal' };
+    const T = m.tile;
+    const cx = Number(oprop(o, 'cellX') ?? 0), cy = Number(oprop(o, 'cellY') ?? 0);
+    if (Math.hypot((cx + 0.5) * T - p.x, (cy + 0.5) * T - (p.y - 4)) > T * 2.8) return { ok: false, reason: 'far' };
+    const sealIdx = Number(oprop(o, 'sealIdx') ?? 0);
+    const gateId = String(oprop(o, 'gateId') ?? 'sea_main');
+    const flag = `tide_seal_${sealIdx}`;
+    const already = p.flags.includes(flag);
+    if (!already) this.addFlag(p, flag);
+    const doneCount = [0, 1, 2].filter((k) => p.flags.includes(`tide_seal_${k}`)).length;
+    let openedGate = false;
+    if (doneCount >= 3) {
+      if (!p.flags.includes('sea_shrine_open')) {
+        this.addFlag(p, 'sea_shrine_open');
+        openedGate = true;
+      }
+      for (const wp of m.objects) {
+        if (wp.type !== 'whirlpool' || String(oprop(wp, 'gateId') ?? '') !== gateId) continue;
+        const key = `${p.map}:${wp.id}`;
+        if (!p.cleared?.includes(key)) {
+          (p.cleared ??= []).push(key);
+          this.emit({ type: 'cleared', playerId: p.id, key });
+        }
+      }
+    }
+    return { ok: true, anim: 'interact', data: { item: openedGate ? 'opened' : already ? 'already' : 'lit', qty: doneCount } };
   }
 
   /** 닉네임 변경권(name_ticket)을 1장 사용하여 새 닉네임으로 변경 (중복 시 뒤에 2, 3... 자동 부여) */
@@ -847,8 +1038,22 @@ export class FarmSimulation {
     }
     return { ok: true, data: changed ? { item: gateId ?? String(objectId ?? '') } : undefined };
   }
-  /** 체육관 눈덩이 등 파괴 가능 퍼즐 초기화 */
-  private gymReset(p: PlayerState): ActionResult {
+  /** 플레이어별 쇳불 도장 밀기 블록 상태 초기화/조회 */
+  private blocksOf(p: PlayerState, mapId: MapId = p.map) {
+    const info = this.maps[mapId];
+    if (!info?.pushBlocks.length) return null;
+    let map = this.gymBlocks.get(p.id);
+    if (!map) {
+      map = new Map();
+      for (const b of info.pushBlocks) {
+        map.set(b.id, { x: b.x, y: b.y, group: b.group, gateId: b.gateId, locked: false });
+      }
+      this.gymBlocks.set(p.id, map);
+    }
+    return map;
+  }
+  /** 체육관 눈덩이 / 밀기 블록 초기화 */
+  private gymReset(p: PlayerState, group?: string): ActionResult {
     const m = this.maps[p.map];
     if (!m) return { ok: false, reason: 'no-map' };
     const snowIds = new Set(m.objects.filter((o) => o.type === 'snowball').map((o) => `${p.map}:${o.id}`));
@@ -857,6 +1062,88 @@ export class FarmSimulation {
       p.cleared = (p.cleared ?? []).filter((k) => !snowIds.has(k));
       this.emit({ type: 'objectRestored', keys: back, playerId: p.id });
     }
+    const blks = this.blocksOf(p);
+    if (blks) {
+      for (const orig of m.pushBlocks) {
+        if (group && orig.group !== group) continue;
+        // 이미 게이트가 열린 그룹은 그대로 유지
+        const gateDone = m.objects.some((o) => o.type === 'gate_bar' && String(oprop(o, 'gateId') ?? '') === orig.gateId && p.cleared?.includes(`${p.map}:${o.id}`));
+        if (gateDone) continue;
+        blks.set(orig.id, { x: orig.x, y: orig.y, group: orig.group, gateId: orig.gateId, locked: false });
+      }
+    }
+    return { ok: true };
+  }
+  /** 물결항 도장 (들판식): 3단계 수위(0/1/2) 전환 */
+  private setGymWater(p: PlayerState, level: number): ActionResult {
+    const m = this.maps[p.map];
+    if (!m) return { ok: false, reason: 'no-map' };
+    const lv = Math.max(0, Math.min(2, Math.floor(level)));
+    const T = m.tile;
+    const sw = m.objects.find((o) => o.type === 'water_switch' && Number(oprop(o, 'level') ?? 0) === lv
+      && Math.hypot(Number(oprop(o, 'cellX') ?? -99) * T + 8 - p.x, Number(oprop(o, 'cellY') ?? -99) * T + 12 - p.y) <= T * 2.8);
+    if (!sw) return { ok: false, reason: 'far' };
+    this.gymWater.set(p.id, lv);
+    return { ok: true, data: { qty: lv } };
+  }
+  /** 쇳불 도장 (장막/검은먹식): 밀기 블록 1칸 이동 + 슬롯 안착 시 관문 해제 */
+  private pushGymBlock(p: PlayerState, objectId: number, dx: number, dy: number): ActionResult {
+    const m = this.maps[p.map];
+    if (!m) return { ok: false, reason: 'no-map' };
+    if (Math.abs(dx) + Math.abs(dy) !== 1) return { ok: false, reason: 'dir' };
+    const blks = this.blocksOf(p);
+    const b = blks?.get(objectId);
+    if (!b || b.locked) return { ok: false, reason: 'no-block' };
+    const T = m.tile;
+    if (Math.hypot(b.x * T + 8 - p.x, b.y * T + 12 - p.y) > T * 2.5) return { ok: false, reason: 'far' };
+    const nx = b.x + dx, ny = b.y + dy;
+    if (!m.inBounds(nx, ny)) return { ok: false, reason: 'blocked' };
+    if (this.blockedAt(p.map, null, nx, ny, p)) return { ok: false, reason: 'blocked' };
+    // 이미 다른 블록이 차지한 칸은 못 밀어 넣음
+    for (const [oid, ob] of blks!) {
+      if (oid !== objectId && !ob.locked && ob.x === nx && ob.y === ny) return { ok: false, reason: 'blocked' };
+    }
+    // 트레이너 자리 방지
+    for (const sp of m.spawnList) {
+      if (!sp.name.startsWith('trainer:')) continue;
+      if (Math.floor(sp.x / T) === nx && Math.floor(sp.y / T) === ny) return { ok: false, reason: 'blocked' };
+    }
+    b.x = nx; b.y = ny;
+    // 정통 소코반 규칙: 슬롯에 올린 블록도 완료 전에는 다시 밀어 재배치 가능, 모든 슬롯이 동시에 채워지면 그룹 전체 확정 잠금 + 관문 개방!
+    const onSlot = !!m.blockSlotAt(nx, ny) && m.blockSlotAt(nx, ny)!.group === b.group;
+    const needSlots = [...m.blockSlots.entries()].filter(([, s]) => s.gateId === b.gateId);
+    const allFilled = needSlots.length > 0 && needSlots.every(([idx]) => {
+      const sx = idx % m.width, sy = Math.floor(idx / m.width);
+      return [...blks!.values()].some((ob) => ob.group === b.group && ob.x === sx && ob.y === sy);
+    });
+    let unlocked = false;
+    if (allFilled) {
+      for (const ob of blks!.values()) if (ob.group === b.group) ob.locked = true;
+      for (const o of m.objects) {
+        if (o.type !== 'gate_bar' || String(oprop(o, 'gateId') ?? '') !== b.gateId) continue;
+        const key = `${p.map}:${o.id}`;
+        if (!p.cleared?.includes(key)) {
+          (p.cleared ??= []).push(key);
+          this.emit({ type: 'cleared', playerId: p.id, key });
+          unlocked = true;
+        }
+      }
+    }
+    return { ok: true, anim: 'interact', data: { item: allFilled ? 'complete' : onSlot ? 'onSlot' : 'moved', qty: unlocked ? 1 : 0 } };
+  }
+  /** 잿빛 도장 (루네식/홍련식): 금 간 화산판 추락 또는 퀴즈 오답 함정 이동 */
+  private gymFall(p: PlayerState, toX: number, toY: number): ActionResult {
+    const m = this.maps[p.map];
+    if (!m) return { ok: false, reason: 'no-map' };
+    const T = m.tile;
+    const nearTrap = m.objects.some((o) =>
+      ((o.type === 'cracked_tile' && Number(oprop(o, 'fallX') ?? -1) === toX && Number(oprop(o, 'fallY') ?? -1) === toY)
+        || (o.type === 'quiz_pad' && Number(oprop(o, 'failX') ?? -1) === toX && Number(oprop(o, 'failY') ?? -1) === toY))
+      && Math.hypot(Number(oprop(o, 'cellX') ?? -99) * T + 8 - p.x, Number(oprop(o, 'cellY') ?? -99) * T + 12 - p.y) <= T * 3.0);
+    if (!nearTrap) return { ok: false, reason: 'far' };
+    const nx = toX * T + 8, ny = toY * T + 13;
+    if (!this.canStand(p, nx, ny)) return { ok: false, reason: 'blocked' };
+    p.x = nx; p.y = ny;
     return { ok: true };
   }
   private finishEvent(p: PlayerState, id: string) {
@@ -1358,7 +1645,16 @@ export class FarmSimulation {
     const info = this.maps[mapId];
     if (!info.inBounds(x, y)) return true;
     if (f) for (const o of f.placed.values()) if (o.x === x && o.y === y) return true;
-    if (!info.isBlocked(x, y)) return false;
+    const wb = info.waterBridgeAt(x, y);
+    if (wb && (this.gymWater.get(who?.id ?? '') ?? 0) !== wb.reqLevel) return true;
+    if (who && info.pushBlocks.length) {
+      const blks = this.blocksOf(who, mapId);
+      if (blks) {
+        for (const b of blks.values()) if (!b.locked && b.x === x && b.y === y) return true;
+      }
+    }
+    const surfing = !!who?.surfing;
+    if (!info.isBlocked(x, y, surfing)) return false;
     const occ = this.occOf(mapId).get(y * info.width + x);
     if (occ == null) return true;
     if (who?.cleared?.includes(`${mapId}:${occ}`) || who?.opened?.includes(`${mapId}:${occ}`)) return false;
@@ -1569,19 +1865,22 @@ export class FarmSimulation {
   private canBattle(p: PlayerState) { return p.party.some((c) => c.hp > 0); }
 
   private encounter(p: PlayerState): ActionResult {
-    const table = ENCOUNTERS.grass[p.map];
-    if (!table || !this.canBattle(p)) return { ok: false, reason: 'no-encounter' };
-    // 플레이어가 실제로 풀숲 위에 있는지 검증
     const m = this.maps[p.map], T = m.tile;
     const cx = Math.floor(p.x / T), cy = Math.floor((p.y - 3) / T);
     const cave = m.props.cave === 'true';
-    if (!cave && !m.objects.some((o) => o.type === 'tallgrass' && Math.floor(o.x / T) === cx && Math.floor(o.y / T) - 1 === cy)) return { ok: false, reason: 'not-grass' };
+    const onSurfWater = !!p.surfing && m.terrainAt(cx, cy) === '2';
+    const table = ENCOUNTERS.grass[p.map];
+    if (!this.canBattle(p)) return { ok: false, reason: 'no-encounter' };
+    if (!onSurfWater && (!table || (!cave && !m.objects.some((o) => o.type === 'tallgrass' && Math.floor(o.x / T) === cx && Math.floor(o.y / T) - 1 === cy)))) return { ok: false, reason: 'not-grass' };
     const now = Date.now(); if (now - (this.lastEncounter.get(p.id) ?? 0) < 5000) return { ok: false, reason: 'cooldown' };
     this.lastEncounter.set(p.id, now);
     const night = this.time.minutes >= 19 * 60 || this.time.minutes < 6 * 60 + 30;
-    const [sp, lo, hi] = this.pick(night ? table.night : table.day, (r) => r[3]);
+    const surfPool = ENCOUNTERS.fish[p.map]?.lumi ?? [['w1a', 14, 20, 30], ['w2a', 14, 20, 25], ['w4a', 16, 22, 25], ['chalang', 16, 22, 20]];
+    const [sp, lo, hi] = onSurfWater
+      ? (p.map === 'ocean_shrine' && table ? this.pick(night ? table.night : table.day, (r) => r[3]) : this.pick(surfPool, (r) => r[3]))
+      : this.pick(night ? table!.night : table!.day, (r) => r[3]);
     const lv = lo + Math.floor(this.rand() * (hi - lo + 1));
-    const { state, update } = this.engine.startWild(p, sp, lv, m.props.battleBg ?? 'grass');
+    const { state, update } = this.engine.startWild(p, sp, lv, onSurfWater ? 'water' : (m.props.battleBg ?? 'grass'));
     state.dark = cave || night;
     this.battles.set(p.id, state);
     return { ok: true, battle: update };
@@ -1620,6 +1919,17 @@ export class FarmSimulation {
     const { state, update } = this.engine.startWild(p, STELLA, STELLA_LV, 'cave');
     state.dark = true;
     update.log.splice(0, 1, { t: 'text', text: '수정 사이로 별빛이 모여들더니, 작은 숨소리가 들린다…' }, { t: 'text', text: `전설의 루미 ${SPECIES[STELLA].name}이(가) 눈을 떴다!` });
+    this.battles.set(p.id, state);
+    return { ok: true, battle: update };
+  }
+  /** 해신의 바다: 세 조류 비석을 모두 깨운 트레이너 앞에 강림하는 물 타입 전설 루미 '해랑' */
+  private seaLegendBattle(p: PlayerState): ActionResult {
+    if (p.map !== 'ocean_shrine') return { ok: false, reason: 'wrong-map' };
+    if (!p.flags.includes('sea_shrine_open')) return { ok: false, reason: 'sealed' };
+    if (this.hasCaught(p, SEA_LEGEND)) return { ok: false, reason: 'caught' };
+    if (!this.canBattle(p)) return { ok: false, reason: 'no-lumi' };
+    const { state, update } = this.engine.startWild(p, SEA_LEGEND, SEA_LEGEND_LV, 'water');
+    update.log.splice(0, 1, { t: 'text', text: '깊은 바다가 갈라지며 찬란한 해류가 솟구친다…!' }, { t: 'text', text: `전설의 물 루미 ${SPECIES[SEA_LEGEND].name}(Lv.${SEA_LEGEND_LV})이(가) 모습을 드러냈다!` });
     this.battles.set(p.id, state);
     return { ok: true, battle: update };
   }
@@ -2040,6 +2350,430 @@ export class FarmSimulation {
     p.gold = Math.max(0, p.gold + n);
     this.emit({ type: 'gold', playerId: p.id, gold: p.gold, delta: n });
     return true;
+  }
+
+  // ── 안티치트 · 별빛 교도소 탈옥 · 휴대폰 고지서 · 제재 ─────────
+  pushNotice(p: PlayerState, notice: Omit<PlayerNotice, 'id' | 'at'>) {
+    const item: PlayerNotice = {
+      ...notice,
+      id: `ntc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      at: Date.now(),
+      read: false,
+    };
+    const list = (p.notices ??= []);
+    list.unshift(item);
+    if (list.length > 40) list.length = 40;
+    this.emit({ type: 'notices', playerId: p.id, notices: list.map((x) => ({ ...x })) });
+  }
+
+  private markNoticesRead(p: PlayerState): ActionResult {
+    const list = (p.notices ??= []);
+    for (const n of list) n.read = true;
+    this.emit({ type: 'notices', playerId: p.id, notices: list.map((x) => ({ ...x })) });
+    return { ok: true };
+  }
+
+  /** 비정상 재화 치트 적발 → 즉시 수감 상태 기록 + 1초 과부하 프리징/알림 이벤트 송출 */
+  flagCheater(p: PlayerState, reason = '비정상 재화 증가 치트 감지'): ActionResult {
+    const cleanReason = String(reason || '비정상 재화 증가 치트 감지').slice(0, 120);
+    p.jailed = true;
+    p.jailReason = cleanReason;
+    p.jailFine = true;
+    p.jailPrevGold = Math.max(p.gold, p.jailPrevGold ?? 0);
+    p.jailPrevCash = Math.max(p.cash ?? 0, p.jailPrevCash ?? 0);
+    p.prisonMined = 0;
+    this.battles.delete(p.id);
+    if (this.maps.in_prison) {
+      const cell = this.maps.in_prison.spawns.get('entry') ?? this.maps.in_prison.spawns.get('player') ?? { x: 56, y: 296 };
+      p.map = 'in_prison';
+      p.inst = '';
+      p.x = cell.x;
+      p.y = cell.y + 5;
+      p.dir = 'right';
+      p.ret = undefined;
+      p.cleared = [];
+    }
+    this.emit({ type: 'cheatFreeze', playerId: p.id, message: 'your are bad cheater', reason: cleanReason });
+    return { ok: true };
+  }
+
+  /** 관리자 또는 시스템이 플레이어를 별빛 교도소로 즉시 수감 */
+  jailPlayer(p: PlayerState, reason = '관리자 제재 수감', fine = true): boolean {
+    if (!this.maps.in_prison) return false;
+    this.battles.delete(p.id);
+    p.jailed = true;
+    p.jailReason = String(reason || '관리자 제재 수감').slice(0, 120);
+    p.jailFine = fine;
+    p.jailPrevGold = Math.max(p.gold, p.jailPrevGold ?? 0);
+    p.jailPrevCash = Math.max(p.cash ?? 0, p.jailPrevCash ?? 0);
+    p.prisonMined = 0;
+    this.toSpawn(p, 'in_prison', '', 'entry');
+    this.emit({ type: 'prisonState', playerId: p.id, jailed: true, mined: 0, goal: PRISON_MINE_GOAL, reason: p.jailReason });
+    this.pushNotice(p, {
+      kind: 'punish',
+      title: '⛓️ 별빛 교도소 수감 통지서',
+      body: `사유: ${p.jailReason}\n\n별빛 교도소에 수감되었습니다.\n감시관의 시야를 피해 감옥 광석 ${PRISON_MINE_GOAL}개를 채광한 뒤 북동쪽 탈출 해치로 탈옥하세요.${fine ? '\n(※ 탈옥 시 벌금 집행으로 골드·캐쉬가 0원으로 초기화됩니다.)' : ''}`,
+    });
+    this.emit({ type: 'toast', playerId: p.id, text: `⛓️ 별빛 교도소에 수감되었습니다! (${p.jailReason})`, icon: 'heart' });
+    return true;
+  }
+
+  /** 관리자 석방 (벌금 몰수 없이 원래 마을로 복귀) */
+  unjailPlayer(p: PlayerState): boolean {
+    p.jailed = false;
+    p.jailReason = undefined;
+    p.jailFine = undefined;
+    p.jailPrevGold = undefined;
+    p.jailPrevCash = undefined;
+    p.prisonMined = 0;
+    p.prisonSlabs = 0;
+    p.prisonPlanks = 0;
+    this.emit({ type: 'prisonState', playerId: p.id, jailed: false, mined: 0, goal: PRISON_MINE_GOAL });
+    if (isPrisonMap(p.map)) this.toSpawn(p, 'town', '', 'from_farm');
+    this.pushNotice(p, {
+      kind: 'system',
+      title: '🔓 석방 통지서',
+      body: '관리자 권한으로 별빛 교도소 수감이 해제되었습니다. 별빛 마을로 복귀합니다.',
+    });
+    this.emit({ type: 'toast', playerId: p.id, text: '🔓 관리자 권한으로 석방되었어요!', icon: 'heart' });
+    return true;
+  }
+
+  /** 채팅 금지 부여 (인게임 접속 중일 때만 시간이 흐름) */
+  mutePlayer(p: PlayerState, minutes: number, reason = ''): boolean {
+    const mins = Math.max(1, Math.min(10_080, Math.round(minutes)));
+    p.muteRemainingSec = mins * 60;
+    this.muteSyncAcc.set(p.id, 0);
+    this.emit({ type: 'mute', playerId: p.id, muteRemainingSec: p.muteRemainingSec });
+    this.pushNotice(p, {
+      kind: 'punish',
+      title: '🔇 채팅 금지 처분 안내',
+      body: `채팅 금지 시간: ${mins}분 (인게임 접속 중일 때만 시간이 차감됩니다)\n${reason ? `사유: ${reason}` : '사유: 신고 접수에 따른 관리자 제재'}`,
+    });
+    this.emit({ type: 'toast', playerId: p.id, text: `🔇 ${mins}분간 채팅이 금지되었습니다. (접속 중일 때만 시간 감소)`, icon: 'heart' });
+    return true;
+  }
+
+  /** 채팅 금지 해제 */
+  unmutePlayer(p: PlayerState): boolean {
+    p.muteRemainingSec = 0;
+    this.muteSyncAcc.delete(p.id);
+    this.emit({ type: 'mute', playerId: p.id, muteRemainingSec: 0 });
+    this.emit({ type: 'toast', playerId: p.id, text: '🔊 관리자에 의해 채팅 금지가 해제되었어요.', icon: 'heart' });
+    return true;
+  }
+
+  /** 별빛 교도소 탈옥 미니게임: 감옥 광석 채광 */
+  private prisonMine(p: PlayerState, objectId: number): ActionResult {
+    if (p.map !== 'in_prison') return { ok: false, reason: 'wrong-map' };
+    const m = this.maps.in_prison;
+    const o = m?.objects.find((ob) => ob.id === objectId && (ob.type === 'prison_ore' || String(oprop(ob, 'interact') ?? '') === 'prison_ore'));
+    if (!o) return { ok: false, reason: 'not-ore' };
+    const T = m.tile;
+    const cx = Number(oprop(o, 'cellX') ?? Math.floor(o.x / T));
+    const cy = Number(oprop(o, 'cellY') ?? Math.floor(o.y / T) - 1);
+    if (!this.inReach(p, cx, cy)) return { ok: false, reason: 'far' };
+    const key = `in_prison:${o.id}`;
+    const cleared = (p.cleared ??= []);
+    if (cleared.includes(key)) return { ok: false, reason: 'already' };
+    cleared.push(key);
+    p.prisonMined = (p.prisonMined ?? 0) + 1;
+    this.emit({ type: 'cleared', playerId: p.id, key });
+    this.emit({ type: 'prisonState', playerId: p.id, jailed: !!p.jailed, mined: p.prisonMined, goal: PRISON_MINE_GOAL, reason: p.jailReason });
+    if (p.prisonMined >= PRISON_MINE_GOAL) {
+      this.emit({ type: 'toast', playerId: p.id, text: `⛏ 탈옥 채광 완료 (${p.prisonMined}/${PRISON_MINE_GOAL})! 북동쪽 녹색 탈출 해치로 이동하세요!`, icon: 'pickaxe' });
+    } else {
+      this.emit({ type: 'toast', playerId: p.id, text: `⛏ 감옥 광석 채광 성공! (${p.prisonMined}/${PRISON_MINE_GOAL})`, icon: 'pickaxe' });
+    }
+    return { ok: true, anim: 'pick', data: { qty: p.prisonMined } };
+  }
+
+  /** 별빛 교도소: 금이 간 벽 부수기 (지하 5층 ~ 지상 1층 전 층 공용) */
+  private prisonBreakWall(p: PlayerState, objectId: number): ActionResult {
+    if (!isPrisonMap(p.map) || p.map === 'in_prison_yard') return { ok: false, reason: 'wrong-map' };
+    const m = this.maps[p.map];
+    const o = m?.objects.find((ob) => ob.id === objectId && (ob.type === 'cracked_wall' || String(oprop(ob, 'interact') ?? '') === 'prison_wall'));
+    if (!o) return { ok: false, reason: 'not-wall' };
+    const T = m.tile;
+    const cx = Number(oprop(o, 'cellX') ?? Math.floor(o.x / T));
+    const cy = Number(oprop(o, 'cellY') ?? Math.floor(o.y / T) - 1);
+    if (!this.inReach(p, cx, cy)) return { ok: false, reason: 'far' };
+    const key = `${p.map}:${o.id}`;
+    const cleared = (p.cleared ??= []);
+    if (cleared.includes(key)) return { ok: false, reason: 'already' };
+    cleared.push(key);
+    this.emit({ type: 'cleared', playerId: p.id, key });
+    this.emit({ type: 'toast', playerId: p.id, text: '💥 금이 간 벽을 부숴 통로를 열었어요! 경찰 감시관을 피해 위층 계단으로 올라가세요!', icon: 'pickaxe' });
+    return { ok: true, anim: 'pick' };
+  }
+
+  /** 별빛 교도소: 철제 계단으로 위층 올라가기 (B5 → B4 → B3 → B2 → B1 → 1F) */
+  private prisonAscend(p: PlayerState, to: MapId): ActionResult {
+    if (!isPrisonMap(p.map) || PRISON_NEXT_FLOOR[p.map] !== to || !this.maps[to]) return { ok: false, reason: 'wrong-floor' };
+    const m = this.maps[p.map];
+    const st = m?.objects.find((ob) => ob.type === 'prison_stairs_up');
+    if (st) {
+      const T = m.tile;
+      const sx = (Number(oprop(st, 'cellX') ?? Math.floor(st.x / T)) + 0.5) * T;
+      const sy = (Number(oprop(st, 'cellY') ?? Math.floor(st.y / T) - 1) + 0.5) * T;
+      if (Math.hypot(p.x - sx, p.y - sy) > T * 2.6) return { ok: false, reason: 'far' };
+    }
+    this.toSpawn(p, to, '', 'entry');
+    this.emit({ type: 'prisonState', playerId: p.id, jailed: !!p.jailed, mined: p.prisonMined ?? 0, goal: PRISON_MINE_GOAL, reason: p.jailReason });
+    this.emit({
+      type: 'toast',
+      playerId: p.id,
+      text: to === 'in_prison_1f'
+        ? '☀️ 지상 1층에 도착했어요! 북쪽의 빛이 새는 금이 간 외벽을 부수면 탈옥 성공!'
+        : `🪜 ${PRISON_FLOOR_LABEL[to] ?? to}(으)로 올라왔어요!`,
+      icon: 'pickaxe',
+    });
+    return { ok: true };
+  }
+
+  /** 성실 노역 루트: 지하 5층 독방 대기 후 노역 채광장으로 이동 */
+  private prisonEnterYard(p: PlayerState): ActionResult {
+    if (!p.jailed || p.map !== 'in_prison' || !this.maps.in_prison_yard) return { ok: false, reason: 'wrong-map' };
+    this.toSpawn(p, 'in_prison_yard', '', 'entry');
+    this.emit({ type: 'prisonLabor', playerId: p.id, slabs: p.prisonSlabs ?? 0, planks: p.prisonPlanks ?? 0, goal: PRISON_LABOR_GOAL });
+    this.emit({ type: 'toast', playerId: p.id, text: '⛏️ 노역 채광장 도착! 돌·나무를 캐서 석판 100개 · 나무판 100개를 만들어 납품하세요.', icon: 'pickaxe' });
+    return { ok: true };
+  }
+
+  /** 노역 채광장에서 지하 5층 독방으로 복귀 */
+  private prisonBackCell(p: PlayerState): ActionResult {
+    if (!p.jailed || p.map !== 'in_prison_yard' || !this.maps.in_prison) return { ok: false, reason: 'wrong-map' };
+    this.toSpawn(p, 'in_prison', '', 'entry');
+    this.emit({ type: 'toast', playerId: p.id, text: '⛓️ 지하 5층 독방으로 돌아왔어요.', icon: 'heart' });
+    return { ok: true };
+  }
+
+  /** 노역 채광장: 돌 / 나무 무한 채집 (1회 +10개, 3.5초 뒤 자동 재생성) */
+  private yardGather(p: PlayerState, objectId: number, resource: 'stone' | 'wood'): ActionResult {
+    if (p.map !== 'in_prison_yard') return { ok: false, reason: 'wrong-map' };
+    const m = this.maps.in_prison_yard;
+    const expectType = resource === 'stone' ? 'yard_stone' : 'yard_wood';
+    const o = m?.objects.find((ob) => ob.id === objectId && ob.type === expectType);
+    if (!o) return { ok: false, reason: 'not-resource' };
+    const T = m.tile;
+    const cx = Number(oprop(o, 'cellX') ?? Math.floor(o.x / T));
+    const cy = Number(oprop(o, 'cellY') ?? Math.floor(o.y / T) - 1);
+    if (!this.inReach(p, cx, cy)) return { ok: false, reason: 'far' };
+    const key = `in_prison_yard:${o.id}`;
+    const cleared = (p.cleared ??= []);
+    if (cleared.includes(key)) return { ok: false, reason: 'cooldown' };
+    const qty = 1;
+    if (!this.addItem(p, resource, qty)) {
+      this.emit({ type: 'toast', playerId: p.id, text: '가방이 가득 찼어요! 작업대에서 석판/나무판을 제작하거나 납품해 주세요.' });
+      return { ok: false, reason: 'full' };
+    }
+    cleared.push(key);
+    this.yardRespawns.push({ playerId: p.id, key, at: Date.now() + 3500 });
+    this.changed(p);
+    this.emit({ type: 'cleared', playerId: p.id, key });
+    this.emit({ type: 'toast', playerId: p.id, text: `${ITEMS[resource].name} +${qty} 획득!`, icon: ITEMS[resource].icon });
+    return { ok: true, anim: resource === 'stone' ? 'pick' : 'axe', data: { item: resource, qty } };
+  }
+
+  /** 노역 채광장 작업대: 돌 → 석판 / 나무 → 나무판 제작 */
+  private yardCraft(p: PlayerState, out: 'stone_slab' | 'wood_plank', qty: number): ActionResult {
+    if (p.map !== 'in_prison_yard') return { ok: false, reason: 'wrong-map' };
+    const src = out === 'stone_slab' ? 'stone' : 'wood';
+    const costPer = 5;
+    const have = this.countItem(p, src);
+    const req = Math.max(1, Math.min(PRISON_LABOR_GOAL, Math.floor(Number(qty) || 1)));
+    const n = Math.min(req, Math.floor(have / costPer));
+    if (n <= 0) return { ok: false, reason: 'no-materials' };
+    this.takeItem(p, src, n * costPer);
+    if (!this.addItem(p, out, n)) {
+      this.addItem(p, src, n * costPer);
+      return { ok: false, reason: 'full' };
+    }
+    this.changed(p);
+    this.emit({ type: 'toast', playerId: p.id, text: `🔨 ${ITEMS[out].name} ×${n} 제작 완료!`, icon: ITEMS[out].icon });
+    return { ok: true, data: { item: out, qty: n } };
+  }
+
+  /** 노역 채광장 납품함: 석판·나무판 납품 (둘 다 100개 달성 시 정식 석방 + 엄마 귀가 연출!) */
+  private yardDeliver(p: PlayerState): ActionResult {
+    if (p.map !== 'in_prison_yard') return { ok: false, reason: 'wrong-map' };
+    let slabs = p.prisonSlabs ?? 0;
+    let planks = p.prisonPlanks ?? 0;
+    const haveSlab = this.countItem(p, 'stone_slab');
+    const havePlank = this.countItem(p, 'wood_plank');
+    const addSlab = Math.min(haveSlab, Math.max(0, PRISON_LABOR_GOAL - slabs));
+    const addPlank = Math.min(havePlank, Math.max(0, PRISON_LABOR_GOAL - planks));
+    if (addSlab <= 0 && addPlank <= 0 && (slabs < PRISON_LABOR_GOAL || planks < PRISON_LABOR_GOAL)) {
+      return { ok: false, reason: 'nothing' };
+    }
+    if (addSlab > 0) { this.takeItem(p, 'stone_slab', addSlab); slabs += addSlab; }
+    if (addPlank > 0) { this.takeItem(p, 'wood_plank', addPlank); planks += addPlank; }
+    p.prisonSlabs = slabs;
+    p.prisonPlanks = planks;
+    this.changed(p);
+    this.emit({ type: 'prisonLabor', playerId: p.id, slabs, planks, goal: PRISON_LABOR_GOAL });
+
+    // 석판 100 + 나무판 100 완납 → 성실 정식 석방!
+    if (slabs >= PRISON_LABOR_GOAL && planks >= PRISON_LABOR_GOAL) {
+      const fine = p.jailFine !== false;
+      const reason = p.jailReason || '규정 위반 노역 완납';
+      const prevGold = Math.max(p.gold, p.jailPrevGold ?? 0);
+      const prevCash = Math.max(p.cash ?? 0, p.jailPrevCash ?? 0);
+      p.jailed = false;
+      p.prisonSlabs = 0;
+      p.prisonPlanks = 0;
+      p.prisonMined = 0;
+      p.evilStack = 0;
+      p.momLeft = false;
+      p.pendingHomecoming = 'honest';
+      p.jailReason = undefined;
+      p.jailFine = undefined;
+      p.jailPrevGold = undefined;
+      p.jailPrevCash = undefined;
+      if (fine) {
+        const deltaGold = -p.gold;
+        p.gold = 0;
+        p.cash = 0;
+        this.emit({ type: 'gold', playerId: p.id, gold: 0, delta: deltaGold });
+        this.emitBm(p);
+        this.pushNotice(p, {
+          kind: 'fine',
+          title: '⚖️ 별빛 치안국 석방 · 벌금 정산 고지서',
+          body: `사유: ${reason}\n\n노역 석판 100개 · 나무판 100개를 성실히 완납하여 정식 석방되었습니다.\n규정에 따라 기존 재화는 0원으로 정산되었습니다.\n\n· 보유 골드: ${prevGold.toLocaleString('ko-KR')}G → 0G\n· 보유 캐쉬: ${prevCash.toLocaleString('ko-KR')}원 → 0원`,
+          prevGold,
+          prevCash,
+        });
+      }
+      this.emit({ type: 'prisonState', playerId: p.id, jailed: false, mined: 0, goal: PRISON_MINE_GOAL });
+      this.emit({ type: 'karma', playerId: p.id, evilStack: 0, momLeft: false, pendingHomecoming: 'honest' });
+      // 집 안으로 바로 입장하여 엄마와의 감동 귀가 연출 재생!
+      p.world = p.homeWorld;
+      const hEntry = this.maps.home.spawns.get('entry') ?? { x: 120, y: 152 };
+      const door = this.homeDoor();
+      this.relocate(p, 'home', p.id, hEntry.x, hEntry.y + 5);
+      p.ret = { map: 'farm', inst: p.id, x: door.x, y: door.y };
+      this.emit({ type: 'toast', playerId: p.id, text: '🔓 석판 100개 · 나무판 100개 완납! 정식으로 석방되어 집으로 돌아갑니다.', icon: 'heart' });
+      return { ok: true, data: { qty: PRISON_LABOR_GOAL } };
+    }
+
+    this.emit({
+      type: 'toast',
+      playerId: p.id,
+      text: `📦 납품 완료! 석판 ${slabs}/${PRISON_LABOR_GOAL} · 나무판 ${planks}/${PRISON_LABOR_GOAL}`,
+      icon: 'stone_slab',
+    });
+    return { ok: true, data: { qty: addSlab + addPlank } };
+  }
+
+  /** 경찰 감시관에게 붙잡힘 → 어느 층에 있든 지하 5층 독방 원점으로 즉시 압송! */
+  private prisonCaught(p: PlayerState): ActionResult {
+    if (!isPrisonMap(p.map) || p.map === 'in_prison_yard') return { ok: false, reason: 'wrong-map' };
+    const restoreKeys = [...(p.cleared ?? [])];
+    p.cleared = [];
+    p.prisonMined = 0;
+    const cell = this.maps.in_prison.spawns.get('entry') ?? this.maps.in_prison.spawns.get('player') ?? { x: 56, y: 200 };
+    if (p.map !== 'in_prison') {
+      this.toSpawn(p, 'in_prison', '', 'entry');
+    } else {
+      p.x = cell.x;
+      p.y = cell.y + 5;
+      p.dir = 'right';
+      if (restoreKeys.length) this.emit({ type: 'objectRestored', playerId: p.id, keys: restoreKeys });
+    }
+    this.emit({ type: 'prisonState', playerId: p.id, jailed: !!p.jailed, mined: 0, goal: PRISON_MINE_GOAL, reason: p.jailReason });
+    this.emit({ type: 'toast', playerId: p.id, text: '🚨 경찰 감시관에게 붙잡혔다! 지하 5층 독방 원점으로 되돌아갑니다!', icon: 'heart' });
+    return { ok: true };
+  }
+
+  /** 지상 1층 외벽 파괴 불법 탈옥 → 0원 초기화 + 벌금 고지서 + 악행스택 100 + 엄마 가출 */
+  private prisonEscape(p: PlayerState): ActionResult {
+    if (p.map !== 'in_prison_1f') return { ok: false, reason: 'need-1f' };
+    const m = this.maps.in_prison_1f;
+    const wall = m?.objects.find((ob) => ob.type === 'prison_exit_wall' || String(oprop(ob, 'interact') ?? '') === 'prison_escape_wall');
+    if (wall) {
+      const T = m.tile;
+      const hx = (Number(oprop(wall, 'cellX') ?? Math.floor(wall.x / T)) + 1) * T;
+      const hy = (Number(oprop(wall, 'cellY') ?? Math.floor(wall.y / T) - 1) + 0.5) * T;
+      if (Math.hypot(p.x - hx, p.y - hy) > T * 3.0) return { ok: false, reason: 'far' };
+    }
+    const fine = p.jailFine !== false;
+    const reason = p.jailReason || '비정상 재화 변조 / 규정 위반';
+    const prevGold = Math.max(p.gold, p.jailPrevGold ?? 0);
+    const prevCash = Math.max(p.cash ?? 0, p.jailPrevCash ?? 0);
+    p.jailed = false;
+    p.prisonMined = 0;
+    p.prisonSlabs = 0;
+    p.prisonPlanks = 0;
+    p.jailReason = undefined;
+    p.jailFine = undefined;
+    p.jailPrevGold = undefined;
+    p.jailPrevCash = undefined;
+    // 불법 탈옥 페널티: 악행스택 100 + 엄마가 집을 떠남!
+    p.evilStack = EVIL_STACK_MAX;
+    p.momLeft = true;
+    p.pendingHomecoming = '';
+    p.lastHelpedNpc = undefined;
+    if (fine) {
+      const deltaGold = -p.gold;
+      p.gold = 0;
+      p.cash = 0;
+      this.emit({ type: 'gold', playerId: p.id, gold: 0, delta: deltaGold });
+      this.emitBm(p);
+      this.pushNotice(p, {
+        kind: 'fine',
+        title: '⚖️ 별빛 치안국 벌금 고지서',
+        body: `처분 사유: ${reason} (+ 불법 탈옥)\n\n지상 1층 외벽 파괴 탈옥이 확인되어 벌금 집행으로 계정의 모든 재화가 0원으로 초기화되었습니다.\n\n· 보유 골드: ${prevGold.toLocaleString('ko-KR')}G → 0G\n· 보유 캐쉬: ${prevCash.toLocaleString('ko-KR')}원 → 0원\n· 악행스택: +100 (마을 사람들을 도와 0으로 줄여야 신뢰를 되찾을 수 있습니다)`,
+        prevGold,
+        prevCash,
+      });
+    }
+    this.emit({ type: 'prisonState', playerId: p.id, jailed: false, mined: 0, goal: PRISON_MINE_GOAL });
+    this.emit({ type: 'karma', playerId: p.id, evilStack: p.evilStack, momLeft: true, pendingHomecoming: '' });
+    this.toSpawn(p, 'town', '', 'from_farm');
+    this.emit({
+      type: 'toast',
+      playerId: p.id,
+      text: '🚨 1층 외벽을 부수고 탈옥 성공! 골드·캐쉬가 0원이 되고 악행스택 100이 쌓였습니다. 집으로 가 엄마를 확인해 보세요…',
+      icon: 'heart',
+    });
+    return { ok: true };
+  }
+
+  /** 엄마 귀가 컷신 완료 → 따뜻한 두부 한 모 지급 */
+  private completeHomecoming(p: PlayerState): ActionResult {
+    const mode = p.pendingHomecoming;
+    if (!mode) return { ok: false, reason: 'none' };
+    p.pendingHomecoming = '';
+    this.addItem(p, 'tofu', 1);
+    this.changed(p);
+    this.emit({ type: 'karma', playerId: p.id, evilStack: p.evilStack ?? 0, momLeft: !!p.momLeft, pendingHomecoming: '' });
+    this.emit({ type: 'toast', playerId: p.id, text: '🍽️ 엄마에게서 따뜻한 두부 한 모를 받았어요!', icon: 'tofu' });
+    return { ok: true, data: { item: 'tofu', qty: 1 } };
+  }
+
+  /** 마을 사람을 한 명 한 명 도와 선행스택 +1 (악행스택 100 → 0 달성 시 엄마 복귀!) */
+  private goodDeed(p: PlayerState, npc: string): ActionResult {
+    const cur = p.evilStack ?? 0;
+    if (cur <= 0) return { ok: false, reason: 'clean' };
+    const npcId = String(npc || '').trim().slice(0, 64);
+    if (!npcId) return { ok: false, reason: 'no-npc' };
+    if (p.lastHelpedNpc === npcId) return { ok: false, reason: 'same-npc' };
+    p.evilStack = Math.max(0, cur - 1);
+    p.lastHelpedNpc = npcId;
+    if (p.evilStack === 0 && p.momLeft) {
+      p.momLeft = false;
+      p.pendingHomecoming = 'mom_returned';
+      this.pushNotice(p, {
+        kind: 'system',
+        title: '💌 엄마에게서 온 편지',
+        body: '마을 사람들이 네가 얼마나 성실하게 남을 돕고 변했는지 전해 주더구나.\n엄마도 이제 마음을 풀고 집으로 돌아왔단다. 얼른 집으로 돌아오렴.',
+      });
+      this.emit({ type: 'toast', playerId: p.id, text: '✨ 악행스택이 0이 되었어요! 엄마가 집으로 돌아오셨습니다! 집으로 가 보세요!', icon: 'heart' });
+    } else {
+      this.emit({ type: 'toast', playerId: p.id, text: `🤝 선행 +1! 남은 악행스택: ${p.evilStack}/${EVIL_STACK_MAX}`, icon: 'heart' });
+    }
+    this.emit({ type: 'karma', playerId: p.id, evilStack: p.evilStack, momLeft: !!p.momLeft, pendingHomecoming: p.pendingHomecoming, lastHelpedNpc: p.lastHelpedNpc });
+    return { ok: true, data: { qty: p.evilStack } };
   }
   setTimeMinutes(minutes: number) {
     const clamped = Math.max(DAY_START, Math.min(DAY_END - 10, Math.round(minutes / 10) * 10));

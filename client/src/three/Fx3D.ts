@@ -5,7 +5,9 @@ import { DIR_VEC, type Dir } from '@shared/types';
 import { TILE } from '../config';
 import type { Heights } from './Terrain';
 
-export type BurstKind = 'chips' | 'leaves' | 'dirt' | 'splash' | 'sparkle' | 'dust';
+export type BurstKind =
+  | 'chips' | 'leaves' | 'dirt' | 'splash' | 'sparkle' | 'dust'
+  | 'grass' | 'frost' | 'ember' | 'magic' | 'heart' | 'rock' | 'note';
 
 let fxOverlay: HTMLDivElement | undefined;
 
@@ -104,21 +106,38 @@ interface WindowQuad {
   hPx: number;
 }
 
+interface Ring3D {
+  mesh: THREE.Mesh;
+  mat: THREE.MeshBasicMaterial;
+  age: number;
+  life: number;
+  maxScale: number;
+}
+
 const BURST_CFG: Record<BurstKind, { colors: number[]; count: number; size: number; speed: number; up: number; gravity: number; life: number; bounce?: boolean; sway?: number; unlit?: boolean; puff?: boolean }> = {
   chips: { colors: [0xc99260, 0x8c5a33, 0xe0b080], count: 8, size: 0.14, speed: 2.2, up: 3.1, gravity: 11, life: 0.58, bounce: true },
   leaves: { colors: [0x5dab4a, 0x86c95b, 0x3f8a3e], count: 6, size: 0.18, speed: 1.4, up: 0.9, gravity: 1.8, life: 1.35, sway: 2.4 },
   dirt: { colors: [0x8b5a2b, 0x6d421e, 0xa87544], count: 7, size: 0.13, speed: 1.6, up: 2.4, gravity: 10, life: 0.45, bounce: true },
-  splash: { colors: [0x78c8ff, 0xb8e6ff, 0xffffff], count: 8, size: 0.12, speed: 1.9, up: 2.7, gravity: 10.5, life: 0.48, unlit: true },
-  sparkle: { colors: [0xffe58a, 0xfff8d0, 0x8ef0ff], count: 8, size: 0.16, speed: 1.6, up: 2.1, gravity: -0.6, life: 0.72, unlit: true },
+  splash: { colors: [0x78c8ff, 0xb8e6ff, 0xffffff], count: 10, size: 0.12, speed: 2.0, up: 2.9, gravity: 10.5, life: 0.5, unlit: true },
+  sparkle: { colors: [0xffe58a, 0xfff8d0, 0x8ef0ff], count: 10, size: 0.16, speed: 1.7, up: 2.2, gravity: -0.6, life: 0.72, unlit: true },
   dust: { colors: [0xf2e6cf, 0xe6d4b2, 0xd8c29a], count: 3, size: 0.24, speed: 0.48, up: 0.52, gravity: 1.6, life: 0.34, puff: true },
+  grass: { colors: [0x54c848, 0x90e858, 0x368c32, 0xc8ff78], count: 6, size: 0.15, speed: 1.5, up: 2.1, gravity: 5.5, life: 0.52, sway: 2.8 },
+  frost: { colors: [0x9eeeff, 0xdcf8ff, 0xffffff, 0x62c4ff], count: 7, size: 0.14, speed: 1.4, up: 1.8, gravity: 1.4, life: 0.65, sway: 1.8, unlit: true },
+  ember: { colors: [0xff5a22, 0xffa030, 0xffe466, 0xff3018], count: 9, size: 0.14, speed: 1.5, up: 2.8, gravity: -1.4, life: 0.75, sway: 1.6, unlit: true },
+  magic: { colors: [0xc880ff, 0x7ceeff, 0xffe878, 0xff8ad8], count: 12, size: 0.16, speed: 2.1, up: 2.6, gravity: -0.9, life: 0.85, sway: 1.4, unlit: true },
+  heart: { colors: [0xff6b9d, 0xffa6c4, 0xffe0eb], count: 6, size: 0.17, speed: 1.0, up: 2.1, gravity: -0.7, life: 0.85, sway: 2.0, unlit: true },
+  rock: { colors: [0xb8b2a8, 0x7c7670, 0xffe880, 0xd8d0c4], count: 10, size: 0.14, speed: 2.5, up: 3.4, gravity: 12, life: 0.55, bounce: true },
+  note: { colors: [0xffe054, 0x7ceeff, 0xff8ad8], count: 6, size: 0.16, speed: 1.1, up: 2.4, gravity: -0.8, life: 0.9, sway: 2.5, unlit: true },
 };
 
 /** 2.5D 월드용 동적 이펙트 매니저 */
 export class Fx3D {
   private boxGeo = new THREE.BoxGeometry(1, 1, 1);
   private planeGeo = new THREE.PlaneGeometry(1, 1);
+  private ringGeo = new THREE.RingGeometry(0.42, 0.6, 24);
   private dustTex?: THREE.CanvasTexture;
   private particles: Particle3D[] = [];
+  private rings: Ring3D[] = [];
   private chimneys: { x: number; y: number; z: number; dark: boolean; acc: number }[] = [];
   private weatherKind = '';
   private weatherGroup = new THREE.Group();
@@ -246,6 +265,28 @@ export class Fx3D {
         maxOpacity: cfg.puff ? 0.58 : 0.9,
       });
     }
+  }
+
+  /** 바닥 위에서 퍼져 나가는 3D 충격파 / 물결 파문 링 */
+  ring(worldPxX: number, worldPxY: number, colorHex = 0xffe58a, maxRadius = 1.25, life = 0.48, liftPx = 2) {
+    const gx = worldPxX / TILE;
+    const gz = worldPxY / TILE;
+    const gy = this.hts.sample(gx, Math.max(0, Math.min(this.hts.h - 0.01, gz))) + liftPx / TILE + 0.04;
+    const mat = new THREE.MeshBasicMaterial({
+      color: colorHex,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    mat.userData = { noTint: true };
+    const mesh = new THREE.Mesh(this.ringGeo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(gx, gy, gz);
+    mesh.scale.set(0.18, 0.18, 1);
+    this.scene3d.add(mesh);
+    this.rings.push({ mesh, mat, age: 0, life, maxScale: maxRadius * 1.6 });
   }
 
   addSpireBeam(worldPxX: number, worldPxY: number, colorHex: number, burst: boolean) {
@@ -398,14 +439,14 @@ export class Fx3D {
     this.weatherDrops = [];
     if (!kind) return;
 
-    const count = kind === 'rain' ? 140 : kind === 'snow' ? 85 : 42;
-    const col = kind === 'rain' ? 0xc2dfff : kind === 'snow' ? 0xf6fbff : kind === 'volcano' ? 0xff9a44 : 0xd0a8ff;
-    const sx = kind === 'rain' ? 0.03 : 0.1;
-    const sy = kind === 'rain' ? 0.48 : 0.1;
+    const count = kind === 'rain' ? 140 : kind === 'snow' ? 85 : kind === 'cave' ? 32 : 42;
+    const col = kind === 'rain' ? 0xc2dfff : kind === 'snow' ? 0xf6fbff : kind === 'volcano' ? 0xff9a44 : kind === 'cave' ? 0x98b4e8 : 0xd0a8ff;
+    const sx = kind === 'rain' ? 0.03 : kind === 'cave' ? 0.07 : 0.1;
+    const sy = kind === 'rain' ? 0.48 : kind === 'cave' ? 0.07 : 0.1;
     for (let i = 0; i < count; i++) {
       const m = new THREE.Mesh(
         this.planeGeo,
-        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: kind === 'rain' ? 0.52 : 0.78, side: THREE.DoubleSide, depthWrite: false }),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: kind === 'rain' ? 0.52 : kind === 'cave' ? 0.45 : 0.78, side: THREE.DoubleSide, depthWrite: false }),
       );
       m.scale.set(sx, sy, 1);
       if (kind === 'rain') m.rotation.z = -0.18;
@@ -415,7 +456,7 @@ export class Fx3D {
         ox: (Math.random() - 0.5) * 28,
         oy: Math.random() * 14,
         oz: (Math.random() - 0.5) * 24,
-        speed: kind === 'rain' ? 15 + Math.random() * 5 : kind === 'snow' ? 2.1 + Math.random() * 1.2 : 1.4 + Math.random() * 1.2,
+        speed: kind === 'rain' ? 15 + Math.random() * 5 : kind === 'snow' ? 2.1 + Math.random() * 1.2 : kind === 'cave' ? 0.45 + Math.random() * 0.45 : 1.4 + Math.random() * 1.2,
         phase: Math.random() * Math.PI * 2,
       });
     }
@@ -486,6 +527,23 @@ export class Fx3D {
       (p.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, (1 - t) * (p.maxOpacity ?? 0.9));
     }
 
+    // 2.5) 3D 충격파 / 파문 링 적분
+    for (let i = this.rings.length - 1; i >= 0; i--) {
+      const r = this.rings[i];
+      r.age += dt;
+      if (r.age >= r.life) {
+        this.scene3d.remove(r.mesh);
+        r.mat.dispose();
+        this.rings.splice(i, 1);
+        continue;
+      }
+      const t = r.age / r.life;
+      const ease = 1 - Math.pow(1 - t, 3);
+      const sc = 0.18 + ease * r.maxScale;
+      r.mesh.scale.set(sc, sc, 1);
+      r.mat.opacity = Math.max(0, (1 - t) * 0.9);
+    }
+
     // 3) 탑 빛기둥 맥동
     for (const b of this.spireBeams) {
       if (b.bursting) {
@@ -499,22 +557,24 @@ export class Fx3D {
       b.haloMat.opacity = 0.15 + pulse * 0.15;
     }
 
-    // 4) 3D 날씨 (비 / 설원 눈 / 화산 불티 / 시공 입자)
-    const activeWeather = interior || cave
+    // 4) 3D 날씨 (비 / 설원 눈 / 화산 불티 / 시공 입자 / 동굴 부유 포자)
+    const activeWeather = interior
       ? ''
-      : weather === 'rain'
-        ? 'rain'
-        : biome === 'snow'
-          ? 'snow'
-          : biome === 'volcano'
-            ? 'volcano'
-            : biome === 'origin' || biome === 'distort'
-              ? 'distort'
-              : '';
+      : cave
+        ? 'cave'
+        : weather === 'rain'
+          ? 'rain'
+          : biome === 'snow'
+            ? 'snow'
+            : biome === 'volcano'
+              ? 'volcano'
+              : biome === 'origin' || biome === 'distort' || biome === 'distortion'
+                ? 'distort'
+                : '';
     this.ensureWeather(activeWeather);
     if (activeWeather) {
       for (const d of this.weatherDrops) {
-        if (activeWeather === 'volcano' || activeWeather === 'distort') {
+        if (activeWeather === 'volcano' || activeWeather === 'distort' || activeWeather === 'cave') {
           d.oy = (d.oy + d.speed * dt) % 14;
           d.ox += Math.sin(nowSec * 1.4 + d.phase) * 0.6 * dt;
         } else {
@@ -538,6 +598,11 @@ export class Fx3D {
       (p.mesh.material as THREE.Material).dispose();
     }
     this.particles = [];
+    for (const r of this.rings) {
+      this.scene3d.remove(r.mesh);
+      r.mat.dispose();
+    }
+    this.rings = [];
     this.ensureWeather('');
     this.scene3d.remove(this.weatherGroup, this.fishingGroup);
     for (const b of this.spireBeams) {
@@ -553,6 +618,7 @@ export class Fx3D {
     this.windows = [];
     this.boxGeo.dispose();
     this.planeGeo.dispose();
+    this.ringGeo.dispose();
     this.lineGeo.dispose();
     this.rippleMat.dispose();
     this.dustTex?.dispose();

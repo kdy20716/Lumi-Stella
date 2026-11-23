@@ -16,8 +16,12 @@ export type AdminCmd =
   | { op: 'reports' }
   | { op: 'resolve'; id: string }
   | { op: 'kick'; uid: string; reason?: string }
-  | { op: 'ban'; uid: string; reason?: string }
+  | { op: 'ban'; uid: string; days?: number; reason?: string }   // days: 세상시간 기준 일수 (미지정/0이면 영구)
   | { op: 'unban'; uid: string }
+  | { op: 'mute'; uid: string; minutes: number; reason?: string } // 인게임 접속 시간 기준 채팅 금지(분)
+  | { op: 'unmute'; uid: string }
+  | { op: 'jail'; uid: string; reason?: string; fine?: boolean }  // 별빛 교도소 수감
+  | { op: 'unjail'; uid: string }                                 // 석방
   | { op: 'goto'; uid: string }                       // 내가 그 사람 옆으로
   | { op: 'bring'; uid: string }                      // 그 사람을 내 옆으로
   | { op: 'give'; uid: string; itemId: string; qty: number }
@@ -26,8 +30,9 @@ export type AdminCmd =
   | { op: 'resetBm'; uid: string }
   | { op: 'warp'; uid: string; map: MapId }
   | { op: 'setTime'; minutes: number };
-export interface AdminUser { uid: string; name: string; look: string; map: MapId; mapName: string; gold: number; cash?: number; badges: number; party: string; online: boolean; world: string }
-export interface BugReport { id: string; uid: string; name: string; text: string; where: string; at: number; resolved?: boolean }
+export interface AdminUser { uid: string; name: string; look: string; map: MapId; mapName: string; gold: number; cash?: number; badges: number; party: string; online: boolean; world: string; jailed?: boolean; muteRemainingSec?: number }
+export interface BugReport { id: string; uid: string; name: string; text: string; where: string; at: number; resolved?: boolean; kind?: 'bug' | 'user'; targetUid?: string; targetName?: string }
+export interface BanEntry { uid: string; name: string; reason: string; at?: number; until?: number }
 
 export type C2S =
   | { t: 'join'; token?: string; dev?: string; mode?: 'public' | 'friends' | 'story' }  // token: Firebase ID 토큰, mode: 모두와 함께 / 친구들만
@@ -35,12 +40,12 @@ export type C2S =
   | { t: 'action'; action: ActionIntent; reqId: number }
   | { t: 'anim'; anim: string; dir: Dir }           // 도구 휘두르기 등 같은 방 사람에게 보이는 일회성 애니메이션
   | { t: 'chat'; text: string }
-  | { t: 'report'; text: string; where: string }     // 버그 신고 (모든 유저)
+  | { t: 'report'; text: string; where: string; kind?: 'bug' | 'user'; targetUid?: string; targetName?: string } // 버그 · 유저 신고 (모든 유저)
   | { t: 'admin'; cmd: AdminCmd; reqId: number };    // 관리자 명령
 
 export type S2C =
   | { t: 'welcome'; id: string; you: PlayerState; snapshot: FarmSnapshot; roster: RosterEntry[]; storage: string; admin: boolean }
-  | { t: 'adminResult'; reqId: number; ok: boolean; message?: string; users?: AdminUser[]; reports?: BugReport[]; bans?: { uid: string; name: string; reason: string }[] }
+  | { t: 'adminResult'; reqId: number; ok: boolean; message?: string; users?: AdminUser[]; reports?: BugReport[]; bans?: BanEntry[] }
   | { t: 'adminReport'; report: BugReport }           // 새 버그 신고 알림 (관리자에게만)
   | { t: 'reported' }
   | { t: 'players'; list: NetPlayer[]; ts: number }

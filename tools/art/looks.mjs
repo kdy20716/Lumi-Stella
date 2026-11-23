@@ -238,5 +238,10 @@ export const BM_LOOKS = {
     shirt: tone('#3a2660', '#54388c', '#7e5cc0'), pants: tone('#24183c', '#38265c', '#5a428a'),
     shoes: shoesDark, outfit: 'vest', sleeves: 'long', accent: tone('#c99a2a', '#f2c848', '#fff09a'),
   },
+  warden: { // 별빛 교도소 경찰 감시관 (경찰 제복: 짙은 경찰 네이비 정모·조끼 + 밝은 경찰청 스카이블루 셔츠 + 다크 네이비 바지)
+    skin: SKINS.light, hair: tone('#0f172a', '#1e293b', '#334155'), hairStyle: 'short', hat: 'cap', glasses: true,
+    shirt: tone('#3b82f6', '#60a5fa', '#bfdbfe'), pants: tone('#0b152c', '#152547', '#283f70'),
+    shoes: shoesDark, outfit: 'vest', sleeves: 'long', accent: tone('#0f2354', '#1d3c85', '#3b64bf'),
+  },
 };
 Object.assign(LOOKS, BM_LOOKS);

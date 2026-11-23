@@ -31,13 +31,15 @@ const NON_BLOCKING = new Set([
   'tuft', 'tallgrass', 'stairs_up', 'attic_stairs_up', 'attic_stairs_down',
   'portal', 'cave_hole', 'glint', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn',
   'pair_card', 'rail_switch', 'quiz_pad', 'prism', 'rune_pad', 'rune_demo', 'snow_reset',
+  'stop_tile', 'water_switch', 'water_bridge', 'push_block', 'block_slot', 'puzzle_reset', 'cracked_tile',
   'gatehouse', 'cycle_gate',
 ]);
 const GYM_EXT_TYPES = new Set([
   'snowball', 'snow_reset', 'pair_card', 'rail_switch', 'quiz_pad',
   'prism', 'laser_src', 'laser_dst', 'rune_pad', 'rune_demo',
+  'stop_tile', 'water_switch', 'water_bridge', 'push_block', 'block_slot', 'puzzle_reset', 'cracked_tile',
 ]);
-const BLOCKING_GYM_EXT = new Set(['snowball', 'laser_src', 'laser_dst']);
+const BLOCKING_GYM_EXT = new Set(['snowball', 'laser_src', 'laser_dst', 'push_block']);
 // 그림자 크기 (가로 배율, 세로 배율)
 const SHADOW: Record<string, [number, number, number]> = {
   oak: [1.25, 1.3, -1], oak_apple: [1.25, 1.3, -1], oak_autumn: [1.25, 1.3, -1], pine: [1, 1.1, -1], pine_snow: [1, 1.1, -1], palm: [0.8, 0.8, -1], dead_tree: [0.9, 0.9, -1], cactus: [0.5, 0.5, 0],
@@ -163,18 +165,22 @@ export class World {
     for (const o of this.info.objects) {
       const type = o.type;
       const cellX = Number(prop(o, 'cellX', 0)), cellY = Number(prop(o, 'cellY', 0)), cellW = Number(prop(o, 'cellW', 1)), cellH = Number(prop(o, 'cellH', 1));
+      if (type === 'pit') {
+        for (let y = cellY - cellH + 1; y <= cellY; y++) for (let x = cellX; x < cellX + cellW; x++) this.grid.setBlocked(x, y, true);
+        continue;
+      }
       const building = m.buildings?.[type];
       let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
       let blockoutFacility = false;
       const sheet = m.spritesheets[type], img = m.images[type];
       if (GYM_EXT_TYPES.has(type)) {
         const key = this.ensureGymExtTexture(type, cellW, cellH, o);
-        const origY = type === 'snowball' ? 0.72 : type === 'rail_switch' || type === 'prism' || type === 'laser_src' || type === 'laser_dst' ? 0.7 : 0.5;
-        const px = type === 'snowball' || type === 'rail_switch' || type === 'prism' || type === 'laser_src' || type === 'laser_dst' ? o.x : cellX * TILE + (cellW * TILE) / 2;
-        const py = type === 'snowball' || type === 'rail_switch' || type === 'prism' || type === 'laser_src' || type === 'laser_dst' ? o.y : cellY * TILE + (cellH * TILE) / 2;
+        const origY = type === 'snowball' || type === 'push_block' ? 0.72 : type === 'rail_switch' || type === 'prism' || type === 'laser_src' || type === 'laser_dst' ? 0.7 : 0.5;
+        const px = type === 'snowball' || type === 'push_block' || type === 'rail_switch' || type === 'prism' || type === 'laser_src' || type === 'laser_dst' ? o.x : cellX * TILE + (cellW * TILE) / 2;
+        const py = type === 'snowball' || type === 'push_block' || type === 'rail_switch' || type === 'prism' || type === 'laser_src' || type === 'laser_dst' ? o.y : (cellY - cellH + 1) * TILE + (cellH * TILE) / 2;
         const sprite = this.scene.add.image(px, py, key).setOrigin(0.5, origY);
         sprite.setDepth(BLOCKING_GYM_EXT.has(type) ? o.y : DEPTH.cursor - 2);
-        const blocks = BLOCKING_GYM_EXT.has(type);
+        const blocks = BLOCKING_GYM_EXT.has(type) || (type === 'water_bridge' && Number(prop(o, 'reqLevel', 0)) !== 0);
         if (blocks) for (let y = cellY - cellH + 1; y <= cellY; y++) for (let x = cellX; x < cellX + cellW; x++) this.grid.setBlocked(x, y, true);
         const interactVal = o.properties?.find((pr) => pr.name === 'interact')?.value;
         const gateVal = o.properties?.find((pr) => pr.name === 'gateId')?.value;
@@ -438,7 +444,7 @@ export class World {
 
   /** 셀 (cx,cy) 위 상호작용 가능한 오브젝트 (비차단 바닥 기믹 포함) */
   interactAt(cx: number, cy: number): WorldObject | undefined {
-    const IGNORED = new Set(['tuft', 'tallgrass', 'glint', 'ice_tile', 'arrow_pad', 'warp_pad', 'gatehouse', 'cycle_gate']);
+    const IGNORED = new Set(['tuft', 'tallgrass', 'glint', 'ice_tile', 'arrow_pad', 'warp_pad', 'gatehouse', 'cycle_gate', 'pit', 'stop_tile', 'water_bridge', 'block_slot', 'cracked_tile']);
     return this.objects.find((o) => o.sprite.active && !IGNORED.has(o.type) && cy <= o.cellY && cy > o.cellY - o.cellH && cx >= o.cellX && cx < o.cellX + o.cellW);
   }
 
@@ -531,9 +537,77 @@ export class World {
     } else if (type === 'rune_pad' || type === 'rune_demo') {
       g.fillStyle = type === 'rune_demo' ? '#4a2078' : '#263468'; g.fillRect(2, 2, w - 4, h - 4);
       g.fillStyle = type === 'rune_demo' ? '#f8d050' : '#78b8ff'; g.fillRect(4, 4, w - 8, h - 8);
+    } else if (type === 'stop_tile') {
+      g.fillStyle = '#1e293b'; g.fillRect(1, 1, w - 2, h - 2);
+      g.fillStyle = '#38bdf8';
+      g.fillRect(3, 3, 4, 4); g.fillRect(w - 7, 3, 4, 4); g.fillRect(3, h - 7, 4, 4); g.fillRect(w - 7, h - 7, 4, 4);
+    } else if (type === 'water_switch') {
+      const col = String(gv('color') ?? '#facc15');
+      g.fillStyle = '#1e3a5f'; g.fillRect(1, 1, w - 2, h - 2);
+      g.fillStyle = col; g.beginPath(); g.arc(cx, cy, 5, 0, Math.PI * 2); g.fill();
+    } else if (type === 'water_bridge') {
+      const req = Number(gv('reqLevel') ?? 0);
+      const col = req === 0 ? '#facc15' : req === 1 ? '#34d399' : '#38bdf8';
+      g.fillStyle = '#925d33'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = col; g.lineWidth = 2; g.strokeRect(1, 1, w - 2, h - 2);
+    } else if (type === 'push_block') {
+      g.fillStyle = '#475569'; g.fillRect(1, 1, w - 2, h - 2);
+      g.fillStyle = '#94a3b8'; g.fillRect(3, 3, w - 6, h - 6);
+      g.strokeStyle = '#f59e0b'; g.lineWidth = 1.5; g.strokeRect(2.5, 2.5, w - 5, h - 5);
+    } else if (type === 'block_slot') {
+      g.fillStyle = '#292524'; g.fillRect(2, 2, w - 4, h - 4);
+      g.strokeStyle = '#f59e0b'; g.lineWidth = 2; g.strokeRect(3, 3, w - 6, h - 6);
+    } else if (type === 'puzzle_reset') {
+      g.fillStyle = '#1e3a5f'; g.fillRect(2, 2, w - 4, h - 4);
+      g.fillStyle = '#38bdf8'; g.fillRect(4, 4, w - 8, h - 8);
+    } else if (type === 'cracked_tile') {
+      g.fillStyle = '#451a03'; g.fillRect(1, 1, w - 2, h - 2);
+      g.fillStyle = '#ea580c'; g.fillRect(2, 2, w - 4, h - 4);
     }
     ct.refresh();
     return key;
+  }
+
+  /** 물결항 도장 (들판식) 수위 반영: 현재 수위와 일치하는 부교만 통행 허용 */
+  setWaterLevel(level: number) {
+    for (const o of this.objects) {
+      if (o.type !== 'water_bridge') continue;
+      const raw = this.info.objects.find((ob) => ob.id === o.id);
+      const req = Number(raw?.properties?.find((pr) => pr.name === 'reqLevel')?.value ?? 0);
+      const active = req === level;
+      o.blocks = !active;
+      for (let y = o.cellY - o.cellH + 1; y <= o.cellY; y++) {
+        for (let x = o.cellX; x < o.cellX + o.cellW; x++) this.grid.setBlocked(x, y, !active);
+      }
+      if (o.sprite?.active) {
+        o.sprite.setAlpha(active ? 1 : 0.35);
+      }
+    }
+  }
+
+  /** 쇳불 도장 밀기 블록 1칸 이동/슬롯 안착 반영 */
+  movePushBlock(id: number, nx: number, ny: number, locked: boolean) {
+    const o = this.objects.find((ob) => ob.id === id && ob.type === 'push_block');
+    if (!o) return;
+    if (o.blocks) this.grid.setBlocked(o.cellX, o.cellY, false);
+    o.cellX = nx;
+    o.cellY = ny;
+    o.blocks = !locked;
+    if (!locked) this.grid.setBlocked(nx, ny, true);
+    if (o.sprite?.active) {
+      o.sprite.setPosition(nx * TILE + 8, (ny + 1) * TILE);
+      o.sprite.setDepth(locked ? DEPTH.cursor - 1 : (ny + 1) * TILE);
+      o.sprite.setTint(locked ? 0xfacc15 : 0xffffff);
+    }
+  }
+
+  /** 쇳불 도장 밀기 블록 그룹 초기화 */
+  resetPushBlocks(group: string | undefined, openGates: Set<string>) {
+    for (const orig of this.info.pushBlocks) {
+      if (group && orig.group !== group) continue;
+      if (openGates.has(orig.gateId)) continue;
+      this.movePushBlock(orig.id, orig.x, orig.y, false);
+    }
   }
 
   /** 단풍꽃 기억력 카드 2D 비주얼 전환 */

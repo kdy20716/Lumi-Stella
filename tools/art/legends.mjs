@@ -187,7 +187,73 @@ function stella(N, f) {
   return t;
 }
 
-const DRAW = { byeolmuri, onnuri, stella };
+// ── 해랑 (전설 · 물): 해신의 바다를 지키는 심해 해룡 — 산호 금관 · 옥빛 지느러미 날개 · 진주 코어 ──
+const ABYSS = ['#0a2a5e', '#15509a', '#2684d4', '#6ec4ff'];
+const ABYSS_D = ['#071b3e', '#0d3670', '#185ba4', '#3b92de'];
+const AQUA_FIN = ['#0e6a82', '#1fa8c4', '#6ef0ff', '#e4ffff'];
+const CORAL = ['#982a46', '#e65878', '#ff98b0', '#ffe4ec'];
+function haerang(N, f) {
+  const t = new Img(N, N), bob = f ? -1.8 : 0;
+  // 먼 지느러미 날개 (푸른 파도깃)
+  const fin = (ox, oy, ang, len, wd) => {
+    const a = ang * Math.PI / 180, c = Math.cos(a), s2 = Math.sin(a), px = -s2, py = c;
+    return poly([
+      [ox + px * wd * 0.7, oy + py * wd * 0.7],
+      [ox + c * len * 0.65 + px * wd, oy + s2 * len * 0.65 + py * wd + bob],
+      [ox + c * len, oy + s2 * len + bob * 1.3],
+      [ox - px * wd * 0.5, oy - py * wd * 0.5],
+    ]);
+  };
+  const farFin = any(...[-66, -46, -24].map((a, i) => fin(56, 48, a, 42 - i * 4, 5.5)));
+  paint(t, N, farFin, ABYSS_D);
+  // 유려하게 굽이치는 해룡의 몸통과 꼬리
+  const body = chain([
+    [34, 42 + bob], [42, 54 + bob], [54, 62 + bob], [66, 70 + bob],
+    [76, 80 + bob], [66, 89 + bob], [50, 90 + bob], [36, 83 + bob],
+  ], 10.5, 4.2);
+  paint(t, N, body, ABYSS, { band: (x, y, c) => (c === ABYSS[1] && Math.floor(x * 0.6 + y * 0.8) % 9 === 0 ? '#50c8f0' : null) });
+  // 꼬리 끝 부채꼴 파도 지느러미
+  paint(t, N, any(
+    poly([[35, 82 + bob], [16, 74 + bob], [22, 86 + bob], [36, 87 + bob]]),
+    poly([[34, 84 + bob], [19, 92 + bob], [30, 94 + bob], [41, 88 + bob]]),
+  ), AQUA_FIN);
+  // 가까운 지느러미 날개 (반투명 청록 발광)
+  const nearFin = any(...[-92, -74, -56, -38].map((a, i) => fin(48, 48, a, 46 - i * 3, 6)));
+  paint(t, N, nearFin, AQUA_FIN, { band: (x, y, c) => (c === AQUA_FIN[2] && f ? '#ffffff' : null) });
+  // 배 비늘 (밝은 진주빛)
+  paint(t, N, ell(44, 58 + bob, 9.5, 11.5, 0.35), ['#7ec8e8', '#b6ecff', '#e4fbff', '#ffffff']);
+  // 목 · 머리
+  paint(t, N, cap(38, 46 + bob, 30, 26 + bob, 8.2, 6.2), ABYSS);
+  paint(t, N, poly([
+    [18, 17 + bob], [33, 14 + bob], [40, 22 + bob], [37, 32 + bob],
+    [22, 34 + bob], [10, 30 + bob], [9, 24 + bob],
+  ]), ABYSS);
+  // 산호 + 황금 삼지창 왕관
+  paint(t, N, any(
+    poly([[26, 16 + bob], [22, 3 + bob], [27, 4 + bob], [30, 15 + bob]]),
+    poly([[31, 15 + bob], [35, 1 + bob], [39, 3 + bob], [35, 16 + bob]]),
+    poly([[36, 17 + bob], [46, 6 + bob], [49, 10 + bob], [39, 20 + bob]]),
+  ), CORAL);
+  paint(t, N, poly([[27, 15 + bob], [33, 12 + bob], [38, 16 + bob], [33, 19 + bob]]), GOLD);
+  // 등줄기 물결 갈기
+  paint(t, N, chain([[38, 22 + bob], [46, 36 + bob], [58, 54 + bob], [72, 72 + bob]], 4.2, 2.2), AQUA_FIN);
+  t.outline('#051430', 0.72);
+  // 가슴 진주 코어 + 눈 + 물보라 반짝임
+  paint(t, N, ell(42, 53 + bob, 4.6, 5.2), f ? ['#2298c8', '#78f4ff', '#e0ffff', '#ffffff'] : ['#b07818', '#ffd85a', '#fff6c0', '#ffffff']);
+  const big = N >= 64;
+  stroke(t, N, [[17, 22 + bob], [24, 21 + bob]], f ? '#ffffff' : '#ffe878', big ? 2 : 1);
+  if (big) {
+    stroke(t, N, [[48, 56 + bob], [58, 64 + bob], [68, 72 + bob]], '#8cf4ff');
+    for (let i = 0; i < 16; i++) {
+      const x = 14 + hash2(i, 6, 19) * 74, y = 10 + hash2(i, 7, 19) * 76 + bob;
+      if (i % 3 === 0) starAt(t, N, x, y, '#8cf4ff', 1);
+      else dotAt(t, N, x, y, i % 2 === f ? '#ffffff' : '#6ef0ff');
+    }
+  }
+  return t;
+}
+
+const DRAW = { byeolmuri, onnuri, stella, haerang };
 export const LEGEND_ART = Object.keys(DRAW);
 /** 배틀용 큰 그림: 96×96 두 프레임 (숨쉬기 · 빛) */
 export function buildLegendBig(id) { const img = new Img(D * 2, D); for (let f = 0; f < 2; f++) img.blit(DRAW[id](D, f), f * D, 0); return img; }

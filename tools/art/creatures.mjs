@@ -416,6 +416,7 @@ export const SPECIES_ART = {
   byeolmuri: { pal: tone('#1a1648', '#30307a', '#5a62b8'), belly: '#c8d0ff', accent: tone('#c9a23a', '#ffd65a', '#fff8c8'), wingPal: tone('#3a2a8a', '#7a6ae0', '#d8d0ff'), ears: 'horn', tail: 'star', extras: ['wings', 'stars', 'glow'], head: 8, body: [7, 6], eyeColor: '#ffe58a', faceMask: true, cheeks: '#8a7ae0' },
   onnuri: { pal: tone('#b8a890', '#f4eee2', '#ffffff'), belly: '#fffaf0', accent: tone('#c98a2a', '#ffd65a', '#fff4b0'), wingPal: tone('#e0b0d8', '#ffe0f4', '#ffffff'), ears: 'feather', tail: 'star', extras: ['wings', 'stars', 'glow'], head: 8, body: [7, 6], eyeColor: '#5ac8a8', faceMask: true, cheeks: '#ffb0c8' },
   stella: { pal: tone('#8a92c8', '#c8d0f4', '#f0f2ff'), belly: '#ffffff', accent: tone('#a83a78', '#f07ab0', '#ffc0dc'), wingPal: tone('#3a2a7a', '#6a52c8', '#b08af0'), ears: 'horn', tail: 'star', extras: ['stars', 'glow'], head: 8, body: [7, 6], eyeColor: '#3a2a8a', faceMask: true, cheeks: '#ffc0dc' },
+  haerang: { pal: tone('#0a2a5e', '#15509a', '#2684d4'), belly: '#d8f8ff', accent: tone('#0e6a82', '#1fa8c4', '#6ef0ff'), wingPal: tone('#0e6a82', '#38c8e8', '#b0f8ff'), ears: 'horn', tail: 'star', extras: ['wings', 'stars', 'glow'], head: 8, body: [7, 6], eyeColor: '#ffe878', faceMask: true, cheeks: '#6ef0ff' },
   astra: { pal: tone('#2a2a6a', '#4a5ab8', '#8a9ae8'), belly: '#e8e0ff', accent: tone('#c99a2a', '#ffd65a', '#fff4b0'), wingPal: tone('#6a5ab8', '#a8a0f0', '#e0dcff'), ears: 'horn', tail: 'star', extras: ['wings', 'stars'], head: 7, body: [6, 5], eyeColor: '#ffd65a', faceMask: true },
 };
 

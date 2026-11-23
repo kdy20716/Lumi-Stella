@@ -47,7 +47,7 @@ export class Player extends Character {
    * 축별로 따로 충돌 검사해서 벽을 따라 미끄러짐.
    * 턱(ledge)은 위에서 아래로만 뛰어내릴 수 있고, 아래나 옆에서는 못 올라감.
    */
-  public slide: { vx: number; vy: number; mode: 'ice' | 'arrow'; remainPx: number; distPx: number } | null = null;
+  public slide: { vx: number; vy: number; mode: 'ice' | 'arrow' | 'current'; remainPx: number; distPx: number } | null = null;
   public onSlideBlocked?: (x: number, y: number, vx: number, vy: number, distPx: number) => void;
   private stopGrace = 0;
 
@@ -55,7 +55,7 @@ export class Player extends Character {
     return this.slide !== null;
   }
 
-  startSlide(vx: number, vy: number, mode: 'ice' | 'arrow', remainPx = Infinity) {
+  startSlide(vx: number, vy: number, mode: 'ice' | 'arrow' | 'current', remainPx = Infinity) {
     const len = Math.hypot(vx, vy) || 1;
     this.slide = { vx: vx / len, vy: vy / len, mode, remainPx, distPx: 0 };
   }
@@ -66,7 +66,7 @@ export class Player extends Character {
 
   /** 타일·장애물 모서리에 살짝 겹쳐 끼었을 때 가장 가까운 통과 가능 좌표로 복구 */
   ensureUnstuck() {
-    if (this.grid.canStand(this.x, this.y) && !this.overlapsLedge(this.x, this.y)) return;
+    if (this.grid.canStand(this.x, this.y, 5, 5, this.surfing) && !this.overlapsLedge(this.x, this.y)) return;
     const dirs: [number, number][] = [
       [0, 1], [0, -1], [1, 0], [-1, 0],
       [0.707, 0.707], [-0.707, 0.707], [0.707, -0.707], [-0.707, -0.707],
@@ -74,7 +74,7 @@ export class Player extends Character {
     for (let r = 1; r <= 16; r++) {
       for (const [dx, dy] of dirs) {
         const nx = this.x + dx * r, ny = this.y + dy * r;
-        if (this.grid.canStand(nx, ny) && !this.overlapsLedge(nx, ny)) {
+        if (this.grid.canStand(nx, ny, 5, 5, this.surfing) && !this.overlapsLedge(nx, ny)) {
           this.setPosition(nx, ny);
           return;
         }
@@ -83,7 +83,7 @@ export class Player extends Character {
     for (let r = 20; r <= 48; r += 4) {
       for (const [dx, dy] of dirs) {
         const nx = this.x + dx * r, ny = this.y + dy * r;
-        if (this.grid.canStand(nx, ny) && !this.overlapsLedge(nx, ny)) {
+        if (this.grid.canStand(nx, ny, 5, 5, this.surfing) && !this.overlapsLedge(nx, ny)) {
           this.setPosition(nx, ny);
           return;
         }
@@ -117,13 +117,13 @@ export class Player extends Character {
     const horizontal = ax > 0.01 && ay > 0.01 ? (wasH ? ax >= ay * 0.6 : ax > ay * 1.6) : ax >= ay;
     const dir: Dir = horizontal ? (vx > 0 ? 'right' : 'left') : (vy > 0 ? 'down' : 'up');
 
-    let totalDist = (((this.riding ? BIKE_SPEED : running ? RUN_SPEED : WALK_SPEED)) * dt) / 1000;
+    let totalDist = (((this.riding ? BIKE_SPEED : this.surfing ? RUN_SPEED * 1.18 : running ? RUN_SPEED : WALK_SPEED)) * dt) / 1000;
     if (this.slide && Number.isFinite(this.slide.remainPx)) {
       totalDist = Math.min(totalDist, this.slide.remainPx);
     }
 
     const solid = (nx: number, ny: number) => {
-      if (!this.grid.canStand(nx, ny)) return true;
+      if (!this.grid.canStand(nx, ny, 5, 5, this.surfing)) return true;
       // 다른 사람과 겹치지 않기 (이미 겹쳐 있으면 멀어지는 쪽으로는 이동 허용)
       return others.some((o) => {
         const dx = Math.abs(o.x - nx), dy = Math.abs(o.y - ny);
@@ -265,6 +265,8 @@ export class Player extends Character {
 
   /** 자전거 탑승 여부 */
   riding = false;
+  /** 파도타기 탑승 여부 */
+  surfing = false;
   /** 턱 넘어 뛰어내리기: 턱 칸을 지나 그 아래 칸 가운데에 착지 (포물선) */
   hopping = false;
   onHop?: () => void;

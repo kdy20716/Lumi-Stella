@@ -3,7 +3,7 @@ import { MapBuilder } from './lib.mjs';
 import { ROOMS, FURN } from '../art/interior.mjs';
 
 const EXTERNAL = { barrel: { w: 1, h: 1 }, crate: { w: 1, h: 1 }, anvil: { w: 1, h: 1 }, cafe_table: { w: 2, h: 1 }, sign: { w: 1, h: 1 } };
-const BLOCKING_GIMMICKS = new Set(['gate_bar', 'snowball', 'laser_src', 'laser_dst']);
+const BLOCKING_GIMMICKS = new Set(['gate_bar', 'snowball', 'laser_src', 'laser_dst', 'pit']);
 
 export function buildInterior(id) {
   const s = ROOMS[id];
@@ -25,7 +25,7 @@ export function buildInterior(id) {
   }
   for (const [type, cx, cy, props = {}] of s.furn) {
     const f = FURN[type] ?? EXTERNAL[type] ?? { w: 1, h: 1 };
-    const passable = type === 'attic_stairs_up' || type === 'attic_stairs_down';
+    const passable = type === 'attic_stairs_up' || type === 'attic_stairs_down' || type === 'prison_hatch' || type === 'prison_stairs_up';
     m.place(type, cx, cy, { w: f.w, h: f.h, block: !passable, force: true, props: type === 'sign' ? { interact: 'sign', ...props } : props });
   }
   for (const [name, cx, cy, props] of s.spawns) m.spawn(name, cx, cy, props);

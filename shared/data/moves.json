@@ -329,6 +329,17 @@
     "priority": 0,
     "description": "세상이 처음 빚어질 때의 빛을 내뿜는다."
   },
+  "abyss_surge": {
+    "id": "abyss_surge",
+    "name": "심해의 해일",
+    "type": "물",
+    "power": 105,
+    "accuracy": 95,
+    "pp": 10,
+    "category": "atk",
+    "priority": 0,
+    "description": "심해의 거대한 해일을 일으켜 상대를 집어삼킨다."
+  },
   "struggle": {
     "id": "struggle",
     "name": "발버둥",

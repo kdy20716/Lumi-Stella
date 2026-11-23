@@ -19,6 +19,7 @@ import { createServer } from 'node:http';
 import { Server as IOServer, type Socket } from 'socket.io';
 import { SNAPSHOT_HZ, type C2S, type BugReport } from '../shared/protocol';
 import { FarmSimulation } from '../shared/sim/FarmSimulation';
+import { formatBanUntil, formatMuteRemaining } from '../shared/sim/antiCheat';
 import { MapInfo, type TiledMap } from '../shared/sim/MapInfo';
 import { MAP_IDS, MAP_NAMES, type MapId, type SaveData } from '../shared/types';
 import { firebaseConfig } from '../shared/firebaseConfig';
@@ -71,8 +72,18 @@ async function join(ws: Conn, m: Extract<C2S, { t: 'join' }>): Promise<Client | 
     }
     else throw new Error('구글 로그인이 필요해요');
   } catch (e) { hub.send(ws, { t: 'error', message: (e as Error).message }); ws.close(); return null; }
-  const banned = (await storage.bans().catch(() => ({})) as Record<string, { reason: string }>)[uid];
-  if (banned) { hub.send(ws, { t: 'error', message: `이 계정은 이용이 정지되었어요.${banned.reason ? ` (${banned.reason})` : ''}` }); ws.close(); return null; }
+  const banMap = await storage.bans().catch(() => ({} as Record<string, { name: string; reason: string; at: number; until?: number }>));
+  const banned = banMap[uid];
+  if (banned) {
+    if (banned.until && Date.now() >= banned.until) {
+      await storage.unban(uid).catch(() => {});
+    } else {
+      const exp = formatBanUntil(banned.until);
+      hub.send(ws, { t: 'error', message: `⛔ 이 계정은 접속이 금지되었습니다. [${exp}]${banned.reason ? ` (${banned.reason})` : ''}` });
+      ws.close();
+      return null;
+    }
+  }
   // 같은 계정이 다른 창에서 접속 중이면 이전 연결을 저장 후 종료
   const old = hub.clients.get(uid);
   if (old) { hub.send(old.conn, { t: 'error', message: '다른 곳에서 같은 계정으로 접속했어요.' }); old.conn.close(); await new Promise((r) => setTimeout(r, 150)); }
@@ -105,7 +116,7 @@ async function onMessage(client: Client, m: C2S) {
       const now = Date.now(), dt = Math.max(16, now - client.lastMove) / 1000;
       client.lastMove = now;
       const dist = Math.hypot(m.x - p.x, m.y - p.y);
-      const speedCap = p.riding ? BIKE_MAX_SPEED : MAX_SPEED;
+      const speedCap = p.riding ? BIKE_MAX_SPEED : p.surfing ? Math.max(MAX_SPEED, 165) : MAX_SPEED;
       if (dist > speedCap * dt + 8 || !sim.canStand(p, m.x, m.y)) { hub.send(ws, { t: 'correct', x: p.x, y: p.y }); break; } // 서버 보정
       if (dist > 2) p.sleeping = false;
       p.x = m.x; p.y = m.y; p.dir = m.dir; client.anim = String(m.anim).slice(0, 16);
@@ -114,15 +125,29 @@ async function onMessage(client: Client, m: C2S) {
     case 'action': {
       const r = sim.apply(client.id, m.action);
       hub.send(ws, { t: 'actionResult', reqId: m.reqId, ...r });
-      // 저장 초기화는 바로 저장소에도 반영 (캐릭터가 없는 상태라 일반 자동 저장은 건너뜀)
-      if (m.action.kind === 'resetSave' && r.ok) { const d = sim.exportSave(client.id); if (d) await storage.save(client.id, d).catch(() => {}); }
+      // 저장 초기화 · 치트 수감 · 탈옥 완료는 즉시 저장소에 반영
+      if ((m.action.kind === 'resetSave' || m.action.kind === 'cheatCaught' || m.action.kind === 'prisonEscape' || m.action.kind === 'yardDeliver' || m.action.kind === 'completeHomecoming' || m.action.kind === 'goodDeed') && r.ok) {
+        const d = sim.exportSave(client.id);
+        if (d) {
+          recent.set(client.id, { data: d, at: Date.now() });
+          await storage.save(client.id, d).catch(() => {});
+        }
+        if (m.action.kind === 'cheatCaught') {
+          setTimeout(() => { if (ws.open) ws.close(); }, 1500);
+        }
+      }
       break;
     }
     case 'anim': hub.toRoom(sim.room(p), { t: 'anim', id: client.id, anim: String(m.anim).slice(0, 16), dir: m.dir }, client.id); break;
     case 'chat': {
       const text = String(m.text ?? '').trim().slice(0, 80);
+      if (!text) break;
+      if ((p.muteRemainingSec ?? 0) > 0) {
+        hub.sendTo(client.id, { t: 'chat', from: 'server', name: '시스템', text: `🔇 채팅 금지 상태입니다! 남은 접속 시간: ${formatMuteRemaining(p.muteRemainingSec!)} (인게임 접속 중일 때만 시간이 흐릅니다)` });
+        break;
+      }
       // 채팅은 같은 세계 사람들에게만 (친구들만 모드는 그 세계 안에서만)
-      if (text) for (const o of sim.players.values()) if (o.world === p.world || o.id === p.id) hub.sendTo(o.id, { t: 'chat', from: client.id, name: client.admin ? `[admin] ${p.name}` : p.name, text });
+      for (const o of sim.players.values()) if (o.world === p.world || o.id === p.id) hub.sendTo(o.id, { t: 'chat', from: client.id, name: client.admin ? `[admin] ${p.name}` : p.name, text });
       break;
     }
     case 'report': {
@@ -130,16 +155,37 @@ async function onMessage(client: Client, m: C2S) {
       const text = String(m.text ?? '').trim().slice(0, REPORT_MAX_LEN);
       if (!text || now - client.lastReport < REPORT_COOLDOWN_MS) break;
       client.lastReport = now;
-      const report: BugReport = { id: `${now.toString(36)}${Math.random().toString(36).slice(2, 6)}`, uid: client.id, name: p.name, text, where: `${MAP_NAMES[p.map] ?? p.map} (${Math.round(p.x / 16)},${Math.round(p.y / 16)}) · ${String(m.where ?? '').slice(0, 80)}`, at: now };
+      const targetUid = typeof m.targetUid === 'string' && m.targetUid.trim() ? m.targetUid.trim().slice(0, 128) : undefined;
+      const resolvedTargetName = targetUid ? (sim.players.get(targetUid)?.name ?? (typeof m.targetName === 'string' ? m.targetName.trim().slice(0, 24) : undefined)) : (typeof m.targetName === 'string' && m.targetName.trim() ? m.targetName.trim().slice(0, 24) : undefined);
+      const report: BugReport = {
+        id: `${now.toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+        uid: client.id, name: p.name, text,
+        where: `${MAP_NAMES[p.map] ?? p.map} (${Math.round(p.x / 16)},${Math.round(p.y / 16)}) · ${String(m.where ?? '').slice(0, 80)}`,
+        at: now,
+        kind: m.kind === 'user' || targetUid ? 'user' : 'bug',
+        targetUid,
+        targetName: resolvedTargetName,
+      };
       await storage.addReport(report).catch(() => {});
       hub.send(ws, { t: 'reported' });
       hub.toAdmins({ t: 'adminReport', report });
-      console.log(`🐞 버그 신고: ${p.name} — ${text.slice(0, 60)}`);
+      console.log(`🚨 신고 접수(${report.kind === 'user' ? '유저' : '버그'}): ${p.name}${resolvedTargetName ? ` → 대상:${resolvedTargetName}` : ''} — ${text.slice(0, 60)}`);
       break;
     }
     case 'admin': {
       // 관리자 확인은 접속할 때 서버가 토큰으로 정한 client.admin 만 믿음 (메시지 안의 어떤 값도 믿지 않음)
-      if (!client.admin) { hub.send(ws, { t: 'adminResult', reqId: Number(m.reqId) || 0, ok: false, message: '권한 없음' }); console.warn(`⚠ 관리자 명령 시도 거부: ${p.name} (${client.id})`); break; }
+      if (!client.admin) {
+        const op = (m.cmd as { op?: string } | undefined)?.op;
+        if (op === 'gold' || op === 'grantCash' || op === 'give') {
+          console.warn(`🚨 비인가 재화 치트 시도 적발 → 즉시 수감: ${p.name} (${client.id}) op=${op}`);
+          sim.flagCheater(p, '비인가 재화 증가 치트 패킷 감지');
+          const d = sim.exportSave(client.id);
+          if (d) { recent.set(client.id, { data: d, at: Date.now() }); await storage.save(client.id, d).catch(() => {}); }
+          setTimeout(() => { if (ws.open) ws.close(); }, 1500);
+          break;
+        }
+        hub.send(ws, { t: 'adminResult', reqId: Number(m.reqId) || 0, ok: false, message: '권한 없음' }); console.warn(`⚠ 관리자 명령 시도 거부: ${p.name} (${client.id})`); break;
+      }
       const r = await handleAdmin(client, m.cmd, sim, hub, storage, kick).catch((e) => ({ ok: false, message: (e as Error).message }));
       hub.send(ws, { t: 'adminResult', reqId: Number(m.reqId) || 0, ...r });
       break;

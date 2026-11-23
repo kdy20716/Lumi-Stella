@@ -34,6 +34,8 @@ export class BootScene extends Phaser.Scene {
     for (const t of ['oak', 'oak_apple', 'oak_autumn', 'pine', 'pine_snow', 'palm']) loop(`${t}:sway`, t, [0, 1, 2, 3], 1.6);
     loop('tuft:sway', 'tuft', [0, 1, 2, 3], 2.5);
     loop('tallgrass:sway', 'tallgrass', [0, 1, 0, 2], 2);
+    loop('campfire:sway', 'campfire', [0, 1, 2, 3], 6.5);
+    loop('whirlpool:sway', 'whirlpool', [0, 1, 2, 3], 8.0);
     // 루미: [정면0, 정면1, 측면0, 측면1, 뒷면0, 뒷면1]
     for (const key of Object.values((m as Manifest & { lumi: Record<string, string> }).lumi ?? {})) {
       loop(`${key}:down`, key, [0, 1], 4); loop(`${key}:left`, key, [2, 3], 4); loop(`${key}:up`, key, [4, 5], 4);

@@ -2,9 +2,10 @@ import { io, type Socket } from 'socket.io-client';
 import { mixedContentProblem } from './serverUrl';
 import { ITEMS, REGION_MAPS, SPECIES } from '@shared/data';
 import { formatKrw } from '@shared/bmShop';
-import type { AdminCmd, AdminUser, BugReport, S2C as _S2C } from '@shared/protocol';
+import type { AdminCmd, AdminUser, BanEntry, BugReport, S2C as _S2C } from '@shared/protocol';
 import type { NetPlayer, RosterEntry, S2C, C2S } from '@shared/protocol';
 import { FarmSimulation, MS_PER_10_MIN, type SimEvent } from '@shared/sim/FarmSimulation';
+import { computeSaveSig, formatBanUntil, formatMuteRemaining, verifySaveIntegrity } from '@shared/sim/antiCheat';
 import type { MapInfo } from '@shared/sim/MapInfo';
 import { SoilState, isHomeMap, roomOf, type ForageSpot, type ActionIntent, type ActionResult, type Dir, type Dish, type FarmSnapshot, type FarmTile, type MapId, type PlacedObject, type PlayerState, type SaveData, type WorldTime } from '@shared/types';
 
@@ -38,6 +39,11 @@ export abstract class Authority {
   me!: PlayerState;
   time!: WorldTime;
   gold = 0;
+  /** 서버/시뮬레이션이 정식 인가한 최근 골드·캐쉬 기준 (치트 변조 감시용) */
+  protected authorizedGold = 0;
+  protected authorizedCash = 0;
+  /** 저장 파일 변조 감지 시 이유 문자열 (씬 시작 직후 즉시 치트 프리징 발동) */
+  tamperDetectedReason: string | null = null;
   /** 지금 있는 방의 상태 사본 (농장이면 그 주인의 경작지) */
   readonly tiles = new Map<string, FarmTile>();
   readonly removed = new Set<string>();
@@ -63,6 +69,20 @@ export abstract class Authority {
     this.dish = s.dish ?? null;
     this.placed.clear(); for (const o of s.placed ?? []) this.placed.set(o.id, { ...o });
     this.time = { ...s.time }; this.gold = s.gold; this.me.gold = s.gold;
+    this.authorizedGold = s.gold;
+    this.authorizedCash = Math.max(0, Math.round(this.me.cash ?? 0));
+  }
+  /** 런타임 메모리·콘솔 재화 무단 변조 감지 */
+  checkCurrencyTamper(): string | null {
+    if (this.tamperDetectedReason) return this.tamperDetectedReason;
+    if (!this.me) return null;
+    const g = this.me.gold;
+    const c = this.me.cash ?? 0;
+    if (!Number.isFinite(g) || !Number.isFinite(c) || g < 0 || c < 0) return '비정상 재화 수치 변조';
+    if (g > this.authorizedGold) return `비정상 골드 증가 감지 (${this.authorizedGold}G → ${g}G)`;
+    if (this.gold > this.authorizedGold) return `비정상 골드 캐시 변조 감지 (${this.authorizedGold}G → ${this.gold}G)`;
+    if (c > this.authorizedCash) return `비정상 캐쉬 증가 감지 (${this.authorizedCash}원 → ${c}원)`;
+    return null;
   }
   protected listeners: ((e: AuthorityEvent) => void)[] = [];
   on(fn: (e: AuthorityEvent) => void) { this.listeners.push(fn); return () => { this.listeners = this.listeners.filter((l) => l !== fn); }; }
@@ -75,9 +95,10 @@ export abstract class Authority {
     const me = this.me;
     switch (e.type) {
       case 'time': case 'newDay': this.time = { ...e.time }; this.subMs = 0; break;
-      case 'gold': if (e.playerId === me.id) { this.gold = e.gold; me.gold = e.gold; } break;
+      case 'gold': if (e.playerId === me.id) { this.gold = e.gold; me.gold = e.gold; this.authorizedGold = e.gold; } break;
       case 'player': if (e.id === me.id) { me.energy = e.energy; me.inventory = e.inventory.map((s) => ({ ...s })); } break;
       case 'bike': if (e.id === me.id) me.riding = e.riding; break;
+      case 'surf': if (e.id === me.id) me.surfing = e.surfing; break;
       case 'tile': if ((e.map ?? 'farm') === me.map && e.owner === this.farmOwner) { const k = `${e.tile.x},${e.tile.y}`; if (e.tile.soil === SoilState.Unplowed) this.tiles.delete(k); else this.tiles.set(k, { ...e.tile, crop: e.tile.crop ? { ...e.tile.crop } : null }); } break;
       case 'objectRemoved': if (!e.owner || e.owner === this.farmOwner) this.removed.add(e.key); break;
       case 'objectRestored':
@@ -92,12 +113,48 @@ export abstract class Authority {
       case 'invite': if (e.to === me.id) this.invites.set(e.from, { from: e.from, name: e.fromName, where: e.where, t: Date.now() }); break;
       case 'story': if (e.id === me.id) me.story = e.story; break;
       case 'bmState':
-        if (e.id === me.id) Object.assign(me, {
-          mailItems: e.mailItems, uiTheme: e.uiTheme, ownedThemes: e.ownedThemes,
-          ownedOutfits: e.ownedOutfits, lumiCoord: e.lumiCoord, ownedLumiCoords: e.ownedLumiCoords,
-          chatBubble: e.chatBubble, ownedBubbles: e.ownedBubbles, bmOrders: e.bmOrders,
-          cash: e.cash, isAdmin: e.isAdmin,
-        });
+        if (e.id === me.id) {
+          Object.assign(me, {
+            mailItems: e.mailItems, uiTheme: e.uiTheme, ownedThemes: e.ownedThemes,
+            ownedOutfits: e.ownedOutfits, lumiCoord: e.lumiCoord, ownedLumiCoords: e.ownedLumiCoords,
+            chatBubble: e.chatBubble, ownedBubbles: e.ownedBubbles, bmOrders: e.bmOrders,
+            cash: e.cash, isAdmin: e.isAdmin,
+          });
+          this.authorizedCash = Math.max(0, Math.round(e.cash ?? 0));
+        }
+        break;
+      case 'prisonState':
+        if (e.playerId === me.id) {
+          me.jailed = e.jailed;
+          me.prisonMined = e.mined;
+          if (e.reason !== undefined) me.jailReason = e.reason;
+        }
+        break;
+      case 'prisonLabor':
+        if (e.playerId === me.id) {
+          me.prisonSlabs = e.slabs;
+          me.prisonPlanks = e.planks;
+        }
+        break;
+      case 'karma':
+        if (e.playerId === me.id) {
+          me.evilStack = e.evilStack;
+          me.momLeft = e.momLeft;
+          if (e.pendingHomecoming !== undefined) me.pendingHomecoming = e.pendingHomecoming;
+          if (e.lastHelpedNpc !== undefined) me.lastHelpedNpc = e.lastHelpedNpc;
+        }
+        break;
+      case 'notices':
+        if (e.playerId === me.id) me.notices = e.notices.map((n) => ({ ...n }));
+        break;
+      case 'mute':
+        if (e.playerId === me.id) me.muteRemainingSec = e.muteRemainingSec;
+        break;
+      case 'cheatFreeze':
+        if (e.playerId === me.id) {
+          me.jailed = true;
+          me.jailReason = e.reason;
+        }
         break;
       case 'placed': if (me.map === 'farm' && e.owner === this.farmOwner) this.placed.set(e.obj.id, { ...e.obj }); break;
       case 'unplaced': if (me.map === 'farm' && e.owner === this.farmOwner) this.placed.delete(e.id); break;
@@ -110,8 +167,8 @@ export abstract class Authority {
   /** 서버가 확인한 관리자 계정이면 true (멀티 전용). 화면 표시용일 뿐, 실제 권한 검사는 서버가 함 */
   isAdmin = false;
   admin(_cmd: AdminCmd): Promise<AdminReply> { void _cmd; return Promise.resolve({ ok: false, message: '멀티플레이에서만 쓸 수 있어요' }); }
-  /** 버그 신고 → 관리자 휴대폰으로 */
-  report(_text: string, _where: string): boolean { void _text; void _where; return false; }
+  /** 버그·유저 신고 → 관리자 휴대폰으로 */
+  report(_text: string, _where: string, _extra?: { kind?: 'bug' | 'user'; targetUid?: string; targetName?: string }): boolean { void _text; void _where; void _extra; return false; }
   shopServerUrl(): string | null { return null; }
   shopHeaders(): Promise<Record<string, string>> { return Promise.resolve({}); }
   abstract sendMove(x: number, y: number, dir: Dir, anim: string): void;
@@ -122,6 +179,22 @@ export abstract class Authority {
 }
 
 const SOLO_KEY = 'sf:solo:v1';
+const LOCAL_MOD_KEY = 'sf:local:mod:v1';
+interface LocalModStore { reports: BugReport[]; bans: BanEntry[] }
+function readLocalMod(): LocalModStore {
+  try {
+    const raw = localStorage.getItem(LOCAL_MOD_KEY);
+    if (raw) {
+      const p = JSON.parse(raw) as Partial<LocalModStore>;
+      return { reports: Array.isArray(p.reports) ? p.reports : [], bans: Array.isArray(p.bans) ? p.bans : [] };
+    }
+  } catch { /* 무시 */ }
+  return { reports: [], bans: [] };
+}
+function writeLocalMod(d: LocalModStore) {
+  try { localStorage.setItem(LOCAL_MOD_KEY, JSON.stringify(d)); } catch { /* 무시 */ }
+}
+
 /** 혼자하기(오프라인): 이 브라우저 localStorage 에 자동 저장 */
 export class LocalAuthority extends Authority {
   readonly online = false;
@@ -135,6 +208,10 @@ export class LocalAuthority extends Authority {
     this.sim = new FarmSimulation(maps);
     let saved: { save: SaveData; time: WorldTime } | null = null;
     try { const raw = localStorage.getItem(SOLO_KEY); if (raw) saved = JSON.parse(raw); } catch { saved = null; }
+    if (saved?.save) {
+      const check = verifySaveIntegrity(saved.save);
+      if (!check.ok) this.tamperDetectedReason = check.reason ?? '저장 파일 재화 변조 감지';
+    }
     if (saved?.time) this.sim.setWorld(saved.time);
     this.me = this.sim.addPlayer('local', saved?.save?.name ?? '트레이너', saved?.save?.look ?? '', saved?.save ?? null);
     this.me.mode = 'story';   // 이 브라우저 저장 = 스토리 모드 (혼자)
@@ -147,21 +224,46 @@ export class LocalAuthority extends Authority {
     this.storageKind = '이 브라우저 (혼자하기)';
     this.sim.on((event) => {
       this.emit({ type: 'sim', event });
-      if (event.type === 'room' || event.type === 'newDay' || event.type === 'story' || event.type === 'look' || event.type === 'bmState' || event.type === 'party') this.save();
+      if (event.type === 'room' || event.type === 'newDay' || event.type === 'story' || event.type === 'look' || event.type === 'bmState' || event.type === 'party' || event.type === 'prisonState' || event.type === 'prisonLabor' || event.type === 'karma' || event.type === 'notices' || event.type === 'mute' || event.type === 'cheatFreeze' || event.type === 'gold') this.save();
     });
     this.saveTimer = window.setInterval(() => this.save(), 30_000);
     window.addEventListener('beforeunload', () => this.save());
   }
   save() {
     const d = this.sim.exportSave('local');
-    if (!d || !d.look || this.resetting) return;
+    if (!d || (!d.look && !d.jailed) || this.resetting) return;
+    if (!d.look && d.jailed) d.look = 'm1';
+    d.saveSig = computeSaveSig({ gold: d.gold, cash: d.cash ?? 0, jailed: !!d.jailed, muteRemainingSec: d.muteRemainingSec ?? 0 });
     try { localStorage.setItem(SOLO_KEY, JSON.stringify({ save: d, time: this.sim.time })); } catch { /* 용량 초과 등 */ }
   }
   override close() { clearInterval(this.saveTimer); }
   override get minutesSmooth() { return this.sim.time.minutes + this.sim.subMinute; }
   async request(a: ActionIntent) {
     if (a.kind === 'resetSave') { this.resetting = true; LocalAuthority.clear(); return { ok: true }; }
-    return this.sim.apply(this.me.id, a);
+    const r = this.sim.apply(this.me.id, a);
+    if (a.kind === 'cheatCaught' || a.kind === 'prisonEscape' || a.kind === 'yardDeliver' || a.kind === 'completeHomecoming' || a.kind === 'goodDeed' || a.kind === 'markNoticesRead') this.save();
+    return r;
+  }
+  override report(text: string, where: string, extra?: { kind?: 'bug' | 'user'; targetUid?: string; targetName?: string }): boolean {
+    const clean = String(text ?? '').trim().slice(0, 500);
+    if (!clean) return false;
+    const mod = readLocalMod();
+    const rep: BugReport = {
+      id: `rep_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`,
+      uid: this.me.id,
+      name: this.me.name,
+      text: clean,
+      where,
+      at: Date.now(),
+      kind: extra?.kind ?? (extra?.targetUid ? 'user' : 'bug'),
+      targetUid: extra?.targetUid || undefined,
+      targetName: extra?.targetName || (extra?.targetUid ? this.sim.players.get(extra.targetUid)?.name : undefined),
+    };
+    mod.reports.unshift(rep);
+    writeLocalMod(mod);
+    this.emit({ type: 'reported' });
+    if (this.isAdmin) this.emit({ type: 'adminReport', report: rep });
+    return true;
   }
   override async admin(cmd: AdminCmd): Promise<AdminReply> {
     if (!this.isAdmin) return { ok: false, message: '권한 없음' };
@@ -179,13 +281,75 @@ export class LocalAuthority extends Authority {
           party: p.party.map((c) => `${SPECIES[c.species]?.name ?? c.species} Lv${c.level}`).join(', '),
           online: true,
           world: p.world ? '친구들만' : '모두',
+          jailed: !!p.jailed,
+          muteRemainingSec: Math.ceil(p.muteRemainingSec ?? 0),
         }));
-        return { ok: true, users, bans: [] };
+        const mod = readLocalMod();
+        const now = Date.now();
+        const activeBans = mod.bans.filter((b) => !b.until || now < b.until);
+        if (activeBans.length !== mod.bans.length) { mod.bans = activeBans; writeLocalMod(mod); }
+        return { ok: true, users, bans: activeBans };
       }
-      case 'reports': return { ok: true, reports: [] };
+      case 'reports': {
+        const mod = readLocalMod();
+        return { ok: true, reports: [...mod.reports].sort((a, b) => b.at - a.at) };
+      }
+      case 'resolve': {
+        const mod = readLocalMod();
+        const rep = mod.reports.find((r) => r.id === cmd.id);
+        if (rep) rep.resolved = true;
+        writeLocalMod(mod);
+        return { ok: true, message: '신고를 처리 완료했어요' };
+      }
+      case 'mute': {
+        const t = this.sim.players.get(cmd.uid);
+        if (!t) return { ok: false, message: '대상이 없어요' };
+        const mins = Math.max(1, Math.min(10_080, Math.round(Number(cmd.minutes) || 10)));
+        this.sim.mutePlayer(t, mins, cmd.reason ?? '');
+        this.save();
+        return { ok: true, message: `${t.name} 님에게 ${mins}분 채팅 금지를 적용했어요 (접속 중일 때만 차감)` };
+      }
+      case 'unmute': {
+        const t = this.sim.players.get(cmd.uid);
+        if (!t) return { ok: false, message: '대상이 없어요' };
+        this.sim.unmutePlayer(t);
+        this.save();
+        return { ok: true, message: `${t.name} 님의 채팅 금지를 해제했어요` };
+      }
+      case 'ban': {
+        const days = typeof cmd.days === 'number' && Number.isFinite(cmd.days) && cmd.days > 0 ? Math.min(3650, Math.round(cmd.days)) : 0;
+        const until = days > 0 ? Date.now() + days * 86_400_000 : undefined;
+        const name = this.sim.players.get(cmd.uid)?.name ?? cmd.uid;
+        const reason = String(cmd.reason ?? (days > 0 ? `관리자 ${days}일 접속 금지` : '관리자 영구 정지')).slice(0, 80);
+        const mod = readLocalMod();
+        mod.bans = mod.bans.filter((b) => b.uid !== cmd.uid);
+        mod.bans.unshift({ uid: cmd.uid, name, reason, at: Date.now(), until });
+        writeLocalMod(mod);
+        return { ok: true, message: `${name} 님에게 접속 금지 적용 (${formatBanUntil(until)})` };
+      }
+      case 'unban': {
+        const mod = readLocalMod();
+        mod.bans = mod.bans.filter((b) => b.uid !== cmd.uid);
+        writeLocalMod(mod);
+        return { ok: true, message: '접속 금지를 해제했어요' };
+      }
+      case 'jail': {
+        const t = this.sim.players.get(cmd.uid);
+        if (!t) return { ok: false, message: '대상이 없어요' };
+        this.sim.jailPlayer(t, cmd.reason ?? '관리자 제재 수감', cmd.fine !== false);
+        this.save();
+        return { ok: true, message: `${t.name} 님을 별빛 교도소로 보냈어요!` };
+      }
+      case 'unjail': {
+        const t = this.sim.players.get(cmd.uid);
+        if (!t) return { ok: false, message: '대상이 없어요' };
+        this.sim.unjailPlayer(t);
+        this.save();
+        return { ok: true, message: `${t.name} 님을 석방했어요` };
+      }
       case 'give': {
         const t = this.sim.players.get(cmd.uid);
-        if (!t || !ITEMS[cmd.itemId]) return { ok: false, message: ' 지급 실패' };
+        if (!t || !ITEMS[cmd.itemId]) return { ok: false, message: '지급 실패' };
         if (!this.sim.grant(t, cmd.itemId, Number(cmd.qty))) return { ok: false, message: '가방이 가득 찼어요' };
         this.save();
         return { ok: true, message: `${ITEMS[cmd.itemId].name}을(를) 지급했어요` };
@@ -229,7 +393,13 @@ export class LocalAuthority extends Authority {
   }
   sendMove(x: number, y: number, dir: Dir, anim: string) { Object.assign(this.me, { x, y, dir, anim }); }
   sendAnim() { /* 혼자: 브로드캐스트 불필요 */ }
-  chat(text: string) { this.emit({ type: 'chat', from: this.me.id, name: this.me.name, text }); }
+  chat(text: string) {
+    if ((this.me.muteRemainingSec ?? 0) > 0) {
+      this.emit({ type: 'chat', from: 'server', name: '시스템', text: `🔇 채팅 금지 상태입니다! 남은 접속 시간: ${formatMuteRemaining(this.me.muteRemainingSec!)} (인게임 접속 중일 때만 시간이 흐릅니다)` });
+      return;
+    }
+    this.emit({ type: 'chat', from: this.me.id, name: this.me.name, text });
+  }
   override update(dt: number) { this.sim.tick(dt); }
 }
 
@@ -352,7 +522,10 @@ export class NetworkAuthority extends Authority {
     this.send({ t: 'admin', cmd, reqId });
     return new Promise((res) => { this.adminPending.set(reqId, res); setTimeout(() => { if (this.adminPending.delete(reqId)) res({ ok: false, message: '응답 없음' }); }, 8000); });
   }
-  report(text: string, where: string) { this.send({ t: 'report', text, where }); return true; }
+  report(text: string, where: string, extra?: { kind?: 'bug' | 'user'; targetUid?: string; targetName?: string }) {
+    this.send({ t: 'report', text, where, kind: extra?.kind, targetUid: extra?.targetUid, targetName: extra?.targetName });
+    return true;
+  }
   override shopServerUrl() { return this.httpUrl; }
   override async shopHeaders(): Promise<Record<string, string>> {
     const c = this.refreshCred ? await this.refreshCred().catch(() => this.credInfo) : this.credInfo;

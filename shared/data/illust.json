@@ -1461,5 +1461,12 @@
     "persona": "sweating hard-working cameraman carrying broadcast rig",
     "pose": "cheer",
     "face": "serious"
+  },
+  "warden": {
+    "name": "경찰 감시관",
+    "role": "별빛 교도소 경찰 감시관",
+    "persona": "strict vigilant Korean prison police warden wearing a dark navy peaked cap with gold badge, sleek rectangular glasses, sky-blue police dress shirt under a dark navy patrol vest, arms crossed with a stern yet principled expression",
+    "pose": "cross",
+    "face": "serious"
   }
 }

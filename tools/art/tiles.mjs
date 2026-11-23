@@ -82,16 +82,40 @@ function stoneTexture() {
   return img;
 }
 
-/** 듀얼그리드 코너 → 지형 판정 함수. 1 = 상대 지형(흙/물) */
-function cornerField(idx, seed, amp = 0.42) {
+/** 듀얼그리드 코너 → 부드러운 원호(SDF) 기반 지형 판정 함수. 1 = 상대 지형(흙/돌/물)
+ *  - 1코너/3코너는 정확한 1/4 원호(r=0.5)로 둥글게 굴려 네모난 직각 계단 현상을 제거
+ *  - 타일 경계(u/v = 0, 1)에서 노이즈를 0으로 감쇠해 인접 타일끼리 완벽히 매끄럽게 이어짐 */
+function cornerField(idx, seed, amp = 0.24) {
   const tl = (idx >> 3) & 1, tr = (idx >> 2) & 1, bl = (idx >> 1) & 1, br = idx & 1;
+  const sum = tl + tr + bl + br;
   return (px, py) => {
-    const u = (px + 0.5) / T, v = (py + 0.5) / T;
-    const cu = Math.min(1, Math.max(0, u)), cv = Math.min(1, Math.max(0, v));
-    const top = tl + (tr - tl) * cu, bot = bl + (br - bl) * cu;
-    const f = top + (bot - top) * cv;
-    const n = (fbm(px / 4, py / 4, 4, seed, 2) - 0.5) * amp;
-    return f + n > 0.5 ? 1 : 0;
+    if (sum === 0) return 0;
+    if (sum === 4) return 1;
+    const u = Math.min(1, Math.max(0, (px + 0.5) / T));
+    const v = Math.min(1, Math.max(0, (py + 0.5) / T));
+    let f = 0.5;
+    if (sum === 1) {
+      const cx = (tr || br) ? 1 : 0, cy = (bl || br) ? 1 : 0;
+      f = 1 - Math.hypot(u - cx, v - cy);
+    } else if (sum === 3) {
+      const cx = (!tr || !br) ? 1 : 0, cy = (!bl || !br) ? 1 : 0;
+      f = Math.hypot(u - cx, v - cy);
+    } else if (tl === tr) {
+      // 가로 경계 (위/아래)
+      f = tl ? (1 - v) : v;
+    } else if (tl === bl) {
+      // 세로 경계 (좌/우)
+      f = tl ? (1 - u) : u;
+    } else {
+      // 대각선 안장: 두 코너를 둥글게 연결
+      const d1 = tl ? Math.hypot(u, v) : Math.hypot(u - 1, v);
+      const d2 = br ? Math.hypot(u - 1, v - 1) : Math.hypot(u, v - 1);
+      f = 1 - Math.min(d1, d2);
+    }
+    // 타일 가장자리에서 부드럽게 0으로 수렴하는 유기적 굴곡 (이음새 단절 방지)
+    const interior = Math.sin(Math.PI * u) * Math.sin(Math.PI * v);
+    const wave = (fbm((px + idx * 5) / 5.5, (py + idx * 3) / 5.5, 4, seed, 2) - 0.5) * amp * (0.28 + 0.72 * interior);
+    return f + wave > 0.5 ? 1 : 0;
   };
 }
 
@@ -109,74 +133,82 @@ export function buildTileset() {
     [x, y] = at(i, ROW.STONE); img.blit(stone, x, y, { sx, sy, sw: T, sh: T });
   }
 
-  // Row 10: 잔디↔돌길 전이 (깔끔한 연석 느낌: 노이즈 약하게)
+  // Row 10: 잔디↔돌길 전이 (둥글게 굴린 자연스러운 연석 곡선)
   for (let idx = 0; idx < 16; idx++) {
     const [ox, oy] = at(idx, ROW.GRASS_STONE);
-    const F0 = cornerField(idx, 17, 0.16);
-    const F = (px, py) => F0(px, py);
+    const F = cornerField(idx, 17, 0.12);
     const gsx = (idx % 4) * T, gsy = Math.floor(idx / 4) * T;
     for (let py = 0; py < T; py++) for (let px = 0; px < T; px++) {
       if (F(px, py)) {
         let c = stone.get(gsx + px, gsy + py);
         const edge = !F(px, py - 1) || !F(px - 1, py) || !F(px + 1, py) || !F(px, py + 1);
-        if (edge) c = rgbArr(!F(px, py - 1) ? '#5d5c62' : '#76757c');
+        if (edge) c = rgbArr(!F(px, py - 1) ? '#68676e' : '#85848c');
         img.put(ox + px, oy + py, c);
       } else {
         let c = grass.get(gsx + px, gsy + py);
-        if (F(px, py + 1)) c = rgbArr(P.grass.l2);
-        else if (F(px - 1, py) || F(px + 1, py) || F(px, py - 1)) c = rgbArr(P.grass.d1);
+        if (F(px, py + 1)) c = rgbArr(mix(c, P.grass.l2, 0.55));
+        else if (F(px - 1, py) || F(px + 1, py) || F(px, py - 1)) c = rgbArr(mix(c, P.grass.d1, 0.65));
         img.put(ox + px, oy + py, c);
       }
     }
   }
 
-  // Row 2: 잔디↔흙 전이
+  // Row 2: 잔디↔흙 전이 (둥근 곡선 + 부드러운 풀잎/자갈 경계 블렌딩)
   for (let idx = 0; idx < 16; idx++) {
     const [ox, oy] = at(idx, ROW.GRASS_DIRT);
-    const F = cornerField(idx, 3);
+    const F = cornerField(idx, 3, 0.26);
     const gsx = (idx % 4) * T, gsy = Math.floor(idx / 4) * T;
     for (let py = 0; py < T; py++) for (let px = 0; px < T; px++) {
       const isDirt = F(px, py);
+      const h = hash2(px + idx * 17, py + idx * 11, 29);
       if (isDirt) {
         let c = dirt.get(gsx + px, gsy + py);
         const up = F(px, py - 1) === 0, up2 = F(px, py - 2) === 0;
-        const side = F(px - 1, py) === 0 || F(px + 1, py) === 0;
-        if (up) c = rgbArr(P.dirt.d2); else if (side || up2) c = rgbArr(mix(c, P.dirt.d2, 0.55));
+        const side = F(px - 1, py) === 0 || F(px + 1, py) === 0 || F(px, py + 1) === 0;
+        if (up) c = rgbArr(mix(c, P.dirt.d2, 0.55));
+        else if (side || up2) c = rgbArr(mix(c, h < 0.28 ? P.grass.d1 : P.dirt.d1, 0.35));
         img.put(ox + px, oy + py, c);
       } else {
         let c = grass.get(gsx + px, gsy + py);
         const down = F(px, py + 1) === 1;
         const near = F(px - 1, py) || F(px + 1, py) || F(px, py - 1);
-        if (down) c = rgbArr(P.grass.l2);
-        else if (near) c = rgbArr(P.grass.d1);
+        if (down) c = rgbArr(h < 0.35 ? P.grass.l2 : mix(c, P.grass.l1, 0.65));
+        else if (near) c = rgbArr(h < 0.25 ? mix(c, P.dirt.base, 0.32) : mix(c, P.grass.d1, 0.55));
         img.put(ox + px, oy + py, c);
       }
     }
   }
 
-  // Row 3: 잔디↔물 전이 (물 영역은 투명 → 아래 애니메이션 물 레이어가 비침)
+  // Row 3: 잔디↔물 전이 (부드럽게 굴린 자연 호수·강 둑, 각진 흰 테두리 제거)
   for (let idx = 0; idx < 16; idx++) {
     const [ox, oy] = at(idx, ROW.GRASS_WATER);
-    const F = cornerField(idx, 9);
+    const F = cornerField(idx, 9, 0.22);
     const gsx = (idx % 4) * T, gsy = Math.floor(idx / 4) * T;
     for (let py = 0; py < T; py++) for (let px = 0; px < T; px++) {
       const isWater = F(px, py);
+      const h = hash2(px + idx * 13, py + idx * 7, 47);
       if (!isWater) {
         let c = grass.get(gsx + px, gsy + py);
         const adj = F(px + 1, py) || F(px - 1, py) || F(px, py + 1) || F(px, py - 1);
-        const adj2 = F(px + 2, py) || F(px - 2, py) || F(px, py + 2);
-        if (adj) c = rgbArr(P.grass.d2); else if (adj2) c = rgbArr(P.grass.d1);
+        const adj2 = F(px + 2, py) || F(px - 2, py) || F(px, py + 2) || F(px, py - 2);
+        if (adj) c = rgbArr(mix(c, P.grass.d2, 0.65));
+        else if (adj2) c = rgbArr(mix(c, P.grass.d1, 0.45));
         img.put(ox + px, oy + py, c);
       } else {
-        // 물가 둑(위쪽 땅 아래로 흙 절벽), 거품 라인
-        const land1 = F(px, py - 1) === 0, land2 = F(px, py - 2) === 0, land3 = F(px, py - 3) === 0;
+        // 자연스러운 둥근 흙/모래 물가 둑 + 잔잔한 얕은 물빛 (하드한 흰 테두리 대신 부드러운 물결)
+        const landN1 = F(px, py - 1) === 0, landN2 = F(px, py - 2) === 0, landN3 = F(px, py - 3) === 0;
         const sideLand = F(px - 1, py) === 0 || F(px + 1, py) === 0 || F(px, py + 1) === 0;
-        if (land1) img.put(ox + px, oy + py, P.dirt.d1);
-        else if (land2) img.put(ox + px, oy + py, P.dirt.d2);
-        else if (land3) img.put(ox + px, oy + py, withAlpha(P.water.foam, 0.65));
-        else if (sideLand) img.put(ox + px, oy + py, withAlpha(P.water.foam, 0.55));
-        else if (F(px - 2, py) === 0 || F(px + 2, py) === 0 || F(px, py + 2) === 0 || F(px, py - 4) === 0)
-          img.put(ox + px, oy + py, withAlpha(P.water.deep, 0.35));
+        const near2 = F(px - 2, py) === 0 || F(px + 2, py) === 0 || F(px, py + 2) === 0;
+        if (landN1) img.put(ox + px, oy + py, mix(P.dirt.base, P.dirt.d1, 0.45));
+        else if (landN2) img.put(ox + px, oy + py, P.dirt.d2);
+        else if (sideLand) img.put(ox + px, oy + py, h < 0.65 ? P.dirt.d1 : mix(P.dirt.base, P.dirt.d2, 0.5));
+        else if (landN3) {
+          // 둑 아래 얕은 잔물결 (끊어지는 자연 거품 점)
+          if (h < 0.38) img.put(ox + px, oy + py, '#b9e8f6');
+          else if (h < 0.72) img.put(ox + px, oy + py, '#63b4d8');
+        } else if (near2 && h < 0.28) {
+          img.put(ox + px, oy + py, '#9cd8ee');
+        }
       }
     }
   }

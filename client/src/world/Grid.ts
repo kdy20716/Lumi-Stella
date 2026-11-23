@@ -5,29 +5,44 @@ import { TILE } from '../config';
 export class Grid {
   readonly w: number; readonly h: number;
   private cells: Uint8Array;
+  private clearedCells: Uint8Array;
   constructor(readonly info: MapInfo) {
     this.w = info.width; this.h = info.height;
     this.cells = new Uint8Array(info.blocked);
+    this.clearedCells = new Uint8Array(info.width * info.height);
   }
-  blocked(cx: number, cy: number) { return cx < 0 || cy < 0 || cx >= this.w || cy >= this.h || this.cells[cy * this.w + cx] === 1; }
-  setBlocked(cx: number, cy: number, v: boolean) { if (cx >= 0 && cy >= 0 && cx < this.w && cy < this.h) this.cells[cy * this.w + cx] = v ? 1 : 0; }
+  blocked(cx: number, cy: number, surfing = false) {
+    if (cx < 0 || cy < 0 || cx >= this.w || cy >= this.h) return true;
+    const i = cy * this.w + cx;
+    if (surfing && this.info.terrainAt(cx, cy) === '2' && (this.info.solidObjCells[i] === 0 || this.clearedCells[i] === 1)) {
+      return false;
+    }
+    return this.cells[i] === 1;
+  }
+  setBlocked(cx: number, cy: number, v: boolean) {
+    if (cx >= 0 && cy >= 0 && cx < this.w && cy < this.h) {
+      const i = cy * this.w + cx;
+      this.cells[i] = v ? 1 : 0;
+      if (!v) this.clearedCells[i] = 1;
+    }
+  }
 
   /** 발 위치(px,py) 기준 AABB(가로 10 × 세로 5)가 막힌 칸이나 3D 절벽 경계와 겹치는지 */
-  canStand(px: number, py: number, hw = 5, hh = 5) {
+  canStand(px: number, py: number, hw = 5, hh = 5, surfing = false) {
     const x0 = Math.floor((px - hw) / TILE), x1 = Math.floor((px + hw - 0.01) / TILE);
     const y0 = Math.floor((py - hh) / TILE), y1 = Math.floor((py - 0.01) / TILE);
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (this.blocked(x, y)) return false;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (this.blocked(x, y, surfing)) return false;
     return !this.info.spansCliffWall(x0, y0, x1, y1);
   }
 
   /** 인접(상하좌우 · 대각선) 한 칸 이동이 충돌과 3D 절벽 벽에 막히지 않는지 */
-  canStep(cx: number, cy: number, nx: number, ny: number): boolean {
-    if (this.blocked(nx, ny)) return false;
+  canStep(cx: number, cy: number, nx: number, ny: number, surfing = false): boolean {
+    if (this.blocked(nx, ny, surfing)) return false;
     const dx = nx - cx, dy = ny - cy;
     if (!dx && !dy) return true;
     if (Math.abs(dx) + Math.abs(dy) === 1) return this.info.canCrossEdge(cx, cy, nx, ny);
     if (Math.abs(dx) === 1 && Math.abs(dy) === 1) {
-      return !this.blocked(cx + dx, cy) && !this.blocked(cx, cy + dy)
+      return !this.blocked(cx + dx, cy, surfing) && !this.blocked(cx, cy + dy, surfing)
         && this.info.canCrossEdge(cx, cy, cx + dx, cy) && this.info.canCrossEdge(cx + dx, cy, nx, ny)
         && this.info.canCrossEdge(cx, cy, cx, cy + dy) && this.info.canCrossEdge(cx, cy + dy, nx, ny);
     }

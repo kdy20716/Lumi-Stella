@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-22T16:38:01.438Z",
+  "generatedAt": "2026-11-23T15:25:11.526Z",
   "tileSize": 16,
   "images": {
     "water0": {
@@ -242,11 +242,17 @@
       "h": 16,
       "originY": 0.875
     },
-    "campfire": {
-      "path": "assets/objects/campfire.png",
+    "tide_seal": {
+      "path": "assets/objects/tide_seal.png",
       "w": 24,
-      "h": 24,
-      "originY": 0.9583333333333334
+      "h": 32,
+      "originY": 1
+    },
+    "sea_altar": {
+      "path": "assets/objects/sea_altar.png",
+      "w": 48,
+      "h": 36,
+      "originY": 1
     },
     "stump": {
       "path": "assets/objects/stump.png",
@@ -952,8 +958,8 @@
     },
     "room_in_gym": {
       "path": "assets/interiors/in_gym.png",
-      "w": 256,
-      "h": 288,
+      "w": 800,
+      "h": 928,
       "originY": 1
     },
     "room_in_windmill": {
@@ -968,46 +974,88 @@
       "h": 176,
       "originY": 1
     },
+    "room_in_prison": {
+      "path": "assets/interiors/in_prison.png",
+      "w": 384,
+      "h": 256,
+      "originY": 1
+    },
+    "room_in_prison_b4": {
+      "path": "assets/interiors/in_prison_b4.png",
+      "w": 384,
+      "h": 256,
+      "originY": 1
+    },
+    "room_in_prison_b3": {
+      "path": "assets/interiors/in_prison_b3.png",
+      "w": 384,
+      "h": 256,
+      "originY": 1
+    },
+    "room_in_prison_b2": {
+      "path": "assets/interiors/in_prison_b2.png",
+      "w": 384,
+      "h": 256,
+      "originY": 1
+    },
+    "room_in_prison_b1": {
+      "path": "assets/interiors/in_prison_b1.png",
+      "w": 384,
+      "h": 256,
+      "originY": 1
+    },
+    "room_in_prison_1f": {
+      "path": "assets/interiors/in_prison_1f.png",
+      "w": 384,
+      "h": 256,
+      "originY": 1
+    },
+    "room_in_prison_yard": {
+      "path": "assets/interiors/in_prison_yard.png",
+      "w": 448,
+      "h": 320,
+      "originY": 1
+    },
     "room_gym_harbor": {
       "path": "assets/interiors/gym_harbor.png",
-      "w": 288,
-      "h": 352,
+      "w": 928,
+      "h": 1088,
       "originY": 1
     },
     "room_gym_maple": {
       "path": "assets/interiors/gym_maple.png",
-      "w": 320,
-      "h": 320,
+      "w": 960,
+      "h": 1056,
       "originY": 1
     },
     "room_gym_forge": {
       "path": "assets/interiors/gym_forge.png",
-      "w": 256,
-      "h": 416,
+      "w": 896,
+      "h": 1184,
       "originY": 1
     },
     "room_gym_ember": {
       "path": "assets/interiors/gym_ember.png",
-      "w": 320,
-      "h": 352,
+      "w": 992,
+      "h": 1120,
       "originY": 1
     },
     "room_gym_lumina": {
       "path": "assets/interiors/gym_lumina.png",
-      "w": 288,
-      "h": 384,
+      "w": 960,
+      "h": 1152,
       "originY": 1
     },
     "room_gym_frost": {
       "path": "assets/interiors/gym_frost.png",
-      "w": 288,
-      "h": 384,
+      "w": 960,
+      "h": 1152,
       "originY": 1
     },
     "room_gym_summit": {
       "path": "assets/interiors/gym_summit.png",
-      "w": 320,
-      "h": 416,
+      "w": 1056,
+      "h": 1248,
       "originY": 1
     },
     "room_league": {
@@ -1292,6 +1340,66 @@
       "h": 38,
       "originY": 1
     },
+    "prison_bars": {
+      "path": "assets/objects/prison_bars.png",
+      "w": 16,
+      "h": 28,
+      "originY": 0.9642857142857143
+    },
+    "prison_cot": {
+      "path": "assets/objects/prison_cot.png",
+      "w": 32,
+      "h": 34,
+      "originY": 1
+    },
+    "prison_ore": {
+      "path": "assets/objects/prison_ore.png",
+      "w": 16,
+      "h": 18,
+      "originY": 1
+    },
+    "prison_hatch": {
+      "path": "assets/objects/prison_hatch.png",
+      "w": 32,
+      "h": 18,
+      "originY": 1
+    },
+    "cracked_wall": {
+      "path": "assets/objects/cracked_wall.png",
+      "w": 16,
+      "h": 26,
+      "originY": 1
+    },
+    "prison_exit_wall": {
+      "path": "assets/objects/prison_exit_wall.png",
+      "w": 32,
+      "h": 28,
+      "originY": 1
+    },
+    "prison_stairs_up": {
+      "path": "assets/objects/prison_stairs_up.png",
+      "w": 16,
+      "h": 18,
+      "originY": 1
+    },
+    "yard_stone": {
+      "path": "assets/objects/yard_stone.png",
+      "w": 16,
+      "h": 18,
+      "originY": 1
+    },
+    "yard_wood": {
+      "path": "assets/objects/yard_wood.png",
+      "w": 16,
+      "h": 18,
+      "originY": 0.9444444444444444
+    },
+    "prison_deliver": {
+      "path": "assets/objects/prison_deliver.png",
+      "w": 32,
+      "h": 26,
+      "originY": 1
+    },
     "worldmap": {
       "path": "assets/ui/worldmap.png",
       "w": 720,
@@ -1417,7 +1525,7 @@
       "path": "assets/ui/icons.png",
       "frameWidth": 16,
       "frameHeight": 16,
-      "frames": 94,
+      "frames": 97,
       "originY": 0.9375,
       "ids": [
         "hoe",
@@ -1499,6 +1607,9 @@
         "star_candy",
         "name_ticket",
         "bicycle",
+        "tofu",
+        "stone_slab",
+        "wood_plank",
         "hoe_copper",
         "hoe_iron",
         "hoe_star",
@@ -1529,6 +1640,20 @@
       "frameHeight": 16,
       "frames": 2,
       "originY": 1
+    },
+    "campfire": {
+      "path": "assets/objects/campfire.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "frames": 4,
+      "originY": 1
+    },
+    "whirlpool": {
+      "path": "assets/objects/whirlpool.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "frames": 4,
+      "originY": 0.72
     },
     "duck": {
       "path": "assets/animals/duck.png",
@@ -1644,6 +1769,13 @@
     },
     "lumi_stella": {
       "path": "assets/lumi/stella.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 6,
+      "originY": 0.9375
+    },
+    "lumi_haerang": {
+      "path": "assets/lumi/haerang.png",
       "frameWidth": 32,
       "frameHeight": 32,
       "frames": 6,
@@ -2596,6 +2728,13 @@
     },
     "lumi_big_stella": {
       "path": "assets/lumi/big_stella.png",
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "frames": 2,
+      "originY": 0.9583333333333334
+    },
+    "lumi_big_haerang": {
+      "path": "assets/lumi/big_haerang.png",
       "frameWidth": 96,
       "frameHeight": 96,
       "frames": 2,
@@ -36304,6 +36443,280 @@
           "repeat": -1
         }
       }
+    },
+    "warden": {
+      "path": "assets/characters/warden.png",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "originX": 0.5,
+      "originY": 0.8020833333333334,
+      "columns": 8,
+      "anims": {
+        "idle-down": {
+          "start": 0,
+          "end": 7,
+          "fps": 6,
+          "repeat": -1
+        },
+        "idle-left": {
+          "start": 8,
+          "end": 15,
+          "fps": 6,
+          "repeat": -1
+        },
+        "idle-right": {
+          "start": 16,
+          "end": 23,
+          "fps": 6,
+          "repeat": -1
+        },
+        "idle-up": {
+          "start": 24,
+          "end": 31,
+          "fps": 6,
+          "repeat": -1
+        },
+        "walk-down": {
+          "start": 32,
+          "end": 35,
+          "fps": 8,
+          "repeat": -1
+        },
+        "walk-left": {
+          "start": 40,
+          "end": 43,
+          "fps": 8,
+          "repeat": -1
+        },
+        "walk-right": {
+          "start": 48,
+          "end": 51,
+          "fps": 8,
+          "repeat": -1
+        },
+        "walk-up": {
+          "start": 56,
+          "end": 59,
+          "fps": 8,
+          "repeat": -1
+        },
+        "run-down": {
+          "start": 64,
+          "end": 69,
+          "fps": 13,
+          "repeat": -1
+        },
+        "run-left": {
+          "start": 72,
+          "end": 77,
+          "fps": 13,
+          "repeat": -1
+        },
+        "run-right": {
+          "start": 80,
+          "end": 85,
+          "fps": 13,
+          "repeat": -1
+        },
+        "run-up": {
+          "start": 88,
+          "end": 93,
+          "fps": 13,
+          "repeat": -1
+        },
+        "hoe-down": {
+          "start": 96,
+          "end": 100,
+          "fps": 14,
+          "repeat": 0
+        },
+        "hoe-left": {
+          "start": 104,
+          "end": 108,
+          "fps": 14,
+          "repeat": 0
+        },
+        "hoe-right": {
+          "start": 112,
+          "end": 116,
+          "fps": 14,
+          "repeat": 0
+        },
+        "hoe-up": {
+          "start": 120,
+          "end": 124,
+          "fps": 14,
+          "repeat": 0
+        },
+        "axe-down": {
+          "start": 128,
+          "end": 132,
+          "fps": 14,
+          "repeat": 0
+        },
+        "axe-left": {
+          "start": 136,
+          "end": 140,
+          "fps": 14,
+          "repeat": 0
+        },
+        "axe-right": {
+          "start": 144,
+          "end": 148,
+          "fps": 14,
+          "repeat": 0
+        },
+        "axe-up": {
+          "start": 152,
+          "end": 156,
+          "fps": 14,
+          "repeat": 0
+        },
+        "water-down": {
+          "start": 160,
+          "end": 163,
+          "fps": 7,
+          "repeat": 0
+        },
+        "water-left": {
+          "start": 168,
+          "end": 171,
+          "fps": 7,
+          "repeat": 0
+        },
+        "water-right": {
+          "start": 176,
+          "end": 179,
+          "fps": 7,
+          "repeat": 0
+        },
+        "water-up": {
+          "start": 184,
+          "end": 187,
+          "fps": 7,
+          "repeat": 0
+        },
+        "interact-down": {
+          "start": 192,
+          "end": 195,
+          "fps": 9,
+          "repeat": 0
+        },
+        "interact-left": {
+          "start": 200,
+          "end": 203,
+          "fps": 9,
+          "repeat": 0
+        },
+        "interact-right": {
+          "start": 208,
+          "end": 211,
+          "fps": 9,
+          "repeat": 0
+        },
+        "interact-up": {
+          "start": 216,
+          "end": 219,
+          "fps": 9,
+          "repeat": 0
+        },
+        "pick-down": {
+          "start": 224,
+          "end": 228,
+          "fps": 14,
+          "repeat": 0
+        },
+        "pick-left": {
+          "start": 232,
+          "end": 236,
+          "fps": 14,
+          "repeat": 0
+        },
+        "pick-right": {
+          "start": 240,
+          "end": 244,
+          "fps": 14,
+          "repeat": 0
+        },
+        "pick-up": {
+          "start": 248,
+          "end": 252,
+          "fps": 14,
+          "repeat": 0
+        },
+        "fish-down": {
+          "start": 256,
+          "end": 259,
+          "fps": 6,
+          "repeat": 0
+        },
+        "fish-left": {
+          "start": 264,
+          "end": 267,
+          "fps": 6,
+          "repeat": 0
+        },
+        "fish-right": {
+          "start": 272,
+          "end": 275,
+          "fps": 6,
+          "repeat": 0
+        },
+        "fish-up": {
+          "start": 280,
+          "end": 283,
+          "fps": 6,
+          "repeat": 0
+        },
+        "bike_idle-down": {
+          "start": 288,
+          "end": 295,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-left": {
+          "start": 296,
+          "end": 303,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-right": {
+          "start": 304,
+          "end": 311,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike_idle-up": {
+          "start": 312,
+          "end": 319,
+          "fps": 4,
+          "repeat": -1
+        },
+        "bike-down": {
+          "start": 320,
+          "end": 325,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-left": {
+          "start": 328,
+          "end": 333,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-right": {
+          "start": 336,
+          "end": 341,
+          "fps": 14,
+          "repeat": -1
+        },
+        "bike-up": {
+          "start": 344,
+          "end": 349,
+          "fps": 14,
+          "repeat": -1
+        }
+      }
     }
   },
   "tileset": {
@@ -36503,6 +36916,7 @@
     "byeolmuri": "lumi_byeolmuri",
     "onnuri": "lumi_onnuri",
     "stella": "lumi_stella",
+    "haerang": "lumi_haerang",
     "astra": "lumi_astra",
     "g1a": "lumi_g1a",
     "g1b": "lumi_g1b",
@@ -36640,6 +37054,7 @@
   "lumiBig": {
     "byeolmuri": "lumi_big_byeolmuri",
     "onnuri": "lumi_big_onnuri",
-    "stella": "lumi_big_stella"
+    "stella": "lumi_big_stella",
+    "haerang": "lumi_big_haerang"
   }
 }

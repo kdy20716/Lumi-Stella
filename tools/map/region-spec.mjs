@@ -102,6 +102,7 @@ export const PLACES = [
   { id: 'fullmoon', name: '보름달섬', kind: 'area', tpl: 'island', biome: 'meadow', tier: 8, x: 14, y: 40, attach: ['moon', 'dock'], desc: '보름달 아래서만 피는 꽃이 있는 섬.' },
   { id: 'newmoon', name: '그믐달섬', kind: 'area', tpl: 'island', biome: 'forest', tier: 8, x: 16, y: 86, attach: ['moon', 'dock'], desc: '빛 한 줄기 없는 어둠의 섬.' },
   { id: 'paradise', name: '꽃구름 정원', kind: 'area', tpl: 'garden', biome: 'meadow', tier: 7, x: 196, y: 232, attach: ['bloom', 'dock'], desc: '바다 건너 꽃이 끝없이 피어 있는 비밀 정원.' },
+  { id: 'ocean_shrine', name: '해신의 바다', kind: 'area', tpl: 'ocean_shrine', biome: 'beach', tier: 7, x: 144, y: 238, attach: ['harbor', 'dock'], desc: '파도타기로 건너는 푸른 해류의 성역. 세 조류 비석을 모두 깨우면 물의 전설이 눈을 뜬다.' },
   // 시설
   { id: 'battle', name: '도전의 섬', kind: 'area', tpl: 'battle', biome: 'beach', tier: 9, x: 352, y: 62, attach: ['crown', 'dock'], desc: '강자들이 모여드는 섬. 도전의 탑이 서 있다.' },
   { id: 'tower', name: '도전의 탑', kind: 'room', room: 'tower', tier: 9, x: 354, y: 56, attach: ['battle', 'door'], desc: '끝없이 이어지는 승부의 탑.' },

@@ -63,7 +63,7 @@ for (const m of Object.values(maps)) for (const w of m.warps) {
 const reach = new Set(['town']); const q = ['town'];
 while (q.length) { const a = q.shift(); for (const b of edges[a]?.keys() ?? []) if (!reach.has(b)) { reach.add(b); q.push(b); } }
 const inRegion = new Set(region.ids);
-const isolated = region.ids.filter((id) => !reach.has(id));
+const isolated = region.ids.filter((id) => !reach.has(id) && !id.startsWith('in_prison'));
 const orphanFiles = files.filter((f) => !inRegion.has(f));
 const missingFiles = region.ids.filter((id) => !maps[id]);
 

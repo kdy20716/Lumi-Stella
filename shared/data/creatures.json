@@ -5710,5 +5710,29 @@
     "description": "강아지 루미의 마지막 모습. 땅과 하늘의 별빛을 품어 위엄이 넘친다.",
     "helps": "exp",
     "kind": "강아지 루미"
+  },
+  "haerang": {
+    "id": "haerang",
+    "name": "해랑",
+    "type": "물",
+    "kind": "해류 루미 · 전설",
+    "base": {
+      "hp": 112,
+      "atk": 98,
+      "def": 108,
+      "spd": 96
+    },
+    "catchRate": 0.04,
+    "expYield": 330,
+    "learnset": [
+      [1, "water_gun"],
+      [1, "aqua_veil"],
+      [40, "wave_ride"],
+      [52, "starlight"],
+      [62, "abyss_surge"]
+    ],
+    "description": "파도타기로만 닿을 수 있는 해신의 바다 깊숙한 성소를 지키는 물 타입 전설의 루미. 세 조류 비석이 모두 공명하면 맑은 해류를 가르며 모습을 드러낸다.",
+    "helps": "fish",
+    "legend": "legend"
   }
 }

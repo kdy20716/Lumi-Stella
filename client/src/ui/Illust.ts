@@ -15,7 +15,7 @@ const PERSONA: Record<string, [Pose, Face]> = {
   woodcutter: ['cross', 'grin'], miner: ['cross', 'serious'], swimmer: ['cheer', 'grin'], skier: ['point', 'grin'], explorer: ['think', 'smile'], researcher: ['think', 'calm'],
   gentleman: ['behind', 'calm'], lady: ['clasp', 'gentle'], ace_m: ['point', 'smug'], ace_f: ['hips', 'smug'],
   leader_harbor: ['hips', 'grin'], leader_maple: ['clasp', 'gentle'], leader_forge: ['cross', 'serious'], leader_ember: ['point', 'grin'], leader_lumina: ['hips', 'smug'],
-  leader_frost: ['cross', 'calm'], leader_summit: ['think', 'serious'], elite1: ['cross', 'smug'], elite2: ['hips', 'smug'], elite3: ['think', 'serious'], elite4: ['point', 'serious'], champion: ['point', 'smug'],
+  leader_frost: ['cross', 'calm'], leader_summit: ['think', 'serious'], elite1: ['cross', 'smug'], elite2: ['hips', 'smug'], elite3: ['think', 'serious'], elite4: ['point', 'serious'], champion: ['point', 'smug'], warden: ['cross', 'serious'],
 };
 export const personaOf = (id: string): [Pose, Face] => PERSONA[id] ?? (/^[mf]\d$/.test(id) ? ['wave', 'smile'] : (['wave', 'smile'] as [Pose, Face]));
 
@@ -159,6 +159,7 @@ const esc = (s: string) => s.replace(/[^#\w(),.% -]/g, '');
 
 /** 인물 일러스트 SVG 문자열 (viewBox 240×300, 허리 위 흉상) */
 export function illustSvg(id: string, pose?: Pose, face?: Face): string {
+  if (id === 'warden') return wardenSvg();
   const L = LOOKS?.[id] ?? LOOKS?.villager;
   if (!L) return '';
   const [p0, f0] = personaOf(id); pose ??= p0; face ??= f0;
@@ -258,4 +259,77 @@ function mixHex(a: string, b: string, t: number) {
   if (!/^#[0-9a-f]{6}$/i.test(a) || !/^#[0-9a-f]{6}$/i.test(b)) return a;
   const [x, y] = [p(a), p(b)];
   return esc('#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''));
+}
+
+
+/** 별빛 교도소 경찰 감시관 전용 벡터 흉상 (AI 일러스트 미생성 시 즉시 표시되는 고디테일 경찰 정복 일러스트) */
+function wardenSvg(): string {
+  const uid = `wd${Math.random().toString(36).slice(2, 7)}`;
+  const ink = '#141a2b';
+  const S = `stroke="${ink}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"`;
+  return `<svg class="ill-svg" viewBox="0 0 240 300" xmlns="http://www.w3.org/2000/svg"><defs>
+    <linearGradient id="${uid}sk" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ffe8d4"/><stop offset=".6" stop-color="#f7cfb1"/><stop offset="1" stop-color="#dea684"/></linearGradient>
+    <linearGradient id="${uid}nv" x1=".15" y1="0" x2=".85" y2="1"><stop offset="0" stop-color="#284b96"/><stop offset=".5" stop-color="#193470"/><stop offset="1" stop-color="#0d1e47"/></linearGradient>
+    <linearGradient id="${uid}sh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#bae0ff"/><stop offset=".55" stop-color="#74b4fb"/><stop offset="1" stop-color="#4585dc"/></linearGradient>
+    <linearGradient id="${uid}gd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4a8"/><stop offset=".5" stop-color="#f2bf38"/><stop offset="1" stop-color="#b57d14"/></linearGradient>
+    <linearGradient id="${uid}vs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#334155"/><stop offset=".4" stop-color="#0f172a"/><stop offset="1" stop-color="#020617"/></linearGradient>
+    <linearGradient id="${uid}hr" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#334155"/><stop offset=".55" stop-color="#182235"/><stop offset="1" stop-color="#0a101d"/></linearGradient>
+    <linearGradient id="${uid}gl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".5"/><stop offset="1" stop-color="#93c5fd" stop-opacity=".18"/></linearGradient>
+  </defs><g class="ill-sway">
+    <path d="M44 300 C42 246 50 202 82 188 L120 180 L158 188 C190 202 198 246 196 300 Z" fill="url(#${uid}sh)" ${S}/>
+    <path d="M56 202 L86 188 L90 198 L62 212 Z" fill="url(#${uid}nv)" ${S}/>
+    <path d="M184 202 L154 188 L150 198 L178 212 Z" fill="url(#${uid}nv)" ${S}/>
+    <circle cx="84" cy="193" r="2.6" fill="url(#${uid}gd)" stroke="${ink}" stroke-width="1.4"/>
+    <circle cx="156" cy="193" r="2.6" fill="url(#${uid}gd)" stroke="${ink}" stroke-width="1.4"/>
+    <path d="M107 156 L107 186 Q120 196 133 186 L133 156 Z" fill="#dea684" ${S}/>
+    <path d="M107 158 Q120 172 133 158 L133 169 Q120 179 107 169 Z" fill="#c68967"/>
+    <path d="M104 176 L120 204 L136 176" fill="#dbeafe" ${S}/>
+    <path d="M98 184 L112 204 L120 196 L104 178 Z" fill="#eff6ff" ${S}/>
+    <path d="M142 184 L128 204 L120 196 L136 178 Z" fill="#eff6ff" ${S}/>
+    <path d="M115 196 L125 196 L123 205 L127 254 L120 264 L113 254 L117 205 Z" fill="#0f2354" ${S}/>
+    <rect x="115" y="222" width="10" height="3" rx="1" fill="url(#${uid}gd)" stroke="${ink}" stroke-width="1"/>
+    <path d="M64 300 C64 252 68 210 88 188 L104 192 L114 238 L114 300 Z" fill="url(#${uid}nv)" ${S}/>
+    <path d="M176 300 C176 252 172 210 152 188 L136 192 L126 238 L126 300 Z" fill="url(#${uid}nv)" ${S}/>
+    <rect x="114" y="236" width="12" height="64" fill="#132959" ${S}/>
+    <path d="M76 218 h24 v18 h-24 Z" fill="#152b5e" stroke="${ink}" stroke-width="2"/>
+    <path d="M76 218 h24 l-3 6 h-18 Z" fill="#23458f" stroke="${ink}" stroke-width="1.8"/>
+    <path d="M140 218 h24 v18 h-24 Z" fill="#152b5e" stroke="${ink}" stroke-width="2"/>
+    <path d="M140 218 h24 l-3 6 h-18 Z" fill="#23458f" stroke="${ink}" stroke-width="1.8"/>
+    <path d="M152 198 L160 202 L159 212 L152 216 L145 212 L144 202 Z" fill="url(#${uid}gd)" stroke="${ink}" stroke-width="1.8"/>
+    <polygon points="152,202 153.8,206 158,206.4 154.8,209 155.8,213 152,210.8 148.2,213 149.2,209 146,206.4 150.2,206" fill="#fff9d6"/>
+    <rect x="74" y="186" width="14" height="20" rx="4" fill="#1e293b" ${S}/>
+    <path d="M77 192 h8 M77 196 h8 M77 200 h8" stroke="#64748b" stroke-width="1.4"/>
+    <path d="M81 206 C75 214 83 220 77 228 C72 234 79 240 74 246" fill="none" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+    <rect x="64" y="280" width="112" height="16" fill="#0f172a" ${S}/>
+    <rect x="110" y="278" width="20" height="20" rx="2" fill="#cbd5e1" ${S}/>
+    <rect x="114" y="282" width="12" height="12" rx="1" fill="#334155"/>
+    <rect x="72" y="276" width="18" height="22" rx="3" fill="#1e293b" ${S}/>
+    <rect x="150" y="276" width="18" height="22" rx="3" fill="#1e293b" ${S}/>
+    <ellipse cx="81" cy="118" rx="7" ry="11" fill="#ebb997" ${S}/>
+    <ellipse cx="159" cy="118" rx="7" ry="11" fill="#ebb997" ${S}/>
+    <path d="M82 98 C82 64 158 64 158 98 C158 134 146 158 120 166 C94 158 82 134 82 98 Z" fill="url(#${uid}sk)" ${S}/>
+    <path d="M78 104 C77 82 88 76 120 76 C152 76 163 82 162 104 L156 114 L154 96 C144 88 134 90 126 98 L120 88 L111 98 C102 90 92 88 86 96 L84 114 Z" fill="url(#${uid}hr)" ${S}/>
+    <path d="M90 107 L111 112 M150 107 L129 112" stroke="#0f172a" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M92 120 Q102 115 111 120 Q102 127 92 120 Z" fill="#ffffff" stroke="${ink}" stroke-width="2"/>
+    <circle cx="102" cy="120" r="4.6" fill="#1e3a8a"/><circle cx="102" cy="120" r="2.2" fill="#090d16"/><circle cx="100" cy="118.4" r="1.4" fill="#ffffff"/>
+    <path d="M129 120 Q138 115 148 120 Q138 127 129 120 Z" fill="#ffffff" stroke="${ink}" stroke-width="2"/>
+    <circle cx="138" cy="120" r="4.6" fill="#1e3a8a"/><circle cx="138" cy="120" r="2.2" fill="#090d16"/><circle cx="136" cy="118.4" r="1.4" fill="#ffffff"/>
+    <path d="M120 126 L118 136 L122 137" fill="none" stroke="#b97f5c" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M108 148 Q120 145 132 148" fill="none" stroke="${ink}" stroke-width="2.6" stroke-linecap="round"/>
+    <rect x="87" y="113" width="28" height="15" rx="3" fill="url(#${uid}gl)" stroke="#1e293b" stroke-width="2.6"/>
+    <rect x="125" y="113" width="28" height="15" rx="3" fill="url(#${uid}gl)" stroke="#1e293b" stroke-width="2.6"/>
+    <path d="M115 119 h10 M83 118 l4 1 M153 119 l4 -1" stroke="#1e293b" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M72 78 L64 48 C82 32 158 32 176 48 L168 78 Z" fill="url(#${uid}nv)" ${S}/>
+    <path d="M73 74 C96 68 144 68 167 74 L165 86 C144 80 96 80 75 86 Z" fill="#0d1b3e" ${S}/>
+    <path d="M75 80 C98 75 142 75 165 80" fill="none" stroke="url(#${uid}gd)" stroke-width="3.2"/>
+    <path d="M74 84 C98 96 142 96 166 84 C162 98 144 103 120 103 C96 103 78 98 74 84 Z" fill="url(#${uid}vs)" ${S}/>
+    <path d="M90 91 C106 96 128 96 146 91" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity=".65"/>
+    <path d="M120 43 L131 48 L129 63 L120 69 L111 63 L109 48 Z" fill="url(#${uid}gd)" stroke="${ink}" stroke-width="2.2"/>
+    <polygon points="120,49 122.4,54.2 128,54.8 123.6,58.4 125,64 120,61 115,64 116.4,58.4 112,54.8 117.6,54.2" fill="#fffbeb"/>
+    <path d="M52 222 C44 252 54 274 78 274 L156 254 C166 252 168 238 156 234 L82 252 C74 252 72 240 76 226 Z" fill="url(#${uid}sh)" ${S}/>
+    <path d="M162 238 C168 242 170 250 164 256 L152 256 L150 238 Z" fill="url(#${uid}sk)" ${S}/>
+    <path d="M188 222 C196 252 186 274 162 274 L84 256 C74 254 72 240 84 236 L158 252 C166 252 168 240 164 226 Z" fill="url(#${uid}sh)" ${S}/>
+    <path d="M74 238 C68 242 66 250 72 256 L86 256 L88 238 Z" fill="url(#${uid}sk)" ${S}/>
+    <path d="M74 244 h8 M74 249 h8" stroke="#c68967" stroke-width="1.6" stroke-linecap="round"/>
+  </g></svg>`;
 }

@@ -87,7 +87,10 @@ sheet('arrow_pad', 'objects/arrow_pad.png', OB.buildArrowPad(), 16, 16, { origin
 image('warp_pad', 'objects/warp_pad.png', OB.buildWarpPad());
 sheet('switch_btn', 'objects/switch_btn.png', OB.buildSwitchBtn(), 16, 16, { originY: 1 });
 image('gate_bar', 'objects/gate_bar.png', OB.buildGateBar());
-image('campfire', 'objects/campfire.png', OB.buildCampfire());
+sheet('campfire', 'objects/campfire.png', OB.buildCampfire(), 24, 24, { originY: 1 });
+sheet('whirlpool', 'objects/whirlpool.png', OB.buildWhirlpool(), 24, 24, { originY: 0.72 });
+image('tide_seal', 'objects/tide_seal.png', OB.buildTideSeal(), { originY: 0.92 });
+image('sea_altar', 'objects/sea_altar.png', OB.buildSeaAltar(), { originY: 0.85 });
 image('stump', 'objects/stump.png', OB.buildStump());
 image('cactus', 'objects/cactus.png', RG.buildCactus());
 image('dead_tree', 'objects/dead_tree.png', RG.buildDeadTree());

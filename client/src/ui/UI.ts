@@ -88,6 +88,7 @@ const title = {
 // ── HUD ────────────────────────────────────────────────
 const hud = {
   node: null as HTMLDivElement | null,
+  noticeBtn: null as HTMLButtonElement | null,
   mount() {
     const n = el('div', 'absolute top-3 right-3 flex flex-col items-end gap-2');
     n.innerHTML = `
@@ -95,9 +96,22 @@ const hud = {
         <div class="flex items-center justify-between gap-3"><span data-h="date"></span><span data-h="weather" class="px-icon" style=""></span></div>
         <div class="flex items-center justify-between gap-3 text-2xl"><span data-h="time"></span></div>
         <div class="mt-1 flex items-center justify-end gap-2 bg-[#e6cb93] px-2 py-0.5 border-2 border-[#a8683a]"><span class="px-icon" style="${iconStyle('gold', 24)}"></span><span data-h="gold" class="text-xl tabular-nums"></span></div>
-      </div>`;
+      </div>
+      <button data-h="notice" class="hud-notice-btn hidden"></button>`;
     root().appendChild(n);
     this.node = n;
+    this.noticeBtn = n.querySelector<HTMLButtonElement>('[data-h=notice]');
+  },
+  notices(unread: number, hasFine: boolean, onClick?: () => void) {
+    if (!this.noticeBtn) return;
+    if (unread <= 0) {
+      this.noticeBtn.classList.add('hidden');
+      this.noticeBtn.onclick = null;
+      return;
+    }
+    this.noticeBtn.classList.remove('hidden');
+    this.noticeBtn.textContent = hasFine ? `⚖️ 벌금 고지서 도착 (${unread}) · R` : `📨 새 메시지 (${unread}) · R`;
+    this.noticeBtn.onclick = () => onClick?.();
   },
   time(t: WorldTime) {
     if (!this.node) return;

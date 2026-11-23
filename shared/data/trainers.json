@@ -145,5 +145,93 @@
     "after": [
       "배지를 모으면 더 먼 곳까지 모험할 수 있을 거야. 2번 도로가 열리면 다시 만나자."
     ]
+  },
+  "gym_windvale_t1": {
+    "id": "gym_windvale_t1",
+    "name": "민재",
+    "title": "바람골 도장 관원",
+    "sprite": "ace_m",
+    "map": "in_gym",
+    "sight": 3,
+    "team": [
+      ["poreureu", 7],
+      ["kongkong", 7]
+    ],
+    "reward": 180,
+    "intro": [
+      "돌풍 화살표 미로에 온 걸 환영해! 먼저 나와 승부하자!"
+    ],
+    "defeat": [
+      "오호, 바람을 제법 잘 타는걸?"
+    ],
+    "after": [
+      "파란 정지 타일을 노려야 원하는 방향으로 꺾을 수 있어!"
+    ]
+  },
+  "gym_windvale_t2": {
+    "id": "gym_windvale_t2",
+    "name": "하윤",
+    "title": "바람골 도장 관원",
+    "sprite": "lass",
+    "map": "in_gym",
+    "sight": 3,
+    "team": [
+      ["poreureu", 7],
+      ["saerok", 8]
+    ],
+    "reward": 200,
+    "intro": [
+      "서쪽 바람 스위치로 가려는 거지? 쉽게는 못 지나가!"
+    ],
+    "defeat": [
+      "바람보다 빠른 판단력이네!"
+    ],
+    "after": [
+      "서쪽과 동쪽 스위치를 모두 열어야 북쪽 태풍 회랑으로 갈 수 있어."
+    ]
+  },
+  "gym_windvale_t3": {
+    "id": "gym_windvale_t3",
+    "name": "지호",
+    "title": "바람골 도장 관원",
+    "sprite": "explorer",
+    "map": "in_gym",
+    "sight": 3,
+    "team": [
+      ["busit", 7],
+      ["poreureu", 8]
+    ],
+    "reward": 210,
+    "intro": [
+      "동쪽 회랑의 회전 화살표를 뚫고 왔구나! 실력을 보여 줘!"
+    ],
+    "defeat": [
+      "대단한데! 동쪽 스위치도 코앞이야."
+    ],
+    "after": [
+      "화살표가 연쇄로 이어지는 곳은 끝점을 거꾸로 추적해 보면 쉬워!"
+    ]
+  },
+  "gym_windvale_t4": {
+    "id": "gym_windvale_t4",
+    "name": "서연",
+    "title": "바람골 수석 관원",
+    "sprite": "ace_f",
+    "map": "in_gym",
+    "sight": 3,
+    "team": [
+      ["poreureu", 8],
+      ["ikkigom", 8]
+    ],
+    "reward": 240,
+    "intro": [
+      "최종 태풍 회랑까지 오다니 놀라워! 관장 세나님 앞 마지막 관문이야!"
+    ],
+    "defeat": [
+      "좋아, 세나님께 도전할 자격이 충분해!"
+    ],
+    "after": [
+      "이 앞의 화살표 미로만 돌파하면 바로 세나님의 단상이야. 파이팅!"
+    ]
   }
 }

@@ -592,7 +592,7 @@ export function buildRegion() {
     m.warp(x + 1, y, 1, 1, link.to, `from_${m.name}`);
     m.spawn(`from_${link.to}`, x + 1, y + 1);
     m.reserve(x - 1, y - 2, x + 3, y + 1);
-    meander(m, hub, [x + 1, y + 1], R, D, 2);
+    meander(m, hub, [x + 1, y + 1], R, m.name === 'altar' ? S : D, 2);
     m.place('sign', x + 3, y + 1, { force: true, props: { interact: 'sign', text: `${nodes[link.to].name}\n${nodes[link.to].desc ?? '어두운 동굴 입구다.'}` } });
   }
   /** 부두 (배 타기): 바다 쪽으로 다리 + 끝에 워프 */
@@ -635,7 +635,7 @@ export function buildRegion() {
     // 네 방향 모두 길이 나 있으면 동쪽 끝에 두고, 동쪽 출구는 도장 지붕보다 위로 올림
     const gymSide = n.gym ? (!hasSide('N') ? 'N' : !hasSide('S') && !n.coastal ? 'S' : !hasSide('E') ? 'E' : !hasSide('W') ? 'W' : 'E') : null;
     const vert = gymSide === 'N' || gymSide === 'S';
-    const EXTRA = vert ? 15 : 0, top = gymSide === 'N' ? EXTRA : 0, EXW = gymSide === 'E' || gymSide === 'W' ? 16 : 0, left = gymSide === 'W' ? EXW : 0;
+    const EXTRA = gymSide === 'S' ? 19 : vert ? 15 : 0, top = gymSide === 'N' ? EXTRA : 0, EXW = gymSide === 'E' || gymSide === 'W' ? 16 : 0, left = gymSide === 'W' ? EXW : 0;
     // 마을마다 크기 · 가로세로 비 · 지형 컨셉을 다르게 배정
     const TOWN_ARCHS = n.coastal || n.biome === 'swamp' ? ['canal', 'harbor_plaza'] : ['rocky', 'snow', 'volcano'].includes(n.biome) ? ['highland', 'ridge'] : ['highland', 'canal', 'plaza'];
     const arch = TOWN_ARCHS[tSeed % TOWN_ARCHS.length];
@@ -657,27 +657,39 @@ export function buildRegion() {
     m.reserve(cx - 9, cy - 4, cx + 9, cy + 4);
     for (const ex of exits) { const inner = edgeExit(m, ex, S); m.path(inner[0], inner[1], cx, inner[1], 2, S); m.path(cx, Math.min(inner[1], cy), cx, Math.max(inner[1], cy), 2, S); }
     // 건물: 북쪽 줄 (쉼터·상점·도장·리그) / 남쪽 줄 (집)
+    // 마을별 개성(복붙 탈피): 단풍골·꽃구름·안개·조개·모래바람·별마루마다 건물 간격·단차·광장 조경을 다르게 구성
     const north = ['center', 'shop_w', ...(n.gym && !gymSide ? ['gym'] : []), ...(n.league ? ['hall'] : [])];
     const south = n.city ? ['casino', 'house_a', 'house_b', 'house_c'] : ['casino', 'house_b', 'house_c'];
-    const rowN = cy - (arch === 'highland' ? 7 : 6), rowS = coastal ? Math.min(cy + 9, seaTop - 4) : cy + (arch === 'highland' ? 9 : 8);
-    const placeRow = (list, row) => {
-      let lft = cx - 3, right = cx + 3, side = 0;
-      for (const key of list) {
+    const rowN = cy - (arch === 'highland' ? 8 : 7), rowS = coastal ? Math.min(cy + 9, seaTop - 4) : cy + (arch === 'highland' ? 9 : 8);
+    const northGap = n.id === 'bloom' ? 5 : n.id === 'sand' ? 4 : n.id === 'mist' ? 5 : n.id === 'maple' ? 4 : 3;
+    const northRowOffset = (idx) => (n.id === 'maple' ? (idx % 2 === 0 ? 0 : -1) : n.id === 'mist' ? (idx % 2 === 0 ? -1 : 0) : n.id === 'shell' ? (idx % 2 === 0 ? -1 : 0) : 0);
+    const placeRow = (list, row, gap = 3, isNorth = false) => {
+      let lft = cx - gap, right = cx + gap, side = 0;
+      for (let li = 0; li < list.length; li++) {
+        const key = list[li];
         const c = cells(key); let x0;
+        const r = row + (isNorth ? northRowOffset(li) : 0);
         if (side % 2 === 0) { x0 = lft - c.w; if (x0 < 3 + left) { side++; } else { lft = x0 - 2; } }
         if (side % 2 === 1) { x0 = right; if (x0 + c.w > W - 3 - (gymSide === 'E' ? EXW : 0)) continue; right = x0 + c.w + 2; }
         side++;
-        if (row - c.h < 3) continue;
+        if (r - c.h < 3) continue;
         const interior = key === 'gym' ? `gym_${n.id}` : key === 'hall' ? 'league' : undefined;
         const interact = key === 'center' ? 'center' : key === 'shop_w' ? 'shop:windvale' : key === 'gym' ? 'gym' : key === 'hall' ? 'league' : key === 'casino' ? 'casino' : `home:${n.id}`;
         const doorX = x0 + c.door;
-        m.place(key, x0, row, { w: c.w, h: c.h, force: true, props: { interact, doorCellX: doorX, ...(interior ? { interior } : {}) } });
-        m.reserve(x0 - 1, row - c.h - 2, x0 + c.w, row);
-        m.path(doorX, Math.min(row + 1, cy), doorX, Math.max(row + 1, cy), 1, S);
-        m.spawn(key === 'center' ? 'wp_center' : key === 'shop_w' ? 'wp_shop' : key === 'gym' ? 'wp_gym' : key === 'casino' ? 'wp_casino' : `wp_${key}_${doorX}`, doorX, row + 1);
+        m.place(key, x0, r, { w: c.w, h: c.h, force: true, props: { interact, doorCellX: doorX, ...(interior ? { interior } : {}) } });
+        m.reserve(x0 - 1, r - c.h - 3, x0 + c.w, r + 1);
+        // 북쪽 건물 앞 깔끔한 테라스 보행로 연결 (계단 폭이 과도해지지 않도록 row+2 보행로로 모아 중앙 계단으로 연결)
+        if (isNorth) {
+          m.path(doorX, r + 1, doorX, row + 2, 1, S);
+          m.path(Math.min(doorX, cx), row + 2, Math.max(doorX, cx), row + 2, 1, S);
+          m.path(cx, row + 2, cx, cy, 2, S);
+        } else {
+          m.path(doorX, Math.min(r + 1, cy), doorX, Math.max(r + 1, cy), 1, S);
+        }
+        m.spawn(key === 'center' ? 'wp_center' : key === 'shop_w' ? 'wp_shop' : key === 'gym' ? 'wp_gym' : key === 'casino' ? 'wp_casino' : `wp_${key}_${doorX}`, doorX, r + 1);
       }
     };
-    placeRow(north, rowN); placeRow(south, rowS);
+    placeRow(north, rowN, northGap, true); placeRow(south, rowS, 3, false);
     // 부두
     const docks = n.links.filter((l) => l.type === 'dock');
     docks.forEach((l, i) => dock(m, l, Math.round(W * (i + 1) / (docks.length + 1)) + 4, seaTop));
@@ -703,28 +715,70 @@ export function buildRegion() {
     }
     m.spawn('wp_npc1', cx - 4, cy); m.spawn('wp_npc2', cx + 5, cy - 1); m.spawn('wp_plaza', cx, cy + 1);
     const maxH = Math.max(...north.map((k) => cells(k).h));
-    const backY = rowN - maxH - 2;
+    const backY = rowN - maxH - 4;
     // 도장: 맨 안쪽 단 위(북) 또는 맨 아래 단(남)의 따로 떨어진 광장
     if (gymSide) {
       const g = cells('gym');
       const side = !vert;   // 동 · 서 끝: 광장 높이 아래쪽에 따로
       const gx = side ? (gymSide === 'E' ? W - 4 - g.w + g.door : 3 + g.door) : cx;
-      const x0 = gx - g.door, gy = gymSide === 'N' ? backY - 2 : gymSide === 'S' ? H - 4 : cy + 3;
+      const x0 = gx - g.door, gy = gymSide === 'N' ? backY - 2 : gymSide === 'S' ? H - 6 : cy + 3;
       m.ellipse(gx, gy + 1.5, 7.5, 1.8, S, 0.02);
       m.place('gym', x0, gy, { w: g.w, h: g.h, force: true, props: { interact: 'gym', doorCellX: gx, interior: `gym_${n.id}` } });
-      m.reserve(x0 - 1, gy - 10, x0 + g.w, gy + 2);
+      m.reserve(x0 - 1, gy - 10, x0 + g.w, gy + 3);
       if (gymSide === 'N') m.path(cx, gy + 1, cx, cy, 2, S);
-      else if (gymSide === 'S') { m.path(cx, cy, cx, gy + 1, 2, S); m.terrace(rowS + 2); }
+      else if (gymSide === 'S') {
+        const lx = Math.max(4, x0 - 4), rx = Math.min(W - 6, x0 + g.w + 2);
+        m.path(cx, cy, cx, rowS + 1, 2, S);
+        m.path(lx, rowS + 1, rx + 1, rowS + 1, 2, S);
+        m.path(lx, rowS + 1, lx, gy + 2, 2, S);
+        m.path(rx, rowS + 1, rx, gy + 2, 2, S);
+        m.path(lx, gy + 1, rx + 1, gy + 1, 3, S);
+        m.reserve(lx - 1, rowS + 5, rx + 2, gy + 3);
+        m.terrace(rowS + 2, 0, W - 1, { maxStairRun: 3, stairCenter: cx });
+      }
       else { m.path(cx, cy, cx, gy + 2, 2, S); m.path(Math.min(cx, gx), gy + 2, Math.max(cx, gx), gy + 2, 2, S); }
       m.spawn('wp_gym', gx, gy + 1);
       m.place('planter', x0 - 1, gy + 1, { force: true }); m.place('planter', x0 + g.w, gy + 1, { force: true });
       signAt(m, cx + 2, gymSide === 'N' ? backY + 4 : gymSide === 'S' ? rowS + 2 : gy + 4, `${n.name} 도장 ${({ N: '↑', S: '↓', E: '→', W: '←' })[gymSide]}\n관장 ${GYMS[n.id]?.name ?? ''} · ${GYMS[n.id]?.type ?? ''} 타입`);
     }
-    // 2.5D 3단: 고지대 컨셉은 아래층 계단 단 추가해 Y축 입체감 강화
-    m.terrace(rowN + 2);
-    if (backY >= 3) m.terrace(backY);
+    // 2.5D 단차: 건물 지붕·몸체를 절대 꿰뚫지 않도록 앞쪽 테라스(rowN+2)만 깔끔한 2~3칸 계단으로 배치하고,
+    // 평지/해변/사막 마을(shell, sand, bloom)은 불필요한 뒤쪽 옹벽을 생략해 개방감·개성을 살림
+    const frontTerraceY = rowN + 2;
+    if (frontTerraceY + 2 < cy - 2 && n.id !== 'shell') {
+      m.terrace(frontTerraceY, 0, W - 1, { maxStairRun: 3, stairCenter: cx });
+    }
+    if (backY >= 4 && !['bloom', 'shell', 'sand', 'mist'].includes(n.id)) {
+      m.terrace(backY, 0, W - 1, { maxStairRun: 3, stairCenter: cx });
+    }
     if ((arch === 'highland' || arch === 'ridge') && gymSide !== 'S' && rowS + 3 < (coastal ? seaTop - 4 : H - 6)) {
-      m.terrace(rowS + 3);
+      m.terrace(rowS + 3, 0, W - 1, { maxStairRun: 3, stairCenter: cx });
+    }
+    // 마을별 시그니처 랜드마크 (5개 마을 복붙 완전 해소)
+    if (n.id === 'bloom') {
+      // 꽃구름 마을: 중앙 꽃밭 정원 + 화분·벤치·풍성한 꽃 군락
+      for (const [dx, dy] of [[-4, -2], [4, -2], [-4, 2], [4, 2], [0, -3]]) m.place('planter', cx + dx, cy + dy, { force: true });
+      m.flowers(18, (x, y) => m.terrain[y][x] === G);
+    } else if (n.id === 'maple') {
+      // 단풍골: 붉은 단풍 정원 + 벤치 쉼터
+      for (const [dx, dy] of [[-6, 1], [6, 1]]) if (m.inb(cx + dx, cy + dy) && !m.blocked[cy + dy][cx + dx]) m.place('oak_autumn', cx + dx, cy + dy, { force: true });
+      m.place('bench', cx + 2, cy + 3, { w: 2, force: true, props: { interact: 'bench' } });
+    } else if (n.id === 'mist') {
+      // 안개 마을: 광장 동쪽 갈대 연못과 휴식 벤치
+      const px0 = Math.min(W - 7, cx + 10), py0 = cy + 1;
+      m.ellipse(px0, py0, 3.2, 2.1, Wt, 0.08);
+      m.reserve(px0 - 4, py0 - 3, px0 + 4, py0 + 3);
+      m.place('bench', px0 - 1, py0 + 3, { w: 2, force: true, props: { interact: 'bench' } });
+    } else if (n.id === 'sand') {
+      // 모래바람 마을: 사막 오아시스 연못과 야자수 링
+      const ox = Math.max(7, cx - 11), oy = cy + 1;
+      m.ellipse(ox, oy, 3.4, 2.2, Wt, 0.06);
+      m.reserve(ox - 5, oy - 3, ox + 5, oy + 4);
+      for (const [dx, dy] of [[-4, -2], [4, -2], [-4, 2], [4, 2]]) if (m.inb(ox + dx, oy + dy) && m.terrain[oy + dy][ox + dx] !== Wt) m.place('palm', ox + dx, oy + dy, { force: true });
+    } else if (n.id === 'shell') {
+      // 조개 마을: 해변 시장 노점과 야자수 산책로
+      m.place('stall', cx - 6, cy + 2, { w: 3, force: true, props: { interact: 'shop:mart3' } });
+      m.place('stall_b', cx + 4, cy + 2, { w: 3, force: true, props: { interact: 'shop:cafe' } });
+      for (const dx of [-8, 8]) if (m.inb(cx + dx, cy - 1)) m.place('palm', cx + dx, cy - 1, { force: true });
     }
     // 수로 마을: 건물이 비어 있는 세로 줄에 맑은 시냇물 + 3D 목조 다리
     if (arch === 'canal' && !coastal && !n.city) {
@@ -938,8 +992,144 @@ export function buildRegion() {
     return m;
   }
 
+  // ── 해신의 바다 (파도타기 전용 해류·소용돌이·조류 비석 퍼즐 → 물 전설 '해랑') ──
+  function genOceanShrine(n) {
+    const aSeed = hashStr(n.id);
+    const R = rng(aSeed);
+    const W = 48, H = 54, cx = 24;
+    const m = new MapBuilder(n.id, W, H, aSeed);
+    m.noCleanPaths = true;
+    m.noTidy = true;
+    // 1) 맵 전체를 탁 트인 바다로 채우고 외곽 암초 경계 차단
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) m.setT(x, y, Wt);
+    const fillIsland = (x0, y0, x1, y1, inner = D, border = G) => {
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const edge = x === x0 || x === x1 || y === y0 || y === y1;
+        m.setT(x, y, edge ? border : inner);
+        m.reserved[y][x] = true;
+      }
+    };
+    const putReef = (x, y) => {
+      if (m.inb(x, y) && !m.blocked[y][x]) m.place('rock_big', x, y, { force: true });
+    };
+    const putCurrent = (x0, y0, x1, y1, dir) => {
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        if (!m.inb(x, y)) continue;
+        m.place('sea_current', x, y, { block: false, force: true, props: { dir } });
+        m.reserved[y][x] = true;
+      }
+    };
+
+    // 2) 남쪽 진입 모래톱 (물결항 연결 선착장 + 파도타기 출발지)
+    fillIsland(21, 46, 26, 49, D, G);
+    for (let y = 49; y <= 52; y++) {
+      m.setBridge(23, y, ROW.WOOD, WOOD.DOCK_H);
+      m.setBridge(24, y, ROW.WOOD, WOOD.DOCK_H);
+      m.reserved[y][23] = m.reserved[y][24] = true;
+    }
+    m.warp(22, 52, 4, 1, 'harbor', `from_${m.name}`, { ferry: 1 });
+    m.spawn('from_harbor', 24, 48);
+    m.spawn('player', 24, 48);
+    m.place('palm', 21, 46, { force: true });
+    m.place('palm', 26, 46, { force: true });
+    signAt(m, 25, 47, '🌊 해신의 바다 · 조류의 성소\n물가 앞에서 [E] 파도타기로 바다에 나갈 수 있다.\n서·동·중앙의 세 조류 비석을 모두 깨우면\n북쪽 심해 소용돌이가 걷히고 물의 전설이 깨어난다!');
+
+    // 3) 중앙 쉼터 모래톱 (3갈래 해류 퍼즐의 허브)
+    fillIsland(21, 36, 26, 39, D, G);
+    m.place('palm', 21, 36, { force: true });
+    signAt(m, 25, 37, '⚓ 해류 안내 비문\n「서쪽은 윗물결이, 동쪽은 아랫물결이 길을 연다.\n세 비석이 모두 울리면 북쪽 심해의 문이 열리리라.」');
+
+    // 4) 북쪽 심해 소용돌이 장벽 (y=15): 양옆은 암초로 완전 봉쇄, 중앙 6칸만 소용돌이 6개로 봉인
+    for (let x = 2; x <= 45; x++) {
+      if (x >= 21 && x <= 26) {
+        m.place('whirlpool', x, 15, { force: true, props: { gateId: 'sea_main', interact: 'whirlpool' } });
+      } else {
+        putReef(x, 15);
+        if (x % 3 === 0) putReef(x, 14);
+      }
+    }
+
+    // 5) 서쪽 시련: 해류 급류 채널 → 서쪽 산호섬 (제1 조류 비석)
+    fillIsland(5, 23, 9, 26, D, G);
+    fillIsland(8, 28, 10, 30, D, D);
+    for (let x = 11; x <= 19; x++) { putReef(x, 31); putReef(x, 27); }
+    for (let y = 27; y <= 34; y++) putReef(11, y);
+    putReef(11, 29); // 급류 진입구 외 암초 정비
+    m.blocked[29][11] = false;
+    m.objects = m.objects.filter((o) => !(o.type === 'rock_big' && o.properties.find((p) => p.name === 'cellX')?.value === 11 && o.properties.find((p) => p.name === 'cellY')?.value === 29));
+    // 함정 남쪽 해류 (되돌려 보냄)
+    putCurrent(12, 33, 19, 33, 'right');
+    // 정답 서쪽 급류 (서쪽 쉼터로 쾌속 이동)
+    putCurrent(12, 29, 19, 29, 'left');
+    // 복귀 동쪽 급류
+    putCurrent(11, 24, 18, 24, 'right');
+    m.place('tide_seal', 7, 24, { force: true, props: { interact: 'tide_seal', sealIdx: 0, gateId: 'sea_main', color: '#38bdf8' } });
+    m.place('palm', 5, 23, { force: true });
+    // 서쪽 보너스 보물섬
+    fillIsland(4, 33, 6, 35, D, G);
+    stash(m, n, R, 'chest', 5, 34);
+
+    // 6) 동쪽 시련: 해류 급류 + 역류 회피 슬라럼 → 동쪽 산호섬 (제2 조류 비석)
+    fillIsland(38, 23, 42, 26, D, G);
+    fillIsland(38, 33, 40, 35, D, D);
+    for (let x = 28; x <= 35; x++) { putReef(x, 32); putReef(x, 28); }
+    // 함정 위쪽 해류 (중앙으로 되돌림)
+    putCurrent(28, 30, 35, 30, 'left');
+    // 정답 아래쪽 급류 (동쪽 모래톱으로 쾌속 이동)
+    putCurrent(28, 34, 36, 34, 'right');
+    // 동쪽 수로 역류 장애물 (x=38은 아래로 밀어냄 → x=40~41 외곽 수로로 우회!)
+    putCurrent(37, 29, 38, 31, 'down');
+    putReef(36, 29); putReef(36, 30); putReef(36, 31);
+    // 복귀 서쪽 급류
+    putCurrent(29, 24, 36, 24, 'left');
+    m.place('tide_seal', 40, 24, { force: true, props: { interact: 'tide_seal', sealIdx: 1, gateId: 'sea_main', color: '#2dd4bf' } });
+    m.place('palm', 42, 23, { force: true });
+
+    // 7) 중앙 시련: 소용돌이 회랑 → 중앙 진주섬 (제3 조류 비석)
+    fillIsland(22, 19, 25, 21, S, G);
+    putReef(20, 22); putReef(21, 22); putReef(25, 22); putReef(26, 22); putReef(27, 22);
+    m.place('whirlpool', 20, 20, { force: true, props: { gateId: 'never', interact: 'whirlpool' } });
+    m.place('whirlpool', 27, 20, { force: true, props: { gateId: 'never', interact: 'whirlpool' } });
+    putCurrent(20, 25, 22, 25, 'right');
+    m.place('tide_seal', 23, 20, { force: true, props: { interact: 'tide_seal', sealIdx: 2, gateId: 'sea_main', color: '#818cf8' } });
+
+    // 8) 북쪽 해신의 성소 (소용돌이 장벽 너머 — 물 전설 루미 '해랑' 강림 제단)
+    fillIsland(20, 5, 27, 11, S, S);
+    for (const [rx, ry] of [[20, 6], [27, 6], [20, 10], [27, 10]]) m.place('ruin_pillar', rx, ry, { force: true });
+    m.place('sea_altar', 22, 8, { w: 3, h: 2, force: true, props: { interact: 'sea_altar', text: '해신의 제단.\n맑은 바닷빛 진주가 고요히 맥동하고 있다…' } });
+    m.place('planter', 21, 10, { force: true });
+    m.place('planter', 26, 10, { force: true });
+
+    // 9) 외곽 암초 테두리 봉쇄 (남쪽 워프 통로 제외)
+    for (let x = 0; x < W; x++) {
+      m.blocked[0][x] = m.blocked[1][x] = true;
+      if (x < 22 || x > 25) m.blocked[H - 1][x] = m.blocked[H - 2][x] = true;
+    }
+    for (let y = 0; y < H; y++) {
+      m.blocked[y][0] = m.blocked[y][1] = true;
+      m.blocked[y][W - 1] = m.blocked[y][W - 2] = true;
+    }
+    // 바다 위 분위기용 산호 암초 몇 개
+    for (const [rx, ry] of [[4, 42], [6, 44], [42, 42], [40, 45], [14, 10], [34, 10], [10, 18], [38, 18]]) putReef(rx, ry);
+
+    finish(m, n, R);
+    m.setProp('battleBg', 'water');
+    m.setProp('surfOnly', 'true');
+    // 바다 파도타기 조우 테이블 (해양 루미 전용)
+    data.grass[n.id] = {
+      day: [['w1b', 36, 44, 24], ['w2b', 36, 44, 22], ['w4b', 38, 46, 20], ['w5b', 38, 46, 18], ['chalang', 38, 45, 16]],
+      night: [['w4b', 38, 46, 28], ['w4c', 42, 48, 12], ['w2b', 36, 44, 24], ['w1c', 42, 48, 10], ['mallang', 36, 44, 26]],
+    };
+    data.fish[n.id] = {
+      items: FISH_ITEMS(7),
+      lumi: [['w1b', 36, 44, 12], ['w4b', 38, 46, 10], ['w2b', 36, 44, 8], ['chalang', 38, 45, 5]],
+    };
+    return m;
+  }
+
   // ── 랜드마크 지역 ────────────────────────────────────
   function genArea(n) {
+    if (n.tpl === 'ocean_shrine') return genOceanShrine(n);
     const aSeed = hashStr(n.id);
     const R = rng(aSeed);
     const big = n.tpl === 'marsh' || n.tpl === 'forest_maze';
@@ -1001,7 +1191,12 @@ export function buildRegion() {
       } else if (l.type === 'stairsUp') { const sy = n.tpl === 'altar' ? cy - 5 : 4; m.place('ruin_pillar', cx - 2, sy + 1, { force: true }); m.place('ruin_pillar', cx + 3, sy + 1, { force: true }); m.path(cx, sy + 1, cx, cy - 1, 2, S); m.warp(cx, sy, 2, 1, l.to, `from_${m.name}`); m.spawn(`from_${l.to}`, cx, sy + 2); m.place('stairs_up', cx, sy, { w: 2, block: false, force: true }); m.reserve(cx - 2, sy - 1, cx + 3, sy + 2); }
       else if (l.type === 'portal') { const x = W - 12, y = cy; m.place('portal', x, y, { w: 2, block: false, force: true }); m.warp(x, y, 2, 1, l.to, `from_${m.name}`); m.spawn(`from_${l.to}`, x, y + 2); m.path(hub[0], hub[1], x, hub[1], 2, S); m.path(x, Math.min(y, hub[1]), x, Math.max(y + 2, hub[1]), 2, S); }
     }
-    if (n.tpl === 'altar') { m.path(cx, 6, cx, cy + 4, 2, S); m.terrace(11); }
+    if (n.tpl === 'altar') {
+      m.path(cx, 6, cx, cy + 4, 3, S);
+      m.terrace(11, 0, W - 1, { maxStairRun: 4, stairCenter: cx });
+      m.place('ruin_pillar', cx - 3, 14, { force: true });
+      m.place('ruin_pillar', cx + 3, 14, { force: true });
+    }
     if (n.tpl === 'battle') { const c = cells('center'); m.place('center', cx - 14, cy - 2, { w: c.w, h: c.h, force: true, props: { interact: 'center', doorCellX: cx - 14 + c.door } }); m.path(cx - 14 + c.door, cy - 1, cx - 14 + c.door, cy, 1, S); }
     if (n.tpl === 'forest_maze') { for (let k = 0; k < 10; k++) meander(m, [4 + Math.floor(R() * (W - 8)), 4 + Math.floor(R() * (H - 8))], hub, R, D, 1); }
     // 풀숲·트레이너
@@ -1092,11 +1287,18 @@ export function buildRegion() {
         intro: [`${nodes[town].name} 도장에 잘 왔어. 나는 관장 ${g.name}.`, g.type === '혼합' ? '별자리처럼 여러 속성을 엮은 내 팀, 하나의 상성으로는 못 이길걸!' : `${g.type} 타입의 진짜 힘, 보여 줄게!`],
         defeat: [`…훌륭해. 이 「${g.badgeName}」를 받아.`], after: ['다음 도시의 관장은 더 강할 거야. 계속 나아가!'],
       };
-      // 도장 관원 2명
-      [['도장 관원', 'ace_m'], ['도장 관원', 'ace_f']].forEach(([title, sprite], k) => {
+      // 도장 관원 4명 (최종 별마루 도장은 9개 방 워프 미궁에 맞춰 6명)
+      const gymCast = town === 'summit'
+        ? [['도장 관원', 'ace_m'], ['도장 관원', 'ace_f'], ['별빛 연구원', 'researcher'], ['도장 관원', 'lass'], ['별빛 탐험가', 'explorer'], ['수석 관원', 'ace_f']]
+        : town === 'harbor'
+          ? [['수영 관원', 'swimmer'], ['도장 관원', 'ace_f'], ['수영 관원', 'swimmer'], ['수석 관원', 'ace_m']]
+          : town === 'forge'
+            ? [['대장간 관원', 'hiker'], ['도장 관원', 'ace_m'], ['광산 관원', 'hiker'], ['수석 관원', 'ace_f']]
+            : [['도장 관원', 'ace_m'], ['도장 관원', 'ace_f'], ['도장 관원', 'lass'], ['수석 관원', 'explorer']];
+      gymCast.forEach(([title, sprite], k) => {
         const id = `gym_${town}_t${k + 1}`;
-        data.trainers[id] = { id, name: nextName(), title, sprite, map: `gym_${town}`, sight: 3, team: [[g.species[k % g.species.length], lv - 4 + k], [g.species[(k + 1) % g.species.length], lv - 3 + k]], reward: 40 * lv,
-          intro: [`관장님께 가려면 나부터 넘어야 해! ${typeTalk(g.type)} 힘을 보여 주지!`], defeat: ['관장님은 나보다 훨씬 강해!'], after: [g.type === '혼합' ? '관장님은 여러 속성을 섞어 써. 파티를 고르게 꾸려 와!' : `관장님은 ${g.type} 타입이야. 상성을 잘 생각해 봐.`] };
+        data.trainers[id] = { id, name: nextName(), title, sprite, map: `gym_${town}`, sight: 3, team: [[g.species[k % g.species.length], Math.max(5, lv - 4 + (k % 3))], [g.species[(k + 1) % g.species.length], Math.max(6, lv - 3 + (k % 3))]], reward: 40 * lv,
+          intro: [`관장님께 가려면 이 퍼즐과 나를 넘어야 해! ${typeTalk(g.type)} 힘을 보여 주지!`], defeat: ['관장님은 나보다 훨씬 강해!'], after: [g.type === '혼합' ? '관장님은 여러 속성을 섞어 써. 파티를 고르게 꾸려 와!' : `관장님은 ${g.type} 타입이야. 상성을 잘 생각해 봐.`] };
       });
     });
     const elites = [

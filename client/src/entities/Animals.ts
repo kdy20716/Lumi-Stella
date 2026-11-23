@@ -80,14 +80,35 @@ export class Butterfly {
   }
 }
 
-/** 호수의 오리: 물 위를 천천히 떠다니다 가끔 자맥질 */
+/** 호수의 오리: 순수한 물 위만 천천히 떠다니다 가끔 자맥질 (다리·부두·육지 절대 진입 금지) */
 export class Duck {
   readonly sprite: Phaser.GameObjects.Sprite;
   private target: { x: number; y: number } | null = null;
   private timer = Math.random() * 3000;
   private diving = 0;
   constructor(private scene: Phaser.Scene, x: number, y: number, private isWater: (px: number, py: number) => boolean) {
-    this.sprite = scene.add.sprite(x, y, 'duck', 0).setOrigin(0.5, 15 / 16);
+    let sx = x, sy = y;
+    if (!isWater(sx, sy)) {
+      // 다리나 물가에 걸쳐 스폰된 경우 가장 가까운 순수 물 칸으로 보정
+      outer: for (let r = 8; r <= 64; r += 8) {
+        for (let a = 0; a < 12; a++) {
+          const nx = x + Math.cos((a / 12) * Math.PI * 2) * r;
+          const ny = y + Math.sin((a / 12) * Math.PI * 2) * r;
+          if (isWater(nx, ny)) { sx = nx; sy = ny; break outer; }
+        }
+      }
+    }
+    this.sprite = scene.add.sprite(sx, sy, 'duck', 0).setOrigin(0.5, 15 / 16);
+  }
+  /** 출발점부터 도착점까지 4px 간격으로 전부 순수 물 위인지 검사 (다리 가로지르기 원천 방지) */
+  private canSwimTo(x0: number, y0: number, x1: number, y1: number) {
+    const d = Math.hypot(x1 - x0, y1 - y0);
+    const steps = Math.max(2, Math.ceil(d / 4));
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      if (!this.isWater(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)) return false;
+    }
+    return true;
   }
   update(dt: number, player: { x: number; y: number }) {
     const s = this.sprite;
@@ -96,21 +117,109 @@ export class Duck {
     else if (this.target) {
       const dx = this.target.x - s.x, dy = this.target.y - s.y, d = Math.hypot(dx, dy), sp = (12 * dt) / 1000;
       if (d < 1) this.target = null;
-      else { s.setPosition(s.x + (dx / d) * sp, s.y + (dy / d) * sp); s.setFlipX(dx > 0); }
+      else {
+        const nx = s.x + (dx / d) * sp, ny = s.y + (dy / d) * sp;
+        if (this.isWater(nx, ny)) {
+          s.setPosition(nx, ny);
+          s.setFlipX(dx > 0);
+        } else {
+          this.target = null;
+          this.timer = 600 + Math.random() * 1200;
+        }
+      }
       s.setFrame(Math.floor(this.scene.time.now / 400) % 2);
     } else if (this.timer <= 0) {
       if (Math.random() < 0.25) this.diving = 1200;
       else {
-        // 플레이어가 가까우면 멀어지는 쪽으로
+        // 플레이어가 가까우면 멀어지는 쪽으로 (단, 다리나 둑은 절대 넘지 않음)
         const away = Math.hypot(player.x - s.x, player.y - s.y) < 40;
-        for (let i = 0; i < 6; i++) {
-          const a = away ? Math.atan2(s.y - player.y, s.x - player.x) + (Math.random() - 0.5) : Math.random() * Math.PI * 2;
-          const tx = s.x + Math.cos(a) * 24, ty = s.y + Math.sin(a) * 16;
-          if (this.isWater(tx, ty) && this.isWater(tx + 6, ty) && this.isWater(tx - 6, ty)) { this.target = { x: tx, y: ty }; break; }
+        for (let i = 0; i < 10; i++) {
+          const a = away && i < 5 ? Math.atan2(s.y - player.y, s.x - player.x) + (Math.random() - 0.5) * 0.9 : Math.random() * Math.PI * 2;
+          const dist = 14 + Math.random() * 18;
+          const tx = s.x + Math.cos(a) * dist, ty = s.y + Math.sin(a) * dist * 0.85;
+          if (this.canSwimTo(s.x, s.y, tx, ty)) { this.target = { x: tx, y: ty }; break; }
         }
       }
       this.timer = 1500 + Math.random() * 3500;
     }
+    s.setDepth(s.y);
+  }
+}
+
+/** 호수·해양에 서식하는 야생 수생/해양 루미: 순수한 물 위에서만 유영하며 다리·부두·육지에 절대 올라오지 않음 */
+export class WaterLumi {
+  readonly sprite: Phaser.GameObjects.Sprite;
+  private target: { x: number; y: number } | null = null;
+  private timer = Math.random() * 2400;
+  private phase = Math.random() * Math.PI * 2;
+  private dir: 'down' | 'side' | 'up' = 'down';
+  constructor(
+    private scene: Phaser.Scene,
+    readonly species: string,
+    x: number,
+    y: number,
+    private isWater: (px: number, py: number) => boolean,
+  ) {
+    let sx = x, sy = y;
+    if (!isWater(sx, sy)) {
+      outer: for (let r = 8; r <= 72; r += 8) {
+        for (let a = 0; a < 12; a++) {
+          const nx = x + Math.cos((a / 12) * Math.PI * 2) * r;
+          const ny = y + Math.sin((a / 12) * Math.PI * 2) * r;
+          if (isWater(nx, ny)) { sx = nx; sy = ny; break outer; }
+        }
+      }
+    }
+    const key = `lumi_${species}`;
+    this.sprite = scene.add.sprite(sx, sy, scene.textures.exists(key) ? key : 'duck', 0).setOrigin(0.5, 0.88);
+    if (scene.anims.exists(`${key}:down`)) this.sprite.play(`${key}:down`);
+  }
+  private canSwimTo(x0: number, y0: number, x1: number, y1: number) {
+    const d = Math.hypot(x1 - x0, y1 - y0);
+    const steps = Math.max(2, Math.ceil(d / 4));
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      if (!this.isWater(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)) return false;
+    }
+    return true;
+  }
+  update(dt: number, player: { x: number; y: number }) {
+    const s = this.sprite;
+    this.timer -= dt;
+    this.phase += dt * 0.004;
+    if (this.target) {
+      const dx = this.target.x - s.x, dy = this.target.y - s.y, d = Math.hypot(dx, dy), sp = (15 * dt) / 1000;
+      if (d < 1.5) {
+        this.target = null;
+        this.timer = 1100 + Math.random() * 2400;
+      } else {
+        const nx = s.x + (dx / d) * sp, ny = s.y + (dy / d) * sp;
+        if (this.isWater(nx, ny)) {
+          s.setPosition(nx, ny);
+          const nd: 'down' | 'side' | 'up' = Math.abs(dx) > Math.abs(dy) ? 'side' : dy < 0 ? 'up' : 'down';
+          if (nd !== this.dir) {
+            this.dir = nd;
+            const ak = `lumi_${this.species}:${nd}`;
+            if (this.scene.anims.exists(ak)) s.play(ak, true);
+          }
+          s.setFlipX(nd === 'side' && dx > 0);
+        } else {
+          this.target = null;
+          this.timer = 700 + Math.random() * 1400;
+        }
+      }
+    } else if (this.timer <= 0) {
+      const away = Math.hypot(player.x - s.x, player.y - s.y) < 42;
+      for (let i = 0; i < 12; i++) {
+        const a = away && i < 6 ? Math.atan2(s.y - player.y, s.x - player.x) + (Math.random() - 0.5) * 1.1 : Math.random() * Math.PI * 2;
+        const dist = 16 + Math.random() * 24;
+        const tx = s.x + Math.cos(a) * dist, ty = s.y + Math.sin(a) * dist * 0.9;
+        if (this.canSwimTo(s.x, s.y, tx, ty)) { this.target = { x: tx, y: ty }; break; }
+      }
+      this.timer = 1200 + Math.random() * 2800;
+    }
+    // 잔잔한 물결 위 부유감
+    s.setData('lift', Math.max(0, Math.sin(this.phase) * 1.6));
     s.setDepth(s.y);
   }
 }

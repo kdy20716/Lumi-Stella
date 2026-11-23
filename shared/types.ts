@@ -30,7 +30,37 @@ export interface MailGift {
   provider?: string;
 }
 
+/** 휴대폰 메시지(알림 · 벌금 고지서 · 관리자 제재 통지) */
+export interface PlayerNotice {
+  id: string;
+  kind: 'fine' | 'punish' | 'system';
+  title: string;
+  body: string;
+  at: number;
+  read?: boolean;
+  prevGold?: number;
+  prevCash?: number;
+}
+
 export const isHomeMap = (m: MapId) => m === 'home' || m === 'home_2f';
+export const PRISON_MAPS = ['in_prison', 'in_prison_b4', 'in_prison_b3', 'in_prison_b2', 'in_prison_b1', 'in_prison_1f', 'in_prison_yard'] as const;
+export const isPrisonMap = (m: MapId) => (PRISON_MAPS as readonly string[]).includes(m);
+export const PRISON_NEXT_FLOOR: Record<string, MapId> = {
+  in_prison: 'in_prison_b4',
+  in_prison_b4: 'in_prison_b3',
+  in_prison_b3: 'in_prison_b2',
+  in_prison_b2: 'in_prison_b1',
+  in_prison_b1: 'in_prison_1f',
+};
+export const PRISON_FLOOR_LABEL: Record<string, string> = {
+  in_prison: '지하 5층 (B5)',
+  in_prison_b4: '지하 4층 (B4)',
+  in_prison_b3: '지하 3층 (B3)',
+  in_prison_b2: '지하 2층 (B2)',
+  in_prison_b1: '지하 1층 (B1)',
+  in_prison_1f: '지상 1층 (1F · 최종 외벽)',
+  in_prison_yard: '노역 채광장',
+};
 export const isPrivateMap = (m: MapId) => m === 'farm' || isHomeMap(m);
 /** 같은 방(room)에 있는 플레이어끼리만 서로 보인다: 공개 맵은 맵 이름, 개인 공간은 맵@주인, 건물 실내는 맵@바깥맵:건물id */
 export const roomKey = (map: MapId, inst: string) => (inst ? `${map}@${inst}` : map);
@@ -100,6 +130,7 @@ export interface InventorySlot { slotIndex: number; itemId: string | null; quant
 
 export interface PlayerState {
   riding?: boolean;
+  surfing?: boolean;
   id: string;
   name: string;
   look: string;           // 캐릭터 시트 키 ('' = 아직 캐릭터를 만들지 않음)
@@ -167,6 +198,30 @@ export interface PlayerState {
   isAdmin?: boolean;
   /** 캐쉬 상점 결제용 캐쉬 잔액 */
   cash?: number;
+  /** 감옥(별빛 교도소) 수감 상태 */
+  jailed?: boolean;
+  jailReason?: string;
+  /** 탈옥 시 골드·캐쉬 0원 몰수(벌금 고지서) 여부 */
+  jailFine?: boolean;
+  jailPrevGold?: number;
+  jailPrevCash?: number;
+  /** 감옥 탈옥 미니게임 중 채광 완료 횟수 */
+  prisonMined?: number;
+  /** 성실 노역 납품 현황 (석판 100 · 나무판 100 달성 시 정식 석방) */
+  prisonSlabs?: number;
+  prisonPlanks?: number;
+  /** 불법 탈옥 악행스택 (100 → 마을 사람 도움 선행 +1씩 쌓아 0 달성 시 엄마 복귀) */
+  evilStack?: number;
+  /** 탈옥으로 인해 엄마가 집을 나간 상태 */
+  momLeft?: boolean;
+  /** 석방/복귀 귀가 컷신 대기 ('honest' | 'mom_returned') */
+  pendingHomecoming?: 'honest' | 'mom_returned' | '';
+  /** 직전에 도운 마을 주민 ID (한 명 한 명 돌아가며 돕기 유도) */
+  lastHelpedNpc?: string;
+  /** 채팅 금지 남은 시간(초) — 인게임에 접속해 있는 동안에만 감소 */
+  muteRemainingSec?: number;
+  /** 휴대폰 메시지 / 벌금 고지서 / 제재 알림 목록 */
+  notices?: PlayerNotice[];
 }
 /** 호감도 규칙 */
 export const BOND_MAX = 10, BOND_WATER = 4, BOND_ASK_AT = [0, 3, 6];
@@ -248,6 +303,21 @@ export interface SaveData {
   bmOrders?: string[];
   cashOrders?: string[];
   cash?: number;
+  jailed?: boolean;
+  jailReason?: string;
+  jailFine?: boolean;
+  jailPrevGold?: number;
+  jailPrevCash?: number;
+  prisonSlabs?: number;
+  prisonPlanks?: number;
+  evilStack?: number;
+  momLeft?: boolean;
+  pendingHomecoming?: 'honest' | 'mom_returned' | '';
+  lastHelpedNpc?: string;
+  muteRemainingSec?: number;
+  notices?: PlayerNotice[];
+  /** 오프라인 저장 무결성 서명 (치트/재화 변조 탐지) */
+  saveSig?: string;
   /** 마지막 위치 (다시 접속하면 그 자리에서 이어서). 실내면 나갈 곳(ret)도 */
   pos?: { map: MapId; inst: string; x: number; y: number; dir?: Dir; ret?: { map: MapId; inst: string; x: number; y: number } };
   savedAt: number;
@@ -329,8 +399,14 @@ export type ActionIntent =
   | { kind: 'pad'; objectId: number }                 // 워프 패드(같은 맵 순간이동)
   | { kind: 'switch'; gateId: string }                // 바닥 스위치로 전자문 열기
   | { kind: 'gymClear'; gateId?: string; objectId?: number } // 체육관 퍼즐 관문 해제 · 눈덩이 파괴
-  | { kind: 'gymReset' }                              // 체육관 눈덩이 등 퍼즐 초기화
+  | { kind: 'gymReset'; group?: string }                     // 체육관 눈덩이/밀기 블록 등 퍼즐 초기화
+  | { kind: 'gymWater'; level: number }                      // 물결항(들판식) 체육관 3단계 수위 변경 (0/1/2)
+  | { kind: 'gymPush'; objectId: number; dx: number; dy: number } // 쇳불(장막/검은먹식) 밀기 블록 1칸 이동
+  | { kind: 'gymFall'; toX: number; toY: number }            // 잿빛(루네식) 금 가는 발판 추락 이동
   | { kind: 'toggleBike'; force?: boolean }           // 자전거 탑승/하차 토글 (force: 자전거 도로 자동 탑승)
+  | { kind: 'toggleSurf'; on?: boolean; tx?: number; ty?: number } // 파도타기 탑승/하차 토글
+  | { kind: 'tideSeal'; objectId: number }            // 해신의 바다 조류 비석 활성화
+  | { kind: 'seaLegend' }                             // 해신의 제단: 물 전설 루미 '해랑' 배틀
   | { kind: 'partySwap'; a: number; b: number }       // 파티 내 루미 순서 교체
   | { kind: 'boxSwap'; partyIndex: number; boxIndex: number } // 파티 루미 ↔ PC 보관함 루미 교체
   | { kind: 'boxDeposit'; partyIndex: number }        // 파티 루미 → PC 보관함 맡기기
@@ -338,7 +414,21 @@ export type ActionIntent =
   | { kind: 'boxRelease'; boxIndex: number }          // PC 보관함 루미 놓아주기
   | { kind: 'useBagItem'; itemId: string; partyIndex: number } // 전투 밖에서 모험 가방 회복약 사용
   | { kind: 'fastTravel'; to: MapId }                 // 방문한 마을 / 농장으로 빠른 이동 (별바람 택시)
-  | { kind: 'escapeCave' };                           // 동굴 안에서 가까운 마을로 탈출
+  | { kind: 'escapeCave' }                            // 동굴 안에서 가까운 마을로 탈출
+  | { kind: 'cheatCaught'; reason: string }           // 클라이언트 무결성 감지 → 수감 처리
+  | { kind: 'prisonMine'; objectId: number }          // 별빛 교도소 탈옥 채광 (호환)
+  | { kind: 'prisonBreakWall'; objectId: number }     // 별빛 교도소 금이 간 벽 부수기
+  | { kind: 'prisonAscend'; to: MapId }               // 별빛 교도소 계단으로 위층 올라가기 (B5→B4→B3→B2→B1→1F)
+  | { kind: 'prisonEnterYard' }                       // 독방 대기 후 성실 노역 채광장 이동
+  | { kind: 'prisonBackCell' }                        // 노역 채광장에서 지하 5층 독방 복귀
+  | { kind: 'yardGather'; objectId: number; resource: 'stone' | 'wood' } // 노역장 돌·나무 채집
+  | { kind: 'yardCraft'; out: 'stone_slab' | 'wood_plank'; qty: number } // 노역장 석판·나무판 제작
+  | { kind: 'yardDeliver' }                           // 노역장 석판·나무판 납품 (100/100 달성 시 정식 석방)
+  | { kind: 'prisonCaught' }                          // 감시관에게 발각 → 지하 5층 원점 복귀
+  | { kind: 'prisonEscape' }                          // 지상 1층 외벽 파괴 탈옥 → 0원 초기화 + 벌금 고지서 + 악행스택 100
+  | { kind: 'completeHomecoming' }                    // 엄마 귀가 컷신 완료 (두부 한 모 지급)
+  | { kind: 'goodDeed'; npc: string }                 // 마을 사람 도와 선행스택 +1 (악행스택 -1)
+  | { kind: 'markNoticesRead' };                      // 휴대폰 메시지/고지서 읽음 처리
 
 export interface ActionResult { ok: boolean; reason?: string; anim?: string; battle?: BattleUpdate; data?: { item?: string; qty?: number; casino?: CasinoOutcome } }
 

@@ -112,7 +112,7 @@ export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_caul
   'seeds_lumi_herb', 'seeds_fire_pepper', 'seeds_iron_bean', 'lumi_herb', 'fire_pepper', 'iron_bean', 'craft',
   'hammer', 'wood', 'fiber', 'fence_wood', 'crate_wood', 'barrel_wood', 'scarecrow', 'lamp_post', 'planter_box', 'origin_ball', 'ocarina',
   'quick_ball', 'moon_ball', 'tide_ball', 'leaf_ball', 'ember_ball', 'repeat_ball', 'heavy_ball',
-  'star_candy', 'name_ticket', 'bicycle'];
+  'star_candy', 'name_ticket', 'bicycle', 'tofu', 'stone_slab', 'wood_plank'];
 // 도구 등급 아이콘 (구리 · 강철 · 별빛): 기본 도구 그림의 쇠 부분을 등급 색으로 바꿈
 export const TOOL_TIERS = { copper: ['#8a4a20', '#c8743a', '#f0a868'], iron: ['#4a5a70', '#9aaec4', '#e4eef8'], star: ['#8a6a10', '#e8b830', '#fff2a0'] };
 for (const base of ['hoe', 'watering_can', 'axe', 'pickaxe', 'rod']) for (const tier of Object.keys(TOOL_TIERS)) ICONS.push(`${base}_${tier}`);
@@ -220,6 +220,26 @@ export function buildIcons() {
       t.vline(10, 5, 6, '#d49a35');
       t.rect(4, 6, 4, 2, '#ff6b8a'); t.hline(4, 9, 5, '#6b4a2b');
       t.set(11, 7, '#e8a838'); t.set(11, 9, '#e8a838');
+    },
+    tofu: (t) => {
+      // 엄마가 주신 따뜻한 하얀 두부 한 모 (접시 위 도톰한 두부 + 김)
+      t.ellipse(8, 12, 6, 2.5, '#6aa8d8'); t.ellipse(8, 12, 4.5, 1.5, '#b8e0f8');
+      t.rect(3, 6, 10, 6, '#f6f2e8'); t.hline(3, 6, 10, '#ffffff');
+      t.hline(3, 11, 10, '#dcd4c0'); t.vline(12, 6, 6, '#dcd4c0');
+      t.rect(5, 7, 6, 2, '#fffdf8');
+      t.set(6, 4, '#ffffff'); t.set(10, 3, '#fff8e8');
+    },
+    stone_slab: (t) => {
+      // 다듬은 회색 석판
+      t.rect(2, 5, 12, 8, '#7a8294'); t.hline(2, 5, 12, '#c0c8d8'); t.hline(2, 12, 12, '#484f5e');
+      t.rect(3, 6, 10, 5, '#959eb2'); t.hline(4, 7, 8, '#b4bdd0');
+      t.vline(8, 6, 5, '#636a7a');
+    },
+    wood_plank: (t) => {
+      // 매끈하게 깎은 나무판
+      t.rect(2, 5, 12, 8, '#b87b44'); t.hline(2, 5, 12, '#e2a96a'); t.hline(2, 12, 12, '#6e4220');
+      t.rect(3, 6, 10, 2, '#ce8e52'); t.hline(3, 9, 10, '#8c562c');
+      t.set(5, 7, '#6e4220'); t.set(11, 10, '#6e4220');
     },
   };
   const seedCol = { parsnip: '#e6d29a', cauliflower: '#9fd06a', tomato: '#e0574b', pumpkin: '#e8892e', lumi_herb: '#5ec8b8', fire_pepper: '#e0402a', iron_bean: '#7a8aa8' };

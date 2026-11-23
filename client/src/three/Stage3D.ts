@@ -105,7 +105,13 @@ export class Stage3D {
   private bulbGlowMat?: THREE.MeshBasicMaterial;
   private bladesMesh?: THREE.Mesh;
   private cursorMesh?: THREE.Mesh;
-  private campfires: { group: THREE.Group; glow: THREE.Mesh; glowMat: THREE.MeshBasicMaterial; gx: number; gy: number; gz: number }[] = [];
+  private campfires: { tex?: THREE.Texture; frames: number; glowOuter: THREE.Mesh; glowInner: THREE.Mesh; halo: THREE.Mesh; outerMat: THREE.MeshBasicMaterial; innerMat: THREE.MeshBasicMaterial; haloMat: THREE.MeshBasicMaterial; gx: number; gy: number; gz: number; phase: number }[] = [];
+  private campfireT = 0;
+  private seaCurrentTexs: THREE.Texture[] = [];
+  private whirlpoolTexs: { tex: THREE.Texture; frames: number }[] = [];
+  private whirlpoolT = 0;
+  private surfMount?: THREE.Group;
+  private surfRipple?: THREE.Mesh;
   private gimmickSpin: THREE.Object3D[] = [];
   private gateMeshes = new Map<string, THREE.Object3D[]>();
   private switchCaps = new Map<string, { cap: THREE.Mesh; baseY: number; col: number }[]>();
@@ -114,6 +120,7 @@ export class Stage3D {
   private soilDirty = true;
   private waterT = 0;
   private bridgeCamBoost = 0;
+  private wardenCones: THREE.Mesh[] = [];
   private swayT = 0;
   private camTarget = new THREE.Vector3();
   private camInit = false;
@@ -140,6 +147,10 @@ export class Stage3D {
   private demoGems: { gem: THREE.Mesh; baseY: number; mat: THREE.MeshBasicMaterial }[] = [];
   private resetPads: { ring: THREE.Mesh; baseY: number }[] = [];
   private snowShards: { mesh: THREE.Mesh; vx: number; vy: number; vz: number; life: number }[] = [];
+  private waterSwitchCaps: { cap: THREE.Mesh; level: number; baseY: number }[] = [];
+  private waterBridgeMeshes: { group: THREE.Group; reqLevel: number; baseY: number; mat: THREE.MeshBasicMaterial; curY: number }[] = [];
+  private pushBlockMeshes = new Map<number, { group: THREE.Group; mat: THREE.MeshBasicMaterial; curX: number; curZ: number; curY: number; baseY: number }>();
+  private crackedTileMeshes = new Map<number, { mat: THREE.MeshBasicMaterial; rimMat: THREE.MeshBasicMaterial; gateId: string }>();
   private gymPuzzle: {
     flippedRails?: Set<string>;
     revealedCards?: Set<number>;
@@ -150,12 +161,17 @@ export class Stage3D {
     matchedRunes?: number;
     demoActive?: boolean;
     quizWrongUntil?: number;
+    waterLevel?: number;
+    pushBlocks?: Map<number, { x: number; y: number; locked: boolean }>;
+    crackedTiles?: Set<number>;
   } = {};
   private gymOpenGates?: Set<string>;
 
   static isExtGimmick(t: string) {
     return t === 'snowball' || t === 'snow_reset' || t === 'pair_card' || t === 'rail_switch' || t === 'quiz_pad'
-      || t === 'prism' || t === 'laser_src' || t === 'laser_dst' || t === 'rune_pad' || t === 'rune_demo';
+      || t === 'prism' || t === 'laser_src' || t === 'laser_dst' || t === 'rune_pad' || t === 'rune_demo'
+      || t === 'stop_tile' || t === 'water_switch' || t === 'water_bridge' || t === 'push_block'
+      || t === 'block_slot' || t === 'puzzle_reset' || t === 'cracked_tile' || t === 'pit';
   }
 
   setGymPuzzleState(p: Stage3D['gymPuzzle'], openGates?: Set<string>) {
@@ -272,9 +288,17 @@ export class Stage3D {
       });
     };
     if (off) {
+      // 듀얼그리드 오토타일(+8px 오프셋)의 맨 왼쪽·위쪽 8px 테두리만 메운다.
+      // (클리핑 없이 전체를 3번 겹쳐 그리면 투명한 물 타일 아래로 물가 잔상이 3겹 비치는 버그가 발생함)
+      cx.save();
+      cx.beginPath();
+      cx.rect(0, 0, off, H * T);
+      cx.rect(0, 0, W * T, off);
+      cx.clip();
       drawLayer('Ground', off - T, off - T);
       drawLayer('Ground', off - T, off);
       drawLayer('Ground', off, off - T);
+      cx.restore();
     }
     drawLayer('Ground', off);
     drawLayer('Decor', 0);
@@ -332,7 +356,9 @@ export class Stage3D {
       if (this.world.windowRects.length && wk > 0) this.fx.setupWindows(this.world.windowRects, wk);
     }
     if (this.cave) {
-      this.scene3d.fog = new THREE.Fog(0x090810, 11, 26);
+      // 카메라 거리(dist=29)보다 안개가 가까우면 화면 전체가 완전 암전되므로
+      // 플레이어 주변(29 전후)은 선명하게 보이고 먼 동굴 외곽만 어둡게 잠기도록 설정
+      this.scene3d.fog = new THREE.Fog(0x0d0c1a, 34, 62);
     }
     if (!this.interior) {
       const tcv = document.createElement('canvas');
@@ -340,8 +366,8 @@ export class Stage3D {
       tcv.height = 64;
       const tcx = tcv.getContext('2d')!;
       const tg = tcx.createRadialGradient(32, 32, 2, 32, 32, 32);
-      tg.addColorStop(0, 'rgba(255, 224, 154, 1)');
-      tg.addColorStop(0.45, 'rgba(255, 196, 112, 0.4)');
+      tg.addColorStop(0, 'rgba(255, 228, 162, 1)');
+      tg.addColorStop(0.45, 'rgba(255, 200, 120, 0.48)');
       tg.addColorStop(1, 'rgba(255, 180, 90, 0)');
       tcx.fillStyle = tg;
       tcx.fillRect(0, 0, 64, 64);
@@ -355,9 +381,38 @@ export class Stage3D {
         depthWrite: false,
       });
       this.torchMat.userData = { noTint: true };
-      this.torchMesh = new THREE.Mesh(new THREE.PlaneGeometry(7, 5), this.torchMat);
+      this.torchMesh = new THREE.Mesh(new THREE.PlaneGeometry(10.5, 8.2), this.torchMat);
       this.torchMesh.rotation.x = -Math.PI / 2;
       this.scene3d.add(this.torchMesh);
+
+      // 파도타기 전용 수면 보드 + 잔물결 링 (바다/호수 위 이동 시 플레이어 발밑에 표시)
+      const sGrp = new THREE.Group();
+      const boardCv = document.createElement('canvas');
+      boardCv.width = 48; boardCv.height = 48;
+      const bc = boardCv.getContext('2d')!;
+      bc.fillStyle = 'rgba(30, 148, 224, 0.92)';
+      bc.beginPath(); bc.ellipse(24, 24, 20, 14, 0, 0, Math.PI * 2); bc.fill();
+      bc.fillStyle = 'rgba(122, 236, 255, 0.95)';
+      bc.beginPath(); bc.ellipse(24, 23, 14, 9, 0, 0, Math.PI * 2); bc.fill();
+      bc.strokeStyle = '#ffffff'; bc.lineWidth = 2.5;
+      bc.beginPath(); bc.ellipse(24, 24, 20, 14, 0, 0, Math.PI * 2); bc.stroke();
+      const boardTex = new THREE.CanvasTexture(boardCv);
+      boardTex.colorSpace = THREE.SRGBColorSpace;
+      const boardMat = new THREE.MeshBasicMaterial({ map: boardTex, transparent: true, depthWrite: false });
+      boardMat.userData = { noTint: true };
+      const boardMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 1.25), boardMat);
+      boardMesh.rotation.x = -Math.PI / 2;
+      boardMesh.position.y = 0.04;
+      const ripMat = new THREE.MeshBasicMaterial({ color: 0xb0f4ff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+      ripMat.userData = { noTint: true };
+      const ripMesh = new THREE.Mesh(new THREE.RingGeometry(0.65, 0.88, 24), ripMat);
+      ripMesh.rotation.x = -Math.PI / 2;
+      ripMesh.position.y = 0.02;
+      sGrp.add(ripMesh, boardMesh);
+      sGrp.visible = false;
+      this.scene3d.add(sGrp);
+      this.surfMount = sGrp;
+      this.surfRipple = ripMesh;
     }
 
     // 3) 동굴 벽 / 도시 외벽 / 물 애니메이션
@@ -501,8 +556,39 @@ export class Stage3D {
         continue;
       }
 
+      if (type === 'pit') {
+        this.objMeshes.set(o.id, created);
+        continue;
+      }
       if (type === 'ice_tile' || type === 'arrow_pad' || type === 'warp_pad' || type === 'switch_btn' || type === 'gate_bar' || Stage3D.isExtGimmick(type)) {
         this.addGimmick3D(type, o, cellX, cellY, cellW, cellH, created, W, H);
+        this.objMeshes.set(o.id, created);
+        continue;
+      }
+
+      if (type === 'prison_hatch') {
+        const grp = new THREE.Group();
+        const cx = cellX + cellW * 0.5, cz = cellY + 0.5;
+        const rim = new THREE.Mesh(
+          new THREE.BoxGeometry(cellW * 0.94, 0.08, 0.88),
+          new THREE.MeshStandardMaterial({ color: 0x3b4252, roughness: 0.65, metalness: 0.4 }),
+        );
+        rim.position.set(cx, base + 0.04, cz);
+        const hole = new THREE.Mesh(
+          new THREE.PlaneGeometry(cellW * 0.72, 0.62),
+          new THREE.MeshBasicMaterial({ color: 0x0b1018 }),
+        );
+        hole.rotation.x = -Math.PI / 2;
+        hole.position.set(cx, base + 0.085, cz);
+        const glow = new THREE.Mesh(
+          new THREE.PlaneGeometry(cellW * 0.88, 0.8),
+          new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.32, side: THREE.DoubleSide }),
+        );
+        glow.rotation.x = -Math.PI / 2;
+        glow.position.set(cx, base + 0.09, cz);
+        grp.add(rim, hole, glow);
+        this.scene3d.add(grp);
+        created.push(grp);
         this.objMeshes.set(o.id, created);
         continue;
       }
@@ -566,6 +652,38 @@ export class Stage3D {
           continue;
         }
       }
+      if (type === 'sea_current') {
+        const dir = String(prop(o, 'dir', 'up'));
+        const cv2 = document.createElement('canvas');
+        cv2.width = 32; cv2.height = 32;
+        const c2 = cv2.getContext('2d')!;
+        c2.fillStyle = 'rgba(28, 178, 232, 0.34)';
+        c2.fillRect(0, 0, 32, 32);
+        c2.strokeStyle = 'rgba(220, 252, 255, 0.92)';
+        c2.lineWidth = 3;
+        c2.lineCap = 'round';
+        // 위쪽 방향 2줄 물결 화살표 (메시 회전으로 상하좌우 방향 표현)
+        for (const oy of [10, 24]) {
+          c2.beginPath();
+          c2.moveTo(6, oy + 5); c2.lineTo(16, oy - 3); c2.lineTo(26, oy + 5);
+          c2.stroke();
+        }
+        const tex = new THREE.CanvasTexture(cv2);
+        tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+        tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+        mat.userData = { noTint: true };
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.02, 1.02), mat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.rotation.z = dir === 'right' ? -Math.PI / 2 : dir === 'down' ? Math.PI : dir === 'left' ? Math.PI / 2 : 0;
+        mesh.position.set(cellX + 0.5, -0.05, cellY + 0.5);
+        this.scene3d.add(mesh);
+        this.seaCurrentTexs.push(tex);
+        created.push(mesh);
+        this.objMeshes.set(o.id, created);
+        continue;
+      }
       if (type === 'spire') {
         const cx0 = cellX + cellW / 2,
           cz0 = cellY + 1 - cellH / 2,
@@ -619,8 +737,10 @@ export class Stage3D {
           }
           bb = new Billboard(t, sh.frameWidth, sh.frameHeight, sh.frames, Math.max(1, Math.round(img.height / sh.frameHeight)), sh.originY);
           bb.setFrame(Number(prop(o, 'frameOffset', 0)) % sh.frames);
-          if (sh.frames > 1 && type !== 'fence') {
+          if (sh.frames > 1 && type !== 'fence' && type !== 'campfire' && type !== 'whirlpool') {
             this.sway.push({ tex: (bb.mesh.material as THREE.MeshBasicMaterial).map!, frames: sh.frames });
+          } else if (type === 'whirlpool' && sh.frames > 1) {
+            this.whirlpoolTexs.push({ tex: (bb.mesh.material as THREE.MeshBasicMaterial).map!, frames: sh.frames });
           }
         }
       } else if (im) {
@@ -647,17 +767,21 @@ export class Stage3D {
       gz += ((o.id % 19) - 9) * 0.0012;
       bb.mesh.position.set(gx, this.hts.sample(gx, Math.min(H - 0.01, gz - 0.01)), gz);
       this.scene3d.add(bb.mesh);
-      this.registerTintMat(bb.mesh);
+      if (type === 'campfire' || type === 'whirlpool' || type === 'tide_seal' || type === 'sea_altar') {
+        (bb.mesh.material as THREE.MeshBasicMaterial).userData = { noTint: true };
+      } else {
+        this.registerTintMat(bb.mesh);
+      }
       created.push(bb.mesh);
 
       if (this.interior && (type === 'lamp_floor' || type === 'forge' || type === 'candle') && this.groundGlowTex) {
         const gm = new THREE.MeshBasicMaterial({
           map: this.groundGlowTex, color: type === 'forge' ? 0xff9a4a : 0xffe49e,
-          transparent: true, opacity: type === 'forge' ? 0.28 : 0.20,
+          transparent: true, opacity: type === 'forge' ? 0.45 : 0.34,
           blending: THREE.AdditiveBlending, depthWrite: false,
         });
         gm.userData = { noTint: true };
-        const g = new THREE.Mesh(new THREE.PlaneGeometry(type === 'forge' ? 3.2 : 2.2, type === 'forge' ? 2.2 : 1.6), gm);
+        const g = new THREE.Mesh(new THREE.PlaneGeometry(type === 'forge' ? 4.2 : 3.0, type === 'forge' ? 3.0 : 2.2), gm);
         g.rotation.x = -Math.PI / 2;
         g.position.set(cellX + cellW / 2, 0.02, cellY + (type === 'forge' ? 0.9 : 0.55));
         this.scene3d.add(g);
@@ -689,7 +813,10 @@ export class Stage3D {
         created.push(s);
       }
       if (type === 'lamp') created.push(...this.addLampGlow(gx, bb.mesh.position.y, gz));
-      if (type === 'campfire') created.push(...this.addCampfire3D(gx, bb.mesh.position.y, gz));
+      if (type === 'campfire') {
+        const cfTex = (bb.mesh.material as THREE.MeshBasicMaterial).map ?? undefined;
+        created.push(...this.addCampfireGlow(gx, bb.mesh.position.y, gz, cfTex, sh?.frames ?? 1));
+      }
       this.objMeshes.set(o.id, created);
     }
 
@@ -729,6 +856,10 @@ export class Stage3D {
 
   burst(kind: BurstKind, worldPxX: number, worldPxY: number, liftPx = 0) {
     this.fx?.burst(kind, worldPxX, worldPxY, liftPx);
+  }
+
+  ring(worldPxX: number, worldPxY: number, colorHex = 0xffe58a, maxRadius = 1.25, life = 0.48, liftPx = 2) {
+    this.fx?.ring(worldPxX, worldPxY, colorHex, maxRadius, life, liftPx);
   }
 
   spireBeam(colorHex: number, worldPxX: number, worldPxY: number, burst: boolean) {
@@ -1031,50 +1162,63 @@ export class Stage3D {
   }
 
   private addLampGlow(gx: number, baseY: number, gz: number): THREE.Object3D[] {
-    const bulb = new THREE.Mesh(new THREE.PlaneGeometry(1.45, 1.45), this.bulbGlowMat!);
+    const bulb = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 2.1), this.bulbGlowMat!);
     bulb.position.set(gx, baseY + 2.28, gz + 0.12);
     bulb.rotation.x = -0.22;
     bulb.renderOrder = 2;
     this.scene3d.add(bulb);
-    const pool = this.addGroundGlow(gx, baseY, gz + 0.12, 2.7, 2.2);
+    const pool = this.addGroundGlow(gx, baseY, gz + 0.12, 4.4, 3.8);
     return [bulb, pool];
   }
 
-  /** 마을 파이어 캠프(모닥불): 밤마다 불꽃이 타오르며 따뜻한 주황빛 바닥 후광을 비춘다 */
-  private addCampfire3D(gx: number, baseY: number, gz: number): THREE.Object3D[] {
-    const group = new THREE.Group();
-    group.position.set(gx, baseY + 0.18, gz + 0.04);
-    const outerMat = new THREE.MeshBasicMaterial({ color: 0xff6a1a, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
-    outerMat.userData = { noTint: true };
-    const innerMat = new THREE.MeshBasicMaterial({ color: 0xffe066, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
-    innerMat.userData = { noTint: true };
-    const outerCone = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.78, 6), outerMat);
-    outerCone.position.y = 0.34;
-    const innerCone = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.52, 5), innerMat);
-    innerCone.position.y = 0.28;
-    group.add(outerCone, innerCone);
-    this.scene3d.add(group);
+  /** 마을 파이어 캠프(모닥불): 3D 콘 제거 · 2D 애니메이션 스프라이트 + 환하고 따뜻한 다중 불빛 후광 */
+  private addCampfireGlow(gx: number, baseY: number, gz: number, tex: THREE.Texture | undefined, frames: number): THREE.Object3D[] {
+    const mkMat = (color: number, op: number) => {
+      const m = new THREE.MeshBasicMaterial({
+        map: this.groundGlowTex,
+        color,
+        transparent: true,
+        opacity: op,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      });
+      m.userData = { noTint: true };
+      return m;
+    };
+    const outerMat = mkMat(0xff8424, 0.55);
+    const glowOuter = new THREE.Mesh(new THREE.PlaneGeometry(10.8, 9.4), outerMat);
+    glowOuter.rotation.x = -Math.PI / 2;
+    glowOuter.position.set(gx, baseY + 0.03, gz);
+    glowOuter.renderOrder = 2;
+    this.scene3d.add(glowOuter);
 
-    const glowMat = new THREE.MeshBasicMaterial({
+    const innerMat = mkMat(0xffe278, 0.75);
+    const glowInner = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 4.8), innerMat);
+    glowInner.rotation.x = -Math.PI / 2;
+    glowInner.position.set(gx, baseY + 0.04, gz);
+    glowInner.renderOrder = 2;
+    this.scene3d.add(glowInner);
+
+    const haloMat = new THREE.MeshBasicMaterial({
       map: this.groundGlowTex,
-      color: 0xff8a30,
+      color: 0xffb848,
       transparent: true,
-      opacity: 0,
+      opacity: 0.45,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -2,
-      polygonOffsetUnits: -2,
     });
-    glowMat.userData = { noTint: true };
-    const glow = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.6), glowMat);
-    glow.rotation.x = -Math.PI / 2;
-    glow.position.set(gx, baseY + 0.032, gz);
-    glow.renderOrder = 2;
-    this.scene3d.add(glow);
+    haloMat.userData = { noTint: true };
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.0), haloMat);
+    halo.position.set(gx, baseY + 0.72, gz - 0.06);
+    halo.rotation.x = -0.22;
+    halo.renderOrder = 3;
+    this.scene3d.add(halo);
 
-    this.campfires.push({ group, glow, glowMat, gx, gy: baseY, gz });
-    return [group, glow];
+    this.campfires.push({ tex, frames, glowOuter, glowInner, halo, outerMat, innerMat, haloMat, gx, gy: baseY, gz, phase: Math.random() * 10 });
+    return [glowOuter, glowInner, halo];
   }
 
   private updateAtmosphere(minutes: number, weather: string) {
@@ -1084,14 +1228,14 @@ export class Stage3D {
     let nightAlpha = 0;
 
     if (this.cave) {
-      cTint.setHex(0x8e95ae);
-      cBg.setHex(0x090810);
-      nightAlpha = 0.72;
+      cTint.setHex(0xc2cbe0);
+      cBg.setHex(0x0d0c1a);
+      nightAlpha = 0.65;
     } else if (!this.interior) {
-      const cDawn = new THREE.Color(0xffdcb8);
+      const cDawn = new THREE.Color(0xffe4c4);
       const cDay = new THREE.Color(0xffffff);
-      const cDusk = new THREE.Color(0xffbf98);
-      const cNight = new THREE.Color(0x7486bc);
+      const cDusk = new THREE.Color(0xffcaaa);
+      const cNight = new THREE.Color(0x8a9cd0);
       const bgDawn = new THREE.Color(0x28202c);
       const bgDay = new THREE.Color(0x182820);
       const bgDusk = new THREE.Color(0x241826);
@@ -1145,18 +1289,18 @@ export class Stage3D {
     }
     const glowAlpha = this.interior || this.cave ? 0 : nightAlpha;
     if (this.groundGlowMat) {
-      this.groundGlowMat.opacity = glowAlpha * 0.3;
+      this.groundGlowMat.opacity = glowAlpha * 0.62;
       this.groundGlowMat.visible = glowAlpha > 0.01;
     }
     if (this.bulbGlowMat) {
-      this.bulbGlowMat.opacity = glowAlpha * 0.65;
+      this.bulbGlowMat.opacity = glowAlpha * 0.92;
       this.bulbGlowMat.visible = glowAlpha > 0.01;
     }
     for (const gm of this.glowMats) {
       gm.opacity = this.interior || this.cave ? 0 : Math.min(1, nightAlpha * 1.15);
     }
     if (this.torchMat) {
-      this.torchMat.opacity = this.cave ? 0.42 : nightAlpha * 0.1;
+      this.torchMat.opacity = this.cave ? 0.58 : nightAlpha * 0.14;
     }
   }
 
@@ -1931,6 +2075,7 @@ export class Stage3D {
       const sym = String(op('pairKey', 'leaf_red'));
       const SYM_COL: Record<string, number> = {
         leaf_red: 0xe8524a, sun_gold: 0xffd448, sakura: 0xff88b8, violet: 0xa870ff, bellflower: 0x48b8ff,
+        emerald: 0x22c55e, coral: 0xf97316, frost: 0x67e8f9,
       };
       const fc = SYM_COL[sym] ?? 0xff6b9d;
       const grp = new THREE.Group();
@@ -2114,6 +2259,139 @@ export class Stage3D {
       }
       return;
     }
+
+    if (type === 'stop_tile') {
+      const grp = new THREE.Group();
+      grp.position.set(cx, h + 0.025, cz);
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(0.88, 0.05, 0.88),
+        new THREE.MeshBasicMaterial({ color: 0x1e293b }),
+      );
+      grp.add(base);
+      const sqMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      for (const [sx, sz] of [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]]) {
+        const sq = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.065, 0.24), sqMat);
+        sq.position.set(sx, 0.015, sz);
+        grp.add(sq);
+      }
+      addM(grp);
+      return;
+    }
+
+    if (type === 'water_switch') {
+      const level = Number(op('level', 0));
+      const col = level === 0 ? 0xfacc15 : level === 1 ? 0x34d399 : 0x38bdf8;
+      const grp = new THREE.Group();
+      grp.position.set(cx, h, cz);
+      const ped = new THREE.Mesh(
+        new THREE.BoxGeometry(0.86, 0.14, 0.86),
+        new THREE.MeshBasicMaterial({ color: 0x1e3a5f }),
+      );
+      ped.position.y = 0.07;
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.36, 0.18, 12),
+        new THREE.MeshBasicMaterial({ color: col }),
+      );
+      cap.position.y = 0.2;
+      grp.add(ped, cap);
+      addM(grp);
+      this.waterSwitchCaps.push({ cap, level, baseY: 0.2 });
+      return;
+    }
+
+    if (type === 'water_bridge') {
+      const reqLevel = Number(op('reqLevel', 0));
+      const stripeCol = reqLevel === 0 ? 0xfacc15 : reqLevel === 1 ? 0x34d399 : 0x38bdf8;
+      const grp = new THREE.Group();
+      grp.position.set(cx, h + 0.03, cz);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xb87e48, transparent: true, opacity: 1 });
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(cellW - 0.06, 0.14, cellH - 0.06), mat);
+      deck.position.y = 0.07;
+      const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(cellW - 0.14, 0.03, cellH - 0.14),
+        new THREE.MeshBasicMaterial({ color: stripeCol, transparent: true, opacity: 0.9 }),
+      );
+      stripe.position.y = 0.15;
+      const inner = new THREE.Mesh(
+        new THREE.BoxGeometry(Math.max(0.2, cellW - 0.34), 0.035, Math.max(0.2, cellH - 0.34)),
+        mat,
+      );
+      inner.position.y = 0.155;
+      grp.add(deck, stripe, inner);
+      addM(grp);
+      this.waterBridgeMeshes.push({ group: grp, reqLevel, baseY: h + 0.03, mat, curY: h + 0.03 });
+      return;
+    }
+
+    if (type === 'push_block') {
+      const grp = new THREE.Group();
+      grp.position.set(cx, h, cz);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x64748b });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.72, 0.84), mat);
+      body.position.y = 0.36;
+      const band = new THREE.Mesh(
+        new THREE.BoxGeometry(0.88, 0.12, 0.88),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b }),
+      );
+      band.position.y = 0.36;
+      const top = new THREE.Mesh(
+        new THREE.BoxGeometry(0.66, 0.08, 0.66),
+        new THREE.MeshBasicMaterial({ color: 0x94a3b8 }),
+      );
+      top.position.y = 0.74;
+      grp.add(body, band, top);
+      addM(grp);
+      this.pushBlockMeshes.set(o.id, { group: grp, mat, curX: cx, curZ: cz, curY: h, baseY: h });
+      return;
+    }
+
+    if (type === 'block_slot') {
+      const grp = new THREE.Group();
+      grp.position.set(cx, h + 0.02, cz);
+      const outer = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.04, 0.9),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b }),
+      );
+      const hole = new THREE.Mesh(
+        new THREE.BoxGeometry(0.7, 0.05, 0.7),
+        new THREE.MeshBasicMaterial({ color: 0x1c1917 }),
+      );
+      hole.position.y = 0.01;
+      grp.add(outer, hole);
+      addM(grp);
+      return;
+    }
+
+    if (type === 'puzzle_reset') {
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(0.84, 0.05, 0.84),
+        new THREE.MeshBasicMaterial({ color: 0x1e3a5f }),
+      );
+      base.position.set(cx, h + 0.025, cz);
+      const ring = new THREE.Mesh(
+        new THREE.BoxGeometry(0.54, 0.07, 0.54),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8 }),
+      );
+      ring.position.set(cx, h + 0.05, cz);
+      addM(base);
+      addM(ring);
+      this.resetPads.push({ ring, baseY: h + 0.05 });
+      return;
+    }
+
+    if (type === 'cracked_tile') {
+      const gateId = String(op('gateId', 'em_r1'));
+      const rimMat = new THREE.MeshBasicMaterial({ color: 0x451a03 });
+      const mat = new THREE.MeshBasicMaterial({ color: 0x9a3412 });
+      const rim = new THREE.Mesh(new THREE.BoxGeometry(0.94, 0.05, 0.94), rimMat);
+      rim.position.set(cx, h + 0.025, cz);
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.07, 0.8), mat);
+      slab.position.set(cx, h + 0.035, cz);
+      addM(rim);
+      addM(slab);
+      this.crackedTileMeshes.set(o.id, { mat, rimMat, gateId });
+      return;
+    }
     void cellW; void cellH;
   }
 
@@ -2225,6 +2503,56 @@ export class Stage3D {
       rp.ring.position.y = rp.baseY + Math.sin(nowSec * 2.5) * 0.02;
     }
 
+    // 5b. 물결항 도장 (들판식) 3단계 수위 스위치 & 부교 상하 애니메이션
+    const wl = pz.waterLevel ?? 0;
+    for (const ws of this.waterSwitchCaps) {
+      const pressed = ws.level === wl;
+      const ty = pressed ? ws.baseY - 0.09 : ws.baseY;
+      ws.cap.position.y += (ty - ws.cap.position.y) * Math.min(1, s * 12);
+    }
+    for (const wb of this.waterBridgeMeshes) {
+      const active = wb.reqLevel === wl;
+      const targetY = active ? wb.baseY + 0.04 : wb.baseY - 0.16;
+      wb.curY += (targetY - wb.curY) * Math.min(1, s * 10);
+      wb.group.position.y = wb.curY;
+      wb.mat.color.setHex(active ? 0xc88d52 : 0x3b6891);
+      wb.mat.opacity = active ? 1 : 0.42;
+    }
+
+    // 5c. 쇳불 도장 (장막/검은먹식) 밀기 블록 이동 & 슬롯 안착
+    if (pz.pushBlocks && this.pushBlockMeshes.size) {
+      for (const [id, bm] of this.pushBlockMeshes) {
+        const st = pz.pushBlocks.get(id);
+        if (!st) continue;
+        const tx = st.x + 0.5, tz = st.y + 0.5;
+        const ty = st.locked ? bm.baseY - 0.58 : bm.baseY;
+        bm.curX += (tx - bm.curX) * Math.min(1, s * 14);
+        bm.curZ += (tz - bm.curZ) * Math.min(1, s * 14);
+        bm.curY += (ty - bm.curY) * Math.min(1, s * 12);
+        bm.group.position.set(bm.curX, bm.curY, bm.curZ);
+        const onSlot = this.world.info.blockSlotAt(st.x, st.y) != null;
+        bm.mat.color.setHex(st.locked ? 0xfacc15 : onSlot ? 0xf59e0b : 0x64748b);
+      }
+    }
+
+    // 5d. 잿빛 도장 (루네식) 금 가는 화산판 (미밟음/금감/완료)
+    if (this.crackedTileMeshes.size) {
+      for (const [id, cm] of this.crackedTileMeshes) {
+        const solved = gates?.has(cm.gateId) ?? false;
+        const cracked = pz.crackedTiles?.has(id) ?? false;
+        if (solved) {
+          cm.mat.color.setHex(0xfacc15);
+          cm.rimMat.color.setHex(0x22c55e);
+        } else if (cracked) {
+          cm.mat.color.setHex(0xff5722);
+          cm.rimMat.color.setHex(0xffd54f);
+        } else {
+          cm.mat.color.setHex(0x6b2714);
+          cm.rimMat.color.setHex(0x2e120a);
+        }
+      }
+    }
+
     // 6. 눈덩이 파괴 파편 물리
     for (let i = this.snowShards.length - 1; i >= 0; i--) {
       const sh = this.snowShards[i];
@@ -2265,7 +2593,7 @@ export class Stage3D {
   update(
     dt: number,
     state: {
-      player: { sprite: Phaser.GameObjects.Sprite; emote?: Phaser.GameObjects.Sprite; label?: Phaser.GameObjects.Text; bubble?: Phaser.GameObjects.Text; dir?: Dir };
+      player: { sprite: Phaser.GameObjects.Sprite; emote?: Phaser.GameObjects.Sprite; label?: Phaser.GameObjects.Text; bubble?: Phaser.GameObjects.Text; dir?: Dir; surfing?: boolean };
       partner?: { sprite: Phaser.GameObjects.Sprite; coordSprite?: Phaser.GameObjects.Image; emote?: Phaser.GameObjects.Sprite };
       npcs: { sprite: Phaser.GameObjects.Sprite; emote?: Phaser.GameObjects.Sprite; label?: Phaser.GameObjects.Text }[];
       trainers: { sprite: Phaser.GameObjects.Sprite; emote?: Phaser.GameObjects.Sprite; label?: Phaser.GameObjects.Text }[];
@@ -2275,6 +2603,8 @@ export class Stage3D {
       remotePartners: Iterable<{ sprite: Phaser.GameObjects.Sprite; coordSprite?: Phaser.GameObjects.Image; emote?: Phaser.GameObjects.Sprite }>;
       chickens: { sprite: Phaser.GameObjects.Sprite }[];
       ducks: { sprite: Phaser.GameObjects.Sprite }[];
+      waterLumis?: { sprite: Phaser.GameObjects.Sprite }[];
+      wardens?: { sprite: Phaser.GameObjects.Sprite; emote?: Phaser.GameObjects.Sprite; label?: Phaser.GameObjects.Text; getConeData(): { ox: number; oy: number; points: { x: number; y: number }[]; state?: 'patrol' | 'suspicious' | 'chase'; alerted: boolean } }[];
       forage: Iterable<Phaser.GameObjects.Image>;
       crops?: Map<string, Phaser.GameObjects.Sprite>;
       tiles?: Map<string, FarmTile>;
@@ -2388,6 +2718,30 @@ export class Stage3D {
     }
     for (const c of state.chickens) this.syncSprite(c.sprite, { shadowScale: 0.35 });
     for (const d of state.ducks) this.syncSprite(d.sprite, { shadowScale: 0 });
+    if (state.waterLumis) {
+      for (const wl of state.waterLumis) this.syncSprite(wl.sprite, { shadowScale: 0 });
+    }
+    if (state.wardens?.length) {
+      for (const w of state.wardens) syncChar(w);
+      this.syncWardenCones(state.wardens);
+    } else if (this.wardenCones.length) {
+      for (const m of this.wardenCones) m.visible = false;
+    }
+    if (this.surfMount) {
+      const onSurf = !!state.player.surfing;
+      this.surfMount.visible = onSurf;
+      if (onSurf) {
+        const px0 = state.player.sprite.x / T, pz0 = state.player.sprite.y / T;
+        const bob = Math.sin(this.phaserScene.time.now * 0.008) * 0.04;
+        this.surfMount.position.set(px0, -0.04 + bob, pz0);
+        if (this.surfRipple) {
+          const p = (this.phaserScene.time.now * 0.0018) % 1;
+          const sc = 0.85 + p * 0.75;
+          this.surfRipple.scale.set(sc, sc, 1);
+          (this.surfRipple.material as THREE.MeshBasicMaterial).opacity = (1 - p) * 0.65;
+        }
+      }
+    }
     for (const f of state.forage) this.syncSprite(f, { shadowScale: 0.35 });
     if (state.crops) {
       for (const sp of state.crops.values()) this.syncSprite(sp, { shadowScale: 0, zOffset: 0.02 });
@@ -2463,22 +2817,45 @@ export class Stage3D {
       this.swayT = 0;
       for (const s of this.sway) s.tex.offset.x = (s.tex.offset.x + 1 / s.frames) % 1;
     }
+    if (this.seaCurrentTexs.length) {
+      for (const t of this.seaCurrentTexs) t.offset.y = (t.offset.y - dt * 0.0022) % 1;
+    }
+    if (this.whirlpoolTexs.length) {
+      this.whirlpoolT += dt;
+      if (this.whirlpoolT > 120) {
+        this.whirlpoolT = 0;
+        const seen = new Set<THREE.Texture>();
+        for (const wp of this.whirlpoolTexs) {
+          if (seen.has(wp.tex)) continue;
+          seen.add(wp.tex);
+          wp.tex.offset.x = (wp.tex.offset.x + 1 / wp.frames) % 1;
+        }
+      }
+    }
     this.updateAtmosphere(state.minutes, state.weather);
     if (this.campfires.length) {
       const now = this.phaserScene.time.now;
-      const fireOn = this.nightAlpha > 0.02 || state.minutes >= 17 * 60 + 30 || state.minutes < 6 * 60 + 30;
-      const pulse = 0.92 + 0.16 * Math.sin(now * 0.013) + 0.08 * Math.cos(now * 0.029);
+      this.campfireT += dt;
+      const stepFrame = this.campfireT > 150;
+      if (stepFrame) this.campfireT = 0;
+      const darkFactor = Math.max(0.45, Math.min(1, this.nightAlpha * 1.35 + (state.minutes >= 17 * 60 || state.minutes < 7 * 60 ? 0.55 : 0)));
+      const seenTex = new Set<THREE.Texture>();
       for (const cf of this.campfires) {
-        cf.group.visible = fireOn;
-        cf.glow.visible = fireOn;
-        if (fireOn) {
-          cf.group.scale.set(1, pulse, 1);
-          cf.group.rotation.y = now * 0.003;
-          cf.glowMat.opacity = Math.max(0.28, this.nightAlpha * 0.55) * (0.9 + 0.1 * Math.sin(now * 0.011));
-          if (Math.random() < 0.06) {
-            this.fx.burst('sparkle', cf.gx * T, cf.gz * T, 10);
-          }
+        if (stepFrame && cf.tex && cf.frames > 1 && !seenTex.has(cf.tex)) {
+          seenTex.add(cf.tex);
+          cf.tex.offset.x = (cf.tex.offset.x + 1 / cf.frames) % 1;
         }
+        const flick = 0.92 + 0.08 * Math.sin(now * 0.014 + cf.phase) + 0.04 * Math.cos(now * 0.031 + cf.phase);
+        const sc = 0.96 + 0.06 * Math.sin(now * 0.012 + cf.phase);
+        cf.glowOuter.visible = true;
+        cf.glowInner.visible = true;
+        cf.halo.visible = true;
+        cf.glowOuter.scale.set(sc, sc, 1);
+        cf.glowInner.scale.set(sc, sc, 1);
+        cf.halo.scale.set(sc, sc, 1);
+        cf.outerMat.opacity = Math.min(0.85, darkFactor * 0.72 * flick);
+        cf.innerMat.opacity = Math.min(0.95, darkFactor * 0.88 * flick);
+        cf.haloMat.opacity = Math.min(0.68, darkFactor * 0.56 * flick);
       }
     }
     this.fx.updateWindows(state.minutes, state.weather, this.phaserScene.time.now);
@@ -2553,6 +2930,59 @@ export class Stage3D {
     syncPhaserCamOverlay(pCam, true);
   }
 
+  /** 별빛 교도소 경찰 감시관 3D 바닥 시야각 (순찰=파랑 · '?'의심=주황 · '!'추격=빨강) */
+  private syncWardenCones(
+    wardens: { getConeData(): { ox: number; oy: number; points: { x: number; y: number }[]; state?: 'patrol' | 'suspicious' | 'chase'; alerted: boolean } }[],
+  ) {
+    while (this.wardenCones.length < wardens.length) {
+      const geo = new THREE.BufferGeometry();
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0x3b82f6,
+        transparent: true,
+        opacity: 0.34,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.renderOrder = 6;
+      this.scene3d.add(mesh);
+      this.wardenCones.push(mesh);
+    }
+    const pulse = 0.28 + Math.sin(this.phaserScene.time.now * 0.007) * 0.06;
+    for (let i = 0; i < this.wardenCones.length; i++) {
+      const mesh = this.wardenCones[i];
+      const w = wardens[i];
+      if (!w) { mesh.visible = false; continue; }
+      const c = w.getConeData();
+      if (c.points.length < 2) { mesh.visible = false; continue; }
+      const tris = c.points.length - 1;
+      const verts = new Float32Array(tris * 9);
+      const y = 0.045;
+      const ox = c.ox / T, oz = c.oy / T;
+      for (let k = 0; k < tris; k++) {
+        const a = c.points[k], b = c.points[k + 1];
+        const base = k * 9;
+        verts[base] = ox; verts[base + 1] = y; verts[base + 2] = oz;
+        verts[base + 3] = a.x / T; verts[base + 4] = y; verts[base + 5] = a.y / T;
+        verts[base + 6] = b.x / T; verts[base + 7] = y; verts[base + 8] = b.y / T;
+      }
+      mesh.geometry.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+      mesh.geometry.computeBoundingSphere();
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      if (c.state === 'chase' || c.alerted) {
+        mat.color.setHex(0xef4444);
+        mat.opacity = 0.56;
+      } else if (c.state === 'suspicious') {
+        mat.color.setHex(0xf59e0b);
+        mat.opacity = 0.44 + Math.sin(this.phaserScene.time.now * 0.016) * 0.1;
+      } else {
+        mat.color.setHex(0x3b82f6);
+        mat.opacity = pulse;
+      }
+      mesh.visible = true;
+    }
+  }
+
   destroy() {
     this.unsubToggle?.();
     if (Stage3D.renderSnapshot) Stage3D.renderSnapshot = undefined;
@@ -2561,6 +2991,8 @@ export class Stage3D {
     this.groundGlowTex?.dispose();
     this.groundGlowMat?.dispose();
     this.bulbGlowMat?.dispose();
+    for (const m of this.wardenCones) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); }
+    this.wardenCones.length = 0;
     this.dynPool.clear();
     this.labelPool.clear();
     this.objMeshes.clear();

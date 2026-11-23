@@ -30,15 +30,50 @@ export class MapBuilder {
   reserve(x0, y0, x1, y1) { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (this.inb(x, y)) this.reserved[y][x] = true; }
   setBridge(x, y, row, col) { if (this.inb(x, y)) this.bridge[y * this.W + x] = gid(row, col); }
 
-  /** 2.5D 단: y <= faceY 는 윗단, 그 아래 두 줄이 절벽(위 · 아래 조각, 막힘) + 그 아래 그늘. 절벽을 지나는 길(흙 · 돌)은 계단 */
-  terrace(faceY, x0 = 0, x1 = this.W - 1) {
+  /** 2.5D 단: y <= faceY 는 윗단, 그 아래 두 줄이 절벽(위 · 아래 조각, 막힘) + 그 아래 그늘. 절벽을 지나는 길(흙 · 돌)은 계단.
+   *  건물 지붕·몸체와 겹치는 칸은 절벽을 긋지 않고, 광장을 가로지르는 초대형 계단은 maxStairRun(기본 3칸)으로 깔끔하게 제한한다. */
+  terrace(faceY, x0 = 0, x1 = this.W - 1, opts = {}) {
     const f1 = faceY + 1, f2 = faceY + 2, { W } = this;
     if (!this.inb(0, f2)) return;
+    const maxStairRun = opts.maxStairRun ?? 3;
+    const stairCenter = opts.stairCenter ?? Math.floor((x0 + x1) / 2);
+    const allowWide = !!opts.allowWide;
+    const BLD = new Set(['center', 'shop_w', 'gym', 'hall', 'casino', 'house', 'house_a', 'house_b', 'house_c', 'lab', 'windmill', 'cave_mouth', 'stall', 'stall_b', 'altar_stone', 'store', 'cafe', 'smithy']);
+    const P = (o, k) => o.properties?.find((p) => p.name === k)?.value;
+    const bldMask = new Uint8Array(W);
+    for (const o of this.objects) {
+      if (!BLD.has(o.type)) continue;
+      const ox = P(o, 'cellX'), oy = P(o, 'cellY'), ow = P(o, 'cellW') ?? 1, oh = P(o, 'cellH') ?? 1;
+      if (ox == null || oy == null) continue;
+      // 3D 지붕이 위쪽으로 2~3칸 더 솟아오르므로 oy - oh - 2 .. oy + 1 구간을 절벽 금지 구역으로 보호
+      const yTop = oy - oh - 2, yBot = oy + 1;
+      if (f2 >= yTop && f1 <= yBot) {
+        for (let bx = Math.max(x0, ox - 1); bx <= Math.min(x1, ox + ow); bx++) bldMask[bx] = 1;
+      }
+    }
     const isPath = (x, y) => this.terrain[y][x] === D || this.terrain[y][x] === S;
     const kind = [];
     for (let x = x0; x <= x1; x++) {
       const water = this.terrain[f1][x] === Wt || this.terrain[f2][x] === Wt || this.bridge[f1 * W + x] || this.bridge[f2 * W + x];
-      kind[x] = water ? '' : isPath(x, f1) || isPath(x, f2) ? 'stairs' : 'face';
+      kind[x] = (water || bldMask[x]) ? '' : isPath(x, f1) || isPath(x, f2) ? 'stairs' : 'face';
+    }
+    // 광장 타원 등을 가로질러 10칸짜리 초대형 계단이 생기지 않도록 연속 계단 폭을 깔끔한 중앙 계단(maxStairRun)으로 제한
+    if (!allowWide && maxStairRun > 0) {
+      let x = x0;
+      while (x <= x1) {
+        if (kind[x] !== 'stairs') { x++; continue; }
+        const a = x;
+        while (x <= x1 && kind[x] === 'stairs') x++;
+        const b = x - 1, len = b - a + 1;
+        if (len > maxStairRun) {
+          const mid = stairCenter >= a && stairCenter <= b ? stairCenter : Math.floor((a + b) / 2);
+          const s0 = Math.max(a, Math.min(b - maxStairRun + 1, mid - Math.floor(maxStairRun / 2)));
+          const s1 = s0 + maxStairRun - 1;
+          for (let k = a; k <= b; k++) {
+            if (k < s0 || k > s1) kind[k] = 'face';
+          }
+        }
+      }
     }
     const wall = (x) => kind[x] === 'face';
     for (let x = x0; x <= x1; x++) {
@@ -405,9 +440,9 @@ export class MapBuilder {
 
   /** 소품 발밑 타일 정리 및 끊긴 길 조각(stray) 제거 */
   cleanPaths() {
-    if (this.noGround || this.props.some((p) => p.name === 'cave')) return;
+    if (this.noGround || this.noCleanPaths || this.props.some((p) => p.name === 'cave')) return;
     const { W, H, terrain } = this;
-    const PASSABLE = new Set(['tallgrass', 'tuft', 'glint', 'stairs_up', 'cave_hole', 'portal', 'vine', 'crack_rock', 'climb_wall', 'boulder', 'water_gate', 'gatehouse', 'cycle_gate', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gate_bar']);
+    const PASSABLE = new Set(['tallgrass', 'tuft', 'glint', 'stairs_up', 'cave_hole', 'portal', 'vine', 'crack_rock', 'climb_wall', 'boulder', 'water_gate', 'gatehouse', 'cycle_gate', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gate_bar', 'sea_current']);
     const P = (o, k) => o.properties?.find((p) => p.name === k)?.value;
     // 1) 지나갈 수 없는 오브젝트가 길(D/S) 위에 놓인 경우, 발밑 타일을 잔디/화단(G)으로 정리
     for (const o of this.objects) {
