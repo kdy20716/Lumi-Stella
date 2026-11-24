@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>루미 스텔라: 별빛의 씨앗 — Game Portfolio</title>
+  <link rel="icon" type="image/png" href="./portfolio_images/sprites/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --wood-dark: #3b2416;
+      --wood-mid: #5c3a24;
+      --wood-light: #8c5a37;
+      --wood-trim: #c98a4b;
+      --parchment: #fff8e7;
+      --parchment-alt: #f4e2be;
+      --parchment-deep: #e6cca0;
+      --ink: #332014;
+      --ink-muted: #664935;
+      --gold: #f5b942;
+      --gold-bright: #ffe066;
+      --grass: #4e8c3e;
+      --water: #1e9ce0;
+      --fire: #e6482e;
+      --page-bg: #f6ecd7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--page-bg);
+      color: var(--ink);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .font-display { font-family: 'Jua', 'Noto Sans KR', sans-serif; letter-spacing: 0.02em; }
+    .pixelated { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+    /* Stardew Wooden Panel */
+    .wood-panel {
+      background: var(--parchment);
+      border: 3.5px solid var(--wood-dark);
+      box-shadow:
+        inset 0 0 0 2.5px var(--wood-trim),
+        inset 0 0 0 5px var(--wood-mid),
+        0 6px 0 rgba(40, 22, 12, 0.22);
+      border-radius: 14px;
+      position: relative;
+    }
+
+    /* Pokémon-style Badge Pill */
+    .poke-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      border: 2px solid var(--wood-dark);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+    }
+
+    /* Screen-only Top Bar with PDF Print Button */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: linear-gradient(180deg, #5c3a24 0%, #3b2416 100%);
+      border-bottom: 4px solid #26150b;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+      padding: 10px 20px;
+    }
+    .nav-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #ffe066;
+      font-size: 1.3rem;
+      text-shadow: 2px 2px 0 #26150b;
+    }
+    .brand img { width: 30px; height: 30px; border-radius: 6px; border: 2px solid #ffe066; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .nav-links a {
+      color: #fff4d6;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.86rem;
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+    .nav-links a:hover { background: rgba(255, 224, 102, 0.2); color: #ffe066; }
+    .print-btn {
+      background: linear-gradient(180deg, #ffe066 0%, #f0ad2e 100%);
+      color: #2b180c;
+      border: 2.5px solid #2b180c;
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-weight: 900;
+      font-size: 0.86rem;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #2b180c;
+    }
+    .print-btn:hover { filter: brightness(1.06); }
+
+    /* Hero Section — CSS Starlight Pattern (Print-Safe!) */
+    .hero {
+      position: relative;
+      background-color: #1a2a54;
+      background-image:
+        radial-gradient(2px 2px at 12% 18%, #ffe885, transparent),
+        radial-gradient(2px 2px at 26% 12%, #ffffff, transparent),
+        radial-gradient(2.5px 2.5px at 42% 24%, #ffe885, transparent),
+        radial-gradient(2px 2px at 58% 10%, #d9ecff, transparent),
+        radial-gradient(2.5px 2.5px at 74% 20%, #ffe885, transparent),
+        radial-gradient(2px 2px at 88% 14%, #ffffff, transparent),
+        radial-gradient(2px 2px at 18% 42%, #d9ecff, transparent),
+        radial-gradient(2px 2px at 66% 36%, #ffe885, transparent),
+        radial-gradient(2px 2px at 92% 38%, #ffffff, transparent),
+        linear-gradient(180deg, #141c3d 0%, #243c6e 50%, #487bb5 84%, #6cb06e 100%);
+      padding: 46px 20px 68px;
+      border-bottom: 6px solid #3b2416;
+    }
+    .hero-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 30px;
+      align-items: center;
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(20, 28, 61, 0.78);
+      border: 2px solid #ffe066;
+      color: #ffe066;
+      padding: 5px 13px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .hero-inner > * { min-width: 0; }
+    .play-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 16px;
+      padding: 8px 16px 8px 8px;
+      background: linear-gradient(180deg, #6ec052 0%, #4e8c3e 100%);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 900;
+      border: 3px solid #2b180c;
+      border-radius: 12px;
+      box-shadow: 0 4px 0 #264a1d;
+    }
+    .play-badge {
+      background: #ffe066;
+      color: #2b180c;
+      border: 2px solid #2b180c;
+      border-radius: 8px;
+      padding: 3px 9px;
+      font-size: 0.8rem;
+    }
+    .play-text { font-size: 0.95rem; }
+    .play-text small { margin-left: 6px; font-size: 0.74rem; font-weight: 700; opacity: 0.9; }
+    .hero-title {
+      white-space: nowrap;
+      font-size: clamp(1.5rem, 3.4vw, 2.7rem);
+      color: #fff9e6;
+      line-height: 1.15;
+      text-shadow: 0 4px 0 #2b180c;
+      margin-bottom: 10px;
+    }
+    .hero-subtitle {
+      color: #eef5ff;
+      font-size: 0.98rem;
+      margin-bottom: 18px;
+    }
+
+    /* RPG Dialogue Box */
+    .rpg-dialogue {
+      background: #fff8e7;
+      color: #332014;
+      border: 3.5px solid #3b2416;
+      box-shadow: inset 0 0 0 2.5px #d99b4e, 0 5px 0 rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 14px 18px;
+      position: relative;
+      font-size: 0.92rem;
+    }
+    .rpg-dialogue-speaker {
+      position: absolute;
+      top: -13px;
+      left: 14px;
+      background: #4e8c3e;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.76rem;
+      padding: 2px 10px;
+      border-radius: 6px;
+      border: 2px solid #2b180c;
+    }
+
+    /* Console Screen Frame */
+    .console-frame {
+      background: #3b2416;
+      padding: 12px;
+      border-radius: 16px;
+      border: 4px solid #24140b;
+      box-shadow: inset 0 0 0 2.5px #c98a4b, 0 10px 24px rgba(0, 0, 0, 0.38);
+    }
+    .console-screen {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 3px solid #1a0f08;
+    }
+    .console-screen img { width: 100%; display: block; }
+    .console-caption {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      padding: 0 4px;
+      color: #f4e2be;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .led-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #5ef272;
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    /* Metrics Strip */
+    .metrics-strip {
+      max-width: 1120px;
+      margin: -34px auto 0;
+      padding: 0 20px;
+      position: relative;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .metric-card {
+      background: var(--parchment);
+      border: 3px solid var(--wood-dark);
+      box-shadow: inset 0 0 0 2px var(--wood-trim), 0 5px 0 rgba(0, 0, 0, 0.18);
+      border-radius: 12px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .metric-val { font-size: 1.6rem; color: var(--grass); line-height: 1.15; }
+    .metric-label { font-weight: 800; font-size: 0.88rem; margin-top: 3px; }
+    .metric-sub { font-size: 0.75rem; color: var(--ink-muted); margin-top: 2px; }
+
+    /* Main Container & Sections */
+    main { max-width: 1120px; margin: 0 auto; padding: 44px 20px 60px; }
+    section { margin-bottom: 52px; scroll-margin-top: 78px; }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 3px dashed var(--wood-light);
+    }
+    .section-title { font-size: 1.7rem; display: flex; align-items: center; gap: 8px; }
+    .section-tag {
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--wood-mid);
+      color: #ffe066;
+      border: 2px solid var(--wood-dark);
+    }
+
+    /* Section 1: All 3 Starters Side-by-Side */
+    .starters-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .starter-card {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .starter-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .starter-stage {
+      width: 72px; height: 72px;
+      border-radius: 12px;
+      background: radial-gradient(circle, #fffdf4 0%, #e6d5b8 100%);
+      border: 2.5px solid var(--wood-dark);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .starter-stage img { width: 60px; height: 60px; object-fit: contain; }
+    .starter-trait {
+      background: var(--parchment-alt);
+      border: 2px solid var(--wood-light);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.78rem; font-weight: 700; }
+    .stat-label { width: 42px; color: var(--ink-muted); }
+    .stat-bar-bg { flex: 1; height: 10px; background: rgba(0, 0, 0, 0.12); border-radius: 999px; overflow: hidden; border: 1.5px solid var(--wood-dark); }
+    .stat-bar-fill { height: 100%; border-radius: 999px; }
+    .stat-num { width: 24px; text-align: right; }
+
+    /* Farm + Core Loop Grid */
+    .farm-loop-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .loop-steps {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .loop-card {
+      background: var(--parchment);
+      border: 3px solid var(--wood-dark);
+      border-radius: 12px;
+      padding: 13px 14px;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.14);
+    }
+    .loop-num {
+      display: inline-block;
+      background: var(--grass);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1.5px solid var(--wood-dark);
+      margin-bottom: 6px;
+    }
+
+    /* Section 2: Expanded World & Diorama Gallery */
+    .img-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .figure-card {
+      overflow: hidden;
+    }
+    .figure-card img {
+      width: 100%;
+      display: block;
+      border-bottom: 3px solid var(--wood-dark);
+      background: #141824;
+    }
+    .figure-card.fixed-h img { height: 245px; object-fit: cover; }
+    .figure-card.contain-h img { height: 270px; object-fit: contain; background: #182032; }
+    .figure-cap {
+      padding: 11px 14px;
+    }
+    .figure-cap h4 { font-size: 0.96rem; margin-bottom: 3px; }
+    .figure-cap p { font-size: 0.82rem; color: var(--ink-muted); }
+
+    /* 8 Gym Badges Ribbon */
+    .badge-ribbon {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 8px;
+    }
+    .gym-badge {
+      background: var(--parchment);
+      border: 2.5px solid var(--wood-dark);
+      border-radius: 10px;
+      padding: 8px 4px;
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+    .gym-badge span { display: block; font-size: 1.15rem; margin-bottom: 2px; }
+    .gym-badge small { display: block; font-weight: 500; color: var(--ink-muted); font-size: 0.68rem; }
+
+    /* Section 3: Architecture Diagram & Tech Cards */
+    .arch-diagram {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .arch-col {
+      background: var(--parchment);
+      border: 3px solid var(--wood-dark);
+      border-radius: 14px;
+      padding: 15px;
+      box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+    }
+    .arch-col-head {
+      font-weight: 900;
+      font-size: 0.92rem;
+      padding: 6px 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      color: #fff;
+      border: 2px solid var(--wood-dark);
+      text-align: center;
+    }
+    .arch-node {
+      background: var(--parchment-alt);
+      border: 2px solid var(--wood-light);
+      border-radius: 8px;
+      padding: 9px 10px;
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+    }
+    .arch-node:last-child { margin-bottom: 0; }
+    .arch-node strong { display: block; font-size: 0.85rem; margin-bottom: 2px; }
+    .arch-node code { font-size: 0.72rem; color: var(--grass); font-weight: 700; }
+
+    .tech-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .tech-card { padding: 18px; }
+    .tech-card h3 { font-size: 1.08rem; margin-bottom: 8px; }
+    .tech-card ul { padding-left: 18px; font-size: 0.85rem; color: var(--ink-muted); }
+    .tech-card li { margin-bottom: 5px; }
+    .tech-card li strong { color: var(--ink); }
+
+    /* Section 4: Expanded BM Cosmetics & UI Themes Showcase */
+    .sub-heading {
+      font-size: 1.12rem;
+      margin: 18px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bm-cosmetic-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .cosmetic-card {
+      background: var(--parchment);
+      border: 2.5px solid var(--wood-dark);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+    }
+    .cosmetic-thumb {
+      width: 60px; height: 60px;
+      border-radius: 10px;
+      background: radial-gradient(circle, #fffef6 0%, #e5d2ad 100%);
+      border: 2px solid var(--wood-dark);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .cosmetic-thumb img { width: 52px; height: 52px; object-fit: contain; }
+    .cosmetic-info { font-size: 0.8rem; }
+    .cosmetic-info strong { display: block; font-size: 0.88rem; }
+    .cosmetic-price { color: #b45309; font-weight: 800; }
+    .cosmetic-unlock { color: var(--ink-muted); font-size: 0.74rem; }
+
+    .ui-themes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .ui-skin-card {
+      border-radius: 12px;
+      padding: 13px 14px;
+      border: 3px solid #8c5a37;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.16);
+    }
+    .ui-skin-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 5px;
+    }
+    .ui-skin-price {
+      font-size: 0.72rem;
+      font-weight: 900;
+      padding: 2px 7px;
+      border-radius: 6px;
+      color: #1a1410;
+      white-space: nowrap;
+    }
+    .ui-skin-card p { font-size: 0.78rem; opacity: 0.92; margin-bottom: 6px; }
+    .ui-skin-unlock { font-size: 0.72rem; opacity: 0.82; }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 3px solid var(--wood-dark);
+      background: var(--parchment);
+      margin: 14px 0 18px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    th, td { padding: 9px 12px; text-align: left; border-bottom: 1.5px solid var(--parchment-deep); }
+    th { background: var(--wood-mid); color: #ffe066; font-weight: 800; white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+
+    /* Payment Pipeline */
+    .pay-flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .pay-step {
+      background: var(--parchment);
+      border: 2.5px solid var(--wood-dark);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.8rem;
+    }
+    .pay-step strong { display: block; color: var(--water); margin-bottom: 4px; font-size: 0.86rem; }
+
+    /* Troubleshooting */
+    .trouble-grid { display: grid; gap: 12px; margin-bottom: 18px; }
+    .trouble-item {
+      padding: 14px 18px;
+      display: grid;
+      grid-template-columns: 1fr 1.65fr;
+      gap: 14px;
+      align-items: center;
+    }
+    .trouble-q { font-weight: 800; font-size: 0.9rem; color: var(--fire); }
+    .trouble-a { font-size: 0.85rem; color: var(--ink-muted); }
+    .trouble-a strong { color: var(--ink); }
+
+    .stack-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    footer {
+      background: linear-gradient(180deg, #4a2d1b 0%, #2b180c 100%);
+      color: #f4e2be;
+      border-top: 5px solid #c98a4b;
+      padding: 28px 20px;
+      text-align: center;
+    }
+
+    /* Responsive (Screen) */
+    @media (max-width: 860px) {
+      .hero-inner, .farm-loop-grid, .img-grid-2, .tech-cards, .trouble-item { grid-template-columns: 1fr; }
+      .starters-row, .arch-diagram, .bm-cosmetic-grid, .ui-themes-grid { grid-template-columns: 1fr; }
+      .metrics-strip, .pay-flow { grid-template-columns: repeat(2, 1fr); }
+      .badge-ribbon { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* ============================================================
+       PDF / PRINT OPTIMIZATION (Full-Bleed HTML-Identical A4 PDF)
+       ============================================================ */
+    .print-bg-fill { display: none; }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    @media print {
+      .no-print { display: none !important; }
+
+      .print-bg-fill {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background-color: #f6ecd7 !important;
+        z-index: -1;
+      }
+
+      html, body {
+        background-color: #f6ecd7 !important;
+        font-size: 11.5px;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0;
+      }
+
+      .hero {
+        padding: 26px 28px 46px;
+        border-radius: 0;
+        margin: 0 0 8px 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .hero-inner {
+        grid-template-columns: 1.05fr 1fr !important;
+        gap: 20px;
+      }
+      .hero-title { font-size: 1.85rem; }
+      .play-link { margin-top: 12px; }
+      .hero-subtitle { font-size: 0.88rem; margin-bottom: 14px; }
+      .rpg-dialogue { padding: 11px 14px; font-size: 0.82rem; }
+
+      .metrics-strip {
+        margin: -24px auto 0;
+        padding: 0 28px;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 10px;
+        break-inside: avoid;
+      }
+      .metric-card { padding: 10px 8px; }
+      .metric-val { font-size: 1.3rem; }
+
+      main {
+        max-width: 100%;
+        padding: 20px 28px 18px;
+      }
+
+      section {
+        margin-bottom: 22px;
+      }
+
+      /* Natural page breaks with warm cream top breathing room */
+      .print-page-break {
+        break-before: page;
+        page-break-before: always;
+        padding-top: 22px;
+      }
+
+      .section-head {
+        margin-bottom: 12px;
+        padding-bottom: 6px;
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+      .section-title { font-size: 1.35rem; }
+      .sub-heading {
+        font-size: 1rem;
+        margin: 12px 0 8px;
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      /* Prevent awkward splits inside cards, images, rows */
+      .wood-panel,
+      .starter-card,
+      .loop-card,
+      .figure-card,
+      .arch-col,
+      .tech-card,
+      .cosmetic-card,
+      .ui-skin-card,
+      .pay-step,
+      .trouble-item,
+      .table-wrap,
+      .badge-ribbon,
+      tr {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      /* Keep multi-column desktop grids intact on A4 */
+      .starters-row,
+      .arch-diagram,
+      .bm-cosmetic-grid,
+      .ui-themes-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 10px;
+      }
+      .farm-loop-grid {
+        grid-template-columns: 1.05fr 1fr !important;
+        gap: 12px;
+      }
+      .img-grid-2,
+      .tech-cards {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px;
+      }
+      .pay-flow {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 8px;
+      }
+      .badge-ribbon {
+        grid-template-columns: repeat(8, 1fr) !important;
+        gap: 5px;
+      }
+      .trouble-item {
+        grid-template-columns: 1fr 1.65fr !important;
+        padding: 10px 14px;
+      }
+
+      .figure-card.fixed-h img { height: 155px; }
+      .figure-card.contain-h img { height: 162px; }
+      .figure-card.overview-h img { height: 235px; object-fit: contain; background: #141824; }
+      .figure-card.gallery-h img { height: 270px; object-fit: cover; }
+
+      /* Compact Architecture & Troubleshooting so they pair cleanly on 1 A4 page */
+      .arch-col { padding: 11px 12px; }
+      .arch-col-head { font-size: 0.84rem; padding: 5px 8px; margin-bottom: 8px; }
+      .arch-node { padding: 7px 9px; margin-bottom: 6px; font-size: 0.76rem; line-height: 1.4; }
+      .tech-card { padding: 12px 14px; }
+      .tech-card h3 { font-size: 0.96rem; margin-bottom: 6px; }
+      .tech-card ul { font-size: 0.78rem; }
+      .tech-card li { margin-bottom: 3px; }
+      .trouble-grid { gap: 8px; margin-bottom: 12px; }
+      .trouble-item { padding: 8px 12px !important; }
+      .trouble-q { font-size: 0.82rem; }
+      .trouble-a { font-size: 0.78rem; }
+
+      /* Compact BM page so all cosmetics + themes + PayPal table + pipeline fit cleanly on 1 A4 page */
+      .bm-cosmetic-grid { gap: 8px !important; margin-bottom: 10px; }
+      .cosmetic-card { padding: 7px 9px; gap: 9px; }
+      .cosmetic-thumb { width: 48px; height: 48px; }
+      .cosmetic-thumb img { width: 42px; height: 42px; }
+      .ui-themes-grid { gap: 8px !important; margin-bottom: 10px; }
+      .ui-skin-card { padding: 9px 11px; }
+      .table-wrap { margin: 8px 0 10px; }
+      th, td { padding: 6px 10px; font-size: 0.78rem; }
+      .pay-step { padding: 9px 10px; font-size: 0.75rem; }
+
+      footer {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-bg-fill" aria-hidden="true"></div>
+  <!-- Screen-only Navigation & One-Click PDF Print Button -->
+  <nav class="navbar no-print">
+    <div class="nav-inner">
+      <a class="brand font-display" href="#top">
+        <img src="./portfolio_images/sprites/favicon.png" alt="Lumi Stella Icon" class="pixelated" />
+        <span>루미 스텔라 포트폴리오</span>
+      </a>
+      <div class="nav-links">
+        <a href="#core">스타팅 & 코어루프</a>
+        <a href="#world">3D 디오라마</a>
+        <a href="#tech">기술 아키텍처</a>
+        <a href="#bm">BM & 실결제</a>
+        <a href="#gallery">엔드게임</a>
+        <button class="print-btn" type="button" onclick="window.print()">🖨️ PDF로 저장 (A4)</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- COVER / HERO -->
+  <header id="top" class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="hero-eyebrow">✨ 2.5D/3D 디오라마 멀티플레이 몬스터 농장 RPG 포트폴리오</div>
+        <h1 class="hero-title font-display">루미 스텔라: 별빛의 씨앗</h1>
+        <p class="hero-subtitle">
+          <strong>포켓몬의 몬스터 수집·배틀 모험</strong>과 <strong>스타듀밸리의 자급자족 농경 라이프</strong>를 결합한
+          풀스택 웹 RPG. Phaser 3 + Three.js 하이브리드 엔진, Socket.io 서버 권한 멀티플레이,
+          PayPal Orders v2 실결제 BM, 그리고 100% 코드 생성 에셋 파이프라인으로 완성했습니다.
+        </p>
+
+        <div class="rpg-dialogue">
+          <span class="rpg-dialogue-speaker">오 이장님 · 별빛 마을</span>
+          <p>
+            "별빛 마을 트레이너는 상점에만 기대지 않는다네. 내 밭에서 약초를 기르고, 광산에서 루미볼을 빚어
+            17개 마을의 8대 체육관과 루미 리그에 도전하는 게 우리 전통이지!"
+          </p>
+        </div>
+
+        <a class="play-link" href="https://lumistella.vercel.app/" target="_blank" rel="noopener">
+          <span class="play-badge">▶ PLAY</span>
+          <span class="play-text">지금 바로 플레이하기 <small>lumistella.vercel.app</small></span>
+        </a>
+      </div>
+
+      <div class="console-frame">
+        <div class="console-screen">
+          <img src="./portfolio_images/01_title_screen.png" alt="루미 스텔라 타이틀 화면" />
+        </div>
+        <div class="console-caption">
+          <span><i class="led-dot"></i>LUMI STELLA · SEEDS OF STARLIGHT</span>
+          <span>Web Desktop · Mobile 양손 패드 지원</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Key Metrics HUD Strip -->
+  <div class="metrics-strip">
+    <div class="metric-card">
+      <div class="metric-val font-display">40,670+</div>
+      <div class="metric-label">총 코드 규모 (LOC)</div>
+      <div class="metric-sub">TS 75모듈 + 생성기 48종</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val font-display">178개 맵</div>
+      <div class="metric-label">도달성 결점 0건</div>
+      <div class="metric-sub">18마을 · 8체육관 퍼즐 · BFS 검증</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val font-display">122 + 90종</div>
+      <div class="metric-label">루미 & 생활 도감</div>
+      <div class="metric-sub">진화·전설 + 농사·채광·낚시</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val font-display">210종 · 28곡</div>
+      <div class="metric-label">AI 일러스트 & WebAudio</div>
+      <div class="metric-sub">외부 에셋 0% 자체 파이프라인</div>
+    </div>
+  </div>
+
+  <main>
+    <!-- SECTION 1: All 3 Starter Lumis & Self-Sufficient Core Loop -->
+    <section id="core">
+      <div class="section-head">
+        <h2 class="section-title font-display">🌱 스타팅 루미 3종 & 자급자족 코어 루프</h2>
+        <span class="section-tag">POKÉMON × STARDEW CORE</span>
+      </div>
+
+      <!-- All 3 Starters Laid Out Side-by-Side -->
+      <div class="starters-row">
+        <!-- 새록 -->
+        <div class="wood-panel starter-card">
+          <div class="starter-top">
+            <div class="starter-stage">
+              <img src="./portfolio_images/sprites/saerok.png" alt="새록" class="pixelated" />
+            </div>
+            <div>
+              <span class="poke-pill" style="background:#4e8c3e; color:#fff; margin-bottom:4px;">🌿 풀 속성 · 균형형</span>
+              <h3 class="font-display" style="font-size:1.2rem;">새록 <small style="font-size:0.78rem; color:var(--ink-muted);">잎사귀 귀 강아지</small></h3>
+            </div>
+          </div>
+          <div class="starter-trait">🌱 농사 도우미: 매일 아침 밭 6칸 자동 물주기</div>
+          <div>
+            <div class="stat-row"><span class="stat-label">체력</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:64%; background:#4e8c3e;"></div></div><span class="stat-num">45</span></div>
+            <div class="stat-row"><span class="stat-label">공격</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:70%; background:#4e8c3e;"></div></div><span class="stat-num">49</span></div>
+            <div class="stat-row"><span class="stat-label">방어</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:70%; background:#4e8c3e;"></div></div><span class="stat-num">49</span></div>
+            <div class="stat-row"><span class="stat-label">스피드</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:64%; background:#4e8c3e;"></div></div><span class="stat-num">45</span></div>
+          </div>
+        </div>
+
+        <!-- 찰랑 -->
+        <div class="wood-panel starter-card">
+          <div class="starter-top">
+            <div class="starter-stage">
+              <img src="./portfolio_images/sprites/chalang.png" alt="찰랑" class="pixelated" />
+            </div>
+            <div>
+              <span class="poke-pill" style="background:#1e9ce0; color:#fff; margin-bottom:4px;">💧 물 속성 · 방어형</span>
+              <h3 class="font-display" style="font-size:1.2rem;">찰랑 <small style="font-size:0.78rem; color:var(--ink-muted);">물방울 꼬리 고양이</small></h3>
+            </div>
+          </div>
+          <div class="starter-trait">🎣 낚시 도우미: 희귀 어종 확률 2배 · 물뿌리개 무료</div>
+          <div>
+            <div class="stat-row"><span class="stat-label">체력</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:63%; background:#1e9ce0;"></div></div><span class="stat-num">44</span></div>
+            <div class="stat-row"><span class="stat-label">공격</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:69%; background:#1e9ce0;"></div></div><span class="stat-num">48</span></div>
+            <div class="stat-row"><span class="stat-label">방어</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:79%; background:#1e9ce0;"></div></div><span class="stat-num">55</span></div>
+            <div class="stat-row"><span class="stat-label">스피드</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:61%; background:#1e9ce0;"></div></div><span class="stat-num">43</span></div>
+          </div>
+        </div>
+
+        <!-- 모락 -->
+        <div class="wood-panel starter-card">
+          <div class="starter-top">
+            <div class="starter-stage">
+              <img src="./portfolio_images/sprites/morak.png" alt="모락" class="pixelated" />
+            </div>
+            <div>
+              <span class="poke-pill" style="background:#e6482e; color:#fff; margin-bottom:4px;">🔥 불 속성 · 속공형</span>
+              <h3 class="font-display" style="font-size:1.2rem;">모락 <small style="font-size:0.78rem; color:var(--ink-muted);">불꽃 귀 토끼</small></h3>
+            </div>
+          </div>
+          <div class="starter-trait">⛏️ 채광 도우미: 광석 채굴량 +1 · 곡괭이 에너지 절약</div>
+          <div>
+            <div class="stat-row"><span class="stat-label">체력</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:56%; background:#e6482e;"></div></div><span class="stat-num">39</span></div>
+            <div class="stat-row"><span class="stat-label">공격</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:74%; background:#e6482e;"></div></div><span class="stat-num">52</span></div>
+            <div class="stat-row"><span class="stat-label">방어</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:61%; background:#e6482e;"></div></div><span class="stat-num">43</span></div>
+            <div class="stat-row"><span class="stat-label">스피드</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:93%; background:#e6482e;"></div></div><span class="stat-num">65</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Starlight Farm + 4-Step Core Loop -->
+      <div class="farm-loop-grid">
+        <div class="wood-panel figure-card">
+          <img src="./portfolio_images/02_starlight_farm.png" alt="별빛 농장" />
+          <div class="figure-cap">
+            <h4 class="font-display">🏡 별빛 농장 — 나만의 자급자족 기지 & 우편함 초대</h4>
+            <p>개간·물주기·벌목·설치물 배치·출하가 가능한 개인 공간. 멀티플레이 친구를 우편함으로 초대해 함께 농사를 짓고, 17개 마을 공용 텃밭에서는 주민 도우미와 협업합니다.</p>
+          </div>
+        </div>
+
+        <div class="loop-steps">
+          <div class="loop-card">
+            <span class="loop-num">STEP 1 · 생활</span>
+            <h4 class="font-display" style="margin-bottom:3px;">농사 · 채광 · 낚시</h4>
+            <p style="font-size:0.8rem; color:var(--ink-muted);">내 밭과 17개 마을 특산 씨앗·광맥·낚시터에서 자원을 직접 수확합니다.</p>
+          </div>
+          <div class="loop-card">
+            <span class="loop-num" style="background:var(--water);">STEP 2 · 수집</span>
+            <h4 class="font-display" style="margin-bottom:3px;">생활 도감 90종</h4>
+            <p style="font-size:0.8rem; color:var(--ink-muted);">농사 30 · 채광 30 · 낚시 30종 등록 및 마일스톤 보상으로 모험 동기를 부여합니다.</p>
+          </div>
+          <div class="loop-card">
+            <span class="loop-num" style="background:#d97706;">STEP 3 · 보급</span>
+            <h4 class="font-display" style="margin-bottom:3px;">제작 & 포만감 요리</h4>
+            <p style="font-size:0.8rem; color:var(--ink-muted);">루미볼·회복약·도핑약·도시락 10종을 직접 제작해 탐험 물자를 충당합니다.</p>
+          </div>
+          <div class="loop-card">
+            <span class="loop-num" style="background:var(--fire);">STEP 4 · 도전</span>
+            <h4 class="font-display" style="margin-bottom:3px;">8대 체육관 & 리그</h4>
+            <p style="font-size:0.8rem; color:var(--ink-muted);">기믹 퍼즐 도장과 사천왕·챔피언, 전설/환상 엔드게임까지 완주합니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: 2.5D/3D Diorama & Region World (All 5 Images Expanded) -->
+    <section id="world" class="print-page-break">
+      <div class="section-head">
+        <h2 class="section-title font-display">🗺️ 2.5D/3D 디오라마 & 루미나 지방 (178개 맵)</h2>
+        <span class="section-tag">THREE.JS DIORAMA + WORLD DESIGN</span>
+      </div>
+
+      <div class="img-grid-2">
+        <div class="wood-panel figure-card fixed-h">
+          <img src="./portfolio_images/03_diorama_town.png" alt="3D 디오라마 별빛 마을" />
+          <div class="figure-cap">
+            <h4 class="font-display">🏘️ 3D 디오라마 마을 (3단 테라스 · 계단 · 빌보드)</h4>
+            <p>Tiled JSON의 Cliff 레이어를 Three.js 3D 메시로 변환하고, 캐릭터·나무·소품은 2D 도트 빌보드로 배치해 4~5세대 RPG 감성을 구현했습니다.</p>
+          </div>
+        </div>
+        <div class="wood-panel figure-card fixed-h">
+          <img src="./portfolio_images/04_diorama_city.png" alt="3D 디오라마 왕관 시티" />
+          <div class="figure-cap">
+            <h4 class="font-display">🏙️ 왕관 시티 — 대도시 3D 원근 투시</h4>
+            <p>리그 섬의 대도시 왕관 시티. 고층 빌딩 3D 투시, 횡단보도, 카메라 FOV/각도 보정으로 입체적 스케일을 연출합니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="wood-panel figure-card overview-h" style="margin-bottom:14px;">
+        <img src="./portfolio_images/05_towns_overview.png" alt="12개 주요 거점 3D 디오라마 오버뷰" />
+        <div class="figure-cap">
+          <h4 class="font-display">🌍 12개 주요 거점 3D 디오라마 오버뷰</h4>
+          <p>별빛 농장 · 별빛 마을 · 바람골 · 물결항 · 단풍골 · 꽃구름 · 쇳불 공업도시 · 안개 마을 · 잿빛 화산마을 · 솔방울 · 빛누리 네온시티 · 별마루 마을까지 바이옴별 입체 설계.</p>
+        </div>
+      </div>
+
+      <div class="img-grid-2">
+        <div class="wood-panel figure-card contain-h">
+          <img src="./portfolio_images/06_worldmap.png" alt="루미나 지방 월드맵" />
+          <div class="figure-cap">
+            <h4 class="font-display">🧭 루미나 지방 코드 생성 월드맵</h4>
+            <p>픽셀아트 생성기(<code>regionmap.mjs</code>)로 그린 대륙 & 리그 섬 지도. 방문한 지역만 구름 안개가 걷힙니다.</p>
+          </div>
+        </div>
+        <div class="wood-panel figure-card contain-h">
+          <img src="./portfolio_images/07_region_graph.png" alt="17개 마을 연결 그래프" />
+          <div class="figure-cap">
+            <h4 class="font-display">🔗 17개 마을 · 29개 도로 · 정기선 노드 그래프</h4>
+            <p>도보 대륙 + 항구 정기선 구조를 설계하고, <code>check-paths.mjs</code> BFS 검사로 전 맵 도달성 결점 0건을 검증했습니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8 Gym Badges Ribbon -->
+      <div class="badge-ribbon">
+        <div class="gym-badge"><span>🍃</span>바람 배지<small>바람골 · 세나</small></div>
+        <div class="gym-badge"><span>💧</span>물결 배지<small>물결항 · 파도</small></div>
+        <div class="gym-badge"><span>🍁</span>단풍 배지<small>단풍골 · 단비</small></div>
+        <div class="gym-badge"><span>⛰️</span>무쇠 배지<small>쇳불 · 무쇠</small></div>
+        <div class="gym-badge"><span>🔥</span>불꽃 배지<small>잿빛 · 화련</small></div>
+        <div class="gym-badge"><span>✨</span>빛누리 배지<small>빛누리 · 샛별</small></div>
+        <div class="gym-badge"><span>❄️</span>서리 배지<small>서리 · 설아</small></div>
+        <div class="gym-badge"><span>🌌</span>별마루 배지<small>별마루 · 천문</small></div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: Technical Architecture -->
+    <section id="tech" class="print-page-break">
+      <div class="section-head">
+        <h2 class="section-title font-display">⚙️ 핵심 기술 아키텍처</h2>
+        <span class="section-tag">FULL-STACK ARCHITECTURE</span>
+      </div>
+
+      <div class="arch-diagram">
+        <div class="arch-col">
+          <div class="arch-col-head" style="background:#3b6ea5;">🖥️ Client (Vercel · Vite + TS)</div>
+          <div class="arch-node">
+            <strong>Hybrid 2.5D/3D Renderer</strong>
+            Phaser 3 로직 + Three.js 입체 지형/실내/배틀<br />
+            <code>Stage3D.ts · Interior3D.ts · BattleStage3D.ts</code>
+          </div>
+          <div class="arch-node">
+            <strong>DOM Overlay & Mobile Pad</strong>
+            Tailwind 폴더블 휴대폰 OS · 결제 모달 · 양손 패드<br />
+            <code>Phone.ts · LifeDexView.ts · Touch.ts</code>
+          </div>
+          <div class="arch-node">
+            <strong>Zero-File WebAudio Engine</strong>
+            28곡 오리지널 BGM 시퀀서 + 11종 재질별 발소리<br />
+            <code>Music.ts · Sfx.ts · tracks.ts</code>
+          </div>
+        </div>
+
+        <div class="arch-col">
+          <div class="arch-col-head" style="background:#4e8c3e;">🧩 Shared Core (Single Source of Truth)</div>
+          <div class="arch-node">
+            <strong>Authority Abstraction</strong>
+            싱글(<code>LocalAuthority</code>) ↔ 멀티(<code>NetworkAuthority</code>) 동일 씬 공유<br />
+            <code>client/src/net/Authority.ts</code>
+          </div>
+          <div class="arch-node">
+            <strong>Authoritative Simulation</strong>
+            농사·배틀·포획·도감·상점 판정 공용 엔진<br />
+            <code>FarmSimulation.ts · Battle.ts · lifeDex.ts</code>
+          </div>
+          <div class="arch-node">
+            <strong>Anti-Cheat & BM Catalog</strong>
+            FNV-1a 세이브 무결성 서명 + 진행도 연동 BM 규칙<br />
+            <code>antiCheat.ts · bmShop.ts · protocol.ts</code>
+          </div>
+        </div>
+
+        <div class="arch-col">
+          <div class="arch-col-head" style="background:#8c3b5a;">☁️ Authoritative Server (Azure · Node 20)</div>
+          <div class="arch-node">
+            <strong>Socket.io Realtime Hub</strong>
+            Prediction / Reconciliation / 110ms 보간 · 방 격리<br />
+            <code>server/hub.ts · server/index.ts</code>
+          </div>
+          <div class="arch-node">
+            <strong>PayPal Orders v2 Payment</strong>
+            OAuth2 주문 생성 · Capture 교차검증 · 오프라인 지급<br />
+            <code>server/payment.ts · server/storage.ts</code>
+          </div>
+          <div class="arch-node">
+            <strong>Firebase Auth & Starlight Prison</strong>
+            JWT 서명 검증 · 관리자 앱 · 안티치트 교도소<br />
+            <code>server/auth.ts · server/admin.ts</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="tech-cards">
+        <div class="wood-panel tech-card">
+          <h3>🎨 제로 외부 에셋 · 절차적 생성 파이프라인</h3>
+          <ul>
+            <li><strong>코드 생성 픽셀아트</strong>: 외부 이미지 툴 없이 Node 내장 <code>zlib</code>로 PNG 직접 인코딩 (9바이옴 타일셋, 캐릭터, 루미 122종, 월드맵).</li>
+            <li><strong>선언적 178개 맵 & BFS 검증</strong>: <code>region-spec.mjs</code>와 셀룰러 오토마타 동굴(<code>cavegen.mjs</code>) 생성 후, <code>check-paths.mjs</code>로 체육관 퍼즐·파도타기 포함 도달성 결점 0건 검증.</li>
+            <li><strong>AI 일러스트 210종</strong>: 도트 초상을 레퍼런스로 Gemini REST API 일괄 생성 및 배경 제거 자동화 파이프라인 구축.</li>
+          </ul>
+        </div>
+        <div class="wood-panel tech-card">
+          <h3>⛓️ 안티치트 & 별빛 교도소 (Gamified Security)</h3>
+          <ul>
+            <li><strong>다층 무결성 검증</strong>: 온라인 서버 권한 검증 + 오프라인 세이브 FNV-1a 결정론적 해시(<code>computeSaveSig</code>)로 재화 변조 탐지.</li>
+            <li><strong>별빛 교도소 콘텐츠화</strong>: 치트 적발 시 단순 차단 대신 지하 5층 독방 수감 → <strong>성실 노역(석판·나무판 100/100)</strong> 석방 또는 감시관 순찰 회피 <strong>탈옥 후 선행 100회 갱생</strong> 루트 제공.</li>
+            <li><strong>권한 격리</strong>: Firebase ID 토큰 <code>email_verified</code> 검증 및 클라우드 <code>DEV_AUTH</code> 관리자 승격 원천 차단.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Troubleshooting & Tech Stack paired directly beneath Architecture -->
+      <div class="section-head" style="margin-top:20px;">
+        <h2 class="section-title font-display">🛠️ 주요 트러블슈팅 & 기술 스택</h2>
+        <span class="section-tag">ENGINEERING HIGHLIGHTS</span>
+      </div>
+
+      <div class="trouble-grid">
+        <div class="wood-panel trouble-item">
+          <div class="trouble-q">Q1. 싱글(오프라인)과 멀티플레이 로직 이중화 위험</div>
+          <div class="trouble-a"><strong>해결:</strong> <code>Authority</code> 인터페이스로 전송 계층을 추상화하고 핵심 규칙을 <code>shared/sim/</code>에 단일화하여, 씬 코드 수정 없이 오프라인 스토리 모드와 실시간 멀티플레이를 완벽 호환.</div>
+        </div>
+        <div class="wood-panel trouble-item">
+          <div class="trouble-q">Q2. 178개 대규모 맵의 워프 누락 및 퍼즐 길막 버그</div>
+          <div class="trouble-a"><strong>해결:</strong> <code>region-spec.mjs</code> 선언적 생성 파이프라인과 BFS 기반 <code>check-paths.mjs</code>(체육관 퍼즐·파도타기 해류 포함)를 구축해 <strong>178개 전 맵 도달성 결점 0건</strong> 자동 검증.</div>
+        </div>
+        <div class="wood-panel trouble-item">
+          <div class="trouble-q">Q3. 모바일 실결제 중 소켓 끊김으로 인한 캐쉬 미지급</div>
+          <div class="trouble-a"><strong>해결:</strong> PayPal 주문을 Firestore에 영속 저장하고, Capture 시점에 유저가 오프라인이면 오프라인 세이브에 직접 반영 후 <code>computeSaveSig</code> 재서명으로 결제 유실 원천 차단.</div>
+        </div>
+        <div class="wood-panel trouble-item">
+          <div class="trouble-q">Q4. 웹 게임의 로컬 세이브 변조 및 1인 개발 리소스 병목</div>
+          <div class="trouble-a"><strong>해결:</strong> FNV-1a 무결성 해시 + <strong>별빛 교도소</strong> 게임화 제재로 보안·재미 동시 확보. 픽셀아트·28곡 WebAudio·210종 AI 일러스트 자동화로 외부 에셋 의존도 0% 달성.</div>
+        </div>
+      </div>
+
+      <div class="stack-pills">
+        <span class="poke-pill" style="background:#3178c6; color:#fff;">TypeScript 5.8</span>
+        <span class="poke-pill" style="background:#646cff; color:#fff;">Vite 6</span>
+        <span class="poke-pill" style="background:#8c52ff; color:#fff;">Phaser 3.90</span>
+        <span class="poke-pill" style="background:#111827; color:#fff;">Three.js 0.170</span>
+        <span class="poke-pill" style="background:#38bdf8; color:#0f172a;">Tailwind CSS 4</span>
+        <span class="poke-pill" style="background:#3c873a; color:#fff;">Node.js 20+</span>
+        <span class="poke-pill" style="background:#25c2a0; color:#0f172a;">Socket.io 4.8</span>
+        <span class="poke-pill" style="background:#ffca28; color:#2b180c;">Firebase Auth & Firestore</span>
+        <span class="poke-pill" style="background:#003087; color:#fff;">PayPal Orders v2</span>
+        <span class="poke-pill" style="background:#e6482e; color:#fff;">WebAudio Synthesizer</span>
+        <span class="poke-pill" style="background:#4f46e5; color:#fff;">Gemini Image API</span>
+        <span class="poke-pill" style="background:#0078d4; color:#fff;">Vercel + Azure App Service</span>
+      </div>
+    </section>
+
+    <!-- SECTION 4: BM & PayPal Orders v2 (All Cosmetics & UI Themes Expanded) -->
+    <section id="bm" class="print-page-break">
+      <div class="section-head">
+        <h2 class="section-title font-display">💎 수익화 모델 (BM) & PayPal Orders v2 실결제</h2>
+        <span class="section-tag">NON-P2W · PROGRESSION-GATED BM</span>
+      </div>
+
+      <p style="font-size:0.9rem; color:var(--ink-muted); margin-bottom:12px;">
+        배틀 밸런스를 해치지 않는 <strong>진행도 연동형 코스메틱(Non-P2W)</strong> 중심의 F2P 수익화 구조입니다.
+        각 마을 관장을 격파할 때마다 해당 지역 콘셉트의 <strong>UI 테마 9종 · 트레이너 의상 9종 · 스타팅 루미 코디 9종</strong>이 순차 해금되며,
+        상시 판매 <strong>채팅 말풍선 5종 · 편의성 소모품 2종(별빛 사탕 $1.00 · 닉네임 변경권 $4.00)</strong>과 밤 전용 <strong>별빛 카지노</strong> 골드 싱크로 경제를 완성했습니다.
+      </p>
+
+      <!-- All 9 Starter Lumi BM Cosmetics Listed -->
+      <h3 class="sub-heading font-display">🎀 스타팅 루미 3종(새록·찰랑·모락) 전용 BM 코디 9종 전체</h3>
+      <div class="bm-cosmetic-grid">
+        <div class="cosmetic-card">
+          <div class="cosmetic-thumb"><img src="./portfolio_images/sprites/saerok_lumi_ribbon.png" alt="별빛 실크 리본" class="pixelated" /></div>
+          <div class="cosmetic-info"><strong>🎀 별빛 실크 리본</strong><span class="cosmetic-price">1,900 캐쉬</span><div class="cosmetic-unlock">프롤로그 완료 시 해금</div></div>
+        </div>
+        <div class="cosmetic-card">
+          <div class="cosmetic-thumb"><img src="./portfolio_images/sprites/chalang_lumi_scarf.png" alt="바람골 하늘 머플러" class="pixelated" /></div>
+          <div class="cosmetic-info"><strong>🧣 바람골 하늘 머플러</strong><span class="cosmetic-price">1,900 캐쉬</span><div class="cosmetic-unlock">바람골 관장 세나 격파</div></div>
+        </div>
+        <div class="cosmetic-card">
+          <div class="cosmetic-thumb"><img src="./portfolio_images/sprites/morak_lumi_goggles.png" alt="물결 탐험 물안경" class="pixelated" /></div>
+          <div class="cosmetic-info"><strong>🥽 물결 탐험 물안경</strong><span class="cosmetic-price">2,500 캐쉬</span><div class="cosmetic-unlock">물결항 관장 파도 격파</div></div>
+        </div>
+        <div class="cosmetic-card">
+          <div class="cosmetic-thumb"><img src="./portfolio_images/sprites/saerok_lumi_flower.png" alt="단풍 꽃잎 화관" class="pixelated" /></div>
+          <div class="cosmetic-info"><strong>🌸 단풍 꽃잎 화관</strong><span class="cosmetic-price">2,500 캐쉬</span><div class="cosmetic-unlock">단풍골 관장 단비 격파</div></div>
+        </div>
+        <div class="cosmetic-card">
+          <div class="cosmetic-thumb"><img src="./portfolio_images/sprites/morak_lumi_helmet.png" alt="쇳불 황동 고글모" class="pixelated" /></div>
+          <div class="cosmetic-info"><strong>⛑️ 쇳불 황동 고글모</strong><span class="cosmetic-price">2,900 캐쉬</span><div class="cosmetic-unlock">쇳불 관장 무쇠 격파</div></div>
+        </div>
+        <div class="cosmetic-card">
+          <div class="cosmetic-thumb"><img src="./portfolio_images/sprites/morak_lumi_cape.png" alt="잿빛 히어로 망토" class="pixelated" /></div>
+          <div class="cosmetic-info"><strong>🦸 잿빛 히어로 망토</strong><span class="cosmetic-price">3,500 캐쉬</span><div class="cosmetic-unlock">잿빛 관장 화련 격파</div></div>
+        </div>
+        <div class="cosmetic-card">
+          <div class="cosmetic-thumb"><img src="./portfolio_images/sprites/chalang_lumi_shades.png" alt="네온 선글라스" class="pixelated" /></div>
+          <div class="cosmetic-info"><strong>🕶️ 네온 선글라스</strong><span class="cosmetic-price">3,500 캐쉬</span><div class="cosmetic-unlock">빛누리 관장 샛별 격파</div></div>
+        </div>
+        <div class="cosmetic-card">
+          <div class="cosmetic-thumb"><img src="./portfolio_images/sprites/chalang_lumi_earmuff.png" alt="서리 눈꽃 귀마개" class="pixelated" /></div>
+          <div class="cosmetic-info"><strong>❄️ 서리 눈꽃 귀마개</strong><span class="cosmetic-price">3,500 캐쉬</span><div class="cosmetic-unlock">서리 관장 설아 격파</div></div>
+        </div>
+        <div class="cosmetic-card">
+          <div class="cosmetic-thumb"><img src="./portfolio_images/sprites/saerok_lumi_crown.png" alt="챔피언 미니 왕관" class="pixelated" /></div>
+          <div class="cosmetic-info"><strong>👑 챔피언 미니 왕관</strong><span class="cosmetic-price">4,900 캐쉬</span><div class="cosmetic-unlock">별마루 관장 천문 격파</div></div>
+        </div>
+      </div>
+
+      <!-- Representative 6 UI Themes Laid Out Side-by-Side -->
+      <h3 class="sub-heading font-display">🎨 인게임 UI 디자인 테마 스킨 (대표 6종 / 총 9종)</h3>
+      <div class="ui-themes-grid">
+        <div class="ui-skin-card" style="background:#5c3a24; border-color:#f5b942; color:#fff7e6;">
+          <div class="ui-skin-top"><strong class="font-display">별빛 시골 원목</strong><span class="ui-skin-price" style="background:#f5b942;">기본 제공</span></div>
+          <p>따뜻한 농장 감성의 기본 나무 UI 테마.</p>
+          <div class="ui-skin-unlock">해금: 기본 보유</div>
+        </div>
+        <div class="ui-skin-card" style="background:#232c52; border-color:#ffe066; color:#f4f7ff;">
+          <div class="ui-skin-top"><strong class="font-display">별빛 야경 UI</strong><span class="ui-skin-price" style="background:#ffe066;">2,900 캐쉬</span></div>
+          <p>밤하늘과 은하수 별빛이 담긴 감성 인디고 UI.</p>
+          <div class="ui-skin-unlock">해금: 프롤로그 완료</div>
+        </div>
+        <div class="ui-skin-card" style="background:#2b5951; border-color:#a8f5e6; color:#f0fffc;">
+          <div class="ui-skin-top"><strong class="font-display">바람골 민트 UI</strong><span class="ui-skin-price" style="background:#a8f5e6;">2,900 캐쉬</span></div>
+          <p>산들바람처럼 산뜻한 민트·클라우드 파스텔 UI.</p>
+          <div class="ui-skin-unlock">해금: 바람골 관장 세나 격파</div>
+        </div>
+        <div class="ui-skin-card" style="background:#1a4269; border-color:#72e6ff; color:#eef8ff;">
+          <div class="ui-skin-top"><strong class="font-display">물결항 딥 마린 UI</strong><span class="ui-skin-price" style="background:#72e6ff;">3,500 캐쉬</span></div>
+          <p>항구의 푸른 파도와 진주 테두리 마린 UI.</p>
+          <div class="ui-skin-unlock">해금: 물결항 관장 파도 격파</div>
+        </div>
+        <div class="ui-skin-card" style="background:#21183d; border-color:#00f0ff; color:#fbf7ff;">
+          <div class="ui-skin-top"><strong class="font-display">빛누리 네온 다크</strong><span class="ui-skin-price" style="background:#00f0ff;">4,500 캐쉬</span></div>
+          <p>시티 팝 스타일의 네온 마젠타·시안 사이버 UI.</p>
+          <div class="ui-skin-unlock">해금: 빛누리 관장 샛별 격파</div>
+        </div>
+        <div class="ui-skin-card" style="background:#3b2147; border-color:#ffe375; color:#fffaf0;">
+          <div class="ui-skin-top"><strong class="font-display">별마루 로열 골드</strong><span class="ui-skin-price" style="background:#ffe375;">5,900 캐쉬</span></div>
+          <p>챔피언의 품격이 담긴 로열 벨벳 & 순금 UI.</p>
+          <div class="ui-skin-unlock">해금: 별마루 관장 천문 격파</div>
+        </div>
+      </div>
+
+      <!-- PayPal Cash Packs Table -->
+      <h3 class="sub-heading font-display">💳 PayPal Orders v2 캐쉬 충전 패키지 & 실결제 파이프라인</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>캐쉬 충전 패키지</th>
+              <th>기본 캐쉬</th>
+              <th>보너스</th>
+              <th>총 지급 캐쉬</th>
+              <th>KRW 기준</th>
+              <th>PayPal USD</th>
+              <th>포지셔닝</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>별빛 캐쉬 1,500</strong></td><td>1,500</td><td>-</td><td><strong>1,500</strong></td><td>₩1,500</td><td>$1.19</td><td>소액 첫 결제 진입</td></tr>
+            <tr><td><strong>별빛 캐쉬 5,000</strong></td><td>5,000</td><td>+250 (+5%)</td><td><strong>5,250</strong></td><td>₩5,000</td><td>$3.99</td><td>UI/의상 1~2종 실속형</td></tr>
+            <tr style="background:rgba(245,185,66,0.18);"><td><strong>⭐ 별빛 캐쉬 10,000</strong></td><td>10,000</td><td><strong>+1,000 (+10%)</strong></td><td><strong>11,000</strong></td><td>₩10,000</td><td>$7.99</td><td><strong>인기 주력 패키지</strong></td></tr>
+            <tr><td><strong>별빛 캐쉬 30,000</strong></td><td>30,000</td><td>+4,500 (+15%)</td><td><strong>34,500</strong></td><td>₩30,000</td><td>$22.99</td><td>마을 풀세트 (UI+의상+코디)</td></tr>
+            <tr><td><strong>별빛 캐쉬 50,000</strong></td><td>50,000</td><td>+10,000 (+20%)</td><td><strong>60,000</strong></td><td>₩50,000</td><td>$38.99</td><td>대용량 컬렉션</td></tr>
+            <tr><td><strong>👑 별빛 캐쉬 100,000</strong></td><td>100,000</td><td><strong>+25,000 (+25%)</strong></td><td><strong>125,000</strong></td><td>₩100,000</td><td>$74.99</td><td>전 품목 컴플리트 패키지</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pay-flow">
+        <div class="pay-step">
+          <strong>1. 서버 주문 생성</strong>
+          Firebase JWT 검증 후 서버 기준 가격으로 PayPal Orders v2 주문 생성 및 안전 도메인 화이트리스트 검증
+        </div>
+        <div class="pay-step">
+          <strong>2. Pending 영속화</strong>
+          결제 승인 대기 주문을 Firestore / 영속 저장소에 기록(TTL 3시간)하여 서버 재시작에도 유실 방지
+        </div>
+        <div class="pay-step">
+          <strong>3. 서버 Capture 검증</strong>
+          <code>/pg-success</code> 콜백 시 서버가 직접 Capture 수행 및 실제 통화·금액 교차 검증으로 위변조 차단
+        </div>
+        <div class="pay-step">
+          <strong>4. 오프라인 복귀 지급</strong>
+          모바일 앱 전환 중 소켓이 끊겨도 오프라인 세이브에 직접 캐쉬 반영 + <code>SaveSig</code> 재서명
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: Exploration & Endgame Gallery -->
+    <section id="gallery" class="print-page-break">
+      <div class="section-head">
+        <h2 class="section-title font-display">🌌 탐험 · 전설 · 포스트게임 갤러리</h2>
+        <span class="section-tag">IN-GAME SCREENSHOTS</span>
+      </div>
+
+      <div class="img-grid-2">
+        <div class="wood-panel figure-card gallery-h">
+          <img src="./portfolio_images/08_cave_exploration.png" alt="동굴 탐험" />
+          <div class="figure-cap">
+            <h4 class="font-display">⛏️ 셀룰러 오토마타 동굴 & 파트너 필드 스킬</h4>
+            <p>시드 기반 어두운 동굴에서 파트너 루미의 바위 부수기로 숨겨진 광석과 통로를 개척합니다.</p>
+          </div>
+        </div>
+        <div class="wood-panel figure-card gallery-h">
+          <img src="./portfolio_images/09_legendary_battle.png" alt="전설 별무리 배틀" />
+          <div class="figure-cap">
+            <h4 class="font-display">🌠 전설의 루미 '별무리 (Lv.70)' 보스전</h4>
+            <p>본편 챔피언 격파 후 수정 미로 끝 별의 제단에서 조우하는 성운 용 '별무리'의 전용 96px 배틀 연출입니다.</p>
+          </div>
+        </div>
+        <div class="wood-panel figure-card gallery-h">
+          <img src="./portfolio_images/11_ocarina_towers.png" alt="오카리나와 4탑" />
+          <div class="figure-cap">
+            <h4 class="font-display">🎵 시련의 오카리나 & 네 방향의 탑 (스텔라)</h4>
+            <p>방향키 연주 미니게임으로 동서남북 4탑의 봉인을 해제하고 빛기둥 연출과 함께 전설 '스텔라'에 도전합니다.</p>
+          </div>
+        </div>
+        <div class="wood-panel figure-card gallery-h">
+          <img src="./portfolio_images/10_postgame_genesis.png" alt="환상 제네시스 연출" />
+          <div class="figure-cap">
+            <h4 class="font-display">🌈 태초의 길 — 환상의 루미 '제네시스 (Lv.150)'</h4>
+            <p>도감 완성 후 열리는 최종 포스트게임. 무지개 하늘과 구름 위 제단에서 세계관의 기원 '제네시스'와 대면합니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="font-display" style="font-size:1.25rem; color:#ffe066; margin-bottom:4px;">
+      ✨ 루미 스텔라: 별빛의 씨앗 (Lumi Stella: Seeds of Starlight)
+    </div>
+    <p style="font-size:0.82rem; opacity:0.88;">
+      Monster Collecting RPG × Self-Sufficient Farming Life · Full-Stack Web Game Portfolio
+    </p>
+  </footer>
+</body>
+</html>
