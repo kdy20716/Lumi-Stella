@@ -87,7 +87,9 @@ export interface ItemDef {
   durability?: number;   // 도구 내구도 (0 이 되면 부서짐 → 작업대에서 다시 제작)
   power?: number;        // 도구 세기 (도끼: 나무 베는 횟수 줄어듦)
   tier?: number;         // 도구 등급 0 기본 · 1 구리 · 2 강철 · 3 별빛
-  energy?: number;       // 음식: 회복 에너지
+  energy?: number;       // 음식: 회복 에너지 (구버전 호환)
+  food?: number;         // 음식: 포만감 회복량 (0~100)
+  partyHeal?: number;    // 음식: 섭취 시 파티 루미 체력 소량 회복 보너스
   catchBonus?: number;   // 루미볼 포획 보정
   /** 특수 볼: quick 첫 턴 · dark 밤/동굴 · type:<속성> · repeat 잡아 본 종 · level 높은 레벨 */
   ballRule?: string;
@@ -96,12 +98,39 @@ export interface ItemDef {
   place?: string;        // 설치물: 농장에 놓이는 오브젝트 종류 (망치로 부수면 아이템으로 돌아옴)
 }
 
-/** 작업대 제작법 (작물·채집물·광석 → 볼·회복약·도핑약) */
+export type LifeDexCat = 'farm' | 'mine' | 'fish';
+export interface LifeDexEntry {
+  id: string;
+  cat: LifeDexCat;
+  item: string;
+  name: string;
+  region: string;
+  regionName: string;
+  kind: 'basic' | 'local' | 'rare';
+  hint: string;
+}
+export interface LifeDexState {
+  farm: Record<string, number>;
+  mine: Record<string, number>;
+  fish: Record<string, number>;
+}
+export interface LifeDexMilestone {
+  pct: number;
+  count: number;
+  id: string;
+  title: string;
+  gold: number;
+  items: Record<string, number>;
+}
+
+/** 작업대 · 부엌 제작법 (작물·채집물·광석 → 볼·회복약·도핑약·요리) */
 export interface RecipeDef {
   id: string; out: string; qty: number; in: Record<string, number>; description: string;
+  station?: 'workbench' | 'kitchen';
   starter?: boolean;     // 처음부터 아는 제작법
   teacher?: string;      // 가르쳐 주는 NPC id
   badges?: number;       // 배우는 데 필요한 배지 수
+  autoUnlockByBadge?: boolean; // 배지 개수 달성 시 자동 해금 여부 (요리 · 특산물 볼)
 }
 
 export interface CropDef {
@@ -222,6 +251,13 @@ export interface PlayerState {
   muteRemainingSec?: number;
   /** 휴대폰 메시지 / 벌금 고지서 / 제재 알림 목록 */
   notices?: PlayerNotice[];
+  // ── 생활 도감 (농사·채광·낚시 90종) & 포만감 ──
+  lifeDex?: LifeDexState;
+  lifeDexClaims?: string[];
+  /** 포만감 게이지 (0~100, 기본 80) */
+  food?: number;
+  /** 편한 모드: 포만감 감소/페널티 비활성화 */
+  hungerOff?: boolean;
 }
 /** 호감도 규칙 */
 export const BOND_MAX = 10, BOND_WATER = 4, BOND_ASK_AT = [0, 3, 6];
@@ -316,6 +352,10 @@ export interface SaveData {
   lastHelpedNpc?: string;
   muteRemainingSec?: number;
   notices?: PlayerNotice[];
+  lifeDex?: LifeDexState;
+  lifeDexClaims?: string[];
+  food?: number;
+  hungerOff?: boolean;
   /** 오프라인 저장 무결성 서명 (치트/재화 변조 탐지) */
   saveSig?: string;
   /** 마지막 위치 (다시 접속하면 그 자리에서 이어서). 실내면 나갈 곳(ret)도 */
@@ -428,7 +468,9 @@ export type ActionIntent =
   | { kind: 'prisonEscape' }                          // 지상 1층 외벽 파괴 탈옥 → 0원 초기화 + 벌금 고지서 + 악행스택 100
   | { kind: 'completeHomecoming' }                    // 엄마 귀가 컷신 완료 (두부 한 모 지급)
   | { kind: 'goodDeed'; npc: string }                 // 마을 사람 도와 선행스택 +1 (악행스택 -1)
-  | { kind: 'markNoticesRead' };                      // 휴대폰 메시지/고지서 읽음 처리
+  | { kind: 'markNoticesRead' }                       // 휴대폰 메시지/고지서 읽음 처리
+  | { kind: 'claimDexMilestone'; milestoneId: string } // 생활 도감 달성률 보상 수령
+  | { kind: 'setHungerMode'; off: boolean };          // 포만감 편한 모드 켜기/끄기
 
 export interface ActionResult { ok: boolean; reason?: string; anim?: string; battle?: BattleUpdate; data?: { item?: string; qty?: number; casino?: CasinoOutcome } }
 

@@ -147,6 +147,18 @@ export abstract class Authority {
       case 'notices':
         if (e.playerId === me.id) me.notices = e.notices.map((n) => ({ ...n }));
         break;
+      case 'lifeDex':
+        if (e.playerId === me.id) {
+          me.lifeDex = JSON.parse(JSON.stringify(e.lifeDex));
+          me.lifeDexClaims = [...e.lifeDexClaims];
+        }
+        break;
+      case 'hunger':
+        if (e.playerId === me.id) {
+          me.food = e.food;
+          me.hungerOff = e.hungerOff;
+        }
+        break;
       case 'mute':
         if (e.playerId === me.id) me.muteRemainingSec = e.muteRemainingSec;
         break;

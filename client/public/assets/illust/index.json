@@ -208,7 +208,8 @@
     "extra_musician",
     "extra_monk",
     "extra_reporter",
-    "extra_cameraman"
+    "extra_cameraman",
+    "warden"
   ],
   "files": {
     "mom": "mom.png",
@@ -419,8 +420,9 @@
     "extra_musician": "extra_musician.png",
     "extra_monk": "extra_monk.png",
     "extra_reporter": "extra_reporter.png",
-    "extra_cameraman": "extra_cameraman.png"
+    "extra_cameraman": "extra_cameraman.png",
+    "warden": "warden.png"
   },
   "model": "gemini-3.1-flash-image (Nano Banana)",
-  "updatedAt": "2026-11-22T13:25:11.383Z"
+  "updatedAt": "2026-11-24T03:13:58.776Z"
 }

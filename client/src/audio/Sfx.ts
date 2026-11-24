@@ -204,6 +204,19 @@ const SOUNDS: Record<string, () => void> = {
   note1: () => ping(N('E5'), undefined, 0, 0.26, 'triangle', 0.24),
   note2: () => ping(N('G5'), undefined, 0, 0.26, 'triangle', 0.24),
   note3: () => ping(N('C6'), undefined, 0, 0.30, 'triangle', 0.24),
+  // 생활 도감 · 요리 · 배고픔
+  jingle_dex: () => {
+    seq([N('C5'), N('E5'), N('A5'), N('C6')], 0.075, 'triangle', 0.24, 0.14);
+    ping(N('E6'), undefined, 0.31, 0.28, 'sine', 0.14);
+  },
+  cook: () => {
+    for (let i = 0; i < 4; i++) burst({ t: i * 0.08, d: 0.11, v: 0.16, hp: 1400, lp: 5500 });
+    seq([0, N('E5'), N('G5'), N('C6')], 0.09, 'triangle', 0.2, 0.15);
+  },
+  stomach: () => {
+    ping(145, 85, 0, 0.18, 'sine', 0.18);
+    ping(125, 75, 0.2, 0.22, 'triangle', 0.14);
+  },
   // 배틀
   encounter: () => { for (let i = 0; i < 6; i++) tone({ f: i % 2 ? 660 : 880, t: i * 0.06, d: 0.05, v: 0.22 }); },
   hit: () => { noise(0, 0.12, 0.45, 1800); tone({ f: 160, f2: 60, t: 0, d: 0.12, w: 'square', v: 0.3 }); },

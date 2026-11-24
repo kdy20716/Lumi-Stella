@@ -8,19 +8,49 @@ import type { BugReport } from '../shared/protocol';
 
 export type BanList = Record<string, { name: string; reason: string; at: number; until?: number }>;
 
+export interface PersistedPendingCashOrder {
+  orderId: string;
+  paypalOrderId: string;
+  uid: string;
+  packId: string;
+  orderName: string;
+  currency: 'USD' | 'KRW';
+  expectedValue: string;
+  cashAmount: number;
+  returnOrigin?: string;
+  createdAt: number;
+}
+
+export interface PersistedFinishedCashOrder {
+  uid: string;
+  status: 'paid' | 'failed';
+  cashAmount: number;
+  provider?: string;
+  returnOrigin?: string;
+  error?: string;
+  updatedAt: number;
+}
+
+export interface CashOrderStoreData {
+  pending: Record<string, PersistedPendingCashOrder>;
+  finished: Record<string, PersistedFinishedCashOrder>;
+}
+
 export interface Storage {
   readonly kind: string;
   load(uid: string): Promise<SaveData | null>;
   save(uid: string, data: SaveData): Promise<void>;
   loadWorld(): Promise<{ time: WorldTime } | null>;
   saveWorld(w: { time: WorldTime }): Promise<void>;
-  // 관리 · 신고 (서버만 읽고 씀 — 클라이언트는 직접 접근 불가)
+  // 관리 · 신고 · 결제 주문 영속화 (서버만 읽고 씀 — 클라이언트는 직접 접근 불가)
   bans(): Promise<BanList>;
   ban(uid: string, name: string, reason: string, until?: number): Promise<void>;
   unban(uid: string): Promise<void>;
   reports(): Promise<BugReport[]>;
   addReport(r: BugReport): Promise<void>;
   resolveReport(id: string): Promise<void>;
+  loadCashOrders(): Promise<CashOrderStoreData>;
+  saveCashOrders(data: CashOrderStoreData): Promise<void>;
   audit?(line: string): Promise<void>;
 }
 
@@ -44,6 +74,8 @@ class FileStorage implements Storage {
   async reports() { return this.readJ<BugReport[]>('_reports.json', []); }
   async addReport(r: BugReport) { const l = await this.reports(); l.push(r); this.writeJ('_reports.json', l.slice(-500)); }
   async resolveReport(id: string) { const l = await this.reports(); const r = l.find((x) => x.id === id); if (r) r.resolved = true; this.writeJ('_reports.json', l); }
+  async loadCashOrders() { return this.readJ<CashOrderStoreData>('_cash_orders.json', { pending: {}, finished: {} }); }
+  async saveCashOrders(data: CashOrderStoreData) { this.writeJ('_cash_orders.json', data); }
   async audit(line: string) { appendFileSync(`${this.dir}_admin.log`, `${new Date().toISOString()} ${line}\n`); }
 }
 
@@ -67,6 +99,8 @@ class FirestoreStorage implements Storage {
   async reports() { return this.getJ<BugReport[]>('reports', []); }
   async addReport(r: BugReport) { const l = await this.reports(); l.push(r); await this.setJ('reports', l.slice(-500)); }
   async resolveReport(id: string) { const l = await this.reports(); const r = l.find((x) => x.id === id); if (r) r.resolved = true; await this.setJ('reports', l); }
+  async loadCashOrders() { return this.getJ<CashOrderStoreData>('cashOrders', { pending: {}, finished: {} }); }
+  async saveCashOrders(data: CashOrderStoreData) { await this.setJ('cashOrders', data); }
 }
 
 export async function createStorage(): Promise<Storage> {

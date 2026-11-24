@@ -1,9 +1,10 @@
 // 작물 성장단계 스프라이트, 아이템 아이콘, DOM UI용 9-slice 패널
 import { Img, mix, darken, lighten, hash2 } from './lib/img.mjs';
 import { P } from './lib/palette.mjs';
+import { NEW_CROPS, NEW_ORES, NEW_FISH, NEW_DISHES } from '../data/gen-lifedex.mjs';
 
 const O = P.outline;
-export const CROP_IDS = ['parsnip', 'cauliflower', 'tomato', 'pumpkin', 'lumi_herb', 'fire_pepper', 'iron_bean'];
+export const CROP_IDS = ['parsnip', 'cauliflower', 'tomato', 'pumpkin', 'lumi_herb', 'fire_pepper', 'iron_bean', ...NEW_CROPS.map((c) => c[0])];
 export const CROP_STAGES = 5; // 0=씨앗 … 4=수확가능
 
 function leaf(t, x, y, dx, dy, len, pal) {
@@ -70,6 +71,73 @@ const DRAW = {
   ],
 };
 
+// 특산 · 비경 작물 23종 성장 단계(5단계) 프로시저럴 도트 생성
+for (const [id, , , , , , , , , , , [cBase, cLight, cDark], shape] of NEW_CROPS) {
+  DRAW[id] = [
+    seedMound,
+    sprout,
+    (t) => {
+      t.vline(8, 20, 7, L.d1);
+      leaf(t, 8, 23, -1, -0.6, 5, L);
+      leaf(t, 8, 22, 1, -0.6, 5, L);
+      leaf(t, 8, 20, 0, -1, 4, L);
+    },
+    (t) => {
+      t.vline(8, 16, 11, L.d1);
+      for (const [dx, dy] of [[-1, -0.5], [1, -0.5], [-0.5, -1], [0.5, -1]]) leaf(t, 8, 23, dx, dy, 6, L);
+      t.ellipse(8, 19, 2.5, 2.5, cDark);
+      t.set(8, 18, cBase);
+    },
+    (t) => {
+      if (shape === 'grain') {
+        for (const sx of [5, 8, 11]) {
+          t.vline(sx, 14, 13, '#8fb848');
+          t.rect(sx - 1, 9, 3, 6, cBase);
+          t.vline(sx, 8, 6, cLight);
+          t.set(sx + 1, 13, cDark);
+        }
+      } else if (shape === 'head') {
+        for (const [dx, dy] of [[-1, -0.2], [1, -0.2], [-0.8, 0.3], [0.8, 0.3]]) leaf(t, 8, 24, dx, dy, 7, L);
+        t.ellipse(8, 21, 5.5, 4.5, cDark);
+        t.ellipse(8, 20, 4.5, 3.5, cBase);
+        for (const [x, y] of [[6, 18], [9, 19], [7, 21]]) t.set(x, y, cLight);
+      } else if (shape === 'puff') {
+        t.vline(8, 15, 12, L.d1);
+        leaf(t, 8, 23, -1, -0.4, 5, L); leaf(t, 8, 22, 1, -0.4, 5, L);
+        for (const [x, y] of [[5, 17], [11, 16], [8, 13]]) {
+          t.circle(x, y, 3, cBase); t.circle(x - 0.5, y - 0.5, 1.8, cLight); t.set(x, y + 2, cDark);
+        }
+      } else if (shape === 'mushroom') {
+        t.rect(6, 20, 4, 7, '#efe4cc'); t.vline(9, 20, 7, '#c8b898');
+        t.ellipse(8, 18, 6, 4, cBase); t.ellipse(7, 17, 4, 2, cLight);
+        t.hline(3, 20, 10, cDark); t.set(5, 17, '#ffffff'); t.set(10, 18, '#ffffff');
+      } else if (shape === 'flower') {
+        t.vline(8, 15, 12, L.base);
+        leaf(t, 8, 24, -1, -0.5, 5, L); leaf(t, 8, 23, 1, -0.5, 5, L);
+        for (const [dx, dy] of [[0, -3], [3, 0], [0, 3], [-3, 0], [-2, -2], [2, -2]]) {
+          t.circle(8 + dx, 15 + dy, 2.2, cBase); t.set(8 + dx, 15 + dy - 1, cLight);
+        }
+        t.circle(8, 15, 1.8, '#ffe066'); t.set(8, 14, '#ffffff');
+      } else if (shape === 'melon') {
+        leaf(t, 4, 21, -1, -0.4, 4, L); leaf(t, 12, 20, 1, -0.4, 4, L);
+        t.ellipse(8, 23, 6.2, 5, cBase);
+        for (const x of [5, 8, 11]) t.vline(x, 19, 8, cDark);
+        t.ellipse(6, 21, 2, 1.5, cLight); t.rect(8, 17, 2, 2, L.d1);
+      } else if (shape === 'berry') {
+        t.vline(8, 14, 13, L.d1);
+        for (let y = 15; y < 25; y += 4) { leaf(t, 8, y, -1, -0.3, 5, L); leaf(t, 8, y + 1, 1, -0.3, 5, L); }
+        for (const [x, y] of [[5, 17], [11, 16], [6, 22], [11, 21]]) {
+          t.circle(x, y, 2.3, cBase); t.set(x - 1, y - 1, cLight); t.set(x + 1, y + 1, cDark);
+        }
+      } else {
+        // root (뿌리채소)
+        for (const [dx, dy] of [[-1, -0.9], [1, -0.9], [-0.3, -1], [0.4, -1]]) leaf(t, 8, 21, dx, dy, 7, L);
+        t.ellipse(8, 25, 4.2, 3.5, cBase); t.rect(6, 23, 3, 2, cLight); t.hline(5, 27, 6, cDark);
+      }
+    },
+  ];
+}
+
 export function buildCrops() {
   const img = new Img(16 * CROP_STAGES, 32 * CROP_IDS.length);
   CROP_IDS.forEach((id, r) => {
@@ -112,7 +180,11 @@ export const ICONS = ['hoe', 'watering_can', 'axe', 'seeds_parsnip', 'seeds_caul
   'seeds_lumi_herb', 'seeds_fire_pepper', 'seeds_iron_bean', 'lumi_herb', 'fire_pepper', 'iron_bean', 'craft',
   'hammer', 'wood', 'fiber', 'fence_wood', 'crate_wood', 'barrel_wood', 'scarecrow', 'lamp_post', 'planter_box', 'origin_ball', 'ocarina',
   'quick_ball', 'moon_ball', 'tide_ball', 'leaf_ball', 'ember_ball', 'repeat_ball', 'heavy_ball',
-  'star_candy', 'name_ticket', 'bicycle', 'tofu', 'stone_slab', 'wood_plank'];
+  'star_candy', 'name_ticket', 'bicycle', 'tofu', 'stone_slab', 'wood_plank', 'food_bowl',
+  ...NEW_CROPS.flatMap((c) => [`seeds_${c[0]}`, c[0]]),
+  ...NEW_ORES.map((o) => o[0]),
+  ...NEW_FISH.map((f) => f[0]),
+  ...NEW_DISHES.map((d) => d[0])];
 // 도구 등급 아이콘 (구리 · 강철 · 별빛): 기본 도구 그림의 쇠 부분을 등급 색으로 바꿈
 export const TOOL_TIERS = { copper: ['#8a4a20', '#c8743a', '#f0a868'], iron: ['#4a5a70', '#9aaec4', '#e4eef8'], star: ['#8a6a10', '#e8b830', '#fff2a0'] };
 for (const base of ['hoe', 'watering_can', 'axe', 'pickaxe', 'rod']) for (const tier of Object.keys(TOOL_TIERS)) ICONS.push(`${base}_${tier}`);
@@ -241,8 +313,58 @@ export function buildIcons() {
       t.rect(3, 6, 10, 2, '#ce8e52'); t.hline(3, 9, 10, '#8c562c');
       t.set(5, 7, '#6e4220'); t.set(11, 10, '#6e4220');
     },
+    food_bowl: (t) => {
+      // 포만감 HUD 고봉밥 그릇 아이콘
+      t.ellipse(8, 7, 5, 3.5, '#ffffff'); t.ellipse(7.5, 6.5, 3.5, 2, '#fffaf0');
+      t.rect(3, 8, 10, 4, '#d85838'); t.ellipse(8, 12, 4.5, 2, '#9e341c');
+      t.hline(3, 8, 10, '#ffd65a'); t.rect(6, 13, 4, 2, '#9e341c');
+    },
   };
-  const seedCol = { parsnip: '#e6d29a', cauliflower: '#9fd06a', tomato: '#e0574b', pumpkin: '#e8892e', lumi_herb: '#5ec8b8', fire_pepper: '#e0402a', iron_bean: '#7a8aa8' };
+  const seedCol = {
+    parsnip: '#e6d29a', cauliflower: '#9fd06a', tomato: '#e0574b', pumpkin: '#e8892e', lumi_herb: '#5ec8b8', fire_pepper: '#e0402a', iron_bean: '#7a8aa8',
+    ...Object.fromEntries(NEW_CROPS.map((c) => [c[0], c[11][0]])),
+  };
+  // 특산 광물 · 물고기 · 요리 · 수확물 아이콘 자동 등록
+  for (const [id, , , , , , [b, l, d]] of NEW_ORES) {
+    draw[id] = (t) => {
+      t.ellipse(8, 9, 5.5, 4.8, d);
+      t.line(8, 3, 4, 8, b); t.line(8, 3, 12, 8, b);
+      t.rect(5, 6, 6, 5, b); t.rect(6, 5, 3, 3, l);
+      t.set(6, 5, '#ffffff'); t.set(11, 10, d); t.set(4, 11, l);
+    };
+  }
+  for (const [id, , , , , , [b, l, d], stripe, whisker] of NEW_FISH) {
+    draw[id] = (t) => fish(t, b, l, d, stripe, whisker);
+  }
+  for (const [id, , , , , , , , [b, l, d]] of NEW_DISHES) {
+    draw[id] = (t) => {
+      // 접시/뚝배기 + 요리 토핑 + 모락모락 김
+      t.ellipse(8, 12, 6.2, 2.8, d); t.ellipse(8, 11, 5.2, 2.2, '#f6efe0');
+      t.ellipse(8, 9, 4.5, 3.2, b); t.ellipse(7.5, 8, 3, 1.8, l);
+      t.set(6, 7, '#ffffff'); t.set(9, 9, d);
+      t.set(6, 3, '#fff8ec'); t.set(10, 2, '#fff8ec');
+    };
+  }
+  for (const [id, , , , , , , , , , , [b, l, d], shape] of NEW_CROPS) {
+    draw[id] = (t) => {
+      if (shape === 'grain') {
+        for (const sx of [5, 8, 11]) { t.vline(sx, 4, 10, b); t.vline(sx, 3, 5, l); }
+        t.hline(4, 11, 9, d);
+      } else if (shape === 'flower') {
+        t.vline(8, 9, 6, L.base);
+        for (const [dx, dy] of [[0, -3], [3, 0], [0, 3], [-3, 0], [-2, -2], [2, -2]]) { t.circle(8 + dx, 7 + dy, 2, b); t.set(8 + dx, 6 + dy, l); }
+        t.circle(8, 7, 1.6, '#ffe066');
+      } else if (shape === 'mushroom') {
+        t.rect(6, 9, 4, 5, '#efe4cc'); t.ellipse(8, 7, 5.5, 3.5, b); t.ellipse(7, 6, 3.5, 1.8, l); t.hline(3, 9, 10, d);
+      } else if (shape === 'puff') {
+        for (const [x, y] of [[6, 9], [10, 9], [8, 6]]) { t.circle(x, y, 3.2, b); t.circle(x - 0.5, y - 0.5, 2, l); }
+        t.rect(7, 12, 3, 2, L.d1);
+      } else {
+        t.ellipse(8, 9.5, 5, 4.2, b); t.ellipse(7, 8, 3, 2.2, l); t.set(6, 7, '#ffffff');
+        leaf(t, 8, 5, -1, -0.8, 3, L); leaf(t, 8, 5, 1, -0.8, 3, L);
+      }
+    };
+  }
   const hexRgb = (h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
   ICONS.forEach((id, i) => {
     const t = new Img(16, 16);

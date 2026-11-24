@@ -1,0 +1,1100 @@
+{
+  "entries": [
+    {
+      "id": "parsnip",
+      "item": "parsnip",
+      "name": "파스닙",
+      "region": "town",
+      "regionName": "별빛 마을",
+      "kind": "basic",
+      "hint": "별빛 마을 소라네 루미 마트에서 씨앗 구매 후 수확",
+      "cat": "farm"
+    },
+    {
+      "id": "cauliflower",
+      "item": "cauliflower",
+      "name": "콜리플라워",
+      "region": "town",
+      "regionName": "별빛 마을",
+      "kind": "basic",
+      "hint": "별빛 마을 소라네 루미 마트에서 씨앗 구매 후 수확",
+      "cat": "farm"
+    },
+    {
+      "id": "tomato",
+      "item": "tomato",
+      "name": "토마토",
+      "region": "town",
+      "regionName": "별빛 마을",
+      "kind": "basic",
+      "hint": "별빛 마을 마트 · 가판대에서 씨앗 구매 후 수확",
+      "cat": "farm"
+    },
+    {
+      "id": "pumpkin",
+      "item": "pumpkin",
+      "name": "호박",
+      "region": "town",
+      "regionName": "별빛 마을",
+      "kind": "basic",
+      "hint": "별빛 마을 마트 · 가판대에서 씨앗 구매 후 수확",
+      "cat": "farm"
+    },
+    {
+      "id": "lumi_herb",
+      "item": "lumi_herb",
+      "name": "루미풀",
+      "region": "town",
+      "regionName": "별빛 마을",
+      "kind": "local",
+      "hint": "별빛 마을 특산 약초 — 마트에서 씨앗을 사 밭에서 수확",
+      "cat": "farm"
+    },
+    {
+      "id": "fire_pepper",
+      "item": "fire_pepper",
+      "name": "불꽃고추",
+      "region": "town",
+      "regionName": "별빛 마을",
+      "kind": "basic",
+      "hint": "루미 마트에서 씨앗 구매 후 수확",
+      "cat": "farm"
+    },
+    {
+      "id": "iron_bean",
+      "item": "iron_bean",
+      "name": "단단콩",
+      "region": "town",
+      "regionName": "별빛 마을",
+      "kind": "basic",
+      "hint": "루미 마트에서 씨앗 구매 후 수확",
+      "cat": "farm"
+    },
+    {
+      "id": "wind_wheat",
+      "cat": "farm",
+      "item": "wind_wheat",
+      "name": "바람밀",
+      "region": "windvale",
+      "regionName": "바람골 마을",
+      "kind": "local",
+      "hint": "바람골 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "salt_cabbage",
+      "cat": "farm",
+      "item": "salt_cabbage",
+      "name": "소금꽃 배추",
+      "region": "harbor",
+      "regionName": "물결항",
+      "kind": "local",
+      "hint": "물결항 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "maple_sweet",
+      "cat": "farm",
+      "item": "maple_sweet",
+      "name": "단풍 고구마",
+      "region": "maple",
+      "regionName": "단풍골",
+      "kind": "local",
+      "hint": "단풍골 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "cloud_cotton",
+      "cat": "farm",
+      "item": "cloud_cotton",
+      "name": "구름 목화",
+      "region": "bloom",
+      "regionName": "꽃구름 마을",
+      "kind": "local",
+      "hint": "꽃구름 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "iron_potato",
+      "cat": "farm",
+      "item": "iron_potato",
+      "name": "무쇠 감자",
+      "region": "forge",
+      "regionName": "쇳불 도시",
+      "kind": "local",
+      "hint": "쇳불 도시 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "mist_shroom",
+      "cat": "farm",
+      "item": "mist_shroom",
+      "name": "안개 버섯",
+      "region": "mist",
+      "regionName": "안개 마을",
+      "kind": "local",
+      "hint": "안개 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "spa_ginger",
+      "cat": "farm",
+      "item": "spa_ginger",
+      "name": "온천 생강",
+      "region": "ember",
+      "regionName": "잿빛 마을",
+      "kind": "local",
+      "hint": "잿빛 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "pine_carrot",
+      "cat": "farm",
+      "item": "pine_carrot",
+      "name": "솔향 당근",
+      "region": "pinecone",
+      "regionName": "솔방울 마을",
+      "kind": "local",
+      "hint": "솔방울 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "glow_radish",
+      "cat": "farm",
+      "item": "glow_radish",
+      "name": "빛무",
+      "region": "lumina",
+      "regionName": "빛누리 시티",
+      "kind": "local",
+      "hint": "빛누리 시티 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "star_flower",
+      "cat": "farm",
+      "item": "star_flower",
+      "name": "별꽃",
+      "region": "summit",
+      "regionName": "별마루 마을",
+      "kind": "local",
+      "hint": "별마루 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "sea_melon",
+      "cat": "farm",
+      "item": "sea_melon",
+      "name": "바다 멜론",
+      "region": "shell",
+      "regionName": "조개 마을",
+      "kind": "local",
+      "hint": "조개 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "cactus_fruit",
+      "cat": "farm",
+      "item": "cactus_fruit",
+      "name": "선인장 열매",
+      "region": "sand",
+      "regionName": "모래바람 마을",
+      "kind": "local",
+      "hint": "모래바람 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "cliff_sorghum",
+      "cat": "farm",
+      "item": "cliff_sorghum",
+      "name": "바위 수수",
+      "region": "canyon",
+      "regionName": "바위골",
+      "kind": "local",
+      "hint": "바위골 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "moon_primrose",
+      "cat": "farm",
+      "item": "moon_primrose",
+      "name": "달맞이꽃",
+      "region": "moon",
+      "regionName": "달맞이 마을",
+      "kind": "local",
+      "hint": "달맞이 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "snow_turnip",
+      "cat": "farm",
+      "item": "snow_turnip",
+      "name": "설원 순무",
+      "region": "frost",
+      "regionName": "서리 마을",
+      "kind": "local",
+      "hint": "서리 마을 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "golden_wheat",
+      "cat": "farm",
+      "item": "golden_wheat",
+      "name": "황금 밀",
+      "region": "crown",
+      "regionName": "왕관 시티",
+      "kind": "local",
+      "hint": "왕관 시티 루미 마트에서 특산 씨앗을 사서 수확"
+    },
+    {
+      "id": "dawn_lotus",
+      "cat": "farm",
+      "item": "dawn_lotus",
+      "name": "새벽 연꽃",
+      "region": "dawn_lake",
+      "regionName": "새벽호수",
+      "kind": "rare",
+      "hint": "새벽호수 주변 풀밭에서 씨앗을 채집해 밭에서 수확"
+    },
+    {
+      "id": "sunset_berry",
+      "cat": "farm",
+      "item": "sunset_berry",
+      "name": "노을 딸기",
+      "region": "valor_lake",
+      "regionName": "노을호수",
+      "kind": "rare",
+      "hint": "노을호수 주변 풀밭에서 씨앗을 채집해 밭에서 수확"
+    },
+    {
+      "id": "moon_mint",
+      "cat": "farm",
+      "item": "moon_mint",
+      "name": "달빛 박하",
+      "region": "acuity_lake",
+      "regionName": "달빛호수",
+      "kind": "rare",
+      "hint": "달빛호수 주변 풀밭에서 씨앗을 채집해 밭에서 수확"
+    },
+    {
+      "id": "marsh_root",
+      "cat": "farm",
+      "item": "marsh_root",
+      "name": "늪 연근",
+      "region": "marsh",
+      "regionName": "늪지 대초원",
+      "kind": "rare",
+      "hint": "늪지 대초원 주변 풀밭에서 씨앗을 채집해 밭에서 수확"
+    },
+    {
+      "id": "paradise_rose",
+      "cat": "farm",
+      "item": "paradise_rose",
+      "name": "꽃구름 장미",
+      "region": "paradise",
+      "regionName": "꽃구름 정원",
+      "kind": "rare",
+      "hint": "꽃구름 정원 주변 풀밭에서 씨앗을 채집해 밭에서 수확"
+    },
+    {
+      "id": "fullmoon_bloom",
+      "cat": "farm",
+      "item": "fullmoon_bloom",
+      "name": "보름달꽃",
+      "region": "fullmoon",
+      "regionName": "보름달섬",
+      "kind": "rare",
+      "hint": "보름달섬 주변 풀밭에서 씨앗을 채집해 밭에서 수확"
+    },
+    {
+      "id": "newmoon_truffle",
+      "cat": "farm",
+      "item": "newmoon_truffle",
+      "name": "그믐 버섯",
+      "region": "newmoon",
+      "regionName": "그믐달섬",
+      "kind": "rare",
+      "hint": "그믐달섬 주변 풀밭에서 씨앗을 채집해 밭에서 수확"
+    },
+    {
+      "id": "stone",
+      "item": "stone",
+      "name": "돌",
+      "region": "farm",
+      "regionName": "별빛 농장 · 전역",
+      "kind": "basic",
+      "hint": "농장이나 도로의 바위를 곡괭이로 채광",
+      "cat": "mine"
+    },
+    {
+      "id": "copper_ore",
+      "item": "copper_ore",
+      "name": "구리 광석",
+      "region": "town",
+      "regionName": "별빛 마을 · 1번 도로",
+      "kind": "local",
+      "hint": "별빛 농장 · 1번 도로 구리 광맥 채광",
+      "cat": "mine"
+    },
+    {
+      "id": "iron_ore",
+      "item": "iron_ore",
+      "name": "철 광석",
+      "region": "route1",
+      "regionName": "1번 도로 · 동굴 전역",
+      "kind": "basic",
+      "hint": "도로 채석장이나 동굴의 철 광맥 채광",
+      "cat": "mine"
+    },
+    {
+      "id": "star_shard",
+      "item": "star_shard",
+      "name": "별가루 결정",
+      "region": "route1",
+      "regionName": "심층 동굴 · 고지대",
+      "kind": "basic",
+      "hint": "보랏빛 별가루 광맥을 곡괭이로 채광",
+      "cat": "mine"
+    },
+    {
+      "id": "coal",
+      "cat": "mine",
+      "item": "coal",
+      "name": "석탄",
+      "region": "route1",
+      "regionName": "산들길 · 광산 전역",
+      "kind": "basic",
+      "hint": "산들길 · 광산 전역의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_breeze",
+      "cat": "mine",
+      "item": "ore_breeze",
+      "name": "바람돌",
+      "region": "windvale",
+      "regionName": "바람골 · 1번 도로",
+      "kind": "local",
+      "hint": "바람골 · 1번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_aqua_quartz",
+      "cat": "mine",
+      "item": "ore_aqua_quartz",
+      "name": "물빛 석영",
+      "region": "harbor",
+      "regionName": "물결항 · 2번 도로",
+      "kind": "local",
+      "hint": "물결항 · 2번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_maple_agate",
+      "cat": "mine",
+      "item": "ore_maple_agate",
+      "name": "단풍 마노",
+      "region": "maple",
+      "regionName": "단풍골 · 3번 도로",
+      "kind": "local",
+      "hint": "단풍골 · 3번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_pink_quartz",
+      "cat": "mine",
+      "item": "ore_pink_quartz",
+      "name": "분홍 석영",
+      "region": "bloom",
+      "regionName": "꽃구름 마을 · 5~6번 도로",
+      "kind": "local",
+      "hint": "꽃구름 마을 · 5~6번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_gold",
+      "cat": "mine",
+      "item": "ore_gold",
+      "name": "금광석",
+      "region": "forge",
+      "regionName": "쇳불 도시 · 4번 도로",
+      "kind": "local",
+      "hint": "쇳불 도시 · 4번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_peat",
+      "cat": "mine",
+      "item": "ore_peat",
+      "name": "이탄",
+      "region": "mist",
+      "regionName": "안개 마을 · 10~11번 도로",
+      "kind": "local",
+      "hint": "안개 마을 · 10~11번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_flame",
+      "cat": "mine",
+      "item": "ore_flame",
+      "name": "화염석",
+      "region": "ember",
+      "regionName": "잿빛 마을 · 7번 도로",
+      "kind": "local",
+      "hint": "잿빛 마을 · 7번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_amber",
+      "cat": "mine",
+      "item": "ore_amber",
+      "name": "호박석",
+      "region": "pinecone",
+      "regionName": "솔방울 마을 · 12~13번 도로",
+      "kind": "local",
+      "hint": "솔방울 마을 · 12~13번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_lumen",
+      "cat": "mine",
+      "item": "ore_lumen",
+      "name": "광휘석",
+      "region": "lumina",
+      "regionName": "빛누리 시티 · 14·20번 도로",
+      "kind": "local",
+      "hint": "빛누리 시티 · 14·20번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_meteor",
+      "cat": "mine",
+      "item": "ore_meteor",
+      "name": "운석 조각",
+      "region": "summit",
+      "regionName": "별마루 마을 · 27~28번 도로",
+      "kind": "local",
+      "hint": "별마루 마을 · 27~28번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_pearl",
+      "cat": "mine",
+      "item": "ore_pearl",
+      "name": "진주",
+      "region": "shell",
+      "regionName": "조개 마을 · 8번 도로 · 해신의 바다",
+      "kind": "local",
+      "hint": "조개 마을 · 8번 도로 · 해신의 바다의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_desert_rose",
+      "cat": "mine",
+      "item": "ore_desert_rose",
+      "name": "사막 장미석",
+      "region": "sand",
+      "regionName": "모래바람 마을 · 9·23번 도로",
+      "kind": "local",
+      "hint": "모래바람 마을 · 9·23번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_jasper",
+      "cat": "mine",
+      "item": "ore_jasper",
+      "name": "벽옥",
+      "region": "canyon",
+      "regionName": "바위골 · 15·17·29번 도로",
+      "kind": "local",
+      "hint": "바위골 · 15·17·29번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_moonstone",
+      "cat": "mine",
+      "item": "ore_moonstone",
+      "name": "월장석",
+      "region": "moon",
+      "regionName": "달맞이 마을 · 25~26번 도로",
+      "kind": "local",
+      "hint": "달맞이 마을 · 25~26번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_cryolite",
+      "cat": "mine",
+      "item": "ore_cryolite",
+      "name": "빙정석",
+      "region": "frost",
+      "regionName": "서리 마을 · 16·18·19번 도로",
+      "kind": "local",
+      "hint": "서리 마을 · 16·18·19번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_crown_diamond",
+      "cat": "mine",
+      "item": "ore_crown_diamond",
+      "name": "왕관 금강석",
+      "region": "crown",
+      "regionName": "왕관 시티 · 등대곶 · 21·24번 도로",
+      "kind": "local",
+      "hint": "왕관 시티 · 등대곶 · 21·24번 도로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_coral",
+      "cat": "mine",
+      "item": "ore_coral",
+      "name": "산호석",
+      "region": "sea_cave",
+      "regionName": "바다 동굴",
+      "kind": "rare",
+      "hint": "바다 동굴의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_glow",
+      "cat": "mine",
+      "item": "ore_glow",
+      "name": "야광석",
+      "region": "wayward_1f",
+      "regionName": "헤매는 동굴",
+      "kind": "rare",
+      "hint": "헤매는 동굴의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_silver",
+      "cat": "mine",
+      "item": "ore_silver",
+      "name": "은광석",
+      "region": "underground",
+      "regionName": "땅속 통로",
+      "kind": "rare",
+      "hint": "땅속 통로의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_obsidian",
+      "cat": "mine",
+      "item": "ore_obsidian",
+      "name": "흑요석",
+      "region": "stark_1f",
+      "regionName": "불꽃산",
+      "kind": "rare",
+      "hint": "불꽃산의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_raw_steel",
+      "cat": "mine",
+      "item": "ore_raw_steel",
+      "name": "무쇠 원석",
+      "region": "iron_1f",
+      "regionName": "무쇠섬 갱도",
+      "kind": "rare",
+      "hint": "무쇠섬 갱도의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_cave_crystal",
+      "cat": "mine",
+      "item": "ore_cave_crystal",
+      "name": "동굴 수정",
+      "region": "coronet_1f",
+      "regionName": "별마루산 동굴",
+      "kind": "rare",
+      "hint": "별마루산 동굴의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_permafrost",
+      "cat": "mine",
+      "item": "ore_permafrost",
+      "name": "만년빙 조각",
+      "region": "ice_cave",
+      "regionName": "얼음 굴",
+      "kind": "rare",
+      "hint": "얼음 굴의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_victory",
+      "cat": "mine",
+      "item": "ore_victory",
+      "name": "승리의 원석",
+      "region": "victory_1f",
+      "regionName": "승리의 길",
+      "kind": "rare",
+      "hint": "승리의 길의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "ore_warp_crystal",
+      "cat": "mine",
+      "item": "ore_warp_crystal",
+      "name": "뒤틀린 결정",
+      "region": "star_maze",
+      "regionName": "별마루산 미로 · 뒤집힌 세계",
+      "kind": "rare",
+      "hint": "별마루산 미로 · 뒤집힌 세계의 바위 · 광맥을 곡괭이로 채광"
+    },
+    {
+      "id": "fish_crucian",
+      "item": "fish_crucian",
+      "name": "붕어",
+      "region": "town",
+      "regionName": "별빛 마을 · 농장 연못",
+      "kind": "local",
+      "hint": "별빛 농장 연못 · 별빛 마을 호수에서 낚시",
+      "cat": "fish"
+    },
+    {
+      "id": "fish_trout",
+      "item": "fish_trout",
+      "name": "송어",
+      "region": "route1",
+      "regionName": "별빛 마을 · 1번 도로",
+      "kind": "basic",
+      "hint": "맑은 강가나 호수에서 낚싯대로 낚시",
+      "cat": "fish"
+    },
+    {
+      "id": "fish_catfish",
+      "item": "fish_catfish",
+      "name": "메기",
+      "region": "farm",
+      "regionName": "별빛 농장 · 강가",
+      "kind": "basic",
+      "hint": "농장 연못이나 완만한 강물에서 낚시",
+      "cat": "fish"
+    },
+    {
+      "id": "fish_rainbow",
+      "item": "fish_rainbow",
+      "name": "무지개송어",
+      "region": "town",
+      "regionName": "별빛 마을 호수",
+      "kind": "basic",
+      "hint": "별빛 마을 호수 · 1번 도로에서 드물게 낚임",
+      "cat": "fish"
+    },
+    {
+      "id": "fish_breeze_medaka",
+      "cat": "fish",
+      "item": "fish_breeze_medaka",
+      "name": "산들 송사리",
+      "region": "windvale",
+      "regionName": "바람골 · 1번 도로",
+      "kind": "local",
+      "hint": "바람골 · 1번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_silver_mackerel",
+      "cat": "fish",
+      "item": "fish_silver_mackerel",
+      "name": "은빛 고등어",
+      "region": "harbor",
+      "regionName": "물결항 · 2번 도로",
+      "kind": "local",
+      "hint": "물결항 · 2번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_yamame",
+      "cat": "fish",
+      "item": "fish_yamame",
+      "name": "계곡 산천어",
+      "region": "maple",
+      "regionName": "단풍골 · 3·31번 도로",
+      "kind": "local",
+      "hint": "단풍골 · 3·31번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_cherry_mullet",
+      "cat": "fish",
+      "item": "fish_cherry_mullet",
+      "name": "벚꽃 숭어",
+      "region": "bloom",
+      "regionName": "꽃구름 마을 · 5번 도로",
+      "kind": "local",
+      "hint": "꽃구름 마을 · 5번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_mine_loach",
+      "cat": "fish",
+      "item": "fish_mine_loach",
+      "name": "광천 미꾸리",
+      "region": "forge",
+      "regionName": "쇳불 도시 · 4번 도로",
+      "kind": "local",
+      "hint": "쇳불 도시 · 4번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_swamp_snakehead",
+      "cat": "fish",
+      "item": "fish_swamp_snakehead",
+      "name": "늪 가물치",
+      "region": "mist",
+      "regionName": "안개 마을 · 10·28번 도로",
+      "kind": "local",
+      "hint": "안개 마을 · 10·28번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_onsen_carp",
+      "cat": "fish",
+      "item": "fish_onsen_carp",
+      "name": "온천 잉어",
+      "region": "ember",
+      "regionName": "잿빛 마을 · 6~7번 도로",
+      "kind": "local",
+      "hint": "잿빛 마을 · 6~7번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_lenok",
+      "cat": "fish",
+      "item": "fish_lenok",
+      "name": "열목어",
+      "region": "pinecone",
+      "regionName": "솔방울 마을 · 12·29번 도로",
+      "kind": "local",
+      "hint": "솔방울 마을 · 12·29번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_neon_guppy",
+      "cat": "fish",
+      "item": "fish_neon_guppy",
+      "name": "네온 구피",
+      "region": "lumina",
+      "regionName": "빛누리 시티 · 11·14번 도로",
+      "kind": "local",
+      "hint": "빛누리 시티 · 11·14번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_star_minnow",
+      "cat": "fish",
+      "item": "fish_star_minnow",
+      "name": "별빛 피라미",
+      "region": "summit",
+      "regionName": "별마루 마을 · 13·27번 도로",
+      "kind": "local",
+      "hint": "별마루 마을 · 13·27번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_azure_bream",
+      "cat": "fish",
+      "item": "fish_azure_bream",
+      "name": "쪽빛 도미",
+      "region": "shell",
+      "regionName": "조개 마을 · 8번 도로",
+      "kind": "local",
+      "hint": "조개 마을 · 8번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_oasis_goby",
+      "cat": "fish",
+      "item": "fish_oasis_goby",
+      "name": "오아시스 망둥이",
+      "region": "sand",
+      "regionName": "모래바람 마을 · 9·23번 도로",
+      "kind": "local",
+      "hint": "모래바람 마을 · 9·23번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_torrent_perch",
+      "cat": "fish",
+      "item": "fish_torrent_perch",
+      "name": "급류 꺽지",
+      "region": "canyon",
+      "regionName": "바위골 · 15~17번 도로",
+      "kind": "local",
+      "hint": "바위골 · 15~17번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_moon_hairtail",
+      "cat": "fish",
+      "item": "fish_moon_hairtail",
+      "name": "달빛 갈치",
+      "region": "moon",
+      "regionName": "달맞이 마을 · 25~26번 도로",
+      "kind": "local",
+      "hint": "달맞이 마을 · 25~26번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_ice_smelt",
+      "cat": "fish",
+      "item": "fish_ice_smelt",
+      "name": "얼음 빙어",
+      "region": "frost",
+      "regionName": "서리 마을 · 18~19번 도로",
+      "kind": "local",
+      "hint": "서리 마을 · 18~19번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_golden_carp",
+      "cat": "fish",
+      "item": "fish_golden_carp",
+      "name": "황금 잉어",
+      "region": "crown",
+      "regionName": "왕관 시티 · 등대곶 · 21·24번 도로",
+      "kind": "local",
+      "hint": "왕관 시티 · 등대곶 · 21·24번 도로 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_dawn_sweetfish",
+      "cat": "fish",
+      "item": "fish_dawn_sweetfish",
+      "name": "새벽 은어",
+      "region": "dawn_lake",
+      "regionName": "새벽호수",
+      "kind": "rare",
+      "hint": "새벽호수 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_sunset_goldfish",
+      "cat": "fish",
+      "item": "fish_sunset_goldfish",
+      "name": "노을 금붕어",
+      "region": "valor_lake",
+      "regionName": "노을호수",
+      "kind": "rare",
+      "hint": "노을호수 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_moon_salmon",
+      "cat": "fish",
+      "item": "fish_moon_salmon",
+      "name": "달빛 연어",
+      "region": "acuity_lake",
+      "regionName": "달빛호수",
+      "kind": "rare",
+      "hint": "달빛호수 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_cave_eel",
+      "cat": "fish",
+      "item": "fish_cave_eel",
+      "name": "동굴 장어",
+      "region": "ocean_shrine",
+      "regionName": "갯바람길 해식동굴 앞바다 · 해신의 바다",
+      "kind": "rare",
+      "hint": "갯바람길 해식동굴 앞바다 · 해신의 바다 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_marsh_sturgeon",
+      "cat": "fish",
+      "item": "fish_marsh_sturgeon",
+      "name": "늪 철갑상어",
+      "region": "marsh",
+      "regionName": "늪지 대초원",
+      "kind": "rare",
+      "hint": "늪지 대초원 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_koi",
+      "cat": "fish",
+      "item": "fish_koi",
+      "name": "정원 비단잉어",
+      "region": "paradise",
+      "regionName": "꽃구름 정원",
+      "kind": "rare",
+      "hint": "꽃구름 정원 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_fullmoon_flounder",
+      "cat": "fish",
+      "item": "fish_fullmoon_flounder",
+      "name": "보름달 넙치",
+      "region": "fullmoon",
+      "regionName": "보름달섬",
+      "kind": "rare",
+      "hint": "보름달섬 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_newmoon_angler",
+      "cat": "fish",
+      "item": "fish_newmoon_angler",
+      "name": "그믐 아귀",
+      "region": "newmoon",
+      "regionName": "그믐달섬",
+      "kind": "rare",
+      "hint": "그믐달섬 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_lava_fin",
+      "cat": "fish",
+      "item": "fish_lava_fin",
+      "name": "용암어",
+      "region": "stark_1f",
+      "regionName": "불꽃산 · 화산재 해변",
+      "kind": "rare",
+      "hint": "불꽃산 · 화산재 해변 물가에서 낚싯대로 낚시"
+    },
+    {
+      "id": "fish_sky_fish",
+      "cat": "fish",
+      "item": "fish_sky_fish",
+      "name": "하늘물고기",
+      "region": "distortion",
+      "regionName": "뒤집힌 세계 · 해신의 바다",
+      "kind": "rare",
+      "hint": "뒤집힌 세계 · 해신의 바다 물가에서 낚싯대로 낚시"
+    }
+  ],
+  "townSpecialties": {
+    "town": {
+      "name": "별빛 마을",
+      "crop": "lumi_herb",
+      "ore": "copper_ore",
+      "fish": "fish_crucian",
+      "seed": "seeds_lumi_herb",
+      "seedPrice": 30
+    },
+    "windvale": {
+      "name": "바람골 마을",
+      "crop": "wind_wheat",
+      "ore": "ore_breeze",
+      "fish": "fish_breeze_medaka",
+      "seed": "seeds_wind_wheat",
+      "seedPrice": 35
+    },
+    "harbor": {
+      "name": "물결항",
+      "crop": "salt_cabbage",
+      "ore": "ore_aqua_quartz",
+      "fish": "fish_silver_mackerel",
+      "seed": "seeds_salt_cabbage",
+      "seedPrice": 55
+    },
+    "maple": {
+      "name": "단풍골",
+      "crop": "maple_sweet",
+      "ore": "ore_maple_agate",
+      "fish": "fish_yamame",
+      "seed": "seeds_maple_sweet",
+      "seedPrice": 55
+    },
+    "bloom": {
+      "name": "꽃구름 마을",
+      "crop": "cloud_cotton",
+      "ore": "ore_pink_quartz",
+      "fish": "fish_cherry_mullet",
+      "seed": "seeds_cloud_cotton",
+      "seedPrice": 65
+    },
+    "forge": {
+      "name": "쇳불 도시",
+      "crop": "iron_potato",
+      "ore": "ore_gold",
+      "fish": "fish_mine_loach",
+      "seed": "seeds_iron_potato",
+      "seedPrice": 65
+    },
+    "mist": {
+      "name": "안개 마을",
+      "crop": "mist_shroom",
+      "ore": "ore_peat",
+      "fish": "fish_swamp_snakehead",
+      "seed": "seeds_mist_shroom",
+      "seedPrice": 75
+    },
+    "ember": {
+      "name": "잿빛 마을",
+      "crop": "spa_ginger",
+      "ore": "ore_flame",
+      "fish": "fish_onsen_carp",
+      "seed": "seeds_spa_ginger",
+      "seedPrice": 80
+    },
+    "pinecone": {
+      "name": "솔방울 마을",
+      "crop": "pine_carrot",
+      "ore": "ore_amber",
+      "fish": "fish_lenok",
+      "seed": "seeds_pine_carrot",
+      "seedPrice": 70
+    },
+    "lumina": {
+      "name": "빛누리 시티",
+      "crop": "glow_radish",
+      "ore": "ore_lumen",
+      "fish": "fish_neon_guppy",
+      "seed": "seeds_glow_radish",
+      "seedPrice": 95
+    },
+    "summit": {
+      "name": "별마루 마을",
+      "crop": "star_flower",
+      "ore": "ore_meteor",
+      "fish": "fish_star_minnow",
+      "seed": "seeds_star_flower",
+      "seedPrice": 115
+    },
+    "shell": {
+      "name": "조개 마을",
+      "crop": "sea_melon",
+      "ore": "ore_pearl",
+      "fish": "fish_azure_bream",
+      "seed": "seeds_sea_melon",
+      "seedPrice": 110
+    },
+    "sand": {
+      "name": "모래바람 마을",
+      "crop": "cactus_fruit",
+      "ore": "ore_desert_rose",
+      "fish": "fish_oasis_goby",
+      "seed": "seeds_cactus_fruit",
+      "seedPrice": 95
+    },
+    "canyon": {
+      "name": "바위골",
+      "crop": "cliff_sorghum",
+      "ore": "ore_jasper",
+      "fish": "fish_torrent_perch",
+      "seed": "seeds_cliff_sorghum",
+      "seedPrice": 85
+    },
+    "moon": {
+      "name": "달맞이 마을",
+      "crop": "moon_primrose",
+      "ore": "ore_moonstone",
+      "fish": "fish_moon_hairtail",
+      "seed": "seeds_moon_primrose",
+      "seedPrice": 120
+    },
+    "frost": {
+      "name": "서리 마을",
+      "crop": "snow_turnip",
+      "ore": "ore_cryolite",
+      "fish": "fish_ice_smelt",
+      "seed": "seeds_snow_turnip",
+      "seedPrice": 110
+    },
+    "crown": {
+      "name": "왕관 시티",
+      "crop": "golden_wheat",
+      "ore": "ore_crown_diamond",
+      "fish": "fish_golden_carp",
+      "seed": "seeds_golden_wheat",
+      "seedPrice": 150
+    }
+  },
+  "milestones": [
+    {
+      "pct": 10,
+      "count": 9,
+      "id": "ldex_10",
+      "title": "초보 채집가 (10%)",
+      "gold": 800,
+      "items": {
+        "quick_ball": 3,
+        "dish_onigiri": 2
+      }
+    },
+    {
+      "pct": 25,
+      "count": 23,
+      "id": "ldex_25",
+      "title": "지방 개척자 (25%)",
+      "gold": 2000,
+      "items": {
+        "hyper_ball": 5,
+        "super_potion": 3
+      }
+    },
+    {
+      "pct": 50,
+      "count": 45,
+      "id": "ldex_50",
+      "title": "특산물 장인 (50%)",
+      "gold": 5000,
+      "items": {
+        "star_ball": 5,
+        "star_candy": 1
+      }
+    },
+    {
+      "pct": 75,
+      "count": 68,
+      "id": "ldex_75",
+      "title": "루미나 박물학자 (75%)",
+      "gold": 12000,
+      "items": {
+        "star_ball": 10,
+        "dish_champion_bento": 3,
+        "star_candy": 2
+      }
+    },
+    {
+      "pct": 100,
+      "count": 90,
+      "id": "ldex_100",
+      "title": "★ 대자연의 마스터 (100%)",
+      "gold": 30000,
+      "items": {
+        "origin_ball": 1,
+        "star_candy": 5
+      }
+    }
+  ]
+}

@@ -6,9 +6,21 @@ import { dexComplete, SKILLS, skillFor, CHAPTERS, CROPS, ENCOUNTERS, EVENTS, HAN
 import { BattleEngine, MAX_LEVEL, healAll, makeCreature, stats, syncPp, type BattleState } from './Battle';
 import {
   SoilState, INTERIOR_OF, isHomeMap, isInterior, isCasinoOpen, isPrisonMap, PRISON_FLOOR_LABEL, PRISON_NEXT_FLOOR, roomOf, BADGE_GATES, BOND_MAX, BOND_WATER, BOND_ASK_AT,
-  type ActionIntent, type ActionResult, type CasinoGame, type CasinoOutcome, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type MailGift, type MapId,
-  type PlacedObject, type PlayerNotice, type PlayerState, type SaveData, type TrainerDef, type WorldTime, type Weather, type BattleUpdate,
+  type ActionIntent, type ActionResult, type CasinoGame, type CasinoOutcome, type Dish, type FarmSnapshot, type FarmTile, type ForageSpot, type InventorySlot, type LifeDexCat, type LifeDexState, type MailGift, type MapId,
+  type PlacedObject, type PlayerNotice, type PlayerState, type SaveData, type Season, type TrainerDef, type WorldTime, type Weather, type BattleUpdate,
 } from '../types';
+import {
+  MORNING_FOOD,
+  canGrowCropAt,
+  claimableMilestone,
+  consumeFoodItem,
+  ensureLifeDex,
+  foodStatusOf,
+  registerLifeDex,
+  rollRegionalMineralDrops,
+  stepHungerTick,
+  syncAutoRecipes,
+} from './lifeDex';
 import { ADMIN_DEFAULT_CASH_KRW, BM_ALL_TOTAL_KRW, BM_LOOK_IDS, BM_PRODUCT_MAP, CHAT_BUBBLES, LUMI_COORDS, UI_THEMES, isBmUnlocked, isValidPlayerLook, remainingBmCostKrw } from '../bmShop';
 import { MapInfo, prop } from './MapInfo';
 import { RIVAL_PICK, STORY, rivalOf } from '../story';
@@ -66,7 +78,9 @@ export type SimEvent =
   | { type: 'prisonLabor'; playerId: string; slabs: number; planks: number; goal: number }
   | { type: 'karma'; playerId: string; evilStack: number; momLeft: boolean; pendingHomecoming?: 'honest' | 'mom_returned' | ''; lastHelpedNpc?: string }
   | { type: 'notices'; playerId: string; notices: PlayerNotice[] }
-  | { type: 'mute'; playerId: string; muteRemainingSec: number };
+  | { type: 'mute'; playerId: string; muteRemainingSec: number }
+  | { type: 'lifeDex'; playerId: string; lifeDex: LifeDexState; lifeDexClaims: string[]; added?: { id: string; cat: LifeDexCat; name: string; first: boolean; total: number } }
+  | { type: 'hunger'; playerId: string; food: number; hungerOff: boolean; peckishAlert?: boolean };
 
 type Listener = (e: SimEvent) => void;
 interface FarmState { owner: string; /** 마을 텃밭이면 그 마을 */ map?: MapId; tiles: Map<string, FarmTile>; removed: Set<number>; placed: Map<string, PlacedObject>; dish: Dish | null }
@@ -239,6 +253,10 @@ export class FarmSimulation {
         lastHelpedNpc: save.lastHelpedNpc,
         muteRemainingSec: typeof save.muteRemainingSec === 'number' && Number.isFinite(save.muteRemainingSec) ? Math.max(0, save.muteRemainingSec) : 0,
         notices: Array.isArray(save.notices) ? save.notices.slice(0, 40) : [],
+        lifeDex: save.lifeDex ? JSON.parse(JSON.stringify(save.lifeDex)) : undefined,
+        lifeDexClaims: Array.isArray(save.lifeDexClaims) ? [...new Set(save.lifeDexClaims)] : [],
+        food: typeof save.food === 'number' && Number.isFinite(save.food) ? Math.max(0, Math.min(100, Math.round(save.food))) : undefined,
+        hungerOff: !!save.hungerOff,
       });
       migrateBag(p.bag);
       if (save.inventory?.length) {
@@ -254,6 +272,8 @@ export class FarmSimulation {
         });
       }
     }
+    ensureLifeDex(p, !!save);
+    syncAutoRecipes(p);
     this.players.set(id, p);
     this.ensureFarm(id, save?.farm);
     for (const [m, tiles] of Object.entries(save?.plots ?? {})) if (this.maps[m]?.farmZones.length) { const f = this.plotOf(id, m); for (const t of tiles) f.tiles.set(`${t.x},${t.y}`, cloneTile(t)); }
@@ -316,6 +336,10 @@ export class FarmSimulation {
       lastHelpedNpc: p.lastHelpedNpc,
       muteRemainingSec: Math.max(0, Math.round(p.muteRemainingSec ?? 0)),
       notices: p.notices ?? [],
+      lifeDex: p.lifeDex,
+      lifeDexClaims: p.lifeDexClaims ?? [],
+      food: p.food ?? 80,
+      hungerOff: !!p.hungerOff,
       plots: Object.fromEntries([...this.plots.values()].filter((pl) => pl.owner === id && pl.tiles.size).map((pl) => [pl.map!, [...pl.tiles.values()]])),
       pos: { map: p.map, inst: p.inst, x: p.x, y: p.y, dir: p.dir, ret: p.ret }, savedAt: Date.now(),
     } satisfies SaveData)) as SaveData;
@@ -417,6 +441,18 @@ export class FarmSimulation {
       this.acc -= MS_PER_10_MIN;
       this.time.minutes += 10;
       this.emit({ type: 'time', time: { ...this.time } });
+      if (this.time.minutes % 30 === 0) {
+        for (const p of this.players.values()) {
+          const outdoor = !isInterior(p.map) && p.map !== 'farm';
+          const hr = stepHungerTick(p, outdoor);
+          if (hr.changed) {
+            this.emit({ type: 'hunger', playerId: p.id, food: p.food ?? 80, hungerOff: !!p.hungerOff, peckishAlert: hr.becamePeckish });
+            if (hr.becamePeckish) {
+              this.emit({ type: 'toast', playerId: p.id, text: '🍙 꼬르륵… 배가 출출해졌어요! 도시락이나 음식을 먹어 보세요.', icon: 'food_bowl' });
+            }
+          }
+        }
+      }
       if (this.time.minutes >= DAY_END) { this.emit({ type: 'toast', text: '새벽이 지나 새 아침이 밝았어요. (잠을 자면 체력이 회복돼요)', icon: 'sun' }); this.newDay(false, false); }
     }
   }
@@ -448,9 +484,21 @@ export class FarmSimulation {
   /** relocate: 모두 집 앞으로 · rest: 체력/루미 회복 (잠을 잤을 때만) */
   newDay(relocate = true, rest = true) {
     const weather: Weather = this.rand() < 0.25 ? 'rain' : 'sunny';
-    this.time = { day: this.time.day + 1, minutes: DAY_START, season: this.time.season, weather };
-    if (this.time.day > 28) this.time.day = 1;
+    const seasons: Season[] = ['spring', 'summer', 'fall', 'winter'];
+    let nextDay = this.time.day + 1;
+    let nextSeason = this.time.season;
+    if (nextDay > 28) {
+      nextDay = 1;
+      nextSeason = seasons[(seasons.indexOf(this.time.season) + 1) % seasons.length];
+    }
+    this.time = { day: nextDay, minutes: DAY_START, season: nextSeason, weather };
     this.acc = 0;
+    if (rest) {
+      for (const p of this.players.values()) {
+        p.food = Math.max(p.food ?? 0, MORNING_FOOD);
+        this.emit({ type: 'hunger', playerId: p.id, food: p.food, hungerOff: !!p.hungerOff });
+      }
+    }
     // 작물 성장 (전날 물 준 칸만) — 메모리에 있는 모든 농장
     for (const f of [...this.farms.values(), ...this.plots.values()]) {
       for (const t of [...f.tiles.values()]) {
@@ -636,6 +684,8 @@ export class FarmSimulation {
       case 'prisonEscape': return this.prisonEscape(p);
       case 'completeHomecoming': return this.completeHomecoming(p);
       case 'goodDeed': return this.goodDeed(p, a.npc);
+      case 'claimDexMilestone': return this.claimDexMilestone(p, a.milestoneId);
+      case 'setHungerMode': return this.setHungerMode(p, a.off);
     }
     return { ok: false, reason: 'unknown' };
   }
@@ -1178,6 +1228,7 @@ export class FarmSimulation {
   private craft(p: PlayerState, recipeId: string, times: number): ActionResult {
     const r = RECIPES[recipeId];
     if (!r) return { ok: false, reason: 'no-recipe' };
+    syncAutoRecipes(p);
     if (!p.recipes.includes(r.id)) return { ok: false, reason: 'unknown-recipe' };
     times = Math.max(1, Math.min(20, Math.floor(times) || 1));
     for (const [it, n] of Object.entries(r.in)) {
@@ -1470,13 +1521,86 @@ export class FarmSimulation {
     const item = ITEMS[d.item];
     const gain = Math.max(15, Math.round((item.energy ?? item.sellPrice * 0.6) * 0.8));
     p.energy = Math.min(p.maxEnergy, p.energy + gain);
+    const { healedCount } = consumeFoodItem(p, item);
     d.servings--;
     if (d.servings <= 0) f.dish = null;
     this.changed(p);
+    if (healedCount > 0) this.emitParty(p);
+    this.emit({ type: 'hunger', playerId: p.id, food: p.food ?? 80, hungerOff: !!p.hungerOff });
     this.emit({ type: 'dish', room: this.room(p), dish: f.dish });
     this.emit({ type: 'emote', playerId: p.id, room: this.room(p), emote: 5 });
-    this.emit({ type: 'toast', room: this.room(p), text: `${p.name}님이 ${item.name}을(를) 맛있게 먹었어요!`, icon: 'energy' });
+    this.emit({ type: 'toast', room: this.room(p), text: `${p.name}님이 ${item.name}을(를) 맛있게 먹었어요!`, icon: 'food_bowl' });
     return { ok: true, anim: 'interact' };
+  }
+
+  private recordDex(p: PlayerState, itemId: string, qty = 1) {
+    const res = registerLifeDex(p, itemId, qty);
+    if (!res) return;
+    this.emit({
+      type: 'lifeDex',
+      playerId: p.id,
+      lifeDex: JSON.parse(JSON.stringify(p.lifeDex)),
+      lifeDexClaims: [...(p.lifeDexClaims ?? [])],
+      added: { id: res.entry.id, cat: res.entry.cat, name: res.entry.name, first: res.first, total: res.total },
+    });
+    if (res.first) {
+      const catKo = res.entry.cat === 'farm' ? '농사 도감' : res.entry.cat === 'mine' ? '채광 도감' : '낚시 도감';
+      this.emit({
+        type: 'toast',
+        playerId: p.id,
+        text: `📖 [${catKo} 신규 등록!] ${res.entry.name} (${res.total}/90)`,
+        icon: itemId,
+      });
+    }
+  }
+
+  private claimDexMilestone(p: PlayerState, milestoneId: string): ActionResult {
+    const check = claimableMilestone(p, milestoneId);
+    if (!check.ok) return { ok: false, reason: check.reason };
+    const m = check.milestone;
+    for (const [it, q] of Object.entries(m.items)) {
+      if (ITEMS[it] && ITEMS[it].type !== 'battle') {
+        const free = p.inventory.some((s) => !s.itemId || (s.itemId === it && s.quantity + q <= ITEMS[it].maxStack));
+        if (!free) {
+          this.emit({ type: 'toast', playerId: p.id, text: '보상을 받을 가방 공간이 부족해요! 한두 칸을 비운 뒤 다시 받아 주세요.' });
+          return { ok: false, reason: 'full' };
+        }
+      }
+    }
+    (p.lifeDexClaims ??= []).push(m.id);
+    if (m.gold > 0) this.setGold(p, m.gold);
+    const rewardNames: string[] = m.gold > 0 ? [`${m.gold.toLocaleString()}G`] : [];
+    for (const [it, q] of Object.entries(m.items)) {
+      if (this.addItem(p, it, q)) rewardNames.push(`${ITEMS[it].name} ×${q}`);
+    }
+    this.changed(p);
+    this.emitParty(p);
+    this.emit({
+      type: 'lifeDex',
+      playerId: p.id,
+      lifeDex: JSON.parse(JSON.stringify(p.lifeDex)),
+      lifeDexClaims: [...p.lifeDexClaims],
+    });
+    this.emit({
+      type: 'toast',
+      playerId: p.id,
+      text: `🏆 ${m.title} 보상 수령! (${rewardNames.join(' · ')})`,
+      icon: 'star_ball',
+    });
+    return { ok: true };
+  }
+
+  private setHungerMode(p: PlayerState, off: boolean): ActionResult {
+    p.hungerOff = !!off;
+    if (p.hungerOff && (p.food ?? 80) < 60) p.food = 80;
+    this.emit({ type: 'hunger', playerId: p.id, food: p.food ?? 80, hungerOff: p.hungerOff });
+    this.emit({
+      type: 'toast',
+      playerId: p.id,
+      text: p.hungerOff ? '🍙 편한 모드 켜짐: 포만감이 줄어들지 않아요.' : '🍙 생존 보급 모드 켜짐: 야외 모험 시 도시락으로 포만감을 챙기세요!',
+      icon: 'food_bowl',
+    });
+    return { ok: true };
   }
 
   // ── 농사 ───────────────────────────────────────────
@@ -1513,7 +1637,7 @@ export class FarmSimulation {
     const tile = f.tiles.get(`${tx},${ty}`);
     if (!tile || tile.crop) return { ok: false, reason: 'no-soil' };
     const crop = CROPS[item.cropId];
-    if (!crop.seasons.includes(this.time.season)) { this.emit({ type: 'toast', playerId: p.id, text: `${crop.name}은(는) 지금 계절에 자라지 않아요.` }); return { ok: false, reason: 'season' }; }
+    if (!canGrowCropAt(crop.id, p.map, this.time.season)) { this.emit({ type: 'toast', playerId: p.id, text: `${crop.name}은(는) 지금 계절에 이 밭에서 자라지 않아요. (본고장 텃밭에서는 언제든 재배 가능!)` }); return { ok: false, reason: 'season' }; }
     tile.crop = { id: crop.id, stage: 0, daysInStage: 0 };
     s.quantity--; if (s.quantity <= 0) { s.itemId = null; s.quantity = 0; }
     this.tileEmit(f, tile); this.changed(p);
@@ -1532,6 +1656,7 @@ export class FarmSimulation {
     else tile.crop = null;
     this.tileEmit(f, tile); this.changed(p);
     this.emit({ type: 'toast', playerId: p.id, text: `${ITEMS[def.harvestItem].name} ×${qty} 수확!`, icon: def.harvestItem });
+    this.recordDex(p, def.harvestItem, qty);
     return { ok: true, anim: 'interact' };
   }
 
@@ -1729,8 +1854,12 @@ export class FarmSimulation {
     if (!item || item.type !== 'food') return { ok: false, reason: 'not-food' };
     if (item.id === 'star_candy') return this.useCandy(p, 0);
     s.quantity--; if (s.quantity <= 0) { s.itemId = null; s.quantity = 0; }
+    const { foodGain, healedCount } = consumeFoodItem(p, item);
     this.changed(p);
-    this.emit({ type: 'toast', playerId: p.id, text: `${item.name}을(를) 먹었어요. 맛있다!`, icon: 'energy' });
+    if (healedCount > 0) this.emitParty(p);
+    this.emit({ type: 'hunger', playerId: p.id, food: p.food ?? 80, hungerOff: !!p.hungerOff });
+    const bonusTxt = healedCount > 0 ? ` · 파티 루미 체력 회복!` : '';
+    this.emit({ type: 'toast', playerId: p.id, text: `🍙 ${item.name}을(를) 먹었어요! (포만감 +${foodGain} → ${p.food}/100${bonusTxt})`, icon: item.icon });
     return { ok: true, anim: 'interact' };
   }
 
@@ -2013,7 +2142,7 @@ export class FarmSimulation {
   private collect(p: PlayerState, map: string): ActionResult {
     const st = p.stock?.[map]; if (!st || p.map !== map) return { ok: false, reason: 'empty' };
     let got = 0;
-    for (const [it, n] of Object.entries(st)) { if (!ITEMS[it] || !this.addItem(p, it, n)) continue; got += n; delete st[it]; }
+    for (const [it, n] of Object.entries(st)) { if (!ITEMS[it] || !this.addItem(p, it, n)) continue; got += n; this.recordDex(p, it, n); delete st[it]; }
     if (!Object.keys(st).length) delete p.stock![map];
     this.changed(p); this.emitParty(p);
     if (!got) { this.emit({ type: 'toast', playerId: p.id, text: '가방이 가득 찼어요!' }); return { ok: false, reason: 'full' }; }
@@ -2216,6 +2345,10 @@ export class FarmSimulation {
         if (tr.badge && !p.badges.includes(tr.badge)) {
           p.badges.push(tr.badge); up.log.push({ t: 'text', text: `${ITEMS[tr.badge].name}을(를) 받았다!` });
           for (const sk of Object.values(SKILLS)) if (sk.badge === tr.badge) up.log.push({ t: 'text', text: `이제 필드에서 비전 기술 「${sk.name}」을(를) 쓸 수 있다! (${sk.look.replace(/\.$/, '')} 앞에서 E)` });
+          const newRecipes = syncAutoRecipes(p);
+          if (newRecipes.length) {
+            up.log.push({ t: 'text', text: `🍳 새 요리 · 제작법 해금: ${newRecipes.map((rid) => ITEMS[RECIPES[rid].out]?.name ?? rid).join(', ')}!` });
+          }
         }
         if (st.trainerId === 'champion' && first) up.log.push({ t: 'text', text: '축하합니다! 루미 리그 챔피언이 되었다 — 이제 당신이 루미 마스터!' }, { t: 'text', text: '(별마루산 꼭대기 별의 제단에서 무언가가 기다리고 있다…)' });
         if (st.trainerId === 'champion_ex' && first) {
@@ -2261,11 +2394,18 @@ export class FarmSimulation {
       this.battles.set(p.id, state);
       return { ok: true, battle: update };
     }
-    // 낚시형 파트너: 희귀 물고기 가중치 2배
-    const [item] = this.pick(table.items, ([id, w]) => (fishHelp && ITEMS[id].sellPrice >= 90 ? w * 2 : w));
+    // 낚시형 파트너 · 든든함 버프: 희귀/특산 물고기 가중치 보너스
+    const wellFed = foodStatusOf(p).wellFed;
+    const [item] = this.pick(table.items, ([id, w]) => {
+      let mult = 1;
+      if (fishHelp && ITEMS[id].sellPrice >= 90) mult *= 2;
+      if (wellFed && ITEMS[id].sellPrice >= 80) mult *= 1.35;
+      return w * mult;
+    });
     if (!this.addItem(p, item, 1)) { this.emit({ type: 'toast', playerId: p.id, text: '가방이 가득 찼어요!' }); return { ok: false, reason: 'full' }; }
     this.changed(p);
     this.emit({ type: 'toast', playerId: p.id, text: `${ITEMS[item].name}을(를) 낚았다!`, icon: item });
+    this.recordDex(p, item, 1);
     if (fishHelp) this.help(p, `${SPECIES[p.party[0].species].name}이(가) 물고기 냄새를 맡고 도와줬어요!`);
     return { ok: true, data: { item, qty: 1 } };
   }
@@ -2292,15 +2432,28 @@ export class FarmSimulation {
     if (!this.spend(p, Math.max(1, (mineHelp ? 2 : 3) - (pickPower >= 3 ? 1 : 0)))) return { ok: false, reason: 'tired' };
     this.wear(p, pick);
     const got: string[] = [];
+    const gotIds: [string, number][] = [];
     for (const [item, lo, hi, chance] of table) {
       if (this.rand() * 100 > chance) continue;
       const qty = lo + Math.floor(this.rand() * (hi - lo + 1)) + (mineHelp && item !== 'stone' ? 1 : 0) + (pickPower >= 2 && item !== 'stone' && this.rand() < 0.3 * (pickPower - 1) ? 1 : 0);
-      if (this.addItem(p, item, qty)) got.push(`${ITEMS[item].name} ×${qty}`);
+      if (this.addItem(p, item, qty)) {
+        got.push(`${ITEMS[item].name} ×${qty}`);
+        gotIds.push([item, qty]);
+      }
+    }
+    // 지역 특산 광물 · 석탄 추가 산출
+    const regDrops = rollRegionalMineralDrops(p.map, pickPower, mineHelp, foodStatusOf(p).wellFed, () => this.rand());
+    for (const rd of regDrops) {
+      if (this.addItem(p, rd.item, rd.qty)) {
+        got.push(`✨${ITEMS[rd.item].name} ×${rd.qty}`);
+        gotIds.push([rd.item, rd.qty]);
+      }
     }
     if (f) f.removed.add(objectId); else { this.removed.add(key); this.oreBack.set(key, Date.now() + ORE_RESPAWN_MS); }
     this.emit({ type: 'objectRemoved', key, owner: f?.owner });
     this.changed(p);
-    if (got.length) this.emit({ type: 'toast', playerId: p.id, text: `${got.join(', ')} 획득!`, icon: (ENCOUNTERS.ore[kind]?.[0]?.[0]) ?? 'stone' });
+    if (got.length) this.emit({ type: 'toast', playerId: p.id, text: `${got.join(', ')} 획득!`, icon: gotIds[gotIds.length - 1]?.[0] ?? 'stone' });
+    for (const [gid, gqty] of gotIds) this.recordDex(p, gid, gqty);
     if (mineHelp) this.help(p, `${SPECIES[p.party[0].species].name}이(가) 바위를 달궈 광석을 더 캐냈어요!`);
     return { ok: true, anim: 'pick' };
   }

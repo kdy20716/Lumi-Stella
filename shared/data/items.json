@@ -182,7 +182,9 @@
     "sellPrice": 25,
     "maxStack": 20,
     "energy": 45,
-    "description": "사용하면 에너지 +45. 루나 카페의 향긋한 드립 커피."
+    "description": "포만감 +12 · 파티 체력 +10. 루나 카페의 향긋한 드립 커피.",
+    "food": 12,
+    "partyHeal": 10
   },
   "bread": {
     "id": "bread",
@@ -192,7 +194,9 @@
     "sellPrice": 40,
     "maxStack": 20,
     "energy": 90,
-    "description": "사용하면 에너지 +90. 겉은 바삭, 속은 촉촉."
+    "description": "포만감 +32 · 파티 체력 +15. 겉은 바삭, 속은 촉촉한 갓 구운 빵.",
+    "food": 32,
+    "partyHeal": 15
   },
   "cake": {
     "id": "cake",
@@ -202,7 +206,9 @@
     "sellPrice": 75,
     "maxStack": 20,
     "energy": 180,
-    "description": "사용하면 에너지 +180. 특별한 날을 위한 케이크."
+    "description": "포만감 +55 · 파티 체력 +35. 달콤한 생크림이 듬뿍 올라간 딸기 케이크.",
+    "food": 55,
+    "partyHeal": 35
   },
   "pickaxe": {
     "id": "pickaxe",
@@ -389,8 +395,10 @@
     "icon": "berry",
     "sellPrice": 25,
     "maxStack": 99,
-    "description": "사용하면 에너지 +25. 길가에서 딴 새콤한 열매.",
-    "energy": 25
+    "description": "포만감 +10 · 파티 체력 +5. 길가에서 딴 새콤달콤 산딸기.",
+    "energy": 25,
+    "food": 10,
+    "partyHeal": 5
   },
   "wild_mushroom": {
     "id": "wild_mushroom",
@@ -417,8 +425,10 @@
     "icon": "herb",
     "sellPrice": 35,
     "maxStack": 99,
-    "description": "사용하면 에너지 +40. 쌉싸름한 들풀.",
-    "energy": 40
+    "description": "포만감 +8 · 파티 체력 +10. 쌉싸름하지만 기운이 나는 들풀.",
+    "energy": 40,
+    "food": 8,
+    "partyHeal": 10
   },
   "stone": {
     "id": "stone",
@@ -938,7 +948,9 @@
     "sellPrice": 0,
     "maxStack": 99,
     "energy": 120,
-    "description": "엄마가 정성껏 준비해 준 따뜻한 하얀 두부 한 모. 먹으면 마음이 포근해지고 기운이 가득 솟아난다."
+    "description": "포만감 +65 · 파티 체력 +50. 엄마의 따뜻한 마음이 담긴 하얀 두부 한 모.",
+    "food": 65,
+    "partyHeal": 50
   },
   "stone_slab": {
     "id": "stone_slab",
@@ -957,5 +969,1030 @@
     "sellPrice": 0,
     "maxStack": 999,
     "description": "교도소 노역장에서 나무 5개를 깎아 만든 매끈한 나무판. 100개를 납품하면 성실 석방 조건을 채울 수 있다."
+  },
+  "seeds_wind_wheat": {
+    "id": "seeds_wind_wheat",
+    "name": "바람밀 씨앗",
+    "type": "seed",
+    "cropId": "wind_wheat",
+    "icon": "seeds_wind_wheat",
+    "sellPrice": 15,
+    "maxStack": 99,
+    "description": "[바람골 마을 특산] 4일이면 자랍니다."
+  },
+  "wind_wheat": {
+    "id": "wind_wheat",
+    "name": "바람밀",
+    "type": "crop",
+    "icon": "wind_wheat",
+    "sellPrice": 48,
+    "maxStack": 99,
+    "description": "산들바람을 맞으며 자라는 고소한 황금빛 밀. 주먹밥과 도시락의 기본 재료."
+  },
+  "seeds_salt_cabbage": {
+    "id": "seeds_salt_cabbage",
+    "name": "소금꽃 배추 씨앗",
+    "type": "seed",
+    "cropId": "salt_cabbage",
+    "icon": "seeds_salt_cabbage",
+    "sellPrice": 25,
+    "maxStack": 99,
+    "description": "[물결항 특산] 5일이면 자랍니다."
+  },
+  "salt_cabbage": {
+    "id": "salt_cabbage",
+    "name": "소금꽃 배추",
+    "type": "crop",
+    "icon": "salt_cabbage",
+    "sellPrice": 85,
+    "maxStack": 99,
+    "description": "바닷바람의 미네랄을 머금어 잎끝에 하얀 소금꽃이 맺힌 아삭한 배추."
+  },
+  "seeds_maple_sweet": {
+    "id": "seeds_maple_sweet",
+    "name": "단풍 고구마 씨앗",
+    "type": "seed",
+    "cropId": "maple_sweet",
+    "icon": "seeds_maple_sweet",
+    "sellPrice": 25,
+    "maxStack": 99,
+    "description": "[단풍골 특산] 5일이면 자랍니다."
+  },
+  "maple_sweet": {
+    "id": "maple_sweet",
+    "name": "단풍 고구마",
+    "type": "crop",
+    "icon": "maple_sweet",
+    "sellPrice": 72,
+    "maxStack": 99,
+    "description": "단풍잎처럼 붉은 껍질 속에 꿀처럼 달콤한 노란 속살이 꽉 찬 고구마."
+  },
+  "seeds_cloud_cotton": {
+    "id": "seeds_cloud_cotton",
+    "name": "구름 목화 씨앗",
+    "type": "seed",
+    "cropId": "cloud_cotton",
+    "icon": "seeds_cloud_cotton",
+    "sellPrice": 30,
+    "maxStack": 99,
+    "description": "[꽃구름 마을 특산] 6일이면 자랍니다, 수확 후 3일마다 재수확."
+  },
+  "cloud_cotton": {
+    "id": "cloud_cotton",
+    "name": "구름 목화",
+    "type": "crop",
+    "icon": "cloud_cotton",
+    "sellPrice": 95,
+    "maxStack": 99,
+    "description": "꽃구름 마을 들판에서 뭉게구름처럼 폭신하게 피어나는 하얀 목화솜."
+  },
+  "seeds_iron_potato": {
+    "id": "seeds_iron_potato",
+    "name": "무쇠 감자 씨앗",
+    "type": "seed",
+    "cropId": "iron_potato",
+    "icon": "seeds_iron_potato",
+    "sellPrice": 30,
+    "maxStack": 99,
+    "description": "[쇳불 도시 특산] 6일이면 자랍니다."
+  },
+  "iron_potato": {
+    "id": "iron_potato",
+    "name": "무쇠 감자",
+    "type": "crop",
+    "icon": "iron_potato",
+    "sellPrice": 88,
+    "maxStack": 99,
+    "description": "광산 지대의 미네랄 토양에서 단단하고 묵직하게 여문 영양 만점 감자."
+  },
+  "seeds_mist_shroom": {
+    "id": "seeds_mist_shroom",
+    "name": "안개 버섯 씨앗",
+    "type": "seed",
+    "cropId": "mist_shroom",
+    "icon": "seeds_mist_shroom",
+    "sellPrice": 35,
+    "maxStack": 99,
+    "description": "[안개 마을 특산] 5일이면 자랍니다, 수확 후 2일마다 재수확."
+  },
+  "mist_shroom": {
+    "id": "mist_shroom",
+    "name": "안개 버섯",
+    "type": "crop",
+    "icon": "mist_shroom",
+    "sellPrice": 105,
+    "maxStack": 99,
+    "description": "습한 안개를 먹고 은은한 보랏빛 포자를 피우는 향긋한 버섯."
+  },
+  "seeds_spa_ginger": {
+    "id": "seeds_spa_ginger",
+    "name": "온천 생강 씨앗",
+    "type": "seed",
+    "cropId": "spa_ginger",
+    "icon": "seeds_spa_ginger",
+    "sellPrice": 35,
+    "maxStack": 99,
+    "description": "[잿빛 마을 특산] 6일이면 자랍니다."
+  },
+  "spa_ginger": {
+    "id": "spa_ginger",
+    "name": "온천 생강",
+    "type": "crop",
+    "icon": "spa_ginger",
+    "sellPrice": 115,
+    "maxStack": 99,
+    "description": "화산 온천수의 지열을 품고 자라 한 입만 먹어도 몸이 데워지는 생강."
+  },
+  "seeds_pine_carrot": {
+    "id": "seeds_pine_carrot",
+    "name": "솔향 당근 씨앗",
+    "type": "seed",
+    "cropId": "pine_carrot",
+    "icon": "seeds_pine_carrot",
+    "sellPrice": 30,
+    "maxStack": 99,
+    "description": "[솔방울 마을 특산] 5일이면 자랍니다."
+  },
+  "pine_carrot": {
+    "id": "pine_carrot",
+    "name": "솔향 당근",
+    "type": "crop",
+    "icon": "pine_carrot",
+    "sellPrice": 98,
+    "maxStack": 99,
+    "description": "울창한 솔숲의 상쾌한 향기가 배어 있는 아삭하고 달콤한 당근."
+  },
+  "seeds_glow_radish": {
+    "id": "seeds_glow_radish",
+    "name": "빛무 씨앗",
+    "type": "seed",
+    "cropId": "glow_radish",
+    "icon": "seeds_glow_radish",
+    "sellPrice": 45,
+    "maxStack": 99,
+    "description": "[빛누리 시티 특산] 6일이면 자랍니다."
+  },
+  "glow_radish": {
+    "id": "glow_radish",
+    "name": "빛무",
+    "type": "crop",
+    "icon": "glow_radish",
+    "sellPrice": 145,
+    "maxStack": 99,
+    "description": "빛누리 시티 온실 화단에서 개량되어 밤에도 은은한 청록빛을 내는 무."
+  },
+  "seeds_star_flower": {
+    "id": "seeds_star_flower",
+    "name": "별꽃 씨앗",
+    "type": "seed",
+    "cropId": "star_flower",
+    "icon": "seeds_star_flower",
+    "sellPrice": 55,
+    "maxStack": 99,
+    "description": "[별마루 마을 특산] 7일이면 자랍니다, 수확 후 3일마다 재수확."
+  },
+  "star_flower": {
+    "id": "star_flower",
+    "name": "별꽃",
+    "type": "crop",
+    "icon": "star_flower",
+    "sellPrice": 175,
+    "maxStack": 99,
+    "description": "별마루 고원의 맑은 밤하늘 아래 다섯 갈래 별 모양으로 피어나는 약초꽃."
+  },
+  "seeds_sea_melon": {
+    "id": "seeds_sea_melon",
+    "name": "바다 멜론 씨앗",
+    "type": "seed",
+    "cropId": "sea_melon",
+    "icon": "seeds_sea_melon",
+    "sellPrice": 50,
+    "maxStack": 99,
+    "description": "[조개 마을 특산] 7일이면 자랍니다."
+  },
+  "sea_melon": {
+    "id": "sea_melon",
+    "name": "바다 멜론",
+    "type": "crop",
+    "icon": "sea_melon",
+    "sellPrice": 210,
+    "maxStack": 99,
+    "description": "푸른 파도 무늬 껍질 속에 시원하고 달콤한 과즙이 가득한 해변 멜론."
+  },
+  "seeds_cactus_fruit": {
+    "id": "seeds_cactus_fruit",
+    "name": "선인장 열매 씨앗",
+    "type": "seed",
+    "cropId": "cactus_fruit",
+    "icon": "seeds_cactus_fruit",
+    "sellPrice": 45,
+    "maxStack": 99,
+    "description": "[모래바람 마을 특산] 6일이면 자랍니다, 수확 후 3일마다 재수확."
+  },
+  "cactus_fruit": {
+    "id": "cactus_fruit",
+    "name": "선인장 열매",
+    "type": "crop",
+    "icon": "cactus_fruit",
+    "sellPrice": 150,
+    "maxStack": 99,
+    "description": "뜨거운 사막 태양 아래에서도 수분을 가득 머금고 열리는 선홍빛 열매."
+  },
+  "seeds_cliff_sorghum": {
+    "id": "seeds_cliff_sorghum",
+    "name": "바위 수수 씨앗",
+    "type": "seed",
+    "cropId": "cliff_sorghum",
+    "icon": "seeds_cliff_sorghum",
+    "sellPrice": 40,
+    "maxStack": 99,
+    "description": "[바위골 특산] 6일이면 자랍니다."
+  },
+  "cliff_sorghum": {
+    "id": "cliff_sorghum",
+    "name": "바위 수수",
+    "type": "crop",
+    "icon": "cliff_sorghum",
+    "sellPrice": 110,
+    "maxStack": 99,
+    "description": "척박한 협곡 바람을 이겨내고 붉은 이삭을 틔우는 차지고 고소한 수수."
+  },
+  "seeds_moon_primrose": {
+    "id": "seeds_moon_primrose",
+    "name": "달맞이꽃 씨앗",
+    "type": "seed",
+    "cropId": "moon_primrose",
+    "icon": "seeds_moon_primrose",
+    "sellPrice": 55,
+    "maxStack": 99,
+    "description": "[달맞이 마을 특산] 7일이면 자랍니다, 수확 후 3일마다 재수확."
+  },
+  "moon_primrose": {
+    "id": "moon_primrose",
+    "name": "달맞이꽃",
+    "type": "crop",
+    "icon": "moon_primrose",
+    "sellPrice": 180,
+    "maxStack": 99,
+    "description": "달빛이 비치면 보랏빛 꽃잎이 활짝 열리는 신비로운 해안 야생화."
+  },
+  "seeds_snow_turnip": {
+    "id": "seeds_snow_turnip",
+    "name": "설원 순무 씨앗",
+    "type": "seed",
+    "cropId": "snow_turnip",
+    "icon": "seeds_snow_turnip",
+    "sellPrice": 50,
+    "maxStack": 99,
+    "description": "[서리 마을 특산] 6일이면 자랍니다."
+  },
+  "snow_turnip": {
+    "id": "snow_turnip",
+    "name": "설원 순무",
+    "type": "crop",
+    "icon": "snow_turnip",
+    "sellPrice": 165,
+    "maxStack": 99,
+    "description": "얼어붙은 눈밭 아래에서 추위를 견디며 당도를 끌어올린 새하얀 순무."
+  },
+  "seeds_golden_wheat": {
+    "id": "seeds_golden_wheat",
+    "name": "황금 밀 씨앗",
+    "type": "seed",
+    "cropId": "golden_wheat",
+    "icon": "seeds_golden_wheat",
+    "sellPrice": 70,
+    "maxStack": 99,
+    "description": "[왕관 시티 특산] 7일이면 자랍니다."
+  },
+  "golden_wheat": {
+    "id": "golden_wheat",
+    "name": "황금 밀",
+    "type": "crop",
+    "icon": "golden_wheat",
+    "sellPrice": 230,
+    "maxStack": 99,
+    "description": "루미 리그 챔피언의 식탁에 오르는 최고급 황금빛 밀 이삭."
+  },
+  "seeds_dawn_lotus": {
+    "id": "seeds_dawn_lotus",
+    "name": "새벽 연꽃 씨앗",
+    "type": "seed",
+    "cropId": "dawn_lotus",
+    "icon": "seeds_dawn_lotus",
+    "sellPrice": 80,
+    "maxStack": 99,
+    "description": "[새벽호수 비경] 7일이면 자랍니다."
+  },
+  "dawn_lotus": {
+    "id": "dawn_lotus",
+    "name": "새벽 연꽃",
+    "type": "crop",
+    "icon": "dawn_lotus",
+    "sellPrice": 280,
+    "maxStack": 99,
+    "description": "새벽호수의 물안개 기운을 머금고 피어나는 영롱한 분홍 연꽃."
+  },
+  "seeds_sunset_berry": {
+    "id": "seeds_sunset_berry",
+    "name": "노을 딸기 씨앗",
+    "type": "seed",
+    "cropId": "sunset_berry",
+    "icon": "seeds_sunset_berry",
+    "sellPrice": 80,
+    "maxStack": 99,
+    "description": "[노을호수 비경] 6일이면 자랍니다, 수확 후 3일마다 재수확."
+  },
+  "sunset_berry": {
+    "id": "sunset_berry",
+    "name": "노을 딸기",
+    "type": "crop",
+    "icon": "sunset_berry",
+    "sellPrice": 240,
+    "maxStack": 99,
+    "description": "노을호수의 붉은 저녁놀을 닮아 새콤달콤한 향이 진동하는 희귀 딸기."
+  },
+  "seeds_moon_mint": {
+    "id": "seeds_moon_mint",
+    "name": "달빛 박하 씨앗",
+    "type": "seed",
+    "cropId": "moon_mint",
+    "icon": "seeds_moon_mint",
+    "sellPrice": 85,
+    "maxStack": 99,
+    "description": "[달빛호수 비경] 6일이면 자랍니다, 수확 후 2일마다 재수확."
+  },
+  "moon_mint": {
+    "id": "moon_mint",
+    "name": "달빛 박하",
+    "type": "crop",
+    "icon": "moon_mint",
+    "sellPrice": 250,
+    "maxStack": 99,
+    "description": "달빛호수 주변의 서늘한 냉기를 품어 머리가 맑아지는 은빛 박하."
+  },
+  "seeds_marsh_root": {
+    "id": "seeds_marsh_root",
+    "name": "늪 연근 씨앗",
+    "type": "seed",
+    "cropId": "marsh_root",
+    "icon": "seeds_marsh_root",
+    "sellPrice": 75,
+    "maxStack": 99,
+    "description": "[늪지 대초원 비경] 7일이면 자랍니다."
+  },
+  "marsh_root": {
+    "id": "marsh_root",
+    "name": "늪 연근",
+    "type": "crop",
+    "icon": "marsh_root",
+    "sellPrice": 245,
+    "maxStack": 99,
+    "description": "깊은 늪지 진흙 속에서 영양분을 가득 저장한 아삭한 연근."
+  },
+  "seeds_paradise_rose": {
+    "id": "seeds_paradise_rose",
+    "name": "꽃구름 장미 씨앗",
+    "type": "seed",
+    "cropId": "paradise_rose",
+    "icon": "seeds_paradise_rose",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "[꽃구름 정원 비경] 7일이면 자랍니다, 수확 후 3일마다 재수확."
+  },
+  "paradise_rose": {
+    "id": "paradise_rose",
+    "name": "꽃구름 장미",
+    "type": "crop",
+    "icon": "paradise_rose",
+    "sellPrice": 290,
+    "maxStack": 99,
+    "description": "바다 건너 꽃구름 정원에서만 구할 수 있는 진한 향기의 보석 장미."
+  },
+  "seeds_fullmoon_bloom": {
+    "id": "seeds_fullmoon_bloom",
+    "name": "보름달꽃 씨앗",
+    "type": "seed",
+    "cropId": "fullmoon_bloom",
+    "icon": "seeds_fullmoon_bloom",
+    "sellPrice": 110,
+    "maxStack": 99,
+    "description": "[보름달섬 비경] 8일이면 자랍니다."
+  },
+  "fullmoon_bloom": {
+    "id": "fullmoon_bloom",
+    "name": "보름달꽃",
+    "type": "crop",
+    "icon": "fullmoon_bloom",
+    "sellPrice": 360,
+    "maxStack": 99,
+    "description": "보름달섬의 축복을 받아 둥근 만월처럼 환하게 빛나는 희귀 꽃."
+  },
+  "seeds_newmoon_truffle": {
+    "id": "seeds_newmoon_truffle",
+    "name": "그믐 버섯 씨앗",
+    "type": "seed",
+    "cropId": "newmoon_truffle",
+    "icon": "seeds_newmoon_truffle",
+    "sellPrice": 110,
+    "maxStack": 99,
+    "description": "[그믐달섬 비경] 8일이면 자랍니다."
+  },
+  "newmoon_truffle": {
+    "id": "newmoon_truffle",
+    "name": "그믐 버섯",
+    "type": "crop",
+    "icon": "newmoon_truffle",
+    "sellPrice": 380,
+    "maxStack": 99,
+    "description": "그믐달섬의 깊은 어둠 속에서만 자라나는 신비하고 진한 향의 송로버섯."
+  },
+  "coal": {
+    "id": "coal",
+    "name": "석탄",
+    "type": "material",
+    "icon": "coal",
+    "sellPrice": 25,
+    "maxStack": 99,
+    "description": "[산들길 · 광산 전역 광물] 화덕과 야외 요리에 두루 쓰이는 검은 연료석."
+  },
+  "ore_breeze": {
+    "id": "ore_breeze",
+    "name": "바람돌",
+    "type": "material",
+    "icon": "ore_breeze",
+    "sellPrice": 65,
+    "maxStack": 99,
+    "description": "[바람골 · 1번 도로 특산 광물] 가벼운 바람의 기운이 깃들어 있는 연옥빛 광석. 신속볼의 재료."
+  },
+  "ore_aqua_quartz": {
+    "id": "ore_aqua_quartz",
+    "name": "물빛 석영",
+    "type": "material",
+    "icon": "ore_aqua_quartz",
+    "sellPrice": 80,
+    "maxStack": 99,
+    "description": "[물결항 · 2번 도로 특산 광물] 파도처럼 투명한 푸른빛이 감도는 석영 결정. 물결볼의 재료."
+  },
+  "ore_maple_agate": {
+    "id": "ore_maple_agate",
+    "name": "단풍 마노",
+    "type": "material",
+    "icon": "ore_maple_agate",
+    "sellPrice": 85,
+    "maxStack": 99,
+    "description": "[단풍골 · 3번 도로 특산 광물] 가을 단풍잎 결이 그대로 굳어 만들어진 붉은 마노."
+  },
+  "ore_pink_quartz": {
+    "id": "ore_pink_quartz",
+    "name": "분홍 석영",
+    "type": "material",
+    "icon": "ore_pink_quartz",
+    "sellPrice": 95,
+    "maxStack": 99,
+    "description": "[꽃구름 마을 · 5~6번 도로 특산 광물] 꽃잎처럼 은은한 분홍빛을 띠는 아름다운 석영."
+  },
+  "ore_gold": {
+    "id": "ore_gold",
+    "name": "금광석",
+    "type": "material",
+    "icon": "ore_gold",
+    "sellPrice": 140,
+    "maxStack": 99,
+    "description": "[쇳불 도시 · 4번 도로 특산 광물] 묵직하고 눈부신 황금빛이 살아 있는 귀한 광석."
+  },
+  "ore_peat": {
+    "id": "ore_peat",
+    "name": "이탄",
+    "type": "material",
+    "icon": "ore_peat",
+    "sellPrice": 90,
+    "maxStack": 99,
+    "description": "[안개 마을 · 10~11번 도로 특산 광물] 오랜 세월 늪지 식물이 퇴적되어 만들어진 고열량 광물."
+  },
+  "ore_flame": {
+    "id": "ore_flame",
+    "name": "화염석",
+    "type": "material",
+    "icon": "ore_flame",
+    "sellPrice": 135,
+    "maxStack": 99,
+    "description": "[잿빛 마을 · 7번 도로 특산 광물] 만지기만 해도 따뜻한 화산의 열기가 응축된 붉은 돌. 불꽃볼의 재료."
+  },
+  "ore_amber": {
+    "id": "ore_amber",
+    "name": "호박석",
+    "type": "material",
+    "icon": "ore_amber",
+    "sellPrice": 120,
+    "maxStack": 99,
+    "description": "[솔방울 마을 · 12~13번 도로 특산 광물] 오래된 침엽수의 송진이 굳어 보석처럼 투명해진 황금 호박."
+  },
+  "ore_lumen": {
+    "id": "ore_lumen",
+    "name": "광휘석",
+    "type": "material",
+    "icon": "ore_lumen",
+    "sellPrice": 155,
+    "maxStack": 99,
+    "description": "[빛누리 시티 · 14·20번 도로 특산 광물] 스스로 네온처럼 찬란한 빛을 내뿜는 미래 도시의 희귀 광석."
+  },
+  "ore_meteor": {
+    "id": "ore_meteor",
+    "name": "운석 조각",
+    "type": "material",
+    "icon": "ore_meteor",
+    "sellPrice": 190,
+    "maxStack": 99,
+    "description": "[별마루 마을 · 27~28번 도로 특산 광물] 별마루산 기슭에 떨어진 별똥별의 파편. 신비한 자성을 띤다."
+  },
+  "ore_pearl": {
+    "id": "ore_pearl",
+    "name": "진주",
+    "type": "material",
+    "icon": "ore_pearl",
+    "sellPrice": 160,
+    "maxStack": 99,
+    "description": "[조개 마을 · 8번 도로 · 해신의 바다 특산 광물] 조개 바위 속에서 영롱한 무지갯빛 광택을 품고 자란 바다의 보석."
+  },
+  "ore_desert_rose": {
+    "id": "ore_desert_rose",
+    "name": "사막 장미석",
+    "type": "material",
+    "icon": "ore_desert_rose",
+    "sellPrice": 150,
+    "maxStack": 99,
+    "description": "[모래바람 마을 · 9·23번 도로 특산 광물] 모래와 바람이 장미꽃 모양으로 빚어낸 사막의 결정석."
+  },
+  "ore_jasper": {
+    "id": "ore_jasper",
+    "name": "벽옥",
+    "type": "material",
+    "icon": "ore_jasper",
+    "sellPrice": 145,
+    "maxStack": 99,
+    "description": "[바위골 · 15·17·29번 도로 특산 광물] 협곡의 깊은 암반층에서 캐내는 치밀하고 단단한 녹색 보석."
+  },
+  "ore_moonstone": {
+    "id": "ore_moonstone",
+    "name": "월장석",
+    "type": "material",
+    "icon": "ore_moonstone",
+    "sellPrice": 185,
+    "maxStack": 99,
+    "description": "[달맞이 마을 · 25~26번 도로 특산 광물] 은은한 달무리가 어른거리는 푸른 진주빛 원석. 달빛볼의 재료."
+  },
+  "ore_cryolite": {
+    "id": "ore_cryolite",
+    "name": "빙정석",
+    "type": "material",
+    "icon": "ore_cryolite",
+    "sellPrice": 180,
+    "maxStack": 99,
+    "description": "[서리 마을 · 16·18·19번 도로 특산 광물] 한여름에도 녹지 않는 얼음처럼 차갑고 투명한 결정."
+  },
+  "ore_crown_diamond": {
+    "id": "ore_crown_diamond",
+    "name": "왕관 금강석",
+    "type": "material",
+    "icon": "ore_crown_diamond",
+    "sellPrice": 280,
+    "maxStack": 99,
+    "description": "[왕관 시티 · 등대곶 · 21·24번 도로 특산 광물] 루미 리그 왕관 장식에 쓰이는 세상에서 가장 단단하고 눈부신 보석."
+  },
+  "ore_coral": {
+    "id": "ore_coral",
+    "name": "산호석",
+    "type": "material",
+    "icon": "ore_coral",
+    "sellPrice": 130,
+    "maxStack": 99,
+    "description": "[바다 동굴 희귀 광물] 바다 동굴 암벽에서 자라난 고운 다홍빛 산호 화석."
+  },
+  "ore_glow": {
+    "id": "ore_glow",
+    "name": "야광석",
+    "type": "material",
+    "icon": "ore_glow",
+    "sellPrice": 145,
+    "maxStack": 99,
+    "description": "[헤매는 동굴 희귀 광물] 칠흑 같은 동굴 어둠 속에서 연둣빛으로 반짝이는 발광 광석."
+  },
+  "ore_silver": {
+    "id": "ore_silver",
+    "name": "은광석",
+    "type": "material",
+    "icon": "ore_silver",
+    "sellPrice": 150,
+    "maxStack": 99,
+    "description": "[땅속 통로 희귀 광물] 땅속 통로 깊은 광맥에서 나오는 맑은 은빛 광석."
+  },
+  "ore_obsidian": {
+    "id": "ore_obsidian",
+    "name": "흑요석",
+    "type": "material",
+    "icon": "ore_obsidian",
+    "sellPrice": 195,
+    "maxStack": 99,
+    "description": "[불꽃산 희귀 광물] 용암이 급격히 식으며 유리처럼 매끄럽고 날카롭게 굳은 검은 돌."
+  },
+  "ore_raw_steel": {
+    "id": "ore_raw_steel",
+    "name": "무쇠 원석",
+    "type": "material",
+    "icon": "ore_raw_steel",
+    "sellPrice": 200,
+    "maxStack": 99,
+    "description": "[무쇠섬 갱도 희귀 광물] 무쇠섬 깊은 갱도에서만 산출되는 고순도 강철 원석."
+  },
+  "ore_cave_crystal": {
+    "id": "ore_cave_crystal",
+    "name": "동굴 수정",
+    "type": "material",
+    "icon": "ore_cave_crystal",
+    "sellPrice": 210,
+    "maxStack": 99,
+    "description": "[별마루산 동굴 희귀 광물] 별마루산 중심부에서 별빛을 머금고 자란 투명한 자수정 기둥."
+  },
+  "ore_permafrost": {
+    "id": "ore_permafrost",
+    "name": "만년빙 조각",
+    "type": "material",
+    "icon": "ore_permafrost",
+    "sellPrice": 205,
+    "maxStack": 99,
+    "description": "[얼음 굴 희귀 광물] 수천 년 동안 녹지 않고 푸른 냉기를 뿜어내는 얼음 굴의 결정."
+  },
+  "ore_victory": {
+    "id": "ore_victory",
+    "name": "승리의 원석",
+    "type": "material",
+    "icon": "ore_victory",
+    "sellPrice": 260,
+    "maxStack": 99,
+    "description": "[승리의 길 희귀 광물] 승리의 길을 돌파하는 도전자에게만 모습을 드러내는 타오르는 금빛 원석."
+  },
+  "ore_warp_crystal": {
+    "id": "ore_warp_crystal",
+    "name": "뒤틀린 결정",
+    "type": "material",
+    "icon": "ore_warp_crystal",
+    "sellPrice": 320,
+    "maxStack": 99,
+    "description": "[별마루산 미로 · 뒤집힌 세계 희귀 광물] 시공간의 경계에서 중력을 거스르며 일렁이는 기묘한 보랏빛 결정."
+  },
+  "fish_breeze_medaka": {
+    "id": "fish_breeze_medaka",
+    "name": "산들 송사리",
+    "type": "material",
+    "icon": "fish_breeze_medaka",
+    "sellPrice": 55,
+    "maxStack": 99,
+    "description": "[바람골 · 1번 도로 특산 어종] 바람골 개울가 수면 위를 가볍게 통통 튀어 오르는 민첩한 송사리."
+  },
+  "fish_silver_mackerel": {
+    "id": "fish_silver_mackerel",
+    "name": "은빛 고등어",
+    "type": "material",
+    "icon": "fish_silver_mackerel",
+    "sellPrice": 85,
+    "maxStack": 99,
+    "description": "[물결항 · 2번 도로 특산 어종] 물결항 앞바다를 무리 지어 가르는 등 푸르고 싱싱한 고등어."
+  },
+  "fish_yamame": {
+    "id": "fish_yamame",
+    "name": "계곡 산천어",
+    "type": "material",
+    "icon": "fish_yamame",
+    "sellPrice": 95,
+    "maxStack": 99,
+    "description": "[단풍골 · 3·31번 도로 특산 어종] 단풍골의 차고 맑은 계곡물에만 사는 붉은 무늬의 귀한 민물고기."
+  },
+  "fish_cherry_mullet": {
+    "id": "fish_cherry_mullet",
+    "name": "벚꽃 숭어",
+    "type": "material",
+    "icon": "fish_cherry_mullet",
+    "sellPrice": 100,
+    "maxStack": 99,
+    "description": "[꽃구름 마을 · 5번 도로 특산 어종] 꽃잎이 흩날리는 바닷가에서 잡혀 비늘에 분홍빛이 감도는 숭어."
+  },
+  "fish_mine_loach": {
+    "id": "fish_mine_loach",
+    "name": "광천 미꾸리",
+    "type": "material",
+    "icon": "fish_mine_loach",
+    "sellPrice": 105,
+    "maxStack": 99,
+    "description": "[쇳불 도시 · 4번 도로 특산 어종] 미네랄이 풍부한 광천수 물줄기에 사는 기운찬 수염 미꾸리."
+  },
+  "fish_swamp_snakehead": {
+    "id": "fish_swamp_snakehead",
+    "name": "늪 가물치",
+    "type": "material",
+    "icon": "fish_swamp_snakehead",
+    "sellPrice": 125,
+    "maxStack": 99,
+    "description": "[안개 마을 · 10·28번 도로 특산 어종] 안개 낀 습지 수초 사이에 숨어 지내는 묵직하고 힘센 가물치."
+  },
+  "fish_onsen_carp": {
+    "id": "fish_onsen_carp",
+    "name": "온천 잉어",
+    "type": "material",
+    "icon": "fish_onsen_carp",
+    "sellPrice": 130,
+    "maxStack": 99,
+    "description": "[잿빛 마을 · 6~7번 도로 특산 어종] 따뜻한 온천수가 섞여 흐르는 물가에서 여유롭게 헤엄치는 붉은 잉어."
+  },
+  "fish_lenok": {
+    "id": "fish_lenok",
+    "name": "열목어",
+    "type": "material",
+    "icon": "fish_lenok",
+    "sellPrice": 135,
+    "maxStack": 99,
+    "description": "[솔방울 마을 · 12·29번 도로 특산 어종] 깊은 숲속 차가운 상류 계곡에서만 만날 수 있는 황갈색 명품 어종."
+  },
+  "fish_neon_guppy": {
+    "id": "fish_neon_guppy",
+    "name": "네온 구피",
+    "type": "material",
+    "icon": "fish_neon_guppy",
+    "sellPrice": 145,
+    "maxStack": 99,
+    "description": "[빛누리 시티 · 11·14번 도로 특산 어종] 빛누리 시티 수로에서 네온사인처럼 화려한 지느러미를 뽐내는 물고기."
+  },
+  "fish_star_minnow": {
+    "id": "fish_star_minnow",
+    "name": "별빛 피라미",
+    "type": "material",
+    "icon": "fish_star_minnow",
+    "sellPrice": 165,
+    "maxStack": 99,
+    "description": "[별마루 마을 · 13·27번 도로 특산 어종] 밤하늘 별빛이 비늘마다 반짝이는 고산 지대의 신비로운 피라미."
+  },
+  "fish_azure_bream": {
+    "id": "fish_azure_bream",
+    "name": "쪽빛 도미",
+    "type": "material",
+    "icon": "fish_azure_bream",
+    "sellPrice": 160,
+    "maxStack": 99,
+    "description": "[조개 마을 · 8번 도로 특산 어종] 조개 마을의 산호초 바다에서 잡히는 선명한 쪽빛 참도미."
+  },
+  "fish_oasis_goby": {
+    "id": "fish_oasis_goby",
+    "name": "오아시스 망둥이",
+    "type": "material",
+    "icon": "fish_oasis_goby",
+    "sellPrice": 150,
+    "maxStack": 99,
+    "description": "[모래바람 마을 · 9·23번 도로 특산 어종] 사막 한가운데 오아시스 연못에서 강인한 생명력으로 살아가는 물고기."
+  },
+  "fish_torrent_perch": {
+    "id": "fish_torrent_perch",
+    "name": "급류 꺽지",
+    "type": "material",
+    "icon": "fish_torrent_perch",
+    "sellPrice": 155,
+    "maxStack": 99,
+    "description": "[바위골 · 15~17번 도로 특산 어종] 바위골의 거센 물살을 거슬러 오르는 단단한 근육질 민물고기."
+  },
+  "fish_moon_hairtail": {
+    "id": "fish_moon_hairtail",
+    "name": "달빛 갈치",
+    "type": "material",
+    "icon": "fish_moon_hairtail",
+    "sellPrice": 185,
+    "maxStack": 99,
+    "description": "[달맞이 마을 · 25~26번 도로 특산 어종] 달 뜨는 밤바다에서 은장도처럼 길고 눈부시게 빛나는 갈치."
+  },
+  "fish_ice_smelt": {
+    "id": "fish_ice_smelt",
+    "name": "얼음 빙어",
+    "type": "material",
+    "icon": "fish_ice_smelt",
+    "sellPrice": 175,
+    "maxStack": 99,
+    "description": "[서리 마을 · 18~19번 도로 특산 어종] 얼음장 아래 차가운 물속을 투명한 몸으로 헤엄치는 고소한 빙어."
+  },
+  "fish_golden_carp": {
+    "id": "fish_golden_carp",
+    "name": "황금 잉어",
+    "type": "material",
+    "icon": "fish_golden_carp",
+    "sellPrice": 260,
+    "maxStack": 99,
+    "description": "[왕관 시티 · 등대곶 · 21·24번 도로 특산 어종] 온몸이 순금빛 비늘로 덮여 행운과 승리를 부른다는 전설적인 잉어."
+  },
+  "fish_dawn_sweetfish": {
+    "id": "fish_dawn_sweetfish",
+    "name": "새벽 은어",
+    "type": "material",
+    "icon": "fish_dawn_sweetfish",
+    "sellPrice": 210,
+    "maxStack": 99,
+    "description": "[새벽호수 비경 어종] 새벽호수의 맑은 이슬만 먹고 자라 수박 향이 나는 은빛 물고기."
+  },
+  "fish_sunset_goldfish": {
+    "id": "fish_sunset_goldfish",
+    "name": "노을 금붕어",
+    "type": "material",
+    "icon": "fish_sunset_goldfish",
+    "sellPrice": 215,
+    "maxStack": 99,
+    "description": "[노을호수 비경 어종] 노을처럼 타오르는 비단 지느러미를 흔들며 유영하는 희귀 금붕어."
+  },
+  "fish_moon_salmon": {
+    "id": "fish_moon_salmon",
+    "name": "달빛 연어",
+    "type": "material",
+    "icon": "fish_moon_salmon",
+    "sellPrice": 230,
+    "maxStack": 99,
+    "description": "[달빛호수 비경 어종] 달빛호수의 얼음물 속에서 푸른 광채를 띠는 대물 연어."
+  },
+  "fish_cave_eel": {
+    "id": "fish_cave_eel",
+    "name": "동굴 장어",
+    "type": "material",
+    "icon": "fish_cave_eel",
+    "sellPrice": 195,
+    "maxStack": 99,
+    "description": "[갯바람길 해식동굴 앞바다 · 해신의 바다 비경 어종] 해식 동굴 입구 바위틈과 깊은 바다 수로에 숨어 지내는 심해 장어."
+  },
+  "fish_marsh_sturgeon": {
+    "id": "fish_marsh_sturgeon",
+    "name": "늪 철갑상어",
+    "type": "material",
+    "icon": "fish_marsh_sturgeon",
+    "sellPrice": 240,
+    "maxStack": 99,
+    "description": "[늪지 대초원 비경 어종] 고대부터 늪지 바닥을 지켜온 단단한 비늘 갑옷의 거대 물고기."
+  },
+  "fish_koi": {
+    "id": "fish_koi",
+    "name": "정원 비단잉어",
+    "type": "material",
+    "icon": "fish_koi",
+    "sellPrice": 250,
+    "maxStack": 99,
+    "description": "[꽃구름 정원 비경 어종] 꽃구름 정원 연못에서 그림 같은 홍백 무늬를 자랑하는 비단잉어."
+  },
+  "fish_fullmoon_flounder": {
+    "id": "fish_fullmoon_flounder",
+    "name": "보름달 넙치",
+    "type": "material",
+    "icon": "fish_fullmoon_flounder",
+    "sellPrice": 290,
+    "maxStack": 99,
+    "description": "[보름달섬 비경 어종] 보름달처럼 둥글고 황금빛이 도는 보름달섬 연안의 희귀 넙치."
+  },
+  "fish_newmoon_angler": {
+    "id": "fish_newmoon_angler",
+    "name": "그믐 아귀",
+    "type": "material",
+    "icon": "fish_newmoon_angler",
+    "sellPrice": 300,
+    "maxStack": 99,
+    "description": "[그믐달섬 비경 어종] 그믐달섬 심해에서 작은 초롱불을 밝히고 먹이를 유인하는 심해어."
+  },
+  "fish_lava_fin": {
+    "id": "fish_lava_fin",
+    "name": "용암어",
+    "type": "material",
+    "icon": "fish_lava_fin",
+    "sellPrice": 280,
+    "maxStack": 99,
+    "description": "[불꽃산 · 화산재 해변 비경 어종] 펄펄 끓는 화산 지열수에서도 거뜬히 헤엄치는 불꽃 지느러미 물고기."
+  },
+  "fish_sky_fish": {
+    "id": "fish_sky_fish",
+    "name": "하늘물고기",
+    "type": "material",
+    "icon": "fish_sky_fish",
+    "sellPrice": 350,
+    "maxStack": 99,
+    "description": "[뒤집힌 세계 · 해신의 바다 비경 어종] 물과 하늘의 경계를 유영하듯 반투명하게 빛나는 환상의 물고기."
+  },
+  "dish_onigiri": {
+    "id": "dish_onigiri",
+    "name": "바람밀 주먹밥",
+    "type": "food",
+    "icon": "dish_onigiri",
+    "sellPrice": 75,
+    "maxStack": 20,
+    "energy": 76,
+    "food": 38,
+    "partyHeal": 15,
+    "description": "포만감 +38 · 파티 체력 +15. 고소한 바람밀로 꼭꼭 뭉친 든든한 휴대 주먹밥."
+  },
+  "dish_grilled_fish": {
+    "id": "dish_grilled_fish",
+    "name": "소금구이 생선",
+    "type": "food",
+    "icon": "dish_grilled_fish",
+    "sellPrice": 95,
+    "maxStack": 20,
+    "energy": 70,
+    "food": 35,
+    "partyHeal": 20,
+    "description": "포만감 +35 · 파티 체력 +20. 숯불에 노릇하고 바삭하게 구워낸 생선구이."
+  },
+  "dish_roasted_sweet": {
+    "id": "dish_roasted_sweet",
+    "name": "모닥불 군고구마",
+    "type": "food",
+    "icon": "dish_roasted_sweet",
+    "sellPrice": 110,
+    "maxStack": 20,
+    "energy": 104,
+    "food": 52,
+    "partyHeal": 25,
+    "description": "포만감 +52 · 파티 체력 +25. 호호 불며 먹는 달콤하고 포슬포슬한 군고구마."
+  },
+  "dish_seafood_stew": {
+    "id": "dish_seafood_stew",
+    "name": "물결 해물전골",
+    "type": "food",
+    "icon": "dish_seafood_stew",
+    "sellPrice": 210,
+    "maxStack": 20,
+    "energy": 124,
+    "food": 62,
+    "partyHeal": 45,
+    "description": "포만감 +62 · 파티 체력 +45. 소금꽃 배추와 은빛 고등어를 시원하게 끓여낸 어부 전골."
+  },
+  "dish_potato_stew": {
+    "id": "dish_potato_stew",
+    "name": "무쇠 감자 스튜",
+    "type": "food",
+    "icon": "dish_potato_stew",
+    "sellPrice": 250,
+    "maxStack": 20,
+    "energy": 144,
+    "food": 72,
+    "partyHeal": 55,
+    "description": "포만감 +72 · 파티 체력 +55. 쇳불 광부들이 즐겨 먹는 진하고 걸쭉한 스튜."
+  },
+  "dish_ginger_tea": {
+    "id": "dish_ginger_tea",
+    "name": "온천 생강차",
+    "type": "food",
+    "icon": "dish_ginger_tea",
+    "sellPrice": 190,
+    "maxStack": 20,
+    "energy": 56,
+    "food": 28,
+    "partyHeal": 70,
+    "description": "포만감 +28 · 파티 체력 +70. 몸속까지 따스해져 루미들의 피로를 빠르게 풀어 주는 차."
+  },
+  "dish_melon_ice": {
+    "id": "dish_melon_ice",
+    "name": "바다 멜론 빙수",
+    "type": "food",
+    "icon": "dish_melon_ice",
+    "sellPrice": 260,
+    "maxStack": 20,
+    "energy": 100,
+    "food": 50,
+    "partyHeal": 50,
+    "description": "포만감 +50 · 파티 체력 +50. 시원한 바다 멜론 과육을 듬뿍 올린 새콤달콤 빙수."
+  },
+  "dish_sorghum_cake": {
+    "id": "dish_sorghum_cake",
+    "name": "바위골 수수떡",
+    "type": "food",
+    "icon": "dish_sorghum_cake",
+    "sellPrice": 220,
+    "maxStack": 20,
+    "energy": 136,
+    "food": 68,
+    "partyHeal": 40,
+    "description": "포만감 +68 · 파티 체력 +40. 험한 협곡을 넘을 때 허기를 꽉 잡아주는 쫄깃한 떡."
+  },
+  "dish_turnip_soup": {
+    "id": "dish_turnip_soup",
+    "name": "따뜻한 순무국",
+    "type": "food",
+    "icon": "dish_turnip_soup",
+    "sellPrice": 340,
+    "maxStack": 20,
+    "energy": 164,
+    "food": 82,
+    "partyHeal": 80,
+    "description": "포만감 +82 · 파티 체력 +80. 매서운 설원 추위도 단숨에 녹여 주는 맑고 깊은 국."
+  },
+  "dish_champion_bento": {
+    "id": "dish_champion_bento",
+    "name": "챔피언 특선 도시락",
+    "type": "food",
+    "icon": "dish_champion_bento",
+    "sellPrice": 620,
+    "maxStack": 20,
+    "energy": 200,
+    "food": 100,
+    "partyHeal": 140,
+    "description": "포만감 +100 · 파티 체력 +140. 루미 리그 도전자들을 위한 최고의 영양 만점 도시락!"
   }
 }

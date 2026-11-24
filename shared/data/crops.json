@@ -151,5 +151,544 @@
       3
     ],
     "spriteRow": 6
+  },
+  "wind_wheat": {
+    "id": "wind_wheat",
+    "name": "바람밀",
+    "seedItem": "seeds_wind_wheat",
+    "harvestItem": "wind_wheat",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      2,
+      3
+    ],
+    "spriteRow": 7
+  },
+  "salt_cabbage": {
+    "id": "salt_cabbage",
+    "name": "소금꽃 배추",
+    "seedItem": "seeds_salt_cabbage",
+    "harvestItem": "salt_cabbage",
+    "seasons": [
+      "spring",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      1,
+      2,
+      1
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 8
+  },
+  "maple_sweet": {
+    "id": "maple_sweet",
+    "name": "단풍 고구마",
+    "seedItem": "seeds_maple_sweet",
+    "harvestItem": "maple_sweet",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      1,
+      2,
+      1
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      2,
+      3
+    ],
+    "spriteRow": 9
+  },
+  "cloud_cotton": {
+    "id": "cloud_cotton",
+    "name": "구름 목화",
+    "seedItem": "seeds_cloud_cotton",
+    "harvestItem": "cloud_cotton",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      1
+    ],
+    "regrowDays": 3,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 10
+  },
+  "iron_potato": {
+    "id": "iron_potato",
+    "name": "무쇠 감자",
+    "seedItem": "seeds_iron_potato",
+    "harvestItem": "iron_potato",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      1,
+      2,
+      2
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      2,
+      3
+    ],
+    "spriteRow": 11
+  },
+  "mist_shroom": {
+    "id": "mist_shroom",
+    "name": "안개 버섯",
+    "seedItem": "seeds_mist_shroom",
+    "harvestItem": "mist_shroom",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      1,
+      1,
+      2
+    ],
+    "regrowDays": 2,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 12
+  },
+  "spa_ginger": {
+    "id": "spa_ginger",
+    "name": "온천 생강",
+    "seedItem": "seeds_spa_ginger",
+    "harvestItem": "spa_ginger",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      1,
+      2,
+      2
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 13
+  },
+  "pine_carrot": {
+    "id": "pine_carrot",
+    "name": "솔향 당근",
+    "seedItem": "seeds_pine_carrot",
+    "harvestItem": "pine_carrot",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      1,
+      2,
+      1
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 14
+  },
+  "glow_radish": {
+    "id": "glow_radish",
+    "name": "빛무",
+    "seedItem": "seeds_glow_radish",
+    "harvestItem": "glow_radish",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      1
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 15
+  },
+  "star_flower": {
+    "id": "star_flower",
+    "name": "별꽃",
+    "seedItem": "seeds_star_flower",
+    "harvestItem": "star_flower",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      2
+    ],
+    "regrowDays": 3,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 16
+  },
+  "sea_melon": {
+    "id": "sea_melon",
+    "name": "바다 멜론",
+    "seedItem": "seeds_sea_melon",
+    "harvestItem": "sea_melon",
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      2
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      1
+    ],
+    "spriteRow": 17
+  },
+  "cactus_fruit": {
+    "id": "cactus_fruit",
+    "name": "선인장 열매",
+    "seedItem": "seeds_cactus_fruit",
+    "harvestItem": "cactus_fruit",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      1
+    ],
+    "regrowDays": 3,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 18
+  },
+  "cliff_sorghum": {
+    "id": "cliff_sorghum",
+    "name": "바위 수수",
+    "seedItem": "seeds_cliff_sorghum",
+    "harvestItem": "cliff_sorghum",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      1,
+      2,
+      2
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      2,
+      3
+    ],
+    "spriteRow": 19
+  },
+  "moon_primrose": {
+    "id": "moon_primrose",
+    "name": "달맞이꽃",
+    "seedItem": "seeds_moon_primrose",
+    "harvestItem": "moon_primrose",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      2
+    ],
+    "regrowDays": 3,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 20
+  },
+  "snow_turnip": {
+    "id": "snow_turnip",
+    "name": "설원 순무",
+    "seedItem": "seeds_snow_turnip",
+    "harvestItem": "snow_turnip",
+    "seasons": [
+      "spring",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      1
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 21
+  },
+  "golden_wheat": {
+    "id": "golden_wheat",
+    "name": "황금 밀",
+    "seedItem": "seeds_golden_wheat",
+    "harvestItem": "golden_wheat",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      2
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      2,
+      3
+    ],
+    "spriteRow": 22
+  },
+  "dawn_lotus": {
+    "id": "dawn_lotus",
+    "name": "새벽 연꽃",
+    "seedItem": "seeds_dawn_lotus",
+    "harvestItem": "dawn_lotus",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      2
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      1
+    ],
+    "spriteRow": 23
+  },
+  "sunset_berry": {
+    "id": "sunset_berry",
+    "name": "노을 딸기",
+    "seedItem": "seeds_sunset_berry",
+    "harvestItem": "sunset_berry",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      1
+    ],
+    "regrowDays": 3,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 24
+  },
+  "moon_mint": {
+    "id": "moon_mint",
+    "name": "달빛 박하",
+    "seedItem": "seeds_moon_mint",
+    "harvestItem": "moon_mint",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      1,
+      2,
+      2
+    ],
+    "regrowDays": 2,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 25
+  },
+  "marsh_root": {
+    "id": "marsh_root",
+    "name": "늪 연근",
+    "seedItem": "seeds_marsh_root",
+    "harvestItem": "marsh_root",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      2
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      2
+    ],
+    "spriteRow": 26
+  },
+  "paradise_rose": {
+    "id": "paradise_rose",
+    "name": "꽃구름 장미",
+    "seedItem": "seeds_paradise_rose",
+    "harvestItem": "paradise_rose",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      2
+    ],
+    "regrowDays": 3,
+    "harvestQty": [
+      1,
+      1
+    ],
+    "spriteRow": 27
+  },
+  "fullmoon_bloom": {
+    "id": "fullmoon_bloom",
+    "name": "보름달꽃",
+    "seedItem": "seeds_fullmoon_bloom",
+    "harvestItem": "fullmoon_bloom",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      3
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      1
+    ],
+    "spriteRow": 28
+  },
+  "newmoon_truffle": {
+    "id": "newmoon_truffle",
+    "name": "그믐 버섯",
+    "seedItem": "seeds_newmoon_truffle",
+    "harvestItem": "newmoon_truffle",
+    "seasons": [
+      "spring",
+      "summer",
+      "fall",
+      "winter"
+    ],
+    "growthDays": [
+      1,
+      2,
+      2,
+      3
+    ],
+    "regrowDays": 0,
+    "harvestQty": [
+      1,
+      1
+    ],
+    "spriteRow": 29
   }
 }

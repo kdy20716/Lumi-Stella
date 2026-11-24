@@ -96,6 +96,11 @@ const hud = {
         <div class="flex items-center justify-between gap-3"><span data-h="date"></span><span data-h="weather" class="px-icon" style=""></span></div>
         <div class="flex items-center justify-between gap-3 text-2xl"><span data-h="time"></span></div>
         <div class="mt-1 flex items-center justify-end gap-2 bg-[#e6cb93] px-2 py-0.5 border-2 border-[#a8683a]"><span class="px-icon" style="${iconStyle('gold', 24)}"></span><span data-h="gold" class="text-xl tabular-nums"></span></div>
+        <div data-h="foodwrap" class="mt-1 flex items-center gap-2 bg-[#f3e2bc] px-2 py-0.5 border-2 border-[#a8683a]" title="포만감 게이지 (야외 모험 시 서서히 감소 · 음식/도시락으로 회복 · 휴대폰 설정에서 편한 모드 전환 가능)">
+          <span class="px-icon shrink-0" style="${iconStyle('food_bowl', 20)}"></span>
+          <div class="flex-1 h-2.5 bg-[#3b2414]/25 border border-[#8a5a32] overflow-hidden"><div data-h="foodbar" class="h-full transition-all" style="width:80%;background:#5fc04a"></div></div>
+          <span data-h="foodtxt" class="text-xs font-bold tabular-nums text-[#5a3a22]">80%</span>
+        </div>
       </div>
       <button data-h="notice" class="hud-notice-btn hidden"></button>`;
     root().appendChild(n);
@@ -123,6 +128,23 @@ const hud = {
   energy(v: number, max: number) {
     const n = document.querySelector('[data-h=energy]') as HTMLElement | null;
     if (n) { n.style.height = `${(v / max) * 100}%`; n.style.filter = v / max < 0.2 ? 'hue-rotate(-80deg)' : ''; }
+  },
+  food(v = 80, hungerOff = false) {
+    if (!this.node) return;
+    const bar = this.node.querySelector<HTMLElement>('[data-h=foodbar]');
+    const txt = this.node.querySelector<HTMLElement>('[data-h=foodtxt]');
+    const wrap = this.node.querySelector<HTMLElement>('[data-h=foodwrap]');
+    if (!bar || !txt || !wrap) return;
+    if (hungerOff) {
+      bar.style.width = '100%';
+      bar.style.background = '#7ab8d8';
+      txt.textContent = '편한모드';
+      return;
+    }
+    const pct = Math.max(0, Math.min(100, Math.round(v)));
+    bar.style.width = `${pct}%`;
+    bar.style.background = pct >= 70 ? '#5fc04a' : pct >= 30 ? '#e8a838' : pct >= 10 ? '#ea580c' : '#dc2626';
+    txt.textContent = `${pct}%`;
   },
 };
 
@@ -444,9 +466,8 @@ const shop = {
 };
 
 
-// ── 작업대 제작 ─────────────────────────────────────────
-// 작물·채집물·광석 → 루미볼 · 회복약 · 도핑약. 배우지 않은 제작법은 누구에게 배우는지 알려 줌
-interface CraftArgs { title: string; sub: string; me: () => PlayerState; onCraft: (id: string, times: number) => void; keeper?: { sprite: string; portrait?: string; name: string }; teacher?: string }
+// ── 작업대 제작 · 부엌/모닥불 요리 ─────────────────────────────────────────
+interface CraftArgs { title: string; sub: string; me: () => PlayerState; onCraft: (id: string, times: number) => void; keeper?: { sprite: string; portrait?: string; name: string }; teacher?: string; station?: 'workbench' | 'kitchen'; icon?: string }
 const craft = {
   node: null as HTMLDivElement | null,
   args: null as CraftArgs | null,
@@ -455,30 +476,36 @@ const craft = {
   refresh() { if (this.node) this.render(); },
   render() {
     const a = this.args!; const me = a.me();
+    const isKitchen = a.station === 'kitchen';
     const have = (id: string) => me.inventory.reduce((n, s) => n + (s.itemId === id ? s.quantity : 0), 0);
-    const list = Object.values(RECIPES).sort((x, y) => Number(!!y.starter) - Number(!!x.starter) || (x.badges ?? 0) - (y.badges ?? 0))
+    const list = Object.values(RECIPES)
+      .filter((r) => (isKitchen ? r.station === 'kitchen' : r.station !== 'kitchen'))
+      .sort((x, y) => Number(!!y.starter) - Number(!!x.starter) || (x.badges ?? 0) - (y.badges ?? 0))
       .filter((r) => !a.teacher || r.teacher === a.teacher || me.recipes.includes(r.id));
     const rows = list.map((r) => {
-      const out = ITEMS[r.out]; const known = me.recipes.includes(r.id);
+      const out = ITEMS[r.out]; const known = me.recipes.includes(r.id) || (!!r.autoUnlockByBadge && me.badges.length >= (r.badges ?? 0));
       const mats = Object.entries(r.in).map(([id, n]) => { const h = have(id); return `<span class="inline-flex items-center gap-0.5 ${h >= n ? '' : 'text-[#c8453c]'}"><span class="px-icon" style="${iconStyle(ITEMS[id].icon, 20)}"></span>${ITEMS[id].name} ${h}/${n}</span>`; }).join(' ');
       const can = known && Object.entries(r.in).every(([id, n]) => have(id) >= n);
-      const lock = r.teacher ? `${NPCS[r.teacher]?.name ?? '공방'}에게 배우기 · 배지 ${r.badges ?? 0}개 필요` : '';
+      const lock = r.autoUnlockByBadge
+        ? `배지 ${r.badges ?? 0}개 달성 시 자동 해금`
+        : r.teacher ? `${NPCS[r.teacher]?.name ?? '공방'}에게 배우기 · 배지 ${r.badges ?? 0}개 필요` : '';
+      const foodTag = known && out.food ? `<span class="text-xs text-[#2d7a44] ml-1.5">🍚+${out.food}${out.partyHeal ? ` · 💚+${out.partyHeal}` : ''}</span>` : '';
       return `<div class="flex items-center gap-3 border-2 px-2 py-1 ${known ? 'bg-[#fff8ec]/70 border-[#d8b67c]' : 'bg-[#e8dcc4]/60 border-[#c8b08a] opacity-80'}">
         <span class="px-icon shrink-0" style="${iconStyle(out.icon, 40)}${known ? '' : ';filter:grayscale(1) brightness(.7)'}"></span>
-        <div class="flex-1 min-w-0"><div class="text-lg">${known ? out.name : '???'} ${r.qty > 1 ? `<span class="text-sm">×${r.qty}</span>` : ''}</div>
+        <div class="flex-1 min-w-0"><div class="text-lg">${known ? out.name : '???'} ${r.qty > 1 ? `<span class="text-sm">×${r.qty}</span>` : ''}${foodTag}</div>
           <div class="text-xs text-[#5a3a22] flex flex-wrap gap-x-2">${known ? mats : `🔒 ${lock}`}</div></div>
-        ${known ? `<button data-c="${r.id}" data-t="1" class="px-btn ${can ? 'green' : ''} text-sm !px-3 !py-1" ${can ? '' : 'disabled style="opacity:.5"'}>만들기</button>
+        ${known ? `<button data-c="${r.id}" data-t="1" class="px-btn ${can ? 'green' : ''} text-sm !px-3 !py-1" ${can ? '' : 'disabled style="opacity:.5"'}>${isKitchen ? '요리하기' : '만들기'}</button>
         <button data-c="${r.id}" data-t="5" class="px-btn text-sm !px-3 !py-1" ${Object.entries(r.in).every(([id, n]) => have(id) >= n * 5) ? '' : 'disabled style="opacity:.5"'}>×5</button>` : ''}
       </div>`;
     }).join('');
     const n = this.node ?? el('div', 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(680px,94cqw)] pointer-events-auto toast-in');
     n.innerHTML = `<div class="px-panel">
       <div class="flex items-center gap-4 mb-3">
-        ${a.keeper ? shopPortraitHtml(a.keeper) : `<span class="px-icon shrink-0" style="${iconStyle('craft', 64)}"></span>`}
+        ${a.keeper ? shopPortraitHtml(a.keeper) : `<span class="px-icon shrink-0" style="${iconStyle(a.icon ?? (isKitchen ? 'food_bowl' : 'craft'), 64)}"></span>`}
         <div class="flex-1"><div class="text-2xl text-[#8a5a32]">${a.title}</div><div class="text-base">${a.sub}</div></div>
       </div>
       <div class="flex flex-col gap-2 max-h-[52cqh] overflow-y-auto pr-1">${rows}</div>
-      <div class="mt-3 flex justify-between items-center text-sm text-[#8a5a32]"><span>재료는 농사 · 채집 · 채광으로 모아요</span><button data-close class="px-btn text-base !py-1">닫기 (Esc)</button></div>
+      <div class="mt-3 flex justify-between items-center text-sm text-[#8a5a32]"><span>${isKitchen ? '특산 작물과 물고기로 든든한 도시락을 만들어요' : '재료는 농사 · 채집 · 채광으로 모아요'}</span><button data-close class="px-btn text-base !py-1">닫기 (Esc)</button></div>
     </div>`;
     n.querySelectorAll<HTMLButtonElement>('[data-c]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); if (b.disabled) return; a.onCraft(b.dataset.c!, Number(b.dataset.t)); }; });
     n.querySelector<HTMLButtonElement>('[data-close]')!.onclick = () => this.close();

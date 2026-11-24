@@ -25,7 +25,7 @@ import { MAP_IDS, MAP_NAMES, type MapId, type SaveData } from '../shared/types';
 import { firebaseConfig } from '../shared/firebaseConfig';
 import { verifyIdToken } from './auth';
 import { createStorage } from './storage';
-import { BIKE_MAX_SPEED, CLIENT_ORIGINS, DEV_AUTH, MAX_SPEED, PORT, REPORT_COOLDOWN_MS, REPORT_MAX_LEN, isAdminEmail } from './config';
+import { ALLOW_DEV_ADMIN, BIKE_MAX_SPEED, CLIENT_ORIGINS, DEV_AUTH, MAX_SPEED, PORT, REPORT_COOLDOWN_MS, REPORT_MAX_LEN, isAdminEmail } from './config';
 import { Hub, type Client, type Conn } from './hub';
 import { handleAdmin } from './admin';
 import { handleShopHttp } from './payment';
@@ -68,7 +68,7 @@ async function join(ws: Conn, m: Extract<C2S, { t: 'join' }>): Promise<Client | 
       const rawDev = String(m.dev);
       uid = `dev-${rawDev.replace(/[^a-zA-Z0-9가-힣_]/g, '').slice(0, 16)}`;
       gName = rawDev.replace(/^admin_?/i, '').slice(0, 10) || '트레이너';
-      admin = /^admin/i.test(rawDev);
+      admin = ALLOW_DEV_ADMIN && /^admin/i.test(rawDev);
     }
     else throw new Error('구글 로그인이 필요해요');
   } catch (e) { hub.send(ws, { t: 'error', message: (e as Error).message }); ws.close(); return null; }
@@ -209,7 +209,18 @@ const http = createServer((req, res) => {
   }
   const reqUrl = req.url ?? '';
   if (reqUrl.startsWith('/api/shop/') || reqUrl.startsWith('/pg-')) {
-    void handleShopHttp(req, res, sim, storage, (uid) => !!hub.clients.get(uid)?.admin);
+    void handleShopHttp(req, res, sim, storage, {
+      isAdminOnline: (uid) => !!hub.clients.get(uid)?.admin,
+      loadOfflineSave: async (uid) => {
+        const r = recent.get(uid);
+        if (r && Date.now() - r.at < RECENT_MS) return r.data;
+        return storage.load(uid).catch(() => null);
+      },
+      saveOfflineSave: async (uid, data) => {
+        recent.set(uid, { data, at: Date.now() });
+        await storage.save(uid, data);
+      },
+    });
     return;
   }
   // Azure App Service 상태 확인 · 브라우저로 열어 봤을 때

@@ -5,10 +5,12 @@ import { BM_ALL_TOTAL_KRW, BM_CASH_PACK_MAP, BM_CASH_PACKS, BM_PRODUCT_MAP, BM_P
 import { ITEMS, MOVES, RECIPES, REGION_MAPS, SPECIES, NPCS, TYPE_COLORS } from '@shared/data';
 import { expToNext, maxPp, ppLeft, stats } from '@shared/sim/Battle';
 import { formatBanUntil, formatMuteRemaining } from '@shared/sim/antiCheat';
+import { lifeDexSummary } from '@shared/sim/lifeDex';
 import { getStoryGuide } from '@shared/storyGuide';
 import { MAP_META, type CreatureInst, type MapId, type MapMeta, type PlayerState, type WorldTime } from '@shared/types';
 import { sfx } from '../audio/Sfx';
 import { music } from '../audio/Music';
+import { renderLifeDexApp, type LifeDexSubTab } from './LifeDexView';
 import { lumiCoordBadgeHtml, lumiSheetUrl } from './LumiCoord';
 import { lookPortrait } from './Social';
 import { iconStyle, formatTime } from './UI';
@@ -59,6 +61,8 @@ export interface PhoneCtx {
   useCandy?(partyIndex: number): Promise<boolean>;
   buyAllBmCash?(): Promise<{ ok: boolean; error?: string; boughtCount?: number }>;
   testPgSystem?(): Promise<PgSystemTestResult>;
+  claimDexMilestone?(milestoneId: string): Promise<boolean>;
+  setHungerMode?(off: boolean): Promise<boolean>;
 }
 
 const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: () => string }[] = [
@@ -77,7 +81,7 @@ const APPS: { id: Exclude<PhoneApp, 'home'>; name: string; bg: string; glyph: ()
   { id: 'bug', name: '신고하기', bg: 'linear-gradient(160deg,#ffb27a,#d8573a)', glyph: () => '<span class="ph-emoji">🚨</span>' },
 ];
 const ADMIN_APP = { id: 'admin' as const, name: '관리자', bg: 'linear-gradient(160deg,#4a4a5a,#14141c)', glyph: () => '<span class="ph-emoji">🛡️</span>' };
-const TITLE: Record<PhoneApp, string> = { home: '', messages: '메시지 · 벌금 고지서', journal: '모험 수첩', map: '루미나 지방 지도', party: '나의 루미 · PC 보관함', bag: '가방', dex: '루미 도감', shop: '캐쉬 상점', recipes: '제작 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말', bug: '유저 · 버그 신고', admin: '관리자 (admin)' };
+const TITLE: Record<PhoneApp, string> = { home: '', messages: '메시지 · 벌금 고지서', journal: '모험 수첩', map: '루미나 지방 지도', party: '나의 루미 · PC 보관함', bag: '가방', dex: '도감 (루미 · 생활)', shop: '캐쉬 상점', recipes: '제작 · 요리 노트', badges: '배지 케이스', friends: '친구', settings: '설정', help: '도움말', bug: '유저 · 버그 신고', admin: '관리자 (admin)' };
 
 /** 도장 순서 */
 const BADGES: [string, string, string, string][] = [
@@ -107,6 +111,9 @@ export const phone = {
   shopTab: 'theme' as 'cash' | BmCategory,
   shopPreviewId: '' as string,
   shopDetailId: '' as string,
+  dexMode: 'lumi' as 'lumi' | 'life',
+  lifeDexTab: 'farm' as LifeDexSubTab,
+  recipeTab: 'all' as 'all' | 'workbench' | 'kitchen',
   unfold: false,
   unfoldTimer: 0,
   get open() { return !!this.node; },
@@ -781,12 +788,20 @@ export const phone = {
       <div class="ph-foot">소지품 ${used}/${me.inventory.length}칸</div>`;
   },
 
-  // ── 도감 ──
+  // ── 도감 (루미 도감 · 생활 도감 90종 & 마을 특산물) ──
   dexApp(me: PlayerState) {
     const all = Object.values(SPECIES);
     const seen = new Set(me.seen), caught = new Set(me.caught);
     const goal = all.filter((sp) => sp.legend !== 'myth'), done = goal.filter((sp) => caught.has(sp.id)).length;
-    return `<div class="ph-dexhead"><span>본 루미 <b>${seen.size}</b></span><span>잡은 루미 <b>${caught.size}</b></span><span>완성 <b>${done}/${goal.length}</b></span></div>
+    const lsum = lifeDexSummary(me);
+    const modeTabs = `<div class="ph-tabs" style="margin-bottom:6px">
+      <button data-dexmode="lumi" class="${this.dexMode === 'lumi' ? 'on' : ''}">🐾 루미 도감 (${caught.size}/${all.length})</button>
+      <button data-dexmode="life" class="${this.dexMode === 'life' ? 'on' : ''}">🌿 생활 도감 (${lsum.total}/${lsum.max})</button>
+    </div>`;
+    if (this.dexMode === 'life') {
+      return `${modeTabs}${renderLifeDexApp(me, this.lifeDexTab)}`;
+    }
+    return `${modeTabs}<div class="ph-dexhead"><span>본 루미 <b>${seen.size}</b></span><span>잡은 루미 <b>${caught.size}</b></span><span>완성 <b>${done}/${goal.length}</b></span></div>
       ${done >= goal.length ? '<div class="ph-heldbar">🏆 루미 도감 완성! 별의 요람에서 루미 마스터가 기다리고 있어요.</div>' : ''}
       <div class="ph-dex">${all.map((sp, i) => {
         const s = seen.has(sp.id) || caught.has(sp.id), c = caught.has(sp.id);
@@ -795,22 +810,34 @@ export const phone = {
           <span class="lumi-icon" style="background-image:url(assets/lumi/${sp.id}.png);width:40px;height:40px;background-size:240px 40px;${s ? '' : 'filter:brightness(0)'}"></span>
           <span class="nm">${s ? sp.name : '???'}</span>${sp.legend && s ? `<span class="ph-small" style="color:${sp.legend === 'myth' ? '#d0547a' : '#6a4ab8'}">${sp.legend === 'myth' ? '환상' : '전설'}</span>` : ''}${c ? `<span class="ball px-icon" style="${iconStyle('lumi_ball', 14)}"></span>` : ''}</div>`;
       }).join('')}</div>
-      <div class="ph-foot">생활 도감(농사 · 채광 · 낚시)은 다음 업데이트에서 추가돼요</div>`;
+      <div class="ph-foot">상단 [🌿 생활 도감] 탭에서 농사·채광·낚시 90종과 마을 특산물을 확인하세요!</div>`;
   },
 
-  // ── 제작 노트 ──
+  // ── 제작 · 요리 노트 ──
   recipeApp(me: PlayerState) {
-    const list = Object.values(RECIPES).sort((x, y) => Number(!!y.starter) - Number(!!x.starter) || (x.badges ?? 0) - (y.badges ?? 0));
-    return `<div class="ph-list">${list.map((r) => {
-      const out = ITEMS[r.out], known = me.recipes.includes(r.id);
+    const allList = Object.values(RECIPES).sort((x, y) => Number(!!y.starter) - Number(!!x.starter) || (x.badges ?? 0) - (y.badges ?? 0));
+    const list = allList.filter((r) => this.recipeTab === 'all' ? true : this.recipeTab === 'kitchen' ? r.station === 'kitchen' : r.station !== 'kitchen');
+    const rtabs = `<div class="ph-tabs" style="margin-bottom:6px">
+      <button data-rtab="all" class="${this.recipeTab === 'all' ? 'on' : ''}">전체 (${allList.length})</button>
+      <button data-rtab="workbench" class="${this.recipeTab === 'workbench' ? 'on' : ''}">🔨 공방 (${allList.filter((r) => r.station !== 'kitchen').length})</button>
+      <button data-rtab="kitchen" class="${this.recipeTab === 'kitchen' ? 'on' : ''}">🍳 요리 (${allList.filter((r) => r.station === 'kitchen').length})</button>
+    </div>`;
+    return `${rtabs}<div class="ph-list">${list.map((r) => {
+      const out = ITEMS[r.out];
+      const known = me.recipes.includes(r.id) || (!!r.autoUnlockByBadge && me.badges.length >= (r.badges ?? 0));
       const ok = known && Object.entries(r.in).every(([id, q]) => countItem(me, id) >= q);
       const mats = Object.entries(r.in).map(([id, q]) => { const h = countItem(me, id); return `<span class="${h >= q ? '' : 'ph-bad'}"><span class="px-icon" style="${iconStyle(ITEMS[id].icon, 16)}"></span>${ITEMS[id].name} ${h}/${q}</span>`; }).join('');
+      const isCook = r.station === 'kitchen';
+      const lockMsg = r.autoUnlockByBadge
+        ? `🔒 배지 ${r.badges ?? 0}개 달성 시 자동 해금`
+        : `🔒 ${NPCS[r.teacher ?? '']?.name ?? '공방'}에게 배우기 · 배지 ${r.badges ?? 0}개`;
+      const statBadge = known && out.food ? `<span class="ph-small" style="color:#2d7a44">🍚+${out.food}${out.partyHeal ? ` · 💚+${out.partyHeal}` : ''}</span>` : '';
       return `<div class="ph-card ${known ? '' : 'locked'}">
         <span class="px-icon" style="${iconStyle(out.icon, 36)}${known ? '' : ';filter:grayscale(1) brightness(.6)'}"></span>
-        <div class="flex-1 min-w-0"><div class="ph-row"><b>${known ? out.name : '???'}</b>${r.qty > 1 ? `<span class="ph-small">×${r.qty}</span>` : ''}${ok ? '<span class="ml-auto ph-ok">제작 가능</span>' : ''}</div>
-          <div class="ph-mats">${known ? mats : `🔒 ${NPCS[r.teacher ?? '']?.name ?? '공방'}에게 배우기 · 배지 ${r.badges ?? 0}개`}</div></div></div>`;
+        <div class="flex-1 min-w-0"><div class="ph-row" style="gap:4px"><b>${known ? out.name : '???'}</b>${r.qty > 1 ? `<span class="ph-small">×${r.qty}</span>` : ''}${isCook ? '<span class="ph-small" style="color:#b85a1c">🍳요리</span>' : ''}${statBadge}${ok ? '<span class="ml-auto ph-ok">제작 가능</span>' : ''}</div>
+          <div class="ph-mats">${known ? mats : lockMsg}</div></div></div>`;
     }).join('')}</div>
-    <div class="ph-foot">제작은 집 작업대 · 민수의 볼 공방 · 한별 연구소에서</div>`;
+    <div class="ph-foot">제작: 집 작업대 · 볼 공방 · 연구소 / 요리: 집 부엌 · 마을 모닥불</div>`;
   },
 
   // ── 배지 ──
@@ -1139,6 +1166,7 @@ export const phone = {
           <input data-phvol="music" type="range" min="0" max="100" value="${bgmPct}" style="flex:1;accent-color:#5fc04a" />
           <b data-phvollbl="music" class="text-xs" style="min-width:34px;text-align:right">${bgmPct}%</b>
         </div>
+        ${sw('hunger', '포만감 보급 모드 (끄면 편한 모드)', !c.me().hungerOff)}
       </div>
       <div class="ph-sec">저장 <span>${esc(c.storage())}</span></div>
       <div class="ph-stack">
@@ -1436,6 +1464,18 @@ export const phone = {
         act?.run(); this.render();
       };
     });
+    n.querySelectorAll<HTMLButtonElement>('[data-dexmode]').forEach((b) => {
+      b.onclick = () => { sfx.play('tap'); this.dexMode = b.dataset.dexmode as 'lumi' | 'life'; this.render(); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-ldextab]').forEach((b) => {
+      b.onclick = () => { sfx.play('tap'); this.lifeDexTab = b.dataset.ldextab as LifeDexSubTab; this.render(); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-dexclaim]').forEach((b) => {
+      b.onclick = () => { const id = b.dataset.dexclaim!; void c.claimDexMilestone?.(id).then(() => this.render()); };
+    });
+    n.querySelectorAll<HTMLButtonElement>('[data-rtab]').forEach((b) => {
+      b.onclick = () => { sfx.play('tap'); this.recipeTab = b.dataset.rtab as 'all' | 'workbench' | 'kitchen'; this.render(); };
+    });
     n.querySelectorAll<HTMLButtonElement>('[data-set]').forEach((b) => {
       b.onclick = () => {
         sfx.play('tap');
@@ -1443,6 +1483,7 @@ export const phone = {
         if (k === 'sound') sfx.setMuted(!sfx.muted);
         else if (k === 'steps') sfx.setSteps(!sfx.stepsOn);
         else if (k === 'music') music.setOn(!music.on);
+        else if (k === 'hunger') { void c.setHungerMode?.(!me.hungerOff).then(() => this.render()); return; }
         else if (k === 'save') c.save();
         else if (k === 'reset') this.confirmReset = true;
         else if (k === 'no') this.confirmReset = false;

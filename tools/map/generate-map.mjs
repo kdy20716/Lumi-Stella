@@ -34,8 +34,9 @@ const { builders, data } = buildRegion();
 /** 걸어서 닿지 않는 보물은 뺌 (나무 · 절벽에 갇힌 자리) */
 function pruneLoot(b) {
   const W = b.W, H = b.H, P = (o, k) => o.properties.find((p) => p.name === k)?.value;
-  const pass = new Set(); for (const o of b.objects) if (P(o, 'skill') || ['glint', 'tuft', 'tallgrass', 'stairs_up', 'cave_hole', 'portal'].includes(o.type)) pass.add(P(o, 'cellY') * W + P(o, 'cellX'));
-  const blocked = (x, y) => x < 0 || y < 0 || x >= W || y >= H || ((b.blocked[y][x] || (b.terrain[y][x] === 2 && !b.bridge[y * W + x])) && !pass.has(y * W + x));
+  const surfOnly = b.props.some((p) => p.name === 'surfOnly' && String(p.value) === 'true');
+  const pass = new Set(); for (const o of b.objects) if (P(o, 'skill') || ['glint', 'tuft', 'tallgrass', 'stairs_up', 'cave_hole', 'portal', 'sea_current'].includes(o.type)) pass.add(P(o, 'cellY') * W + P(o, 'cellX'));
+  const blocked = (x, y) => x < 0 || y < 0 || x >= W || y >= H || ((b.blocked[y][x] || (!surfOnly && b.terrain[y][x] === 2 && !b.bridge[y * W + x])) && !pass.has(y * W + x));
   const st = b.spawns.find((q) => q.name === 'player') ?? b.spawns[0]; if (!st) return;
   const seen = new Uint8Array(W * H), q = [[Math.floor(st.x / 16), Math.floor(st.y / 16)]];
   while (q.length) { const [x, y] = q.pop(); if (blocked(x, y) || seen[y * W + x]) continue; seen[y * W + x] = 1; q.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]); }

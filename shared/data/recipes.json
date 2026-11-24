@@ -415,5 +415,201 @@
     "description": "별빛 낚싯대: 최고급 도구.",
     "teacher": "minsu",
     "badges": 5
+  },
+  "dish_onigiri": {
+    "id": "dish_onigiri",
+    "out": "dish_onigiri",
+    "qty": 1,
+    "in": {
+      "wind_wheat": 2
+    },
+    "station": "kitchen",
+    "description": "포만감 +38 · 파티 체력 +15. 고소한 바람밀로 꼭꼭 뭉친 든든한 휴대 주먹밥.",
+    "starter": true
+  },
+  "dish_grilled_fish": {
+    "id": "dish_grilled_fish",
+    "out": "dish_grilled_fish",
+    "qty": 1,
+    "in": {
+      "fish_crucian": 1,
+      "coal": 1
+    },
+    "station": "kitchen",
+    "description": "포만감 +35 · 파티 체력 +20. 숯불에 노릇하고 바삭하게 구워낸 생선구이.",
+    "starter": true
+  },
+  "dish_roasted_sweet": {
+    "id": "dish_roasted_sweet",
+    "out": "dish_roasted_sweet",
+    "qty": 1,
+    "in": {
+      "maple_sweet": 1
+    },
+    "station": "kitchen",
+    "description": "포만감 +52 · 파티 체력 +25. 호호 불며 먹는 달콤하고 포슬포슬한 군고구마.",
+    "starter": true
+  },
+  "dish_seafood_stew": {
+    "id": "dish_seafood_stew",
+    "out": "dish_seafood_stew",
+    "qty": 1,
+    "in": {
+      "salt_cabbage": 1,
+      "fish_silver_mackerel": 1
+    },
+    "station": "kitchen",
+    "description": "포만감 +62 · 파티 체력 +45. 소금꽃 배추와 은빛 고등어를 시원하게 끓여낸 어부 전골.",
+    "badges": 1,
+    "autoUnlockByBadge": true
+  },
+  "dish_potato_stew": {
+    "id": "dish_potato_stew",
+    "out": "dish_potato_stew",
+    "qty": 1,
+    "in": {
+      "iron_potato": 2,
+      "pine_carrot": 1
+    },
+    "station": "kitchen",
+    "description": "포만감 +72 · 파티 체력 +55. 쇳불 광부들이 즐겨 먹는 진하고 걸쭉한 스튜.",
+    "badges": 2,
+    "autoUnlockByBadge": true
+  },
+  "dish_ginger_tea": {
+    "id": "dish_ginger_tea",
+    "out": "dish_ginger_tea",
+    "qty": 1,
+    "in": {
+      "spa_ginger": 2
+    },
+    "station": "kitchen",
+    "description": "포만감 +28 · 파티 체력 +70. 몸속까지 따스해져 루미들의 피로를 빠르게 풀어 주는 차.",
+    "badges": 3,
+    "autoUnlockByBadge": true
+  },
+  "dish_melon_ice": {
+    "id": "dish_melon_ice",
+    "out": "dish_melon_ice",
+    "qty": 1,
+    "in": {
+      "sea_melon": 1,
+      "berry": 2
+    },
+    "station": "kitchen",
+    "description": "포만감 +50 · 파티 체력 +50. 시원한 바다 멜론 과육을 듬뿍 올린 새콤달콤 빙수.",
+    "badges": 3,
+    "autoUnlockByBadge": true
+  },
+  "dish_sorghum_cake": {
+    "id": "dish_sorghum_cake",
+    "out": "dish_sorghum_cake",
+    "qty": 1,
+    "in": {
+      "cliff_sorghum": 2
+    },
+    "station": "kitchen",
+    "description": "포만감 +68 · 파티 체력 +40. 험한 협곡을 넘을 때 허기를 꽉 잡아주는 쫄깃한 떡.",
+    "badges": 4,
+    "autoUnlockByBadge": true
+  },
+  "dish_turnip_soup": {
+    "id": "dish_turnip_soup",
+    "out": "dish_turnip_soup",
+    "qty": 1,
+    "in": {
+      "snow_turnip": 2,
+      "fish_ice_smelt": 1
+    },
+    "station": "kitchen",
+    "description": "포만감 +82 · 파티 체력 +80. 매서운 설원 추위도 단숨에 녹여 주는 맑고 깊은 국.",
+    "badges": 5,
+    "autoUnlockByBadge": true
+  },
+  "dish_champion_bento": {
+    "id": "dish_champion_bento",
+    "out": "dish_champion_bento",
+    "qty": 1,
+    "in": {
+      "golden_wheat": 1,
+      "fish_golden_carp": 1,
+      "star_flower": 1
+    },
+    "station": "kitchen",
+    "description": "포만감 +100 · 파티 체력 +140. 루미 리그 도전자들을 위한 최고의 영양 만점 도시락!",
+    "badges": 7,
+    "autoUnlockByBadge": true
+  },
+  "quick_ball": {
+    "id": "quick_ball",
+    "out": "quick_ball",
+    "qty": 2,
+    "in": {
+      "ore_breeze": 1,
+      "copper_ore": 1,
+      "wind_wheat": 1
+    },
+    "starter": true,
+    "description": "바람골 특산 바람돌과 바람밀로 만드는 첫 턴 특화 루미볼."
+  },
+  "tide_ball": {
+    "id": "tide_ball",
+    "out": "tide_ball",
+    "qty": 2,
+    "in": {
+      "ore_aqua_quartz": 1,
+      "copper_ore": 1
+    },
+    "badges": 1,
+    "autoUnlockByBadge": true,
+    "description": "물결항 물빛 석영으로 빚어 물 타입 루미에게 강한 포획볼."
+  },
+  "leaf_ball": {
+    "id": "leaf_ball",
+    "out": "leaf_ball",
+    "qty": 2,
+    "in": {
+      "ore_maple_agate": 1,
+      "cloud_cotton": 1
+    },
+    "badges": 2,
+    "autoUnlockByBadge": true,
+    "description": "단풍 마노와 구름 목화로 만든 풀 타입 특화 포획볼."
+  },
+  "heavy_ball": {
+    "id": "heavy_ball",
+    "out": "heavy_ball",
+    "qty": 2,
+    "in": {
+      "ore_gold": 1,
+      "iron_ore": 2
+    },
+    "badges": 3,
+    "autoUnlockByBadge": true,
+    "description": "쇳불 금광석과 철을 합금해 높은 레벨 루미에게 강한 묵직한 볼."
+  },
+  "ember_ball": {
+    "id": "ember_ball",
+    "out": "ember_ball",
+    "qty": 2,
+    "in": {
+      "ore_flame": 1,
+      "iron_ore": 1
+    },
+    "badges": 4,
+    "autoUnlockByBadge": true,
+    "description": "잿빛 화염석의 열기를 담은 불 타입 특화 포획볼."
+  },
+  "moon_ball": {
+    "id": "moon_ball",
+    "out": "moon_ball",
+    "qty": 2,
+    "in": {
+      "ore_moonstone": 1,
+      "ore_lumen": 1
+    },
+    "badges": 5,
+    "autoUnlockByBadge": true,
+    "description": "월장석과 광휘석을 세공해 밤과 동굴에서 빛나는 포획볼."
   }
 }

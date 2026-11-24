@@ -13,10 +13,16 @@ import {
   type BmCashPack,
 } from '../shared/bmShop';
 import { firebaseConfig } from '../shared/firebaseConfig';
+import { computeSaveSig } from '../shared/sim/antiCheat';
 import type { FarmSimulation } from '../shared/sim/FarmSimulation';
+import type { SaveData } from '../shared/types';
 import { verifyIdToken } from './auth';
 import { DEV_AUTH, PORT, isAdminEmail } from './config';
-import type { Storage } from './storage';
+import type {
+  PersistedFinishedCashOrder,
+  PersistedPendingCashOrder,
+  Storage,
+} from './storage';
 
 export type PgMode = 'paypal' | 'paypal-link' | 'unconfigured';
 
@@ -29,38 +35,56 @@ interface PayPalCfg {
   meUrl: string;
 }
 
-interface PendingCashOrder {
-  orderId: string;
-  paypalOrderId: string;
-  uid: string;
-  packId: string;
-  orderName: string;
-  currency: 'USD' | 'KRW';
-  expectedValue: string;
-  cashAmount: number;
-  returnOrigin?: string;
-  createdAt: number;
-}
-
-interface CashOrderRecord {
-  uid: string;
-  status: 'paid' | 'failed';
-  cashAmount: number;
-  provider?: string;
-  returnOrigin?: string;
-  error?: string;
-  updatedAt: number;
-}
+type PendingCashOrder = PersistedPendingCashOrder;
+type CashOrderRecord = PersistedFinishedCashOrder;
 
 interface Actor {
   uid: string;
   isAdmin: boolean;
 }
 
+export interface ShopHttpHooks {
+  isAdminOnline?: (uid: string) => boolean;
+  loadOfflineSave?: (uid: string) => Promise<SaveData | null>;
+  saveOfflineSave?: (uid: string, data: SaveData) => Promise<void>;
+}
+
 const pendingCashOrders = new Map<string, PendingCashOrder>();
 const finishedCashOrders = new Map<string, CashOrderRecord>();
-const ORDER_TTL_MS = 30 * 60_000;
+const PENDING_ORDER_TTL_MS = 3 * 60 * 60_000;
+const FINISHED_ORDER_TTL_MS = 24 * 60 * 60_000;
 let tokenCache: { key: string; token: string; until: number } | null = null;
+let ordersHydrated: Promise<void> | null = null;
+
+async function ensureOrdersLoaded(storage: Storage): Promise<void> {
+  ordersHydrated ??= storage
+    .loadCashOrders()
+    .then((data) => {
+      for (const [k, v] of Object.entries(data?.pending ?? {})) {
+        if (!pendingCashOrders.has(k)) pendingCashOrders.set(k, v);
+      }
+      for (const [k, v] of Object.entries(data?.finished ?? {})) {
+        if (!finishedCashOrders.has(k)) finishedCashOrders.set(k, v);
+      }
+      pruneOrders();
+    })
+    .catch((e) => {
+      console.warn('⚠ 캐쉬 주문 목록 복원 실패:', (e as Error).message);
+    });
+  await ordersHydrated;
+}
+
+async function persistOrders(storage: Storage): Promise<void> {
+  pruneOrders();
+  await storage
+    .saveCashOrders({
+      pending: Object.fromEntries(pendingCashOrders),
+      finished: Object.fromEntries(finishedCashOrders),
+    })
+    .catch((e) => {
+      console.warn('⚠ 캐쉬 주문 목록 저장 실패:', (e as Error).message);
+    });
+}
 
 function readPayPalConfig(): PayPalCfg {
   const clientId = process.env.PAYPAL_CLIENT_ID?.trim() ?? '';
@@ -142,9 +166,21 @@ async function resolveActor(req: IncomingMessage, isAdminOnline?: (uid: string) 
   throw new Error('구글 로그인이 필요합니다');
 }
 
-function pruneOrders(now = Date.now()) {
-  for (const [k, v] of pendingCashOrders) if (now - v.createdAt > ORDER_TTL_MS) pendingCashOrders.delete(k);
-  for (const [k, v] of finishedCashOrders) if (now - v.updatedAt > ORDER_TTL_MS) finishedCashOrders.delete(k);
+function pruneOrders(now = Date.now()): boolean {
+  let changed = false;
+  for (const [k, v] of pendingCashOrders) {
+    if (now - v.createdAt > PENDING_ORDER_TTL_MS) {
+      pendingCashOrders.delete(k);
+      changed = true;
+    }
+  }
+  for (const [k, v] of finishedCashOrders) {
+    if (now - v.updatedAt > FINISHED_ORDER_TTL_MS) {
+      finishedCashOrders.delete(k);
+      changed = true;
+    }
+  }
+  return changed;
 }
 
 function publicOrigin(req: IncomingMessage): string {
@@ -357,8 +393,14 @@ export async function handleShopHttp(
   res: ServerResponse,
   sim: FarmSimulation,
   storage: Storage,
-  isAdminOnline?: (uid: string) => boolean,
+  hooksOrAdmin?: ((uid: string) => boolean) | ShopHttpHooks,
 ): Promise<boolean> {
+  const hooks: ShopHttpHooks =
+    typeof hooksOrAdmin === 'function' ? { isAdminOnline: hooksOrAdmin } : (hooksOrAdmin ?? {});
+  const isAdminOnline = hooks.isAdminOnline;
+  const loadOfflineSave = hooks.loadOfflineSave ?? ((uid: string) => storage.load(uid));
+  const saveOfflineSave = hooks.saveOfflineSave ?? ((uid: string, data: SaveData) => storage.save(uid, data));
+
   const fullUrl = req.url ?? '';
   const qIdx = fullUrl.indexOf('?');
   const url = qIdx >= 0 ? fullUrl.slice(0, qIdx) : fullUrl;
@@ -367,14 +409,19 @@ export async function handleShopHttp(
   if (!url.startsWith('/api/shop/') && !url.startsWith('/pg-')) return false;
 
   try {
+    await ensureOrdersLoaded(storage);
+
     // ── PayPal 결제 승인 복귀 콜백 (return_url / cancel_url) ─────────────────
     if (req.method === 'GET' && url === '/pg-success') {
-      pruneOrders();
+      if (pruneOrders()) await persistOrders(storage);
       const orderId = query.get('orderId') ?? '';
       const paypalToken = query.get('token') ?? '';
       const done = finishedCashOrders.get(orderId);
       if (done?.status === 'paid') {
-        const cur = sim.players.get(done.uid)?.cash ?? 0;
+        const cur =
+          sim.players.get(done.uid)?.cash ??
+          (await loadOfflineSave(done.uid).catch(() => null))?.cash ??
+          done.cashAmount;
         sendHtml(res, 200, renderPgResultHtml({
           ok: true, title: 'PayPal 결제 및 캐쉬 충전 완료!',
           subtitle: '이미 반영된 주문입니다. 창을 닫고 게임 상점에서 확인해 주세요.',
@@ -396,22 +443,47 @@ export async function handleShopHttp(
         const cfg = readPayPalConfig();
         await capturePayPalOrder(cfg, order);
         pendingCashOrders.delete(orderId);
-        const cr = sim.creditCashOrder(order.uid, order.orderId, order.cashAmount, `paypal:${cfg.env}`);
-        if (!cr.ok) throw new Error('캐쉬 지급 실패');
-        const p = sim.players.get(order.uid);
-        const save = sim.exportSave(order.uid);
-        if (save) await storage.save(order.uid, save);
+
+        let newBalance = order.cashAmount;
+        const onlineP = sim.players.get(order.uid);
+        if (onlineP) {
+          const cr = sim.creditCashOrder(order.uid, order.orderId, order.cashAmount, `paypal:${cfg.env}`);
+          if (!cr.ok) throw new Error('캐쉬 지급 실패');
+          newBalance = onlineP.cash ?? order.cashAmount;
+          const save = sim.exportSave(order.uid);
+          if (save) await saveOfflineSave(order.uid, save);
+        } else {
+          // 모바일/별도 탭 결제 중 소켓이 끊긴 경우: 오프라인 세이브에 직접 안전 지급
+          const saved = await loadOfflineSave(order.uid);
+          if (!saved) throw new Error('캐릭터 저장 데이터를 찾을 수 없습니다');
+          const orders = (saved.cashOrders ??= []);
+          if (!orders.includes(order.orderId)) {
+            orders.push(order.orderId);
+            saved.cash = Math.max(0, Math.round((saved.cash ?? 0) + order.cashAmount));
+            saved.saveSig = computeSaveSig({
+              gold: saved.gold,
+              cash: saved.cash,
+              jailed: !!saved.jailed,
+              muteRemainingSec: saved.muteRemainingSec ?? 0,
+            });
+            await saveOfflineSave(order.uid, saved);
+          }
+          newBalance = saved.cash ?? order.cashAmount;
+        }
+
         finishedCashOrders.set(orderId, {
           uid: order.uid, status: 'paid', cashAmount: order.cashAmount, provider: `paypal:${cfg.env}`, returnOrigin: order.returnOrigin, updatedAt: Date.now(),
         });
+        await persistOrders(storage);
         sendHtml(res, 200, renderPgResultHtml({
           ok: true, title: 'PayPal 결제 및 캐쉬 충전 완료!',
           subtitle: '게임 내 보유 캐쉬가 즉시 충전되었습니다. 창을 닫고 게임으로 돌아가세요.',
-          orderId, cashAdded: order.cashAmount, newBalance: p?.cash ?? order.cashAmount, returnOrigin: order.returnOrigin,
+          orderId, cashAdded: order.cashAmount, newBalance, returnOrigin: order.returnOrigin,
         }));
       } catch (err) {
         const msg = (err as Error).message || 'PayPal 결제 승인 실패';
         finishedCashOrders.set(orderId, { uid: order.uid, status: 'failed', cashAmount: 0, returnOrigin: order.returnOrigin, error: msg, updatedAt: Date.now() });
+        await persistOrders(storage);
         sendHtml(res, 400, renderPgResultHtml({ ok: false, title: 'PayPal 결제 승인 실패', subtitle: msg, orderId, returnOrigin: order.returnOrigin }));
       }
       return true;
@@ -426,6 +498,7 @@ export async function handleShopHttp(
         finishedCashOrders.set(orderId, {
           uid: order.uid, status: 'failed', cashAmount: 0, returnOrigin, error: 'PayPal 결제가 취소되었습니다.', updatedAt: Date.now(),
         });
+        await persistOrders(storage);
       }
       sendHtml(res, 200, renderPgResultHtml({
         ok: false,
@@ -481,6 +554,7 @@ export async function handleShopHttp(
           returnOrigin,
           createdAt: Date.now(),
         });
+        await persistOrders(storage);
         sendJson(res, 200, {
           ok: true,
           mode: 'paypal',

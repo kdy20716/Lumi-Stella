@@ -1094,7 +1094,9 @@ export function buildRegion() {
     m.place('tide_seal', 23, 20, { force: true, props: { interact: 'tide_seal', sealIdx: 2, gateId: 'sea_main', color: '#818cf8' } });
 
     // 8) 북쪽 해신의 성소 (소용돌이 장벽 너머 — 물 전설 루미 '해랑' 강림 제단)
-    fillIsland(20, 5, 27, 11, S, S);
+    fillIsland(20, 5, 27, 11, S, G);
+    m.setT(21, 10, G);
+    m.setT(26, 10, G);
     for (const [rx, ry] of [[20, 6], [27, 6], [20, 10], [27, 10]]) m.place('ruin_pillar', rx, ry, { force: true });
     m.place('sea_altar', 22, 8, { w: 3, h: 2, force: true, props: { interact: 'sea_altar', text: '해신의 제단.\n맑은 바닷빛 진주가 고요히 맥동하고 있다…' } });
     m.place('planter', 21, 10, { force: true });

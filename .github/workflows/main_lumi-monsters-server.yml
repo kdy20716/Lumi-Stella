@@ -23,17 +23,27 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: npm install, build, and test
+      - name: npm install, typecheck, and simulation test
         run: |
           npm install
-          npm run build --if-present
-          npm run test --if-present
-      
+          npm run typecheck
+          npm run test:features
+
+      - name: Prune devDependencies for server runtime
+        run: npm prune --omit=dev
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: |
+            server/**
+            shared/**
+            client/public/assets/maps/**
+            node_modules/**
+            package.json
+            package-lock.json
+            tsconfig.json
 
   deploy:
     runs-on: ubuntu-latest

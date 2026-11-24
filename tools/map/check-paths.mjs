@@ -10,19 +10,23 @@ const region = JSON.parse(readFileSync(new URL('../../shared/data/region.json', 
 const only = process.argv[2];
 const SKILL = new Set(['vine', 'crack_rock', 'climb_wall']), PASS = new Set(['tuft', 'tallgrass', 'stairs_up', 'portal', 'cave_hole', 'ice_tile', 'arrow_pad', 'warp_pad', 'switch_btn', 'gatehouse', 'cycle_gate', 'pair_card', 'rail_switch', 'quiz_pad', 'prism', 'rune_pad', 'rune_demo', 'snow_reset', 'stop_tile', 'water_switch', 'water_bridge', 'push_block', 'block_slot', 'puzzle_reset', 'cracked_tile', 'sea_current']);
 
-function runGimmickBfs(W, H, col, objs, startX, startY) {
+function runGimmickBfs(W, H, col, objs, startX, startY, opts = {}) {
+  const { surfOnly = false, terr = null } = opts;
   const P = (o, k) => o.properties?.find((p) => p.name === k)?.value;
   const objAt = new Map();
   const ice = new Uint8Array(W * H);
   const stopTiles = new Uint8Array(W * H);
   const warps = new Map();
   const arrows = new Map();
+  const currents = new Map(); // idx -> dir ('left'|'right'|'up'|'down')
   const switches = new Map();
   const railSwitches = new Map();
   const waterSwitches = new Map(); // idx -> level
   const waterBridges = new Map();  // idx -> reqLevel
   const snowballs = new Set();
   const gates = new Map();
+  const tideSeals = new Map(); // idx -> gateId
+  const tideSealNeeds = new Map(); // gateId -> Set<idx>
   const puzzleNeeds = new Map(); // gateId -> Set<idx> (all must be seen; for quiz_pad any correct idx unlocks)
   const quizCorrect = new Map(); // idx -> gateId
   for (const o of objs) {
@@ -35,17 +39,23 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
       else if (o.type === 'stop_tile') stopTiles[idx] = 1;
       else if (o.type === 'warp_pad') warps.set(idx, [Number(P(o, 'toX') ?? x), Number(P(o, 'toY') ?? y)]);
       else if (o.type === 'arrow_pad') arrows.set(idx, { dir: P(o, 'dir') ?? 'up', altDir: P(o, 'altDir') ?? '', railGroup: P(o, 'railGroup') ?? '', steps: Number(P(o, 'steps') ?? 3), spin: !!P(o, 'spin') });
+      else if (o.type === 'sea_current') currents.set(idx, String(P(o, 'dir') ?? 'up'));
       else if (o.type === 'switch_btn') switches.set(idx, String(P(o, 'gateId') ?? ''));
       else if (o.type === 'rail_switch') railSwitches.set(idx, { rg: String(P(o, 'railGroup') ?? ''), gid: String(P(o, 'gateId') ?? '') });
       else if (o.type === 'water_switch') waterSwitches.set(idx, Number(P(o, 'level') ?? 0));
       else if (o.type === 'water_bridge') waterBridges.set(idx, Number(P(o, 'reqLevel') ?? 0));
       else if (o.type === 'snowball') snowballs.add(idx);
       else if (o.type === 'quiz_pad' && P(o, 'correct')) quizCorrect.set(idx, String(P(o, 'gateId') ?? ''));
-      else if (o.type === 'pair_card' || o.type === 'prism' || o.type === 'rune_pad' || o.type === 'block_slot' || o.type === 'cracked_tile') {
+      else if (o.type === 'tide_seal') {
+        const gid = String(P(o, 'gateId') ?? '');
+        tideSeals.set(idx, gid);
+        if (!tideSealNeeds.has(gid)) tideSealNeeds.set(gid, new Set());
+        tideSealNeeds.get(gid).add(idx);
+      } else if (o.type === 'pair_card' || o.type === 'prism' || o.type === 'rune_pad' || o.type === 'block_slot' || o.type === 'cracked_tile') {
         const gid = String(P(o, 'gateId') ?? '');
         if (!puzzleNeeds.has(gid)) puzzleNeeds.set(gid, new Set());
         puzzleNeeds.get(gid).add(idx);
-      } else if (o.type === 'gate_bar') {
+      } else if (o.type === 'gate_bar' || o.type === 'whirlpool') {
         const gid = String(P(o, 'gateId') ?? '');
         if (!gates.has(gid)) gates.set(gid, []);
         gates.get(gid).push([x, y]);
@@ -54,6 +64,7 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
     }
   }
   const openGates = new Set();
+  const activeSeals = new Set();
   const brokenSnow = new Set();
   const switchedRails = new Set();
   const waterLevels = new Set([0]);
@@ -63,9 +74,13 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
     if (waterBridges.has(i) && !waterLevels.has(waterBridges.get(i))) return true;
     if (!col[i]) return false;
     const o = objAt.get(i);
-    if (!o) return true;
+    if (!o) {
+      // 파도타기 전용 맵(surfOnly): 내부 바다('2') 칸은 암초/오브젝트가 없으면 파도타기로 이동 가능 (테두리 2칸 봉쇄 제외)
+      if (surfOnly && terr && x >= 2 && x < W - 2 && y >= 2 && y < H - 2 && terr[y]?.[x] === '2') return false;
+      return true;
+    }
     if (o.type === 'snowball') return !brokenSnow.has(i);
-    if (o.type === 'gate_bar') return !openGates.has(String(P(o, 'gateId') ?? ''));
+    if (o.type === 'gate_bar' || o.type === 'whirlpool') return !openGates.has(String(P(o, 'gateId') ?? ''));
     return !(SKILL.has(o.type) || PASS.has(o.type));
   };
 
@@ -103,6 +118,34 @@ function runGimmickBfs(W, H, col, objs, startX, startY) {
     }
     for (const [gid, req] of puzzleNeeds) {
       if (!openGates.has(gid) && [...req].every((ri) => seen[ri])) unlockGate(gid);
+    }
+    // 조류 비석(tide_seal): 인접 4방향에서 조사 가능 → 같은 gateId 의 모든 비석 도달 시 소용돌이 해제
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+      const sIdx = ny * W + nx;
+      if (tideSeals.has(sIdx) && !activeSeals.has(sIdx)) {
+        activeSeals.add(sIdx);
+        const gid = tideSeals.get(sIdx);
+        const req = tideSealNeeds.get(gid);
+        if (req && [...req].every((ri) => activeSeals.has(ri))) {
+          unlockGate(gid);
+          for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) if (seen[yy * W + xx]) q.push([xx, yy]);
+        }
+      }
+    }
+    // 해신의 바다 급류(sea_current): 급류 위에 서 있으면 해류 방향으로 연속 이동
+    if (currents.has(idx)) {
+      let cx = x, cy = y, steps = 0;
+      while (currents.has(cy * W + cx) && steps < W + H) {
+        const cdir = currents.get(cy * W + cx);
+        const [dx, dy] = cdir === 'right' ? [1, 0] : cdir === 'down' ? [0, 1] : cdir === 'left' ? [-1, 0] : [0, -1];
+        if (blocked(cx + dx, cy + dy)) break;
+        cx += dx; cy += dy; steps++;
+        seen[cy * W + cx] = 1;
+      }
+      push(cx, cy);
+      continue;
     }
     if (arrows.has(idx)) {
       const ap = arrows.get(idx);
@@ -161,7 +204,8 @@ for (const id of region.ids) {
   const col = L('Collision').data.map((g) => !!g), cliff = L('Cliff')?.data ?? [];
   const sp = L('Spawns').objects;
   const start = isInt ? (sp.find((s) => s.name === 'entry') ?? sp[0]) : (sp.find((s) => s.name === 'player') ?? sp[0]);
-  const { seen, P, objAt } = runGimmickBfs(W, H, col, L('Objects').objects, Math.floor(start.x / 16), Math.floor(start.y / 16));
+  const surfOnly = m.properties.some((p) => p.name === 'surfOnly' && String(p.value) === 'true');
+  const { seen, P, objAt } = runGimmickBfs(W, H, col, L('Objects').objects, Math.floor(start.x / 16), Math.floor(start.y / 16), { surfOnly, terr });
   const near = (x0, y0, x1, y1) => { for (let y = y0 - 1; y <= y1 + 1; y++) for (let x = x0 - 1; x <= x1 + 1; x++) if (x >= 0 && y >= 0 && x < W && y < H && seen[y * W + x]) return true; return false; };
 
   if (isInt) {
@@ -187,7 +231,7 @@ for (const id of region.ids) {
   for (const o of L('Objects').objects) { const dx = P(o, 'doorCellX'); if (dx == null) continue; const cy = P(o, 'cellY'); for (let d = 1; d <= 3; d++) { const k = comp[(cy + d) * W + dx]; if (k >= 0) { comps[k].door = true; break; } } }
   for (const w of L('Warps').objects) for (let y = w.y / 16 - 1; y <= (w.y + w.height) / 16; y++) for (let x = w.x / 16 - 1; x <= (w.x + w.width) / 16; x++) { const k = x >= 0 && y >= 0 && x < W && y < H ? comp[y * W + x] : -1; if (k >= 0) comps[k].edge = true; }
   const main = Math.max(0, ...comps.map((c) => c.n));
-  const stray = cave ? [] : comps.filter((c) => c.n < main && !c.edge && !c.door && c.n >= 2);
+  const stray = cave || surfOnly ? [] : comps.filter((c) => c.n < main && !c.edge && !c.door && c.n >= 2);
   // 길 위에 놓인 물건 (계단 · 절벽 줄 제외)
   let onPath = 0; const where = [];
   if (!cave) for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; if (!isPath(x, y) || !col[i] || cliff[i]) continue; const o = objAt.get(i); if (!o || SKILL.has(o.type) || PASS.has(o.type) || (P(o, 'cellW') ?? 1) * (P(o, 'cellH') ?? 1) >= 4 || P(o, 'interact') || o.type === 'spire') continue; onPath++; if (where.length < 4) where.push(`${o.type}@${x},${y}`); }

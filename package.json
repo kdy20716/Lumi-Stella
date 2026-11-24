@@ -14,7 +14,8 @@
     "gen": "npm run gen:art && npm run gen:map",
     "server": "tsx server/index.ts",
     "start": "tsx server/index.ts",
-    "gen:illust": "node tools/art/gen-illust.mjs"
+    "gen:illust": "node tools/art/gen-illust.mjs",
+    "test:features": "tsx tools/test/latest-features.ts"
   },
   "dependencies": {
     "firebase": "^12.0.0",

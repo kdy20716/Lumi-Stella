@@ -31,6 +31,7 @@ import { EventDirector, VILLAIN_CAST } from '../story/EventDirector';
 import { captureMemory } from '../story/Memories';
 import { STORY } from '@shared/story';
 import { EVIL_STACK_MAX, LEGEND, MYTH, PRISON_LABOR_GOAL, STELLA, SEA_LEGEND, dexComplete } from '@shared/sim/FarmSimulation';
+import { foodStatusOf } from '@shared/sim/lifeDex';
 import { playFlute } from '../ui/Flute';
 import { stormFx, questClear } from '../fx/Storm';
 import { playBattleIntro, playInteractFx, showAreaPlate, type EncounterEnv } from '../fx/CinematicFx';
@@ -491,7 +492,7 @@ export class FarmScene extends Phaser.Scene {
     this.badgeCount = this.auth.me.badges.length;
     applyUiTheme(this.auth.me.uiTheme);
     this.playMapMusic();
-    ui.hud.time(this.auth.time); ui.hud.gold(this.auth.gold); ui.hud.energy(this.auth.me.energy, this.auth.me.maxEnergy);
+    ui.hud.time(this.auth.time); ui.hud.gold(this.auth.gold); ui.hud.energy(this.auth.me.energy, this.auth.me.maxEnergy); ui.hud.food(this.auth.me.food ?? 80, !!this.auth.me.hungerOff);
     ui.hotbar.onClick = () => { if (this.hasPhone()) phone.toggle('bag'); };
     if (firstTime) this.selected = -1;   // 접속하면 빈손으로 시작 (가방에서 골라 듦)
     this.ensureHeld();
@@ -732,6 +733,26 @@ export class FarmScene extends Phaser.Scene {
         return r;
       },
       testPgSystem: () => runPgSystemTest(this.auth),
+      claimDexMilestone: async (milestoneId) => {
+        const r = await this.auth.request({ kind: 'claimDexMilestone', milestoneId });
+        if (r.ok) {
+          sfx.play('jingle_dex');
+          this.fxPop(this.player.x, this.player.y - 10, 'sparkle', 0xffe066, 1.35);
+          phone.refresh();
+          return true;
+        }
+        sfx.play('error');
+        return false;
+      },
+      setHungerMode: async (off) => {
+        const r = await this.auth.request({ kind: 'setHungerMode', off });
+        if (r.ok) {
+          ui.hud.food(this.auth.me.food ?? 80, !!this.auth.me.hungerOff);
+          phone.refresh();
+          return true;
+        }
+        return false;
+      },
     });
     phone.refresh();
   }
@@ -1080,7 +1101,8 @@ export class FarmScene extends Phaser.Scene {
       });
       out.push({ label: '다른 루미에게 쓰기 (상점 탭)', run: () => { phone.shopTab = 'item'; phone.show('shop'); } });
     } else if (item.type === 'food') {
-      out.push({ label: '먹기', run: () => this.eatSlot(slot), primary: true });
+      const foodGain = item.food ? ` (🍚+${item.food}${item.partyHeal ? ` · 💚+${item.partyHeal}` : ''})` : '';
+      out.push({ label: `먹기${foodGain}`, run: () => this.eatSlot(slot), primary: true });
     }
     if (item.id === 'name_ticket') out.push({ label: '닉네임 변경하기', run: () => { phone.shopTab = 'item'; phone.show('shop'); }, primary: true });
     if (item.id === 'ocarina') out.push({ label: '불기', run: () => this.fluteAnywhere(), primary: true });
@@ -1269,7 +1291,7 @@ export class FarmScene extends Phaser.Scene {
       case 'bed': return ownHome ? { label: label('침대에서 자기 (하루 마치기)'), run: () => { sfx.play('bed'); this.fxPop(o.sprite.x, o.sprite.y, 'magic', 0xb8a0ff, 1.2); this.sleep(); } } : { label: label('살펴보기'), run: () => this.say(['친구의 침대다. 푹신해 보인다.']) };
       case 'nbed': return { label: label('살펴보기'), run: () => this.say([`${houseOwner || '이웃'}의 침대다. 남의 침대에 누울 순 없지.`]) };
       case 'wardrobe': return ownHome ? { label: label('옷장 — 외형 바꾸기'), run: () => { sfx.play('chest'); this.fxPop(o.sprite.x, o.sprite.y, 'sparkle', 0xffb8e0, 1.25); this.openWardrobe(); } } : { label: label('살펴보기'), run: () => this.say(['친구의 옷장이다. 멋진 옷이 가득하다.']) };
-      case 'kitchen': return { label: label('부엌 살펴보기'), run: () => { this.stage3d?.ring(o.sprite.x, o.sprite.y, 0xffe58a, 1.0); this.say(['깔끔한 부엌. 수확한 작물이나 카페 음식을 들고 식탁에서 E 를 누르면 같이 먹을 수 있어요.']); } };
+      case 'kitchen': return { label: label('🍳 부엌 — 특산물 요리 · 도시락 만들기'), run: () => { sfx.play('open'); this.fxPop(o.sprite.x, o.sprite.y, 'sparkle', 0xffb347, 1.2); this.openCraft('kitchen'); } };
       case 'tv': return { label: label('TV 보기'), run: () => { sfx.play('tap'); this.fxPop(o.sprite.x, o.sprite.y, 'sparkle', 0x7ceeff, 1.15); this.say(this.tvProgram(), '📺 TV 방송'); } };
       case 'dtable': return this.tableInteraction();
       case 'piano': return { label: label('피아노 치기'), run: () => { sfx.play('piano'); this.emote(4); this.fxPop(o.sprite.x, o.sprite.y, 'note', 0xffe054, 1.35); this.say(['♪ 도레미파솔~ 서툴지만 즐거운 소리가 난다.']); } };
@@ -1295,16 +1317,15 @@ export class FarmScene extends Phaser.Scene {
       case 'prison_escape': return { label: label('비밀 탈출 해치로 탈옥하기'), run: () => void this.escapePrison(o) };
       case 'bench': return { label: label('벤치에 앉아 쉬기'), run: () => { sfx.play('sit'); this.fxPop(this.player.x, this.player.y, 'heart', 0xffa6c4, 1.1); this.say(['벤치에 앉아 호수를 바라본다.\n오리들이 한가롭게 떠다닌다...']); } };
       case 'campfire': return {
-        label: label('모닥불 곁에 나란히 앉기'),
+        label: label('🔥 모닥불 — 캠핑 요리 · 쉬어가기'),
         run: () => {
           sfx.play('sit');
           const dir = facingFromVector(14 * TILE + 8 - this.player.x, 26 * TILE - this.player.y, this.player.dir);
           this.player.play('idle', dir);
           this.emote(2);
           this.fxPop(o.sprite.x, o.sprite.y, 'ember', 0xff8030, 1.5);
-          this.stage3d?.burst('heart', this.player.x, this.player.y, 14);
-          const isNight = this.auth.time.minutes >= 17 * 60 + 30 || this.auth.time.minutes < 6 * 60 + 30;
-          ui.toast.push(isNight ? '타오르는 모닥불 곁에 나란히 앉았어요. (Enter로 채팅해 보세요!)' : '모닥불 광장 벤치에 앉았어요. 밤이 되면 불꽃이 타오릅니다!', 'heart');
+          this.stage3d?.burst('heart', this.player.x, this.player.y, 10);
+          this.openCraft('campfire');
         },
       };
       case 'tower': case 'dept': {
@@ -2387,7 +2408,19 @@ export class FarmScene extends Phaser.Scene {
         if (ev.type === 'tile') { if ((ev.map ?? 'farm') === this.mapId && ev.owner === this.auth.farmOwner) { this.farm?.apply(ev.tile); this.stage3d?.markSoilDirty(); } }
         else if (ev.type === 'time') { ui.hud.time(ev.time); phone.tick(ev.time); if (ev.time.minutes === 18 * 60) ui.toast.push('🌙 해가 지고 가로등이 켜져요. 별빛 카지노도 영업을 시작합니다!', 'sun'); if (ev.time.minutes === 24 * 60) ui.toast.push('자정이 넘었어요! 곧 자러 가야 해요.', 'energy'); }
         else if (ev.type === 'gold') { if (ev.playerId === me.id) { ui.hud.gold(ev.gold); ui.shop.gold(ev.gold); casinoModal.refreshGold(ev.gold); phone.refresh(); if (ev.delta > 0) ui.toast.push(`+${ev.delta}G`, 'gold'); } }
-        else if (ev.type === 'player' && ev.id === me.id) { ui.hud.energy(ev.energy, me.maxEnergy); this.ensureHeld(); ui.craft.refresh(); ui.shop.refresh(); phone.refresh(); }
+        else if (ev.type === 'player' && ev.id === me.id) { ui.hud.energy(ev.energy, me.maxEnergy); ui.hud.food(me.food ?? 80, !!me.hungerOff); this.ensureHeld(); ui.craft.refresh(); ui.shop.refresh(); phone.refresh(); }
+        else if (ev.type === 'lifeDex' && ev.playerId === me.id) {
+          if (ev.added?.first) {
+            sfx.play('jingle_dex');
+            this.fxPop(this.player.x, this.player.y - 10, 'sparkle', 0x7effb2, 1.3);
+          }
+          phone.refresh();
+        }
+        else if (ev.type === 'hunger' && ev.playerId === me.id) {
+          ui.hud.food(ev.food, ev.hungerOff);
+          if (ev.peckishAlert) sfx.play('stomach');
+          phone.refresh();
+        }
         else if (ev.type === 'objectRemoved') { const [m, id] = ev.key.split(':'); if (m === this.mapId && (!ev.owner || ev.owner === this.auth.farmOwner)) this.world.removeObject(Number(id)); }
         else if (ev.type === 'opened' && ev.playerId === me.id) { const [m, id] = ev.key.split(':'); if (m === this.mapId) this.world.removeObject(Number(id)); }
         else if (ev.type === 'cleared' && ev.playerId === me.id) {
@@ -2766,7 +2799,7 @@ export class FarmScene extends Phaser.Scene {
       this.bikeZoneEntered = false;
     }
     this.player.riding = !!this.auth.me.riding && !this.world.interior && !this.world.cave;
-    const run = k.SHIFT.isDown || touch.run;
+    const run = (k.SHIFT.isDown || touch.run) && foodStatusOf(this.auth.me).canRun;
     this.player.move(dt, { vx, vy, run }, this.npcs.filter((n) => n.state !== 'gone' && n.sprite.visible));
     this.player.update();
     const groundY = this.player.sprite.getData('groundY');
@@ -2885,20 +2918,39 @@ export class FarmScene extends Phaser.Scene {
     if (n > 0) { sfx.play('item'); this.say(t.teach, t.name, NPCS[npc]?.sprite); }
   }
 
-  /** 작업대 창: 집(전부) · 볼 공방(민수) · 연구소(한별 박사) · 마을 공방장인 */
-  private openCraft(where: 'home' | 'smithy' | 'lab', custom?: { sprite: string; portrait?: string; name: string; title: string }) {
+  /** 작업대·부엌 창: 집 작업대 · 볼 공방(민수) · 연구소(한별 박사) · 집 부엌 · 마을 모닥불 */
+  private openCraft(where: 'home' | 'smithy' | 'lab' | 'kitchen' | 'campfire', custom?: { sprite: string; portrait?: string; name: string; title: string }) {
     this.player.play('idle');
+    const isKitchen = where === 'kitchen' || where === 'campfire';
     const keeper = custom ?? (where === 'smithy' ? NPCS.minsu : where === 'lab' ? NPCS.hanbyeol : undefined);
-    const title = custom?.title ?? (where === 'home' ? '나의 작업대' : where === 'smithy' ? '민수의 볼 공방' : '한별 연구소 · 약품 조합기');
+    const title = custom?.title ?? (
+      where === 'kitchen' ? '집 부엌 · 요리대' :
+      where === 'campfire' ? '모닥불 캠핑 냄비' :
+      where === 'home' ? '나의 작업대' :
+      where === 'smithy' ? '민수의 볼 공방' :
+      '한별 연구소 · 약품 조합기'
+    );
     const sub = custom
       ? '"재료만 있으면 볼이든 회복약이든 강화 도구든 마음껏 만들어 보게!"'
-      : where === 'home' ? '밭에서 키운 약초와 캐 온 광석으로 직접 만들어요.' : where === 'smithy' ? '"화덕은 마음껏 써. 배운 대로만 하면 볼은 절대 안 깨져."' : '"조합 비율만 지키면 누구나 좋은 약을 만들 수 있다네."';
+      : where === 'kitchen' ? '수확한 특산 작물과 직접 낚은 물고기로 든든한 도시락을 만들어요.'
+      : where === 'campfire' ? '타닥타닥 모닥불 위 냄비에서 따뜻한 캠핑 요리를 끓여요!'
+      : where === 'home' ? '밭에서 키운 약초와 캐 온 광석으로 직접 만들어요.'
+      : where === 'smithy' ? '"화덕은 마음껏 써. 배운 대로만 하면 볼은 절대 안 깨져."'
+      : '"조합 비율만 지키면 누구나 좋은 약을 만들 수 있다네."';
     ui.craft.show({
       title, sub,
+      station: isKitchen ? 'kitchen' : 'workbench',
+      icon: isKitchen ? 'food_bowl' : 'craft',
       keeper: keeper ? { sprite: keeper.sprite, portrait: 'portrait' in keeper ? keeper.portrait : keeper.sprite, name: keeper.name } : undefined,
-      teacher: where === 'home' || custom ? undefined : where === 'smithy' ? 'minsu' : 'hanbyeol',
+      teacher: where === 'home' || isKitchen || custom ? undefined : where === 'smithy' ? 'minsu' : 'hanbyeol',
       me: () => this.auth.me,
-      onCraft: (id, times) => { void this.auth.request({ kind: 'craft', recipe: id, times }).then((res) => { if (res.ok) sfx.play(where === 'smithy' ? 'craft_fire' : where === 'lab' ? 'craft_lab' : 'craft_bench'); else sfx.play('error'); ui.craft.refresh(); }); },
+      onCraft: (id, times) => {
+        void this.auth.request({ kind: 'craft', recipe: id, times }).then((res) => {
+          if (res.ok) sfx.play(isKitchen ? 'cook' : where === 'smithy' ? 'craft_fire' : where === 'lab' ? 'craft_lab' : 'craft_bench');
+          else sfx.play('error');
+          ui.craft.refresh();
+        });
+      },
     });
   }
 
